@@ -12,3 +12,5 @@ components = [
   "rustfmt",
 ]
 profile = "minimal"
+
+# vim:set ft=toml:
