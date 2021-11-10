@@ -1,8 +1,7 @@
 #![deny(clippy::suspicious, clippy::style)]
 #![warn(clippy::pedantic, clippy::cargo)]
 
-use indexer_core::init;
-use indexer_core::prelude::*;
+use indexer_core::{init, prelude::*};
 
 fn main() {
     init();
