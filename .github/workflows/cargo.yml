@@ -9,6 +9,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
+        with:
+          components: cargo, rustc
+          profile: minimal
 
       - uses: actions-rs/cargo@v1
         with:
@@ -26,6 +29,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
+        with:
+          components: cargo, rustc
+          profile: minimal
 
       - uses: actions-rs/cargo@v1
         with:
@@ -43,6 +49,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
+        with:
+          components: cargo, rustc, clippy
+          profile: minimal
 
       - uses: actions-rs/cargo@v1
         with:
@@ -60,6 +69,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
+        with:
+          components: cargo, rustc, rustfmt
+          profile: minimal
+
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
