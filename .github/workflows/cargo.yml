@@ -1,0 +1,66 @@
+name: Cargo
+
+on: [pull_request, push]
+
+jobs:
+  build:
+    name: cargo build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all --all-features
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all --release --all-features
+
+  test:
+    name: cargo test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all --all-features
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all --release --all-features
+
+  clippy:
+    name: cargo clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all --all-features
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all --release --all-features
+
+  fmt:
+    name: cargo fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all --check

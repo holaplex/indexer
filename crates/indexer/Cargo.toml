@@ -1,0 +1,12 @@
+[package]
+name = "metaplex-indexer"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+
+[dependencies.indexer-core]
+package = "metaplex-indexer-core"
+version = "=0.0.0"
+path = "../core"
+
