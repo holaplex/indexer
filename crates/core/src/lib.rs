@@ -1,13 +1,18 @@
-#![deny(clippy::suspicious, clippy::style)]
-#![warn(clippy::pedantic, clippy::cargo)]
+//! Core components for `metaplex-indexer` and `metaplex-indexer-rpc`.
+
+#![deny(
+    clippy::suspicious,
+    clippy::style,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
+#![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
 pub mod error;
 pub mod hash;
 pub mod pubkeys;
-mod thread_pool;
 
-pub use thread_pool::ThreadPool;
-
+/// Commonly used utilities
 pub mod prelude {
     pub use log::{debug, error, info, trace, warn};
 
@@ -27,9 +32,12 @@ fn dotenv(name: impl AsRef<Path>) -> Result<Option<PathBuf>, dotenv::Error> {
     }
 }
 
+/// Process environment variables, initialize logging, and then execute the
+/// provided closure and handle its result before exiting.
+///
 /// # Panics
 /// This function panics if dotenv fails to load a .env file
-pub fn run(main: impl FnOnce() -> Result<()>) {
+pub fn run(main: impl FnOnce() -> Result<()>) -> ! {
     [
         ".env.local",
         if cfg!(debug_assertions) {
@@ -56,8 +64,11 @@ pub fn run(main: impl FnOnce() -> Result<()>) {
         .parse_default_env()
         .init();
 
-    match main() {
-        Ok(()) => (),
-        Err(e) => log::error!("{:?}", e),
-    }
+    std::process::exit(match main() {
+        Ok(()) => 0,
+        Err(e) => {
+            log::error!("{:?}", e);
+            1
+        },
+    });
 }

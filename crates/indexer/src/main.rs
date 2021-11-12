@@ -1,12 +1,21 @@
-#![deny(clippy::suspicious, clippy::style)]
-#![warn(clippy::pedantic, clippy::cargo)]
+//! Binary for running the write half of the indexer.
+
+#![deny(
+    clippy::suspicious,
+    clippy::style,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
+#![warn(clippy::pedantic, clippy::cargo, missing_docs)]
+
+mod get_storefronts;
 
 use std::env;
 
+use baby_pool::ThreadPool;
 use indexer_core::{
     prelude::*,
     pubkeys::{find_store_address, find_store_indexer},
-    ThreadPool,
 };
 use solana_client::{
     client_error::{ClientError, ClientErrorKind},
@@ -15,9 +24,14 @@ use solana_client::{
 };
 use solana_sdk::pubkey::Pubkey;
 
-enum Job {
+/// A job to be run on the process thread pool
+#[derive(Debug, Clone, Copy)]
+pub enum Job {
+    /// Fetch the storefront list from the Holaplex API
     GetStorefronts,
+    /// Process data for a store owner pubkey
     StoreOwner(Pubkey),
+    /// Process data for an auction cache pubkey
     AuctionCache(Pubkey),
 }
 
@@ -25,18 +39,20 @@ fn main() {
     indexer_core::run(|| {
         let endpoint = env::var("SOLANA_ENDPOINT").context("Couldn't get Solana endpoint")?;
         info!("Connecting to endpoint: {:?}", endpoint);
-        let client = RpcClient::new(endpoint);
+        let _client = RpcClient::new(endpoint);
 
-        let pool = ThreadPool::new(None, |job, handle| match job {
-            Job::GetStorefronts => {
-                handle.push(Job::GetStorefronts);
-                todo!()
-            },
-            Job::StoreOwner(k) => todo!("store_owner"),
-            Job::AuctionCache(k) => todo!("auction_cache"),
+        let pool = ThreadPool::new(None, |job, handle| {
+            let res = match job {
+                Job::GetStorefronts => get_storefronts::run(handle),
+                Job::StoreOwner(_) => todo!("store_owner"),
+                Job::AuctionCache(_) => todo!("auction_cache"),
+            };
+
+            match res {
+                Ok(()) => (),
+                Err(e) => error!("Job {:?} failed: {:?}", job, e),
+            }
         });
-
-        std::thread::sleep(std::time::Duration::from_secs(1));
 
         pool.push(Job::GetStorefronts);
         pool.join();
@@ -45,7 +61,7 @@ fn main() {
     });
 }
 
-fn main_old() {
+fn _main_old() {
     indexer_core::run(|| {
         let endpoint = env::var("SOLANA_ENDPOINT").context("Couldn't get Solana endpoint")?;
         info!("Connecting to endpoint: {:?}", endpoint);

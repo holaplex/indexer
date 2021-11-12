@@ -99,6 +99,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
+name = "baby-pool"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b2d8d3b2a3ec23008f201505f7d85d34bfe282635e9b06831b12ef1b24f4c04"
+dependencies = [
+ "crossbeam",
+ "dispose",
+ "log",
+ "num_cpus",
+ "parking_lot 0.11.2",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1310,6 +1323,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "hyper-tls"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6183ddfa99b85da61a140bea0efc93fdf56ceaa041b37d553518030827f9905"
+dependencies = [
+ "bytes 1.1.0",
+ "hyper",
+ "native-tls",
+ "tokio",
+ "tokio-native-tls",
+]
+
+[[package]]
 name = "idna"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1573,27 +1599,27 @@ dependencies = [
 
 [[package]]
 name = "metaplex-indexer"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
+ "baby-pool",
  "metaplex-indexer-core",
+ "reqwest",
+ "serde",
  "solana-client",
  "solana-sdk",
+ "tokio",
 ]
 
 [[package]]
 name = "metaplex-indexer-core"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "anyhow",
- "crossbeam",
  "dashmap",
  "diesel",
- "dispose",
  "dotenv",
  "env_logger 0.9.0",
  "log",
- "num_cpus",
- "parking_lot 0.11.2",
  "rand 0.8.4",
  "seahash",
  "solana-sdk",
@@ -1601,7 +1627,7 @@ dependencies = [
 
 [[package]]
 name = "metaplex-indexer-rpc"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "metaplex-indexer-core",
 ]
@@ -2225,11 +2251,13 @@ dependencies = [
  "http-body",
  "hyper",
  "hyper-rustls",
+ "hyper-tls",
  "ipnet",
  "js-sys",
  "lazy_static",
  "log",
  "mime",
+ "native-tls",
  "percent-encoding",
  "pin-project-lite",
  "rustls",
@@ -2237,6 +2265,7 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "tokio",
+ "tokio-native-tls",
  "tokio-rustls",
  "url",
  "wasm-bindgen",
@@ -3355,6 +3384,16 @@ dependencies = [
  "proc-macro2 1.0.32",
  "quote 1.0.10",
  "syn 1.0.81",
+]
+
+[[package]]
+name = "tokio-native-tls"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7d995660bd2b7f8c1568414c1126076c13fbb725c40112dc0120b78eb9b717b"
+dependencies = [
+ "native-tls",
+ "tokio",
 ]
 
 [[package]]

@@ -1,8 +1,12 @@
+//! Fast hash tables using the `seahash` hasher
+
 use std::hash::BuildHasher;
 
 use rand::{prelude::*, rngs::StdRng};
 use seahash::SeaHasher;
 
+/// Adapter for `SeaHasher` to use with hash maps.
+///
 /// # NOTE
 /// This hasher is susceptible to hash-DoS attacks.  Use with care if ingesting
 /// user data into a map with this hasher.
@@ -28,7 +32,13 @@ impl BuildHasher for SeaHasherBuilder {
     }
 }
 
+/// `std::collections::HashMap` alias that uses `seahash`
+#[allow(clippy::module_name_repetitions)]
 pub type HashMap<K, V> = std::collections::HashMap<K, V, SeaHasherBuilder>;
+/// `std::collections::HashSet` alias that uses `seahash`
+#[allow(clippy::module_name_repetitions)]
 pub type HashSet<V> = std::collections::HashSet<V, SeaHasherBuilder>;
+/// `dashmap::DashMap` alias that uses `seahash`
 pub type DashMap<K, V> = dashmap::DashMap<K, V, SeaHasherBuilder>;
+/// `dashmap::DashSet` alias that uses `seahash`
 pub type DashSet<V> = dashmap::DashSet<V, SeaHasherBuilder>;
