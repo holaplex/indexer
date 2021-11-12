@@ -1,10 +1,12 @@
 #![deny(clippy::suspicious, clippy::style)]
 #![warn(clippy::pedantic, clippy::cargo)]
 
-use indexer_core::{init, prelude::*};
+use indexer_core::prelude::*;
 
 fn main() {
-    init();
+    indexer_core::run(|| {
+        info!("Hello, world!");
 
-    info!("Hello, world!");
+        Ok(())
+    });
 }
