@@ -1,10 +1,10 @@
 use std::env;
 
-use baby_pool::ThreadPoolHandle;
 use indexer_core::prelude::*;
 use serde::Deserialize;
+use solana_sdk::pubkey::Pubkey;
 
-use crate::Job;
+use crate::{Job, ThreadPoolHandle};
 
 #[derive(Debug, Deserialize)]
 struct StorefrontRecord {
@@ -14,11 +14,12 @@ struct StorefrontRecord {
 #[derive(Debug, Deserialize)]
 struct Storefront {
     pubkey: String,
-    subdomain: String,
+    /* TODO
+     * subdomain: String, */
 }
 
-async fn get_storefronts_async(_handle: ThreadPoolHandle<'_, Job>) -> Result<()> {
-    let storefronts: Vec<Storefront> = reqwest::Client::new()
+async fn get_storefronts_async(handle: &ThreadPoolHandle<'_>) -> Result<()> {
+    let storefronts: Vec<StorefrontRecord> = reqwest::Client::new()
         .get(
             env::var("HOLAPLEX_STOREFRONTS_ENDPOINT")
                 .context("Couldn't get endpoint for Holaplex storefronts")?,
@@ -30,12 +31,19 @@ async fn get_storefronts_async(_handle: ThreadPoolHandle<'_, Job>) -> Result<()>
         .await
         .context("Couldn't parse Holaplex storefronts")?;
 
-    debug!("Storefronts: {:?}", storefronts);
+    debug!("Loaded {:?} storefront(s)", storefronts.len());
+
+    for StorefrontRecord { storefront } in storefronts {
+        match Pubkey::try_from(storefront.pubkey.as_str()) {
+            Ok(k) => handle.push(Job::StoreOwner(k)),
+            Err(e) => error!("Failed to parse {:?}: {:?}", storefront.pubkey, e),
+        }
+    }
 
     Ok(())
 }
 
-pub fn run(handle: ThreadPoolHandle<Job>) -> Result<()> {
+pub fn run(handle: &ThreadPoolHandle) -> Result<()> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

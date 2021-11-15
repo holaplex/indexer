@@ -8,24 +8,36 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
-mod get_storefronts;
-
-use std::env;
+use std::path::PathBuf;
 
 use baby_pool::ThreadPool;
-use indexer_core::{
-    prelude::*,
-    pubkeys::{find_store_address, find_store_indexer},
-};
-use solana_client::{
-    client_error::{ClientError, ClientErrorKind},
-    rpc_client::RpcClient,
-    rpc_request::RpcError,
-};
+use clap::Parser;
+use indexer_core::prelude::*;
 use solana_sdk::pubkey::Pubkey;
 
-/// A job to be run on the process thread pool
+mod auction;
+mod auction_cache;
+mod client;
+mod get_storefronts;
+mod metadata;
+mod store_owner;
+pub mod util;
+
+pub use client::Client;
+
+/// The three pubkeys associated with a single Metaplex auction
 #[derive(Debug, Clone, Copy)]
+pub struct AuctionKeys {
+    auction: Pubkey,
+    manager: Pubkey,
+    vault: Pubkey,
+}
+
+/// Convenience alias for a shared `AuctionKeys`
+pub type RcAuctionKeys = std::sync::Arc<AuctionKeys>;
+
+/// A job to be run on the process thread pool
+#[derive(Debug, Clone)]
 pub enum Job {
     /// Fetch the storefront list from the Holaplex API
     GetStorefronts,
@@ -33,19 +45,44 @@ pub enum Job {
     StoreOwner(Pubkey),
     /// Process data for an auction cache pubkey
     AuctionCache(Pubkey),
+    /// Process data for an individual item
+    Metadata(Pubkey),
+    /// Process data for an auction
+    Auction(RcAuctionKeys),
+}
+
+type ThreadPoolHandle<'a> = baby_pool::ThreadPoolHandle<'a, Job>;
+
+#[derive(Parser)]
+struct Opts {
+    /// Load a predefined list of storefront owner keys, rather than fetching
+    /// from Holaplex.  Provided file should be a JSON array of strings.
+    #[clap(long)]
+    store_list: Option<PathBuf>,
+
+    /// The number of threads to use.  Defaults to available core count.
+    #[clap(short = 'j')]
+    thread_count: Option<usize>,
 }
 
 fn main() {
     indexer_core::run(|| {
-        let endpoint = env::var("SOLANA_ENDPOINT").context("Couldn't get Solana endpoint")?;
-        info!("Connecting to endpoint: {:?}", endpoint);
-        let _client = RpcClient::new(endpoint);
+        let Opts {
+            thread_count,
+            store_list,
+        } = Opts::parse();
 
-        let pool = ThreadPool::new(None, |job, handle| {
+        let client = Client::new_rc().context("Failed to construct Client")?;
+
+        let pool = ThreadPool::new(thread_count, move |job, handle| {
+            trace!("{:?}", job);
+
             let res = match job {
-                Job::GetStorefronts => get_storefronts::run(handle),
-                Job::StoreOwner(_) => todo!("store_owner"),
-                Job::AuctionCache(_) => todo!("auction_cache"),
+                Job::GetStorefronts => get_storefronts::run(&handle),
+                Job::StoreOwner(owner) => store_owner::process(&client, owner, &handle),
+                Job::AuctionCache(store) => auction_cache::process(&client, store, &handle),
+                Job::Metadata(meta) => metadata::process(&client, meta, &handle),
+                Job::Auction(ref keys) => auction::process(&client, keys, &handle),
             };
 
             match res {
@@ -54,77 +91,24 @@ fn main() {
             }
         });
 
-        pool.push(Job::GetStorefronts);
+        if let Some(store_list) = store_list {
+            let list: Vec<String> = serde_json::from_reader(
+                std::fs::File::open(store_list).context("Couldn't open storefront list")?,
+            )
+            .context("Couldn't parse storefront list")?;
+
+            list.into_iter()
+                .filter_map(|i| {
+                    Pubkey::try_from(&*i)
+                        .map_err(|e| error!("Failed to parse pubkey: {:?}", e))
+                        .ok()
+                })
+                .for_each(|k| pool.push(Job::StoreOwner(k)));
+        } else {
+            pool.push(Job::GetStorefronts);
+        }
+
         pool.join();
-
-        Ok(())
-    });
-}
-
-fn _main_old() {
-    indexer_core::run(|| {
-        let endpoint = env::var("SOLANA_ENDPOINT").context("Couldn't get Solana endpoint")?;
-        info!("Connecting to endpoint: {:?}", endpoint);
-        let client = RpcClient::new(endpoint);
-
-        let mut indexed_stores = Vec::new();
-        let mut s = String::new();
-
-        while let Ok(line) = std::io::stdin()
-            .read_line(&mut s)
-            .map_err(|e| warn!("{:?}", e))
-        {
-            if line == 0 {
-                break;
-            }
-
-            if let Ok(owner) = Pubkey::try_from(s.trim()).map_err(|e| {
-                error!(
-                    "{:?}",
-                    Error::from(e).context(format!("Failed to parse pubkey {:?}", s))
-                );
-            }) {
-                let (store, _bump) = find_store_address(owner);
-
-                let mut pages = (0..)
-                    .map_while(|i| {
-                        let (indexer, _bump) = find_store_indexer(store, i);
-
-                        match client.get_account(&indexer) {
-                            Ok(acct) => Some((acct, i)),
-                            Err(ClientError {
-                                kind: ClientErrorKind::RpcError(RpcError::ForUser(msg)),
-                                ..
-                            }) if msg.starts_with("AccountNotFound:") => None,
-                            Err(e) => {
-                                error!(
-                                    "{:?}",
-                                    Error::from(e).context(format!("Failed to get page {}", i))
-                                );
-                                None
-                            },
-                        }
-                    })
-                    .peekable();
-
-                if pages.peek().is_some() {
-                    info!("Indexer found for store {:?} (owner {:?})", store, owner);
-                    indexed_stores.push(owner);
-                } else {
-                    warn!("No indexer for store {:?} (owner {:?})", store, owner);
-                }
-
-                pages.for_each(|(acct, i)| info!("Indexer, page {}: {:?}", i, acct));
-            }
-
-            s.clear();
-        }
-
-        info!("Found {} indexed store(s).", indexed_stores.len());
-
-        for key in indexed_stores {
-            println!("{:?}", key);
-        }
 
         Ok(())
     });

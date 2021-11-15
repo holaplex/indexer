@@ -41,3 +41,16 @@ pub fn find_store_indexer(store: impl Borrow<Pubkey>, index: u64) -> (Pubkey, u8
         &ids::metaplex(),
     )
 }
+
+/// Find the address of an `AuctionDataExtended` account, given the auction vault
+pub fn find_auction_data_extended(vault: impl Borrow<Pubkey>) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            "auction".as_bytes(),
+            &ids::auction().to_bytes(),
+            &vault.borrow().to_bytes(),
+            "extended".as_bytes(),
+        ],
+        &ids::auction(),
+    )
+}
