@@ -8,6 +8,13 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
+// TODO: #[macro_use] is somewhat deprecated, but diesel still relies on it
+#[macro_use]
+extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
+
+pub mod db;
 pub mod error;
 pub mod hash;
 pub mod pubkeys;

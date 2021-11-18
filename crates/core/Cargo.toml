@@ -26,7 +26,8 @@ dashmap = "4.0.2"
 seahash = "4.1.0"
 
 # ORM
-diesel = "1.4.8"
+diesel = { version = "1.4.8", features = ["postgres", "r2d2"] }
+diesel_migrations = "1.4.0"
 
 # Solana
 solana-sdk = "1.8.3"

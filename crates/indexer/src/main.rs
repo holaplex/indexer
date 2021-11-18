@@ -8,11 +8,11 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 use baby_pool::ThreadPool;
 use clap::Parser;
-use indexer_core::prelude::*;
+use indexer_core::{db, prelude::*};
 use solana_sdk::pubkey::Pubkey;
 
 mod auction;
@@ -73,6 +73,12 @@ fn main() {
         } = Opts::parse();
 
         let client = Client::new_rc().context("Failed to construct Client")?;
+        let db = db::connect(
+            env::var_os("DATABASE_WRITE_URL")
+                .or_else(|| env::var_os("DATABASE_URL"))
+                .ok_or_else(|| anyhow!("No value found for DATABASE_WRITE_URL or DATABASE_URL"))
+                .map(move |v| v.to_string_lossy().into_owned())?,
+        );
 
         let pool = ThreadPool::new(thread_count, move |job, handle| {
             trace!("{:?}", job);
