@@ -12,19 +12,24 @@ create table metadatas (
 );
 
 create table metadata_creators (
-  address           bytea   unique primary key not null,
   metadata_address  bytea   not null,
   creator_address   bytea   not null,
   share             integer not null,
   verified          boolean default false,
 
+  primary key (metadata_address, creator_address),
   foreign key (metadata_address) references metadatas (address)
 );
 
+create index on metadata_creators (metadata_address);
+
 create table listing_metadatas (
-  listing_address   bytea primary key not null,
+  listing_address   bytea not null,
   metadata_address  bytea not null,
 
+  primary key (listing_address, metadata_address),
   foreign key (listing_address) references listings (address),
   foreign key (metadata_address) references metadatas (address)
 );
+
+create index on listing_metadatas (listing_address);

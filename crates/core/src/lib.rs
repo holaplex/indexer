@@ -21,6 +21,15 @@ pub mod pubkeys;
 
 /// Commonly used utilities
 pub mod prelude {
+    pub use std::borrow::{
+        Cow,
+        Cow::{Borrowed, Owned},
+    };
+
+    pub use chrono::{self, prelude::*};
+    pub use diesel::query_dsl::{
+        BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl,
+    };
     pub use log::{debug, error, info, trace, warn};
 
     pub use super::error::prelude::*;

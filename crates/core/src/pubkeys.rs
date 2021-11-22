@@ -54,3 +54,16 @@ pub fn find_auction_data_extended(vault: impl Borrow<Pubkey>) -> (Pubkey, u8) {
         &ids::auction(),
     )
 }
+
+/// Find the address of an `Edition` account, given the token mint
+pub fn find_edition(mint: impl Borrow<Pubkey>) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            "metadata".as_bytes(),
+            &ids::metadata().to_bytes(),
+            &mint.borrow().to_bytes(),
+            "edition".as_bytes(),
+        ],
+        &ids::metadata(),
+    )
+}

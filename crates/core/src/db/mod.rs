@@ -1,8 +1,20 @@
 //! Interface with the indexer database
 
-mod models;
+pub mod models;
+#[allow(missing_docs)]
 mod schema;
 
+pub mod tables {
+    //! Diesel schema DSLs
+
+    pub use super::schema::{
+        editions::dsl as editions, listing_metadatas::dsl as listing_metadatas,
+        listings::dsl as listings, master_editions::dsl as master_editions,
+        metadata_creators::dsl as metadata_creators, metadatas::dsl as metadatas,
+    };
+}
+
+pub use diesel::{insert_into, pg::upsert::excluded};
 use diesel::{pg, r2d2};
 
 use crate::prelude::*;

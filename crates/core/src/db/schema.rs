@@ -2,12 +2,12 @@ table! {
     editions (address) {
         address -> Bytea,
         parent_address -> Bytea,
-        edition -> Int4,
+        edition -> Int8,
     }
 }
 
 table! {
-    listing_metadatas (listing_address) {
+    listing_metadatas (listing_address, metadata_address) {
         listing_address -> Bytea,
         metadata_address -> Bytea,
     }
@@ -24,7 +24,7 @@ table! {
         store -> Bytea,
         last_bid -> Nullable<Int8>,
         end_auction_gap -> Nullable<Timestamp>,
-        price_floor -> Nullable<Int4>,
+        price_floor -> Nullable<Int8>,
         total_uncancelled_bids -> Nullable<Int4>,
         gap_tick_size -> Nullable<Int4>,
         instant_sale_price -> Nullable<Int8>,
@@ -35,14 +35,13 @@ table! {
 table! {
     master_editions (address) {
         address -> Bytea,
-        supply -> Int4,
-        max_supply -> Int4,
+        supply -> Int8,
+        max_supply -> Nullable<Int8>,
     }
 }
 
 table! {
-    metadata_creators (address) {
-        address -> Bytea,
+    metadata_creators (metadata_address, creator_address) {
         metadata_address -> Bytea,
         creator_address -> Bytea,
         share -> Int4,

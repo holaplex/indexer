@@ -99,19 +99,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
-name = "baby-pool"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d49e8a8302ac6804c07bb8ba859d3c8ca71dc2109c0a4aba3bd62026b95e487e"
-dependencies = [
- "crossbeam",
- "dispose",
- "log",
- "num_cpus",
- "parking_lot 0.11.2",
-]
-
-[[package]]
 name = "backtrace"
 version = "0.3.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -745,6 +732,7 @@ checksum = "b28135ecf6b7d446b43e27e225622a038cc4e2930a1022f51cdb97ada19b8e4d"
 dependencies = [
  "bitflags",
  "byteorder",
+ "chrono",
  "diesel_derives",
  "pq-sys",
  "r2d2",
@@ -1687,7 +1675,6 @@ dependencies = [
 name = "metaplex-indexer"
 version = "0.1.0"
 dependencies = [
- "baby-pool",
  "clap 3.0.0-beta.5",
  "metaplex",
  "metaplex-auction",
@@ -1701,6 +1688,7 @@ dependencies = [
  "solana-program",
  "solana-sdk",
  "tokio",
+ "topograph",
 ]
 
 [[package]]
@@ -1708,6 +1696,7 @@ name = "metaplex-indexer-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "dashmap",
  "diesel",
  "diesel_migrations",
@@ -3626,6 +3615,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a31142970826733df8241ef35dc040ef98c679ab14d7c3e54d827099b3acecaa"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "topograph"
+version = "0.2.0-alpha.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5df278c9eca1e2922b86a545ee6264f57f5d47957d57ff001c7522805a7feb8b"
+dependencies = [
+ "crossbeam",
+ "dispose",
+ "log",
+ "num_cpus",
+ "parking_lot 0.11.2",
 ]
 
 [[package]]

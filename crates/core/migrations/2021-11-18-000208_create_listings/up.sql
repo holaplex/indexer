@@ -8,7 +8,7 @@ create table listings (
   store                   bytea     not null,
   last_bid                bigint    null,
   end_auction_gap         timestamp null,
-  price_floor             integer   null,
+  price_floor             bigint    null,
   total_uncancelled_bids  integer   default 0,
   gap_tick_size           integer   null,
   instant_sale_price      bigint    null,
