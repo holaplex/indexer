@@ -1,10 +1,19 @@
-#![deny(clippy::suspicious, clippy::style)]
-#![warn(clippy::pedantic, clippy::cargo)]
+//! JSONRPC server to read data from `metaplex-indexer`
 
-use indexer_core::{init, prelude::*};
+#![deny(
+    clippy::suspicious,
+    clippy::style,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
+#![warn(clippy::pedantic, clippy::cargo, missing_docs)]
+
+use indexer_core::prelude::*;
 
 fn main() {
-    init();
+    indexer_core::run(|| {
+        info!("Hello, world!");
 
-    info!("Hello, world!");
+        Ok(())
+    });
 }

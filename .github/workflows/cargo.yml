@@ -6,10 +6,15 @@ on:
     branches: [master]
 
 jobs:
-  build:
-    name: cargo build
+  check:
+    name: cargo check
     runs-on: ubuntu-latest
     steps:
+      - name: install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libudev-dev
+
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -19,18 +24,24 @@ jobs:
 
       - uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: check
           args: --all --all-features
 
       - uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: check
           args: --all --release --all-features
 
   test:
     name: cargo test
+    needs: check
     runs-on: ubuntu-latest
     steps:
+      - name: install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libudev-dev
+
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -50,8 +61,14 @@ jobs:
 
   clippy:
     name: cargo clippy
+    needs: check
     runs-on: ubuntu-latest
     steps:
+      - name: install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libudev-dev
+
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
