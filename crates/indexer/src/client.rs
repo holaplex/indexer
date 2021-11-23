@@ -1,4 +1,4 @@
-use std::{env, panic::AssertUnwindSafe, sync::Arc};
+use std::{borrow::Borrow, env, panic::AssertUnwindSafe, sync::Arc};
 
 use indexer_core::{
     db::{Pool, PooledConnection},
@@ -7,6 +7,7 @@ use indexer_core::{
 use solana_client::{
     client_error::{ClientErrorKind, Result as ClientResult},
     rpc_client::RpcClient,
+    rpc_config::RpcProgramAccountsConfig,
     rpc_request::RpcError,
 };
 use solana_sdk::{account::Account, pubkey::Pubkey};
@@ -17,6 +18,13 @@ use solana_sdk::{account::Account, pubkey::Pubkey};
 pub struct Client {
     db: AssertUnwindSafe<Pool>,
     rpc: AssertUnwindSafe<RpcClient>,
+}
+
+pub mod prelude {
+    pub use solana_client::{
+        rpc_config::RpcProgramAccountsConfig,
+        rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType},
+    };
 }
 
 impl Client {
@@ -82,5 +90,20 @@ impl Client {
         self.rpc
             .0
             .get_multiple_accounts(&*keys.into_iter().collect::<Vec<_>>())
+    }
+
+    /// Fetch multiple Solana accounts for a program given a config containing
+    /// optional filters.
+    ///
+    /// # Errors
+    /// This function fails if the underlying JSONRPC call returns an error.
+    pub fn get_program_accounts(
+        &self,
+        program: impl Borrow<Pubkey>,
+        config: RpcProgramAccountsConfig,
+    ) -> ClientResult<Vec<(Pubkey, Account)>> {
+        self.rpc
+            .0
+            .get_program_accounts_with_config(program.borrow(), config)
     }
 }

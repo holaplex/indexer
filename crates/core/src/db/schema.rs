@@ -21,7 +21,7 @@ table! {
         ended -> Bool,
         authority -> Bytea,
         token_mint -> Bytea,
-        store -> Bytea,
+        store_owner -> Bytea,
         last_bid -> Nullable<Int8>,
         end_auction_gap -> Nullable<Timestamp>,
         price_floor -> Nullable<Int8>,

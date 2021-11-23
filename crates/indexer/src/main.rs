@@ -39,13 +39,20 @@ pub struct ListingMetadata {
     metadata: Pubkey,
 }
 
-/// The three pubkeys associated with a single Metaplex auction
+/// Identifying information about an auction cache account
+#[derive(Debug, Clone, Copy)]
+pub struct AuctionCacheKeys {
+    cache: Pubkey,
+    store_owner: Pubkey,
+}
+
+/// Identifying information about an auction from its cache account
 #[derive(Debug, Clone, Copy)]
 pub struct AuctionKeys {
     auction: Pubkey,
     manager: Pubkey,
     vault: Pubkey,
-    store: Pubkey,
+    store_owner: Pubkey,
     created_at: chrono::NaiveDateTime,
 }
 
@@ -60,7 +67,7 @@ pub enum Job {
     /// Process data for a store owner pubkey
     StoreOwner(Pubkey),
     /// Process data for an auction cache pubkey
-    AuctionCache(Pubkey),
+    AuctionCache(AuctionCacheKeys),
     /// Process the join record for a listing item
     ListingMetadata(ListingMetadata),
     /// Process data for an individual item

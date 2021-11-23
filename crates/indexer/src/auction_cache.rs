@@ -9,16 +9,20 @@ use indexer_core::db::{
 use metaplex::state::AuctionCache;
 use solana_sdk::pubkey::Pubkey;
 
-use crate::{prelude::*, util, AuctionKeys, Client, Job, ThreadPoolHandle};
+use crate::{prelude::*, util, AuctionCacheKeys, AuctionKeys, Client, Job, ThreadPoolHandle};
 
-pub fn process(client: &Client, cache: Pubkey, handle: ThreadPoolHandle) -> Result<()> {
+pub fn process(client: &Client, keys: AuctionCacheKeys, handle: ThreadPoolHandle) -> Result<()> {
     let mut acct = client
-        .get_account(&cache)
+        .get_account(&keys.cache)
         .context("Failed to get auction cache")?;
 
-    let cache =
-        AuctionCache::from_account_info(&util::account_as_info(&cache, false, false, &mut acct))
-            .context("Failed to parse AuctionCache")?;
+    let cache = AuctionCache::from_account_info(&util::account_as_info(
+        &keys.cache,
+        false,
+        false,
+        &mut acct,
+    ))
+    .context("Failed to parse AuctionCache")?;
 
     let AuctionCache {
         metadata,
@@ -50,7 +54,7 @@ pub fn process(client: &Client, cache: Pubkey, handle: ThreadPoolHandle) -> Resu
             auction,
             manager,
             vault,
-            store,
+            store_owner: keys.store_owner,
             created_at: NaiveDateTime::from_timestamp(timestamp, 0),
         })),
         auction_outs,

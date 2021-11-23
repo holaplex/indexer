@@ -13,4 +13,4 @@ done
 
 cd "$(dirname "$0")"/crates/core
 
-psql "$DATABASE_URL" $@
+psql "$DATABASE_URL" "$@"

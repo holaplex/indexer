@@ -47,8 +47,8 @@ pub struct Listing<'a> {
     pub authority: Cow<'a, [u8]>,
     /// The item being auctioned
     pub token_mint: Cow<'a, [u8]>,
-    /// The store this auction was found from
-    pub store: Cow<'a, [u8]>,
+    /// The owner of the store this auction was found from
+    pub store_owner: Cow<'a, [u8]>,
     /// The amount of the last bid, if applicable
     pub last_bid: Option<i64>,
     /// The gap time of the auction, if applicable

@@ -5,7 +5,7 @@ create table listings (
   ended                   boolean   not null,
   authority               bytea     not null,
   token_mint              bytea     not null,
-  store                   bytea     not null,
+  store_owner             bytea     not null,
   last_bid                bigint    null,
   end_auction_gap         timestamp null,
   price_floor             bigint    null,
