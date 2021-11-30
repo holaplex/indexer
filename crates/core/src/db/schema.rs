@@ -45,7 +45,7 @@ table! {
         metadata_address -> Bytea,
         creator_address -> Bytea,
         share -> Int4,
-        verified -> Nullable<Bool>,
+        verified -> Bool,
     }
 }
 
@@ -58,8 +58,8 @@ table! {
         seller_fee_basis_points -> Int4,
         update_authority_address -> Bytea,
         mint_address -> Bytea,
-        primary_sale_happened -> Nullable<Bool>,
-        is_mutable -> Nullable<Bool>,
+        primary_sale_happened -> Bool,
+        is_mutable -> Bool,
         edition_nonce -> Nullable<Int4>,
     }
 }

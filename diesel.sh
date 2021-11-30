@@ -15,4 +15,4 @@ export DATABASE_URL
 
 cd "$(dirname "$0")"/crates/core
 
-diesel $@
+diesel "$@"
