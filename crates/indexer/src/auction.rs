@@ -12,9 +12,8 @@ use indexer_core::{
 use metaplex_auction::processor::{
     AuctionData, AuctionDataExtended, BidState, BidderMetadata, PriceFloor, BIDDER_METADATA_LEN,
 };
-use solana_sdk::pubkey::Pubkey;
 
-use crate::{client::prelude::*, util, Client, RcAuctionKeys, ThreadPoolHandle};
+use crate::{prelude::*, util, Client, RcAuctionKeys, ThreadPoolHandle};
 
 pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle) -> Result<()> {
     let (ext, _bump) = find_auction_data_extended(&keys.vault);
@@ -41,12 +40,8 @@ pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle)
     .context("Failed to parse AuctionDataExtended")?;
 
     // TODO: what timezone is any of this in????
-    let addr = keys.auction.to_bytes();
-    let auth_addr = auction.authority.to_bytes();
-    let mint_addr = auction.token_mint.to_bytes();
-    let store_owner_addr = keys.store_owner.to_bytes();
     let row = Listing {
-        address: Borrowed(&addr),
+        address: Owned(bs58::encode(keys.auction).into_string()),
         ends_at: auction
             .ended_at
             .map(|t| NaiveDateTime::from_timestamp(t, 0)),
@@ -54,9 +49,9 @@ pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle)
         ended: auction
             .ended(Local::now().naive_utc().timestamp())
             .context("Failed to check if auction was ended")?,
-        authority: Borrowed(&auth_addr),
-        token_mint: Borrowed(&mint_addr),
-        store_owner: Borrowed(&store_owner_addr),
+        authority: Owned(bs58::encode(auction.authority).into_string()),
+        token_mint: Owned(bs58::encode(auction.token_mint).into_string()),
+        store_owner: Owned(bs58::encode(keys.store_owner).into_string()),
         last_bid: auction.last_bid,
         // TODO: horrible abuse of the NaiveDateTime struct but Metaplex does
         //       roughly the same thing with the solana UnixTimestamp struct.

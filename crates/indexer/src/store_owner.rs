@@ -1,6 +1,6 @@
 use indexer_core::pubkeys::{find_store_address, find_store_indexer};
 use metaplex::state::StoreIndexer;
-use solana_sdk::{account::Account, pubkey::Pubkey};
+use solana_sdk::account::Account;
 
 use crate::{prelude::*, util, AuctionCacheKeys, Client, Job, ThreadPoolHandle};
 

@@ -1,27 +1,27 @@
 table! {
     editions (address) {
-        address -> Bytea,
-        parent_address -> Bytea,
+        address -> Varchar,
+        parent_address -> Varchar,
         edition -> Int8,
     }
 }
 
 table! {
     listing_metadatas (listing_address, metadata_address) {
-        listing_address -> Bytea,
-        metadata_address -> Bytea,
+        listing_address -> Varchar,
+        metadata_address -> Varchar,
     }
 }
 
 table! {
     listings (address) {
-        address -> Bytea,
+        address -> Varchar,
         ends_at -> Nullable<Timestamp>,
         created_at -> Timestamp,
         ended -> Bool,
-        authority -> Bytea,
-        token_mint -> Bytea,
-        store_owner -> Bytea,
+        authority -> Varchar,
+        token_mint -> Varchar,
+        store_owner -> Varchar,
         last_bid -> Nullable<Int8>,
         end_auction_gap -> Nullable<Timestamp>,
         price_floor -> Nullable<Int8>,
@@ -34,7 +34,7 @@ table! {
 
 table! {
     master_editions (address) {
-        address -> Bytea,
+        address -> Varchar,
         supply -> Int8,
         max_supply -> Nullable<Int8>,
     }
@@ -42,8 +42,8 @@ table! {
 
 table! {
     metadata_creators (metadata_address, creator_address) {
-        metadata_address -> Bytea,
-        creator_address -> Bytea,
+        metadata_address -> Varchar,
+        creator_address -> Varchar,
         share -> Int4,
         verified -> Bool,
     }
@@ -51,13 +51,13 @@ table! {
 
 table! {
     metadatas (address) {
-        address -> Bytea,
+        address -> Varchar,
         name -> Text,
         symbol -> Text,
         uri -> Text,
         seller_fee_basis_points -> Int4,
-        update_authority_address -> Bytea,
-        mint_address -> Bytea,
+        update_authority_address -> Varchar,
+        mint_address -> Varchar,
         primary_sale_happened -> Bool,
         is_mutable -> Bool,
         edition_nonce -> Nullable<Int4>,

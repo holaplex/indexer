@@ -7,7 +7,6 @@ use indexer_core::db::{
     },
 };
 use metaplex_token_metadata::state::Metadata as MetadataAccount;
-use solana_sdk::pubkey::Pubkey;
 
 use crate::{prelude::*, util, Client, Job, ThreadPoolHandle};
 
@@ -21,17 +20,15 @@ pub fn process(client: &Client, meta_key: Pubkey, handle: ThreadPoolHandle) -> R
     ))
     .context("Failed tintegeio parse Metadata")?;
 
-    let addr = meta_key.to_bytes();
-    let auth_addr = meta.update_authority.to_bytes();
-    let mint_addr = meta.mint.to_bytes();
+    let addr = bs58::encode(meta_key).into_string();
     let row = Metadata {
         address: Borrowed(&addr),
         name: Borrowed(meta.data.name.trim_end_matches('\0')),
         symbol: Borrowed(meta.data.symbol.trim_end_matches('\0')),
         uri: Borrowed(meta.data.uri.trim_end_matches('\0')),
         seller_fee_basis_points: meta.data.seller_fee_basis_points.into(),
-        update_authority_address: Borrowed(&auth_addr),
-        mint_address: Borrowed(&mint_addr),
+        update_authority_address: Owned(bs58::encode(meta.update_authority).into_string()),
+        mint_address: Owned(bs58::encode(meta.mint).into_string()),
         primary_sale_happened: meta.primary_sale_happened,
         is_mutable: meta.is_mutable,
         edition_nonce: meta.edition_nonce.map(Into::into),
@@ -50,10 +47,9 @@ pub fn process(client: &Client, meta_key: Pubkey, handle: ThreadPoolHandle) -> R
     handle.push(Job::EditionForMint(meta.mint));
 
     for creator in meta.data.creators.unwrap_or_else(Vec::new) {
-        let creator_addr = creator.address.to_bytes();
         let row = MetadataCreator {
             metadata_address: Borrowed(&addr),
-            creator_address: Borrowed(&creator_addr),
+            creator_address: Owned(bs58::encode(creator.address).into_string()),
             share: creator.share.into(),
             verified: creator.verified,
         };

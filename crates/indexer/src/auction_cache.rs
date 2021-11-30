@@ -7,7 +7,6 @@ use indexer_core::db::{
     tables::listing_metadatas::{listing_address, listing_metadatas, metadata_address},
 };
 use metaplex::state::AuctionCache;
-use solana_sdk::pubkey::Pubkey;
 
 use crate::{prelude::*, util, AuctionCacheKeys, AuctionKeys, Client, Job, ThreadPoolHandle};
 
@@ -29,7 +28,6 @@ pub fn process(client: &Client, keys: AuctionCacheKeys, handle: ThreadPoolHandle
         auction,
         auction_manager: manager,
         vault,
-        store,
         timestamp,
         ..
     } = cache;
@@ -72,8 +70,8 @@ pub fn process_listing_metadata(
 
     insert_into(listing_metadatas)
         .values(ListingMetadata {
-            listing_address: Borrowed(&listing.to_bytes()),
-            metadata_address: Borrowed(&metadata.to_bytes()),
+            listing_address: Owned(bs58::encode(listing).into_string()),
+            metadata_address: Owned(bs58::encode(metadata).into_string()),
         })
         .on_conflict((listing_address, metadata_address))
         .do_nothing()

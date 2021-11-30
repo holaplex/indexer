@@ -12,7 +12,6 @@ use indexer_core::{
 use metaplex_token_metadata::state::{
     Edition as EditionAccount, MasterEdition as MasterEditionTrait,
 };
-use solana_sdk::pubkey::Pubkey;
 
 use crate::{
     prelude::*, util, util::MasterEdition as MasterEditionAccount, Client, ThreadPoolHandle,
@@ -41,11 +40,9 @@ pub fn process(client: &Client, mint_key: Pubkey, _handle: ThreadPoolHandle) -> 
 }
 
 fn process_edition(client: &Client, edition_key: Pubkey, edition: &EditionAccount) -> Result<()> {
-    let addr = edition_key.to_bytes();
-    let parent_addr = edition.parent.to_bytes();
     let row = Edition {
-        address: Borrowed(&addr),
-        parent_address: Borrowed(&parent_addr),
+        address: Owned(bs58::encode(edition_key).into_string()),
+        parent_address: Owned(bs58::encode(edition.parent).into_string()),
         edition: edition
             .edition
             .try_into()
@@ -84,9 +81,8 @@ fn process_master(
     master_key: Pubkey,
     master_edition: &MasterEditionAccount,
 ) -> Result<()> {
-    let master_addr = master_key.to_bytes();
     let row = MasterEdition {
-        address: Borrowed(&master_addr),
+        address: Owned(bs58::encode(master_key).into_string()),
         supply: master_edition
             .supply()
             .try_into()

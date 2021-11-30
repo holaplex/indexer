@@ -15,9 +15,9 @@ use super::schema::{
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct Edition<'a> {
     /// The address of this account
-    pub address: Cow<'a, [u8]>,
+    pub address: Cow<'a, str>,
     /// The address of this edition's parent master edition
-    pub parent_address: Cow<'a, [u8]>,
+    pub parent_address: Cow<'a, str>,
     /// The ordinal of this edition
     pub edition: i64,
 }
@@ -27,16 +27,16 @@ pub struct Edition<'a> {
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct ListingMetadata<'a> {
     /// The address of this record's listing
-    pub listing_address: Cow<'a, [u8]>,
+    pub listing_address: Cow<'a, str>,
     /// The address of this record's metadata
-    pub metadata_address: Cow<'a, [u8]>,
+    pub metadata_address: Cow<'a, str>,
 }
 
 /// A row in the `listings` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct Listing<'a> {
     /// The address of this account
-    pub address: Cow<'a, [u8]>,
+    pub address: Cow<'a, str>,
     /// The timestamp this auction ends at, if applicable
     pub ends_at: Option<NaiveDateTime>,
     /// The timestamp this auction was created at
@@ -44,11 +44,11 @@ pub struct Listing<'a> {
     /// Whether this auction has ended
     pub ended: bool,
     /// The authority of this auction
-    pub authority: Cow<'a, [u8]>,
+    pub authority: Cow<'a, str>,
     /// The item being auctioned
-    pub token_mint: Cow<'a, [u8]>,
+    pub token_mint: Cow<'a, str>,
     /// The owner of the store this auction was found from
-    pub store_owner: Cow<'a, [u8]>,
+    pub store_owner: Cow<'a, str>,
     /// The amount of the last bid, if applicable
     pub last_bid: Option<i64>,
     /// The gap time of the auction, if applicable
@@ -70,7 +70,7 @@ pub struct Listing<'a> {
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct MasterEdition<'a> {
     /// The address of this account
-    pub address: Cow<'a, [u8]>,
+    pub address: Cow<'a, str>,
     /// The available printing supply of the master edition
     pub supply: i64,
     /// The maximum printing supply of the master edition, or `None` if it is
@@ -83,9 +83,9 @@ pub struct MasterEdition<'a> {
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct MetadataCreator<'a> {
     /// The address of this record's metadata
-    pub metadata_address: Cow<'a, [u8]>,
+    pub metadata_address: Cow<'a, str>,
     /// The address of this record's creator wallet
-    pub creator_address: Cow<'a, [u8]>,
+    pub creator_address: Cow<'a, str>,
     /// The share of the creator, in percentage points
     pub share: i32,
     /// Whether this creator has verified this metadata
@@ -96,7 +96,7 @@ pub struct MetadataCreator<'a> {
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct Metadata<'a> {
     /// The address of this account
-    pub address: Cow<'a, [u8]>,
+    pub address: Cow<'a, str>,
     /// The name of this item
     pub name: Cow<'a, str>,
     /// The symbol for this item
@@ -107,9 +107,9 @@ pub struct Metadata<'a> {
     /// range from 0-10,000)
     pub seller_fee_basis_points: i32,
     /// The authority over this item
-    pub update_authority_address: Cow<'a, [u8]>,
+    pub update_authority_address: Cow<'a, str>,
     /// The token address for this item
-    pub mint_address: Cow<'a, [u8]>,
+    pub mint_address: Cow<'a, str>,
     /// True if this item is in the secondary market.  Immutable once set.
     pub primary_sale_happened: bool,
     /// True if this item can be changed by the update authority

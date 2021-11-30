@@ -18,6 +18,7 @@ use topograph::{graph, threaded};
 
 mod prelude {
     pub use indexer_core::prelude::*;
+    pub use solana_sdk::{bs58, pubkey::Pubkey};
     pub use topograph::prelude::*;
 }
 

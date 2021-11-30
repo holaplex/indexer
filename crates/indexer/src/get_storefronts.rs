@@ -1,7 +1,6 @@
 use std::env;
 
 use serde::Deserialize;
-use solana_sdk::pubkey::Pubkey;
 
 use crate::{prelude::*, Job, ThreadPoolHandle};
 
