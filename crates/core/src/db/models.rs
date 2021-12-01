@@ -9,6 +9,7 @@ use chrono::NaiveDateTime;
 
 use super::schema::{
     editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
+    storefronts,
 };
 
 /// A row in the `editions` table
@@ -116,4 +117,21 @@ pub struct Metadata<'a> {
     pub is_mutable: bool,
     /// Metaplex isn't clear about what this is.  Assume reserved.
     pub edition_nonce: Option<i32>,
+}
+
+/// A row in the `storefronts` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct Storefront<'a> {
+    /// The address of this store's owner's wallet
+    pub owner_address: Cow<'a, str>,
+    /// The subdomain of the store on holaplex.com
+    pub subdomain: Cow<'a, str>,
+    /// The title of this store
+    pub title: Cow<'a, str>,
+    /// The description text for this store
+    pub description: Cow<'a, str>,
+    /// The file URL for this store's favicon
+    pub favicon_url: Cow<'a, str>,
+    /// The file URL for this store's log
+    pub logo_url: Cow<'a, str>,
 }

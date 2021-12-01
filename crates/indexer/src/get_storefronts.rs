@@ -1,11 +1,19 @@
-use std::{collections::HashMap, env};
+use std::env;
 
-use indexer_core::hash::HashSet;
+use indexer_core::{
+    db::{
+        insert_into,
+        models::Storefront,
+        tables::storefronts::{owner_address, storefronts},
+        PooledConnection,
+    },
+    hash::{HashMap, HashSet},
+};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{prelude::*, Job, ThreadPoolHandle};
+use crate::{prelude::*, Client, Job, ThreadPoolHandle};
 
 #[derive(Serialize)]
 struct Query {
@@ -94,8 +102,65 @@ const QUERY: &str = r#"query GetStorefronts($after: String, $first: Int) {
 
 const BATCH: usize = 1000;
 
-async fn get_storefronts_async(handle: ThreadPoolHandle<'_>) -> Result<()> {
-    let client = reqwest::Client::new();
+fn process_tags(
+    mut tags: HashMap<String, String>,
+    db: &PooledConnection,
+    handle: ThreadPoolHandle<'_>,
+    known_pubkeys: &mut HashSet<Pubkey>,
+) -> Result<()> {
+    let owner = Pubkey::try_from(
+        tags.remove("solana:pubkey")
+            .ok_or_else(|| anyhow!("Missing storefront owner key"))?
+            .as_str(),
+    )
+    .context("Failed to parse owner pubkey")?;
+
+    if known_pubkeys.insert(owner) {
+        let subdomain = tags
+            .remove("holaplex:metadata:subdomain")
+            .ok_or_else(|| anyhow!("Missing storefront subdomain"))?;
+        let title = tags
+            .remove("holaplex:metadata:page:title")
+            .unwrap_or_else(String::new);
+        let description = tags
+            .remove("holaplex:metadata:page:description")
+            .unwrap_or_else(String::new);
+        let favicon_url = tags
+            .remove("holaplex:metadata:favicon:url")
+            .unwrap_or_else(String::new);
+        let logo_url = tags
+            .remove("holaplex:theme:logo:url")
+            .unwrap_or_else(String::new);
+
+        let row = Storefront {
+            owner_address: Owned(bs58::encode(owner).into_string()),
+            subdomain: Owned(subdomain),
+            title: Owned(title),
+            description: Owned(description),
+            favicon_url: Owned(favicon_url),
+            logo_url: Owned(logo_url),
+        };
+
+        insert_into(storefronts)
+            .values(&row)
+            .on_conflict(owner_address)
+            .do_update()
+            .set(&row)
+            .execute(db)
+            .context("Failed to insert storefront")?;
+
+        handle.push(Job::StoreOwner(owner));
+    } else {
+        trace!("Skipping duplicate owner {:?}", owner);
+    }
+
+    Ok(())
+}
+
+async fn get_storefronts_async(client: &Client, handle: ThreadPoolHandle<'_>) -> Result<()> {
+    let db = client.db()?;
+
+    let http_client = reqwest::Client::new();
     let url = env::var("ARWEAVE_URL")
         .context("Couldn't get Arweave URL")
         .and_then(|s| Url::parse(&s).context("Couldn't parse Arweave URL"))
@@ -116,7 +181,7 @@ async fn get_storefronts_async(handle: ThreadPoolHandle<'_>) -> Result<()> {
                             page_info: QueryPageInfo { has_next_page },
                         },
                 },
-        } = client
+        } = http_client
             .post(url.clone())
             .header("Content-Type", "application/json")
             .json(&Query {
@@ -138,21 +203,18 @@ async fn get_storefronts_async(handle: ThreadPoolHandle<'_>) -> Result<()> {
         let mut next_after = None;
 
         for edge in edges {
-            match edge
-                .node
-                .tags
-                .iter()
-                .find(|t| t.name == "solana:pubkey")
-                .ok_or_else(|| {
-                    anyhow!("Missing storefront owner key for Arweave storefront record")
-                })
-                .and_then(|o| {
-                    Pubkey::try_from(o.value.as_str()).context("Failed to parse owner pubkey")
-                }) {
-                Ok(k) if known_pubkeys.insert(k) => handle.push(Job::StoreOwner(k)),
-                Ok(k) => trace!("Skipping duplicate owner {:?}", k),
-                Err(e) => error!("Failed to get store owner: {:?}", e),
-            }
+            process_tags(
+                edge.node
+                    .tags
+                    .into_iter()
+                    .map(|QueryTag { name, value }| (name, value))
+                    .collect(),
+                &db,
+                handle,
+                &mut known_pubkeys,
+            )
+            .map_err(|e| error!("{:?}", e))
+            .ok();
 
             next_after = Some(edge.cursor);
         }
@@ -174,10 +236,10 @@ async fn get_storefronts_async(handle: ThreadPoolHandle<'_>) -> Result<()> {
     Ok(())
 }
 
-pub fn run(handle: ThreadPoolHandle) -> Result<()> {
+pub fn run(client: &Client, handle: ThreadPoolHandle) -> Result<()> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .context("Failed to create async executor")?
-        .block_on(get_storefronts_async(handle))
+        .block_on(get_storefronts_async(client, handle))
 }

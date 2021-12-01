@@ -64,9 +64,21 @@ table! {
     }
 }
 
+table! {
+    storefronts (owner_address) {
+        owner_address -> Varchar,
+        subdomain -> Text,
+        title -> Text,
+        description -> Text,
+        favicon_url -> Text,
+        logo_url -> Text,
+    }
+}
+
 joinable!(editions -> master_editions (parent_address));
 joinable!(listing_metadatas -> listings (listing_address));
 joinable!(listing_metadatas -> metadatas (metadata_address));
+joinable!(listings -> storefronts (store_owner));
 joinable!(metadata_creators -> metadatas (metadata_address));
 
 allow_tables_to_appear_in_same_query!(
@@ -76,4 +88,5 @@ allow_tables_to_appear_in_same_query!(
     master_editions,
     metadata_creators,
     metadatas,
+    storefronts,
 );
