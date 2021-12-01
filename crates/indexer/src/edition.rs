@@ -20,9 +20,17 @@ use crate::{
 pub fn process(client: &Client, mint_key: Pubkey, _handle: ThreadPoolHandle) -> Result<()> {
     let (edition_key, _bump) = find_edition(mint_key);
 
-    let mut acct = client
-        .get_account(&edition_key)
+    let acct = client
+        .get_account_opt(&edition_key)
         .context("Failed to get item edition")?;
+
+    let mut acct = if let Some(acct) = acct {
+        acct
+    } else {
+        debug!("No edition data found for mint {:?}", mint_key);
+
+        return Ok(());
+    };
 
     let info = util::account_as_info(&edition_key, false, false, &mut acct);
 
