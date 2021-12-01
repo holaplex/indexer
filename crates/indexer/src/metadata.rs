@@ -1,10 +1,7 @@
 use indexer_core::db::{
     insert_into,
     models::{Metadata, MetadataCreator},
-    tables::{
-        metadata_creators::{creator_address, metadata_address, metadata_creators},
-        metadatas::{address, metadatas},
-    },
+    tables::{metadata_creators, metadatas},
 };
 use metaplex_token_metadata::state::Metadata as MetadataAccount;
 
@@ -36,9 +33,9 @@ pub fn process(client: &Client, meta_key: Pubkey, handle: ThreadPoolHandle) -> R
 
     let db = client.db()?;
 
-    insert_into(metadatas)
+    insert_into(metadatas::table)
         .values(&row)
-        .on_conflict(address)
+        .on_conflict(metadatas::address)
         .do_update()
         .set(&row)
         .execute(&db)
@@ -54,9 +51,12 @@ pub fn process(client: &Client, meta_key: Pubkey, handle: ThreadPoolHandle) -> R
             verified: creator.verified,
         };
 
-        insert_into(metadata_creators)
+        insert_into(metadata_creators::table)
             .values(&row)
-            .on_conflict((metadata_address, creator_address))
+            .on_conflict((
+                metadata_creators::metadata_address,
+                metadata_creators::creator_address,
+            ))
             .do_update()
             .set(&row)
             .execute(&db)

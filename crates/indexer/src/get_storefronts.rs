@@ -1,12 +1,7 @@
 use std::env;
 
 use indexer_core::{
-    db::{
-        insert_into,
-        models::Storefront,
-        tables::storefronts::{owner_address, storefronts},
-        PooledConnection,
-    },
+    db::{insert_into, models::Storefront, tables::storefronts, PooledConnection},
     hash::{HashMap, HashSet},
 };
 use reqwest::Url;
@@ -141,9 +136,9 @@ fn process_tags(
             logo_url: Owned(logo_url),
         };
 
-        insert_into(storefronts)
+        insert_into(storefronts::table)
             .values(&row)
-            .on_conflict(owner_address)
+            .on_conflict(storefronts::owner_address)
             .do_update()
             .set(&row)
             .execute(db)

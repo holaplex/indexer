@@ -1,11 +1,7 @@
 use std::sync::Arc;
 
 use chrono::NaiveDateTime;
-use indexer_core::db::{
-    insert_into,
-    models::ListingMetadata,
-    tables::listing_metadatas::{listing_address, listing_metadatas, metadata_address},
-};
+use indexer_core::db::{insert_into, models::ListingMetadata, tables::listing_metadatas};
 use metaplex::state::AuctionCache;
 
 use crate::{prelude::*, util, AuctionCacheKeys, AuctionKeys, Client, Job, ThreadPoolHandle};
@@ -68,12 +64,15 @@ pub fn process_listing_metadata(
 ) -> Result<()> {
     let db = client.db()?;
 
-    insert_into(listing_metadatas)
+    insert_into(listing_metadatas::table)
         .values(ListingMetadata {
             listing_address: Owned(bs58::encode(listing).into_string()),
             metadata_address: Owned(bs58::encode(metadata).into_string()),
         })
-        .on_conflict((listing_address, metadata_address))
+        .on_conflict((
+            listing_metadatas::listing_address,
+            listing_metadatas::metadata_address,
+        ))
         .do_nothing()
         .execute(&db)
         .context("Failed to insert listing-metadata join")?;
