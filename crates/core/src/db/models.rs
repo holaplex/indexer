@@ -31,6 +31,8 @@ pub struct ListingMetadata<'a> {
     pub listing_address: Cow<'a, str>,
     /// The address of this record's metadata
     pub metadata_address: Cow<'a, str>,
+    /// The index of the metadata in the array of items for the listing
+    pub metadata_index: i32,
 }
 
 /// A row in the `listings` table

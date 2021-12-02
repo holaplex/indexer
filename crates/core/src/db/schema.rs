@@ -10,6 +10,7 @@ table! {
     listing_metadatas (listing_address, metadata_address) {
         listing_address -> Varchar,
         metadata_address -> Varchar,
+        metadata_index -> Int4,
     }
 }
 
