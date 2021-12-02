@@ -13,7 +13,8 @@ use super::schema::{
 };
 
 /// A row in the `editions` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[belongs_to(parent = "MasterEdition<'_>", foreign_key = "parent_address")]
 pub struct Edition<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -25,7 +26,9 @@ pub struct Edition<'a> {
 
 /// A row in the `listing_metadatas` table.  This is a join on `listings` and
 /// `metadatas`
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[belongs_to(parent = "Listing<'_>", foreign_key = "listing_address")]
+#[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
 pub struct ListingMetadata<'a> {
     /// The address of this record's listing
     pub listing_address: Cow<'a, str>,
@@ -36,7 +39,8 @@ pub struct ListingMetadata<'a> {
 }
 
 /// A row in the `listings` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[belongs_to(parent = "Storefront<'_>", foreign_key = "store_owner")]
 pub struct Listing<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -83,7 +87,8 @@ pub struct MasterEdition<'a> {
 
 /// A row in the `metadata_creators` table.  This is a join on `metadatas` and
 /// creator wallets.
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
 pub struct MetadataCreator<'a> {
     /// The address of this record's metadata
     pub metadata_address: Cow<'a, str>,
@@ -136,4 +141,40 @@ pub struct Storefront<'a> {
     pub favicon_url: Cow<'a, str>,
     /// The file URL for this store's log
     pub logo_url: Cow<'a, str>,
+}
+
+/// Join record for the RPC getListings query
+#[derive(Debug, Clone, Queryable)]
+pub struct RpcGetListingsJoin {
+    // Table `listings`
+    /// Listing address
+    pub address: String,
+    /// Listing end time
+    pub ends_at: Option<NaiveDateTime>,
+    /// Listing created time
+    pub created_at: NaiveDateTime,
+    /// Listing ended flag
+    pub ended: bool,
+    /// Listing last bid price
+    pub last_bid: Option<i64>,
+    /// Listing price floor
+    pub price_floor: Option<i64>,
+    /// Listing bid count
+    pub total_uncancelled_bids: Option<i32>,
+    /// Listing instant-sale price
+    pub instant_sale_price: Option<i64>,
+
+    // Table `storefronts`
+    /// Storefront subdomain
+    pub subdomain: String,
+    /// Storefront title
+    pub store_title: String,
+
+    // Table `metadatas`
+    /// Metadata address
+    pub meta_address: String,
+    /// Metadata name
+    pub name: String,
+    /// Metadata URI
+    pub uri: String,
 }

@@ -2,6 +2,7 @@ use std::collections::hash_map::Entry;
 
 use indexer_core::{
     db::{
+        models::RpcGetListingsJoin,
         tables::{listing_metadatas, listings, metadatas, storefronts},
         Pool, PooledConnection,
     },
@@ -25,6 +26,13 @@ fn internal_error<E: Into<indexer_core::error::Error>>(
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Listing {
     address: String,
+    ends_at: Option<String>,
+    created_at: String,
+    ended: bool,
+    last_bid: Option<i64>,
+    price_floor: Option<i64>,
+    total_uncancelled_bids: Option<i32>,
+    instant_sale_price: Option<i64>,
     subdomain: String,
     #[serde(rename = "storeTitle")]
     store_title: String,
@@ -33,6 +41,7 @@ pub struct Listing {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListingItem {
+    address: String,
     name: String,
     uri: String,
 }
@@ -63,13 +72,22 @@ impl Rpc for Server {
     fn get_listings(&self) -> Result<Vec<Listing>> {
         let db = self.db()?;
 
-        let items: Vec<(String, String, String, String, String)> = listings::table
+        // TODO: figure out a less ugly way to perform this join
+        let items: Vec<RpcGetListingsJoin> = listings::table
             .inner_join(listing_metadatas::table.inner_join(metadatas::table))
             .inner_join(storefronts::table)
             .select((
                 listings::address,
+                listings::ends_at,
+                listings::created_at,
+                listings::ended,
+                listings::last_bid,
+                listings::price_floor,
+                listings::total_uncancelled_bids,
+                listings::instant_sale_price,
                 storefronts::subdomain,
                 storefronts::title,
+                metadatas::address,
                 metadatas::name,
                 metadatas::uri,
             ))
@@ -79,19 +97,49 @@ impl Rpc for Server {
 
         let mut listings = HashMap::default();
 
-        for (address, subdomain, store_title, name, uri) in items {
+        for RpcGetListingsJoin {
+            address,
+            ends_at,
+            created_at,
+            ended,
+            last_bid,
+            price_floor,
+            total_uncancelled_bids,
+            instant_sale_price,
+            subdomain,
+            store_title,
+            meta_address,
+            name,
+            uri,
+        } in items
+        {
             match listings.entry(address.clone()) {
                 Entry::Vacant(v) => {
                     v.insert(Listing {
                         address,
+                        ends_at: ends_at.map(|e| e.to_string()),
+                        created_at: created_at.to_string(),
+                        ended,
+                        last_bid,
+                        price_floor,
+                        total_uncancelled_bids,
+                        instant_sale_price,
                         subdomain,
                         store_title,
-                        items: vec![ListingItem { name, uri }],
+                        items: vec![ListingItem {
+                            address: meta_address,
+                            name,
+                            uri,
+                        }],
                     });
                 },
                 Entry::Occupied(o) => {
                     let o = o.into_mut();
-                    o.items.push(ListingItem { name, uri });
+                    o.items.push(ListingItem {
+                        address: meta_address,
+                        name,
+                        uri,
+                    });
                 },
             }
         }
