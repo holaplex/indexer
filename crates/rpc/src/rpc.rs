@@ -1,4 +1,5 @@
 use std::collections::hash_map::Entry;
+
 use indexer_core::{
     db::{
         models::{RpcGetListingsJoin, Storefront},
@@ -39,19 +40,17 @@ pub struct Listing {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Storefronts{
+pub struct Storefronts {
     #[serde(rename = "ownerAddress")]
-    owner_address : String,
+    owner_address: String,
     subdomain: String,
-    title : String,
-    description : String,
+    title: String,
+    description: String,
     #[serde(rename = "faviconUrl")]
-    favicon_url :String,
+    favicon_url: String,
     #[serde(rename = "logoUrl")]
-    logo_url : String,
+    logo_url: String,
 }
-
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListingItem {
@@ -68,7 +67,6 @@ pub trait Rpc {
     fn get_stores(&self) -> Result<Vec<Storefronts>>;
     #[rpc(name = "getStoresCount")]
     fn get_stores_count(&self) -> Result<i64>;
-
 }
 
 pub struct Server {
@@ -86,7 +84,6 @@ impl Server {
             .map_err(internal_error("Failed to connect to the database"))
     }
 }
-
 
 impl Rpc for Server {
     fn get_listings(&self) -> Result<Vec<Listing>> {
@@ -173,29 +170,31 @@ impl Rpc for Server {
             .order_by(storefronts::owner_address)
             .load(&db)
             .map_err(internal_error("Failed to load storefronts"))?;
-        let mut stores : Vec<Storefronts>= Vec::new();
-        for Storefront{
+        let mut stores: Vec<Storefronts> = Vec::new();
+        for Storefront {
             owner_address,
             subdomain,
             title,
             description,
             favicon_url,
             logo_url,
-        } in items {
-            stores.push(Storefronts{
-                owner_address : owner_address.to_string(),
-                subdomain :subdomain.to_string(),
-                title : title.to_string(),
-                description : description.to_string(),
-                favicon_url : favicon_url.to_string(),
-                logo_url: logo_url.to_string()});
+        } in items
+        {
+            stores.push(Storefronts {
+                owner_address: owner_address.to_string(),
+                subdomain: subdomain.to_string(),
+                title: title.to_string(),
+                description: description.to_string(),
+                favicon_url: favicon_url.to_string(),
+                logo_url: logo_url.to_string(),
+            });
         }
         dbg!();
-        println!("{}",stores.len());
+        println!("{}", stores.len());
         Ok(stores)
     }
 
-    fn get_stores_count(&self) -> Result<i64>{
+    fn get_stores_count(&self) -> Result<i64> {
         let db = self.db()?;
         let count = storefronts::table.count().get_result(&db);
         Ok(count.unwrap())
