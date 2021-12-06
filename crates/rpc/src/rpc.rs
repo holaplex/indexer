@@ -47,7 +47,9 @@ pub struct Storefronts{
     subdomain: String,
     title : String,
     description : String,
+    #[serde(rename = "faviconUrl")]
     favicon_url :String,
+    #[serde(rename = "logoUrl")]
     logo_url : String,
 }
 
