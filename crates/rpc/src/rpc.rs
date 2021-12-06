@@ -9,7 +9,6 @@ use indexer_core::{
 };
 use jsonrpc_core::{Error, Result};
 use jsonrpc_derive::rpc;
-use jsonrpc_core::types::params::Params;
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
@@ -68,7 +67,7 @@ pub trait Rpc {
     #[rpc(name = "getStorefronts")]
     fn get_stores(&self) -> Result<Vec<Storefronts>>;
     #[rpc(name = "getStoresCount")]
-    fn get_storesCount(&self) -> Result<i64>;
+    fn get_stores_count(&self) -> Result<i64>;
 
 }
 
@@ -196,36 +195,9 @@ impl Rpc for Server {
         Ok(stores)
     }
 
-    fn get_storesCount(&self) -> Result<i64>{
+    fn get_stores_count(&self) -> Result<i64>{
         let db = self.db()?;
-        // let items: Vec<Storefront> = storefronts::table
-        // .order_by(storefronts::owner_address)
-        // .load(&db)
-        // .map_err(internal_error("Failed to load storefronts"))?;
-        // let mut stores : Vec<Storefronts>= Vec::new();
-        // for Storefront{
-        //     owner_address,
-        //     subdomain,
-        //     title,
-        //     description,
-        //     favicon_url,
-        //     logo_url,
-        // } in items {
-        //     stores.push(Storefronts{
-        //         owner_address : owner_address.to_string(),
-        //         subdomain :subdomain.to_string(),
-        //         title : title.to_string(),
-        //         description : description.to_string(),
-        //         favicon_url : favicon_url.to_string(),
-        //         logo_url: logo_url.to_string()});
-        // }
         let count = storefronts::table.count().get_result(&db);
         Ok(count.unwrap())
-
-
-
     }
-
-
-
 }

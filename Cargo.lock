@@ -1929,7 +1929,6 @@ dependencies = [
  "jsonrpc-http-server",
  "metaplex-indexer-core",
  "serde",
- "serde_json",
  "solana-sdk",
  "tokio",
 ]
