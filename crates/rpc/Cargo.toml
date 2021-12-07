@@ -14,7 +14,13 @@ keywords = ["solana", "metaplex", "holaplex", "web3"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [dependencies]
-# Add dependencies
+jsonrpc-core = "18.0.0"
+jsonrpc-core-client = "18.0.0"
+jsonrpc-derive = "18.0.0"
+jsonrpc-http-server = "18.0.0"
+serde = { version = "1.0.130", features = ["derive"] }
+solana-sdk = "1.8.5"
+tokio = "1.14.0"
 
 [dependencies.indexer-core]
 package = "metaplex-indexer-core"

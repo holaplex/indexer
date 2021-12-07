@@ -1,10 +1,6 @@
 use chrono::{offset::Local, NaiveDateTime};
 use indexer_core::{
-    db::{
-        insert_into,
-        models::Listing,
-        tables::listings::{address, listings},
-    },
+    db::{insert_into, models::Listing, tables::listings},
     prelude::*,
     pubkeys,
     pubkeys::find_auction_data_extended,
@@ -88,9 +84,9 @@ pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle)
 
     let db = client.db()?;
 
-    insert_into(listings)
+    insert_into(listings::table)
         .values(&row)
-        .on_conflict(address)
+        .on_conflict(listings::address)
         .do_update()
         .set(&row)
         .execute(&db)

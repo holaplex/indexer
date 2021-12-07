@@ -2,10 +2,7 @@ use indexer_core::{
     db::{
         insert_into,
         models::{Edition, MasterEdition},
-        tables::{
-            editions::{address, editions},
-            master_editions::{address as master_address, master_editions},
-        },
+        tables::{editions, master_editions},
     },
     pubkeys::find_edition,
 };
@@ -73,9 +70,9 @@ fn process_edition(client: &Client, edition_key: Pubkey, edition: &EditionAccoun
 
     process_master(client, edition.parent, &master_edition)?;
 
-    insert_into(editions)
+    insert_into(editions::table)
         .values(&row)
-        .on_conflict(address)
+        .on_conflict(editions::address)
         .do_update()
         .set(&row)
         .execute(&db)
@@ -106,9 +103,9 @@ fn process_master(
 
     let db = client.db()?;
 
-    insert_into(master_editions)
+    insert_into(master_editions::table)
         .values(&row)
-        .on_conflict(master_address)
+        .on_conflict(master_editions::address)
         .do_update()
         .set(&row)
         .execute(&db)

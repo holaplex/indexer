@@ -27,8 +27,9 @@ pub mod prelude {
     };
 
     pub use chrono::{self, prelude::*};
-    pub use diesel::query_dsl::{
-        BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl,
+    pub use diesel::{
+        expression_methods::*,
+        query_dsl::{BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl},
     };
     pub use log::{debug, error, info, trace, warn};
 

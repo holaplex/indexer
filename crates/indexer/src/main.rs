@@ -38,6 +38,7 @@ pub use client::Client;
 pub struct ListingMetadata {
     listing: Pubkey,
     metadata: Pubkey,
+    index: usize,
 }
 
 /// Identifying information about an auction cache account

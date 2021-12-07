@@ -1,11 +1,7 @@
 use std::sync::Arc;
 
 use chrono::NaiveDateTime;
-use indexer_core::db::{
-    insert_into,
-    models::ListingMetadata,
-    tables::listing_metadatas::{listing_address, listing_metadatas, metadata_address},
-};
+use indexer_core::db::{insert_into, models::ListingMetadata, tables::listing_metadatas};
 use metaplex::state::AuctionCache;
 
 use crate::{prelude::*, util, AuctionCacheKeys, AuctionKeys, Client, Job, ThreadPoolHandle};
@@ -34,11 +30,12 @@ pub fn process(client: &Client, keys: AuctionCacheKeys, handle: ThreadPoolHandle
 
     let mut auction_outs = Vec::new();
 
-    for meta in metadata {
+    for (index, meta) in metadata.into_iter().enumerate() {
         let mut deps = handle.create_node(
             Job::ListingMetadata(crate::ListingMetadata {
                 listing: auction,
                 metadata: meta,
+                index,
             }),
             2,
         );
@@ -63,17 +60,27 @@ pub fn process(client: &Client, keys: AuctionCacheKeys, handle: ThreadPoolHandle
 
 pub fn process_listing_metadata(
     client: &Client,
-    crate::ListingMetadata { listing, metadata }: crate::ListingMetadata,
+    crate::ListingMetadata {
+        listing,
+        metadata,
+        index,
+    }: crate::ListingMetadata,
     _handle: ThreadPoolHandle,
 ) -> Result<()> {
     let db = client.db()?;
 
-    insert_into(listing_metadatas)
+    insert_into(listing_metadatas::table)
         .values(ListingMetadata {
             listing_address: Owned(bs58::encode(listing).into_string()),
             metadata_address: Owned(bs58::encode(metadata).into_string()),
+            metadata_index: index
+                .try_into()
+                .context("Metadata index too big to store")?,
         })
-        .on_conflict((listing_address, metadata_address))
+        .on_conflict((
+            listing_metadatas::listing_address,
+            listing_metadatas::metadata_address,
+        ))
         .do_nothing()
         .execute(&db)
         .context("Failed to insert listing-metadata join")?;

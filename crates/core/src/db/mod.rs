@@ -8,10 +8,8 @@ pub mod tables {
     //! Diesel schema DSLs
 
     pub use super::schema::{
-        editions::dsl as editions, listing_metadatas::dsl as listing_metadatas,
-        listings::dsl as listings, master_editions::dsl as master_editions,
-        metadata_creators::dsl as metadata_creators, metadatas::dsl as metadatas,
-        storefronts::dsl as storefronts,
+        editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
+        storefronts,
     };
 }
 
