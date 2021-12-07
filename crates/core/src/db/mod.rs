@@ -11,6 +11,7 @@ pub mod tables {
         editions::dsl as editions, listing_metadatas::dsl as listing_metadatas,
         listings::dsl as listings, master_editions::dsl as master_editions,
         metadata_creators::dsl as metadata_creators, metadatas::dsl as metadatas,
+        storefronts::dsl as storefronts,
     };
 }
 

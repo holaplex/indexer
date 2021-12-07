@@ -115,7 +115,7 @@ fn main() {
                 trace!("{:?}", job);
 
                 let res = match job {
-                    Job::GetStorefronts => get_storefronts::run(handle),
+                    Job::GetStorefronts => get_storefronts::run(&client, handle),
                     Job::StoreOwner(owner) => store_owner::process(&client, owner, handle),
                     Job::AuctionCache(store) => auction_cache::process(&client, store, handle),
                     Job::ListingMetadata(lm) => {
