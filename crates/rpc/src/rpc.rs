@@ -25,6 +25,7 @@ fn internal_error<E: Into<indexer_core::error::Error>>(
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Listing {
+    #[serde(rename = "listingAddress")]
     address: String,
     ends_at: Option<String>,
     created_at: String,
@@ -54,6 +55,7 @@ pub struct RpcStorefront {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListingItem {
+    #[serde(rename = "metadataAddress")]
     address: String,
     name: String,
     uri: String,
