@@ -15,6 +15,8 @@ mod ids {
     pubkeys!(metaplex, "p1exdMJcjVao65QdewkaZRUnU6VPSXhus9n2GzWfh98");
 }
 
+pub use ids::{auction, metadata, metaplex, vault};
+
 /// Find the address of a store given its owner's address
 pub fn find_store_address(owner: impl Borrow<Pubkey>) -> (Pubkey, u8) {
     Pubkey::find_program_address(
@@ -52,5 +54,18 @@ pub fn find_auction_data_extended(vault: impl Borrow<Pubkey>) -> (Pubkey, u8) {
             "extended".as_bytes(),
         ],
         &ids::auction(),
+    )
+}
+
+/// Find the address of an `Edition` account, given the token mint
+pub fn find_edition(mint: impl Borrow<Pubkey>) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            "metadata".as_bytes(),
+            &ids::metadata().to_bytes(),
+            &mint.borrow().to_bytes(),
+            "edition".as_bytes(),
+        ],
+        &ids::metadata(),
     )
 }

@@ -16,6 +16,7 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 [dependencies]
 # Basic utilities
 anyhow = "1.0.45"
+chrono = "0.4.19"
 dotenv = "0.15.0"
 env_logger = "0.9.0"
 log = "0.4.14"
@@ -26,7 +27,8 @@ dashmap = "4.0.2"
 seahash = "4.1.0"
 
 # ORM
-diesel = "1.4.8"
+diesel = { version = "1.4.8", features = ["postgres", "r2d2", "chrono"] }
+diesel_migrations = "1.4.0"
 
 # Solana
 solana-sdk = "1.8.3"

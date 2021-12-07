@@ -8,16 +8,24 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
-use baby_pool::ThreadPool;
 use clap::Parser;
-use indexer_core::prelude::*;
+use indexer_core::db;
+use prelude::*;
 use solana_sdk::pubkey::Pubkey;
+use topograph::{graph, threaded};
+
+mod prelude {
+    pub use indexer_core::prelude::*;
+    pub use solana_sdk::{bs58, pubkey::Pubkey};
+    pub use topograph::prelude::*;
+}
 
 mod auction;
 mod auction_cache;
 mod client;
+mod edition;
 mod get_storefronts;
 mod metadata;
 mod store_owner;
@@ -25,12 +33,28 @@ pub mod util;
 
 pub use client::Client;
 
-/// The three pubkeys associated with a single Metaplex auction
+/// Convenience record for passing data to a [`ListingMetadata`] job
+#[derive(Debug, Clone, Copy)]
+pub struct ListingMetadata {
+    listing: Pubkey,
+    metadata: Pubkey,
+}
+
+/// Identifying information about an auction cache account
+#[derive(Debug, Clone, Copy)]
+pub struct AuctionCacheKeys {
+    cache: Pubkey,
+    store_owner: Pubkey,
+}
+
+/// Identifying information about an auction from its cache account
 #[derive(Debug, Clone, Copy)]
 pub struct AuctionKeys {
     auction: Pubkey,
     manager: Pubkey,
     vault: Pubkey,
+    store_owner: Pubkey,
+    created_at: chrono::NaiveDateTime,
 }
 
 /// Convenience alias for a shared `AuctionKeys`
@@ -44,14 +68,18 @@ pub enum Job {
     /// Process data for a store owner pubkey
     StoreOwner(Pubkey),
     /// Process data for an auction cache pubkey
-    AuctionCache(Pubkey),
+    AuctionCache(AuctionCacheKeys),
+    /// Process the join record for a listing item
+    ListingMetadata(ListingMetadata),
     /// Process data for an individual item
     Metadata(Pubkey),
+    /// Locate and process the edition for a token mint
+    EditionForMint(Pubkey),
     /// Process data for an auction
     Auction(RcAuctionKeys),
 }
 
-type ThreadPoolHandle<'a> = baby_pool::ThreadPoolHandle<'a, Job>;
+type ThreadPoolHandle<'a> = graph::Handle<threaded::Handle<'a, graph::Job<Job>>>;
 
 #[derive(Parser)]
 struct Opts {
@@ -72,24 +100,35 @@ fn main() {
             store_list,
         } = Opts::parse();
 
-        let client = Client::new_rc().context("Failed to construct Client")?;
+        let db = db::connect(
+            env::var_os("DATABASE_WRITE_URL")
+                .or_else(|| env::var_os("DATABASE_URL"))
+                .ok_or_else(|| anyhow!("No value found for DATABASE_WRITE_URL or DATABASE_URL"))
+                .map(move |v| v.to_string_lossy().into_owned())?,
+        )
+        .context("Failed to connect to Postgres")?;
+        let client = Client::new_rc(db).context("Failed to construct Client")?;
 
-        let pool = ThreadPool::new(thread_count, move |job, handle| {
-            trace!("{:?}", job);
+        let pool = threaded::Builder::default()
+            .num_threads(thread_count)
+            .build_graph(move |job, handle| {
+                trace!("{:?}", job);
 
-            let res = match job {
-                Job::GetStorefronts => get_storefronts::run(&handle),
-                Job::StoreOwner(owner) => store_owner::process(&client, owner, &handle),
-                Job::AuctionCache(store) => auction_cache::process(&client, store, &handle),
-                Job::Metadata(meta) => metadata::process(&client, meta, &handle),
-                Job::Auction(ref keys) => auction::process(&client, keys, &handle),
-            };
+                let res = match job {
+                    Job::GetStorefronts => get_storefronts::run(handle),
+                    Job::StoreOwner(owner) => store_owner::process(&client, owner, handle),
+                    Job::AuctionCache(store) => auction_cache::process(&client, store, handle),
+                    Job::ListingMetadata(lm) => {
+                        auction_cache::process_listing_metadata(&client, lm, handle)
+                    },
+                    Job::Metadata(meta) => metadata::process(&client, meta, handle),
+                    Job::EditionForMint(mint) => edition::process(&client, mint, handle),
+                    Job::Auction(ref keys) => auction::process(&client, keys, handle),
+                };
 
-            match res {
-                Ok(()) => (),
-                Err(e) => error!("Job {:?} failed: {:?}", job, e),
-            }
-        });
+                res.map_err(|e| error!("Job {:?} failed: {:?}", job, e))
+            })
+            .context("Failed to initialize thread pool")?;
 
         if let Some(store_list) = store_list {
             let list: Vec<String> = serde_json::from_reader(

@@ -14,12 +14,12 @@ keywords = ["solana", "metaplex", "holaplex", "web3"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [dependencies]
-baby-pool = "0.2.1"
 clap = "3.0.0-beta.5"
 reqwest = "0.11.6"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.70"
 tokio = { version = "1.13.0", features = ["rt"] }
+topograph = "0.2.0-alpha.1"
 
 # Solana & Metaplex
 metaplex = "0.0.1"

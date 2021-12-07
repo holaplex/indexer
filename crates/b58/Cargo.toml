@@ -1,0 +1,17 @@
+[package]
+name = "metaplex-indexer-b58"
+version = "0.0.0"
+authors = [
+  "ryans <ryans@holaplex.com>",
+]
+edition = "2021"
+description = "Development tool for handling base58 on the command line"
+
+[[bin]]
+name = "b58"
+path = "main.rs"
+
+[dependencies]
+bs58 = "0.4.0"
+clap = "3.0.0-beta.5"
+hex = "0.4.3"

@@ -1,10 +1,8 @@
 use std::env;
 
-use indexer_core::prelude::*;
 use serde::Deserialize;
-use solana_sdk::pubkey::Pubkey;
 
-use crate::{Job, ThreadPoolHandle};
+use crate::{prelude::*, Job, ThreadPoolHandle};
 
 #[derive(Debug, Deserialize)]
 struct StorefrontRecord {
@@ -18,7 +16,7 @@ struct Storefront {
      * subdomain: String, */
 }
 
-async fn get_storefronts_async(handle: &ThreadPoolHandle<'_>) -> Result<()> {
+async fn get_storefronts_async(handle: ThreadPoolHandle<'_>) -> Result<()> {
     let storefronts: Vec<StorefrontRecord> = reqwest::Client::new()
         .get(
             env::var("HOLAPLEX_STOREFRONTS_ENDPOINT")
@@ -43,7 +41,7 @@ async fn get_storefronts_async(handle: &ThreadPoolHandle<'_>) -> Result<()> {
     Ok(())
 }
 
-pub fn run(handle: &ThreadPoolHandle) -> Result<()> {
+pub fn run(handle: ThreadPoolHandle) -> Result<()> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

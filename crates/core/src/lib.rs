@@ -8,12 +8,28 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
+// TODO: #[macro_use] is somewhat deprecated, but diesel still relies on it
+#[macro_use]
+extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
+
+pub mod db;
 pub mod error;
 pub mod hash;
 pub mod pubkeys;
 
 /// Commonly used utilities
 pub mod prelude {
+    pub use std::borrow::{
+        Cow,
+        Cow::{Borrowed, Owned},
+    };
+
+    pub use chrono::{self, prelude::*};
+    pub use diesel::query_dsl::{
+        BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl,
+    };
     pub use log::{debug, error, info, trace, warn};
 
     pub use super::error::prelude::*;
