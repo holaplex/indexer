@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:14.1
+    container_name: metaplex_indexer.dev_db
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWD}
+    ports:
+      - "5337:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
+    driver: local
+    name: metaplex_indexer.dev_db_data

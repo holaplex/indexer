@@ -1,13 +1,29 @@
 [package]
 name = "metaplex-indexer-rpc"
-version = "0.0.0"
+version = "0.1.0"
+authors = [
+  "ryans <ryans@holaplex.com>",
+]
 edition = "2021"
+description = "JSONRPC read replica for providing cached Metaplex data"
+documentation = "https://docs.rs/metaplex-indexer-rpc"
+readme = "../../README.md"
+repository = "https://github.com/holaplex/metaplex-indexer"
+license = "MIT OR Apache-2.0"
+keywords = ["solana", "metaplex", "holaplex", "web3"]
+categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [dependencies]
-# Add dependencies
+jsonrpc-core = "18.0.0"
+jsonrpc-core-client = "18.0.0"
+jsonrpc-derive = "18.0.0"
+jsonrpc-http-server = "18.0.0"
+serde = { version = "1.0.130", features = ["derive"] }
+solana-sdk = "1.8.5"
+tokio = "1.14.0"
 
 [dependencies.indexer-core]
 package = "metaplex-indexer-core"
-version = "=0.0.0"
+version = "=0.1.0"
 path = "../core"
 
