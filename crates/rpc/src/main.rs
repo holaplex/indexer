@@ -24,6 +24,11 @@ mod prelude {
 mod rpc;
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    let port = &args[1];
+    let port_int = port.parse::<u16>().unwrap();
+
     indexer_core::run(|| {
         let db = db::connect(
             env::var_os("DATABASE_READ_URL")
@@ -36,7 +41,7 @@ fn main() {
         let mut io = IoHandler::new();
         io.extend_with(rpc::Server::new(db).to_delegate());
 
-        let mut addr: SocketAddr = "127.0.0.1:3000".parse().unwrap();
+        let mut addr: SocketAddr = "0.0.0.0:3000".parse().unwrap();
 
         if let Some(var) = env::var_os("PORT") {
             addr.set_port(
@@ -45,6 +50,8 @@ fn main() {
                     .context("Couldn't parse PORT")?,
             );
         }
+
+        addr.set_port(port_int);
 
         let server = ServerBuilder::new(io)
             .start_http(&addr)
