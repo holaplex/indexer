@@ -53,6 +53,20 @@ pub struct Storefronts {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct StoreListing {
+    address: String,
+    name: String,
+    uri: String,
+    ends_at: Option<String>,
+    created_at: String,
+    ended: bool,
+    last_bid: Option<i64>,
+    price_floor: Option<i64>,
+    total_uncancelled_bids: Option<i32>,
+    instant_sale_price: Option<i64>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ListingItem {
     address: String,
     name: String,
@@ -67,6 +81,8 @@ pub trait Rpc {
     fn get_stores(&self) -> Result<Vec<Storefronts>>;
     #[rpc(name = "getStoresCount")]
     fn get_stores_count(&self) -> Result<i64>;
+    #[rpc(name = "getStoreListings")]
+    fn get_store_listings(&self, param: String) -> Result<Vec<StoreListing>>;
 }
 
 pub struct Server {
@@ -198,5 +214,64 @@ impl Rpc for Server {
         let db = self.db()?;
         let count = storefronts::table.count().get_result(&db);
         Ok(count.unwrap())
+    }
+
+    fn get_store_listings(&self, param: String) -> Result<Vec<StoreListing>> {
+        let db = self.db()?;
+
+        // TODO: figure out a less ugly way to perform this join
+        let items: Vec<RpcGetListingsJoin> = listings::table
+            .inner_join(listing_metadatas::table.inner_join(metadatas::table))
+            .inner_join(storefronts::table)
+            .filter(storefronts::subdomain.eq(param))
+            .select((
+                listings::address,
+                listings::ends_at,
+                listings::created_at,
+                listings::ended,
+                listings::last_bid,
+                listings::price_floor,
+                listings::total_uncancelled_bids,
+                listings::instant_sale_price,
+                storefronts::subdomain,
+                storefronts::title,
+                metadatas::address,
+                metadatas::name,
+                metadatas::uri,
+            ))
+            .order_by((listings::address, listing_metadatas::metadata_index))
+            .load(&db)
+            .map_err(internal_error("Failed to load store listings"))?;
+        let mut auctions: Vec<StoreListing> = Vec::new();
+        for RpcGetListingsJoin {
+            address,
+            ends_at,
+            created_at,
+            ended,
+            last_bid,
+            price_floor,
+            total_uncancelled_bids,
+            instant_sale_price,
+            subdomain,
+            store_title,
+            meta_address,
+            name,
+            uri,
+        } in items
+        {
+            auctions.push(StoreListing {
+                address,
+                name,
+                uri,
+                ends_at: ends_at.map(|e| e.to_string()),
+                created_at: created_at.to_string(),
+                ended,
+                last_bid,
+                price_floor,
+                total_uncancelled_bids,
+                instant_sale_price,
+            });
+        }
+        Ok(auctions)
     }
 }
