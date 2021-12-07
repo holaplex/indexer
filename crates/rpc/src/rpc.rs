@@ -2,7 +2,7 @@ use std::collections::hash_map::Entry;
 
 use indexer_core::{
     db::{
-        models::{RpcGetListingsJoin, Storefront, Metadata},
+        models::{Metadata, RpcGetListingsJoin, Storefront},
         tables::{listing_metadatas, listings, metadatas, storefronts},
         Pool, PooledConnection,
     },
@@ -254,9 +254,9 @@ impl Rpc for Server {
             price_floor,
             total_uncancelled_bids,
             instant_sale_price,
-            subdomain : _,
-            store_title : _,
-            meta_address : _,
+            subdomain: _,
+            store_title: _,
+            meta_address: _,
             name,
             uri,
         } in items
@@ -277,11 +277,11 @@ impl Rpc for Server {
         Ok(auctions)
     }
 
-
     fn get_listing_metadata(&self, param: String) -> Result<Vec<ListingItem>> {
         let db = self.db()?;
 
-        let items: Vec<Metadata> = listing_metadatas::table.inner_join(metadatas::table)
+        let items: Vec<Metadata> = listing_metadatas::table
+            .inner_join(metadatas::table)
             .filter(listing_metadatas::listing_address.eq(param))
             .select((
                 metadatas::address,
@@ -294,32 +294,30 @@ impl Rpc for Server {
                 metadatas::primary_sale_happened,
                 metadatas::is_mutable,
                 metadatas::edition_nonce,
-            )
-            )
-            .order_by( listing_metadatas::metadata_index)
+            ))
+            .order_by(listing_metadatas::metadata_index)
             .load(&db)
             .map_err(internal_error("Failed to load metadata"))?;
-            let mut metadatas: Vec<ListingItem> = Vec::new();
-            for Metadata {
-                address,
-                name,
-                symbol : _,
-                uri,
-                seller_fee_basis_points: _,
-                update_authority_address: _,
-                mint_address: _,
-                primary_sale_happened: _,
-                is_mutable: _,
-                edition_nonce: _,
-            } in items
-            {
-                metadatas.push(ListingItem {
-                    address: address.to_string(),
-                    name: name.to_string(),
-                    uri: uri.to_string(),
-                });
-
-            }
+        let mut metadatas: Vec<ListingItem> = Vec::new();
+        for Metadata {
+            address,
+            name,
+            symbol: _,
+            uri,
+            seller_fee_basis_points: _,
+            update_authority_address: _,
+            mint_address: _,
+            primary_sale_happened: _,
+            is_mutable: _,
+            edition_nonce: _,
+        } in items
+        {
+            metadatas.push(ListingItem {
+                address: address.to_string(),
+                name: name.to_string(),
+                uri: uri.to_string(),
+            });
+        }
         Ok(metadatas)
     }
 }
