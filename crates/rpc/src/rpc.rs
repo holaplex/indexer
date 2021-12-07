@@ -2,7 +2,7 @@ use std::collections::hash_map::Entry;
 
 use indexer_core::{
     db::{
-        models::{RpcGetListingsJoin, Storefront},
+        models::{RpcGetListingsJoin, Storefront, Metadata},
         tables::{listing_metadatas, listings, metadatas, storefronts},
         Pool, PooledConnection,
     },
@@ -83,6 +83,8 @@ pub trait Rpc {
     fn get_stores_count(&self) -> Result<i64>;
     #[rpc(name = "getStoreListings")]
     fn get_store_listings(&self, param: String) -> Result<Vec<StoreListing>>;
+    #[rpc(name = "getListingMetadata")]
+    fn get_listing_metadata(&self, param: String) -> Result<Vec<ListingItem>>;
 }
 
 pub struct Server {
@@ -252,9 +254,9 @@ impl Rpc for Server {
             price_floor,
             total_uncancelled_bids,
             instant_sale_price,
-            subdomain,
-            store_title,
-            meta_address,
+            subdomain : _,
+            store_title : _,
+            meta_address : _,
             name,
             uri,
         } in items
@@ -273,5 +275,51 @@ impl Rpc for Server {
             });
         }
         Ok(auctions)
+    }
+
+
+    fn get_listing_metadata(&self, param: String) -> Result<Vec<ListingItem>> {
+        let db = self.db()?;
+
+        let items: Vec<Metadata> = listing_metadatas::table.inner_join(metadatas::table)
+            .filter(listing_metadatas::listing_address.eq(param))
+            .select((
+                metadatas::address,
+                metadatas::name,
+                metadatas::symbol,
+                metadatas::uri,
+                metadatas::seller_fee_basis_points,
+                metadatas::update_authority_address,
+                metadatas::mint_address,
+                metadatas::primary_sale_happened,
+                metadatas::is_mutable,
+                metadatas::edition_nonce,
+            )
+            )
+            .order_by( listing_metadatas::metadata_index)
+            .load(&db)
+            .map_err(internal_error("Failed to load metadata"))?;
+            let mut metadatas: Vec<ListingItem> = Vec::new();
+            for Metadata {
+                address,
+                name,
+                symbol : _,
+                uri,
+                seller_fee_basis_points: _,
+                update_authority_address: _,
+                mint_address: _,
+                primary_sale_happened: _,
+                is_mutable: _,
+                edition_nonce: _,
+            } in items
+            {
+                metadatas.push(ListingItem {
+                    address: address.to_string(),
+                    name: name.to_string(),
+                    uri: uri.to_string(),
+                });
+
+            }
+        Ok(metadatas)
     }
 }
