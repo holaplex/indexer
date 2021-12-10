@@ -10,6 +10,7 @@
 
 use std::{env, net::SocketAddr};
 
+use clap::Parser;
 use indexer_core::db;
 use jsonrpc_core::{IoHandler, Value};
 use jsonrpc_http_server::ServerBuilder;
@@ -23,13 +24,17 @@ mod prelude {
 
 mod rpc;
 
+#[derive(Parser)]
+struct Opts {
+    /// The port to listen on.
+    #[clap(short, long, default_value_t = 3000, env = "PORT")]
+    port: u16,
+}
+
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    let port = &args[1];
-    let port_int = port.parse::<u16>().unwrap();
-
     indexer_core::run(|| {
+        let Opts { port } = Opts::parse();
+
         let db = db::connect(
             env::var_os("DATABASE_READ_URL")
                 .or_else(|| env::var_os("DATABASE_URL"))
@@ -41,17 +46,8 @@ fn main() {
         let mut io = IoHandler::new();
         io.extend_with(rpc::Server::new(db).to_delegate());
 
-        let mut addr: SocketAddr = "0.0.0.0:3000".parse().unwrap();
-
-        if let Some(var) = env::var_os("PORT") {
-            addr.set_port(
-                var.to_string_lossy()
-                    .parse()
-                    .context("Couldn't parse PORT")?,
-            );
-        }
-
-        addr.set_port(port_int);
+        let mut addr: SocketAddr = "0.0.0.0".parse().unwrap();
+        addr.set_port(port);
 
         let server = ServerBuilder::new(io)
             .start_http(&addr)
