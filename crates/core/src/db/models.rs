@@ -159,6 +159,8 @@ pub struct RpcGetListingsJoin {
     pub ended: bool,
     /// Listing last bid price
     pub last_bid: Option<i64>,
+    /// The timestamp of the last bid on the listing, if available
+    pub last_bid_time: Option<NaiveDateTime>,
     /// Listing price floor
     pub price_floor: Option<i64>,
     /// Listing bid count
