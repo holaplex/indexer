@@ -24,6 +24,7 @@ fn internal_error<E: Into<indexer_core::error::Error>>(
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Listing {
     #[serde(rename = "listingAddress")]
     address: String,
@@ -35,25 +36,23 @@ pub struct Listing {
     total_uncancelled_bids: Option<i32>,
     instant_sale_price: Option<i64>,
     subdomain: String,
-    #[serde(rename = "storeTitle")]
     store_title: String,
     items: Vec<ListingItem>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RpcStorefront {
-    #[serde(rename = "ownerAddress")]
     owner_address: String,
     subdomain: String,
     title: String,
     description: String,
-    #[serde(rename = "faviconUrl")]
     favicon_url: String,
-    #[serde(rename = "logoUrl")]
     logo_url: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ListingItem {
     #[serde(rename = "metadataAddress")]
     address: String,
