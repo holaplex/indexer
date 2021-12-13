@@ -9,7 +9,7 @@ use metaplex_auction::processor::{
     AuctionData, AuctionDataExtended, BidState, BidderMetadata, PriceFloor, BIDDER_METADATA_LEN,
 };
 
-use crate::{prelude::*, util, Client, RcAuctionKeys, ThreadPoolHandle};
+use crate::{client::prelude::*, prelude::*, util, Client, RcAuctionKeys, ThreadPoolHandle};
 
 pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle) -> Result<()> {
     let (ext, _bump) = find_auction_data_extended(&keys.vault);
@@ -35,6 +35,15 @@ pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle)
     ))
     .context("Failed to parse AuctionDataExtended")?;
 
+    let BidsInfo {
+        last_time: last_bid_time,
+        count: total_uncancelled_bids,
+    } = query_bids(client, &keys.auction, &auction, &ext);
+
+    let total_uncancelled_bids = total_uncancelled_bids
+        .map(|c| c.try_into().context("Bid count is too high to store!"))
+        .transpose()?;
+
     // TODO: what timezone is any of this in????
     let row = Listing {
         address: Owned(bs58::encode(keys.auction).into_string()),
@@ -49,6 +58,7 @@ pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle)
         token_mint: Owned(bs58::encode(auction.token_mint).into_string()),
         store_owner: Owned(bs58::encode(keys.store_owner).into_string()),
         last_bid: auction.last_bid,
+        last_bid_time,
         // TODO: horrible abuse of the NaiveDateTime struct but Metaplex does
         //       roughly the same thing with the solana UnixTimestamp struct.
         end_auction_gap: auction
@@ -62,9 +72,7 @@ pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle)
             ),
             PriceFloor::BlindedPrice(_) => Some(-1),
         },
-        total_uncancelled_bids: count_bids(client, &keys.auction, &auction, &ext)?
-            .map(|n| n.try_into().context("Bid count is too high to store!"))
-            .transpose()?,
+        total_uncancelled_bids,
         gap_tick_size: ext.gap_tick_size_percentage.map(Into::into),
         instant_sale_price: ext
             .instant_sale_price
@@ -95,59 +103,68 @@ pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle)
     Ok(())
 }
 
-fn count_bids(
+struct BidsInfo {
+    count: Option<usize>,
+    last_time: Option<NaiveDateTime>,
+}
+
+fn query_bids(
     client: &Client,
     auction_key: &Pubkey,
     auction: &AuctionData,
     ext: &AuctionDataExtended,
-) -> Result<Option<usize>> {
+) -> BidsInfo {
     // TODO: work-in-progress for proper accounting of bidder metadata.
     //       there's a lot of moving parts so this will have to be resolved as
     //       its own issue
 
-    // let mut bidders = Vec::new();
+    let last_time =
+        if matches!(auction.bid_state, BidState::EnglishAuction { .. }) {
+            client
+                .get_program_accounts(pubkeys::auction(), RpcProgramAccountsConfig {
+                    filters: Some(vec![
+                        RpcFilterType::DataSize(BIDDER_METADATA_LEN.try_into().unwrap()),
+                        RpcFilterType::Memcmp(Memcmp {
+                            offset: 32,
+                            bytes: MemcmpEncodedBytes::Bytes(auction_key.to_bytes().into()),
+                            encoding: None,
+                        }),
+                    ]),
+                    ..RpcProgramAccountsConfig::default()
+                })
+                .context("Failed to retrieve bids for auction")
+                .and_then(|bids| {
+                    bids.into_iter()
+                        .map(|(key, mut acct)| {
+                            BidderMetadata::from_account_info(&util::account_as_info(
+                                &key, false, false, &mut acct,
+                            ))
+                            .context("Failed to parse bidder metadata")
+                        })
+                        .try_fold(None::<i64>, |last_time, bid| {
+                            bid.map(|bid| {
+                                Some(last_time.map_or(bid.last_bid_timestamp, |l| {
+                                    l.max(bid.last_bid_timestamp)
+                                }))
+                            })
+                        })
+                })
+                .map_err(|e| error!("Failed to count bids: {:?}", e))
+                .ok()
+                .flatten()
+                .map(|i| NaiveDateTime::from_timestamp(i, 0))
+        } else {
+            None
+        };
 
-    // let queried = if matches!(auction.bid_state, BidState::EnglishAuction { .. }) {
-    //     let bids = client
-    //         .get_program_accounts(pubkeys::auction(), RpcProgramAccountsConfig {
-    //             filters: Some(vec![
-    //                 RpcFilterType::DataSize(BIDDER_METADATA_LEN.try_into().unwrap()),
-    //                 RpcFilterType::Memcmp(Memcmp {
-    //                     offset: 32,
-    //                     bytes: MemcmpEncodedBytes::Bytes(auction_key.to_bytes().into()),
-    //                     encoding: None,
-    //                 }),
-    //             ]),
-    //             ..RpcProgramAccountsConfig::default()
-    //         })
-    //         .context("Failed to retrieve bids for auction")?;
+    let count = if ext.instant_sale_price.is_some() {
+        None
+    } else {
+        match auction.bid_state {
+            BidState::EnglishAuction { ref bids, .. } => Some(bids.len()),
+            BidState::OpenEdition { .. } => None,
+        }
+    };
 
-    //     bids.into_iter()
-    //         .map(|(key, mut acct)| {
-    //             BidderMetadata::from_account_info(&util::account_as_info(
-    //                 &key, false, false, &mut acct,
-    //             ))
-    //         })
-    //         .try_fold(0, |n, r| r.map(|b| {
-    //             bidders.push(b.clone()); // TODO
-
-    //             if b.cancelled { n } else { n + 1 }
-    //         }))
-    //         .context("Failed to count bids")
-    //         .map(Some)
-    // } else {
-    //     Ok(None)
-    // };
-
-    // warn!("{:#?}", bidders);
-    // warn!("{:#?}", auction.bid_state);
-
-    if ext.instant_sale_price.is_some() {
-        return Ok(None);
-    }
-
-    Ok(match auction.bid_state {
-        BidState::EnglishAuction { ref bids, .. } => Some(bids.len()),
-        BidState::OpenEdition { .. } => None,
-    })
+    BidsInfo { count, last_time }
 }

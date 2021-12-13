@@ -30,6 +30,7 @@ table! {
         gap_tick_size -> Nullable<Int4>,
         instant_sale_price -> Nullable<Int8>,
         name -> Text,
+        last_bid_time -> Nullable<Timestamp>,
     }
 }
 

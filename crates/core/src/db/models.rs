@@ -71,6 +71,8 @@ pub struct Listing<'a> {
     pub instant_sale_price: Option<i64>,
     /// The name of the listing
     pub name: Cow<'a, str>,
+    /// The timestamp of the last bid, if applicable and the auction has bids
+    pub last_bid_time: Option<NaiveDateTime>,
 }
 
 /// A row in the `master_editions` table
