@@ -147,7 +147,7 @@ pub struct Storefront<'a> {
 
 /// Join record for the RPC getListings query
 #[derive(Debug, Clone, Queryable)]
-pub struct RpcGetListingsJoin {
+pub struct ListingsTripleJoinRow {
     // Table `listings`
     /// Listing address
     pub address: String,

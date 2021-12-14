@@ -22,6 +22,7 @@ mod prelude {
 }
 
 mod rpc;
+mod rpc_models;
 
 fn main() {
     indexer_core::run(|| {
