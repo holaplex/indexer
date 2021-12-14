@@ -23,6 +23,8 @@ fn internal_error<E: Into<indexer_core::error::Error>>(
 
 #[rpc]
 pub trait Rpc {
+    #[rpc(name = "getFeaturedListings")]
+    fn get_featured_listings(&self) -> Result<Vec<Listing>>;
     #[rpc(name = "getListings")]
     fn get_listings(&self) -> Result<Vec<Listing>>;
     #[rpc(name = "getStorefronts")]
@@ -52,10 +54,17 @@ impl Server {
 }
 
 impl Rpc for Server {
+    fn get_featured_listings(&self) -> Result<Vec<Listing>> {
+        let db = self.db()?;
+
+        listings_triple_join::load(|q| q.limit(4), &db, Local::now().naive_utc())
+            .map_err(internal_error("Failed to load listings"))
+    }
+
     fn get_listings(&self) -> Result<Vec<Listing>> {
         let db = self.db()?;
 
-        listings_triple_join::load(|q| q, &db, Local::now().naive_utc())
+        listings_triple_join::load(|q| q.offset(4), &db, Local::now().naive_utc())
             .map_err(internal_error("Failed to load listings"))
     }
 
