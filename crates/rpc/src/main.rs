@@ -11,7 +11,7 @@
 use std::{env, net::SocketAddr};
 
 use indexer_core::db;
-use jsonrpc_core::{IoHandler, Value};
+use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
 use prelude::*;
 use rpc::Rpc;

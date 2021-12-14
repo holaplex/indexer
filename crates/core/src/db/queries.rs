@@ -1,3 +1,5 @@
+//! Reusable query operations for common or complicated queries.
+
 use std::collections::hash_map::Entry;
 
 use anyhow::Context;

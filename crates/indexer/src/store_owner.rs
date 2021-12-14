@@ -5,6 +5,7 @@ use solana_sdk::account::Account;
 use crate::{prelude::*, util, AuctionCacheKeys, Client, Job, ThreadPoolHandle};
 
 // TODO: reroll the loop into multiple jobs
+#[allow(clippy::unnecessary_wraps)]
 pub fn process(client: &Client, owner: Pubkey, handle: ThreadPoolHandle) -> Result<()> {
     let (store, _bump) = find_store_address(owner);
 

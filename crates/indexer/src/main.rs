@@ -52,7 +52,6 @@ pub struct AuctionCacheKeys {
 #[derive(Debug, Clone, Copy)]
 pub struct AuctionKeys {
     auction: Pubkey,
-    manager: Pubkey,
     vault: Pubkey,
     store_owner: Pubkey,
     created_at: chrono::NaiveDateTime,

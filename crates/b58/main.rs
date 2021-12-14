@@ -1,3 +1,5 @@
+#![allow(clippy::pedantic, clippy::cargo)]
+
 use std::{
     borrow::Cow,
     io::{prelude::*, stdin, stdout},
