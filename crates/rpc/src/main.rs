@@ -47,7 +47,7 @@ fn main() {
         let mut io = IoHandler::new();
         io.extend_with(rpc::Server::new(db).to_delegate());
 
-        let mut addr: SocketAddr = "127.0.0.1:3000".parse().unwrap();
+        let mut addr: SocketAddr = "0.0.0.0".parse().unwrap();
         addr.set_port(port);
 
         let server = ServerBuilder::new(io)
