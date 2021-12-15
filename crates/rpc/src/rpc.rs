@@ -1,6 +1,6 @@
 use indexer_core::db::{
     models::{Metadata, Storefront},
-    queries,
+    queries::listings_triple_join,
     tables::{listing_metadatas, metadatas, storefronts},
     Pool, PooledConnection,
 };
@@ -55,12 +55,8 @@ impl Rpc for Server {
     fn get_listings(&self) -> Result<Vec<Listing>> {
         let db = self.db()?;
 
-        queries::listings_triple_join(|q| {
-            q.select(queries::LISTINGS_TRIPLE_JOIN_COLS)
-                .order_by(queries::LISTINGS_TRIPLE_JOIN_ORDER)
-                .load(&db)
-        })
-        .map_err(internal_error("Failed to load listings"))
+        listings_triple_join::load(|q| q, &db, Local::now().naive_utc())
+            .map_err(internal_error("Failed to load listings"))
     }
 
     fn get_storefronts(&self) -> Result<Vec<RpcStorefront>> {
@@ -103,12 +99,11 @@ impl Rpc for Server {
     fn get_store_listings(&self, store_domain: String) -> Result<Vec<Listing>> {
         let db = self.db()?;
 
-        queries::listings_triple_join(|q| {
-            q.filter(storefronts::subdomain.eq(store_domain))
-                .select(queries::LISTINGS_TRIPLE_JOIN_COLS)
-                .order_by(queries::LISTINGS_TRIPLE_JOIN_ORDER)
-                .load(&db)
-        })
+        listings_triple_join::load(
+            |q| q.filter(storefronts::subdomain.eq(store_domain)),
+            &db,
+            Local::now().naive_utc(),
+        )
         .map_err(internal_error("Failed to load store listings"))
     }
 
