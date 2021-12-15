@@ -23,7 +23,7 @@ table! {
         authority -> Varchar,
         token_mint -> Varchar,
         store_owner -> Varchar,
-        last_bid -> Nullable<Int8>,
+        highest_bid -> Nullable<Int8>,
         end_auction_gap -> Nullable<Timestamp>,
         price_floor -> Nullable<Int8>,
         total_uncancelled_bids -> Nullable<Int4>,

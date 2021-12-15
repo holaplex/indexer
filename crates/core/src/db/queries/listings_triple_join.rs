@@ -28,7 +28,7 @@ use crate::{
 
 type EndsBefore = And<IsNotNull<listings::ends_at>, Lt<listings::ends_at, NaiveDateTime>>;
 type EndsAfter = And<IsNotNull<listings::ends_at>, Gt<listings::ends_at, NaiveDateTime>>;
-type EndedInstantSale = And<IsNull<listings::ends_at>, IsNotNull<listings::last_bid>>;
+type EndedInstantSale = And<IsNull<listings::ends_at>, IsNotNull<listings::highest_bid>>;
 type PriceFloorGt = And<IsNotNull<listings::price_floor>, Gt<listings::price_floor, i64>>;
 
 type Or4<A, B, C, D> = Or<Or<Or<A, B>, C>, D>;
@@ -50,7 +50,7 @@ pub fn rejected(now: NaiveDateTime) -> Rejected {
         .and(listings::ends_at.lt(now));
     let ended_instant_sale: EndedInstantSale = listings::ends_at
         .is_null()
-        .and(listings::last_bid.is_not_null());
+        .and(listings::highest_bid.is_not_null());
     let not_ending_soon: EndsAfter = listings::ends_at
         .is_not_null()
         .and(listings::ends_at.gt(in_31_days));
@@ -70,7 +70,7 @@ pub type Columns = (
     listings::ends_at,
     listings::created_at,
     listings::ended,
-    listings::last_bid,
+    listings::highest_bid,
     listings::last_bid_time,
     listings::price_floor,
     listings::total_uncancelled_bids,
@@ -88,7 +88,7 @@ pub const COLUMNS: Columns = (
     listings::ends_at,
     listings::created_at,
     listings::ended,
-    listings::last_bid,
+    listings::highest_bid,
     listings::last_bid_time,
     listings::price_floor,
     listings::total_uncancelled_bids,
