@@ -12,7 +12,7 @@ use std::{env, net::SocketAddr};
 
 use clap::Parser;
 use indexer_core::db;
-use jsonrpc_core::{IoHandler, Value};
+use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
 use prelude::*;
 use rpc::Rpc;
@@ -23,6 +23,7 @@ mod prelude {
 }
 
 mod rpc;
+mod rpc_models;
 
 #[derive(Parser)]
 struct Opts {

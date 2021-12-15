@@ -22,7 +22,6 @@ pub fn process(client: &Client, keys: AuctionCacheKeys, handle: ThreadPoolHandle
     let AuctionCache {
         metadata,
         auction,
-        auction_manager: manager,
         vault,
         timestamp,
         ..
@@ -47,7 +46,6 @@ pub fn process(client: &Client, keys: AuctionCacheKeys, handle: ThreadPoolHandle
     handle.push_dependency(
         Job::Auction(Arc::new(AuctionKeys {
             auction,
-            manager,
             vault,
             store_owner: keys.store_owner,
             created_at: NaiveDateTime::from_timestamp(timestamp, 0),

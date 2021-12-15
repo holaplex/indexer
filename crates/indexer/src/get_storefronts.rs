@@ -43,13 +43,16 @@ struct QueryEdge {
 
 #[derive(Debug, Deserialize)]
 struct QueryNode {
+    #[allow(dead_code)]
     id: String,
+    #[allow(dead_code)]
     owner: QueryOwner,
     tags: Vec<QueryTag>,
 }
 
 #[derive(Debug, Deserialize)]
 struct QueryOwner {
+    #[allow(dead_code)]
     address: String,
 }
 
