@@ -9,7 +9,7 @@ description = "Core components for metaplex-indexer and metaplex-indexer-rpc"
 documentation = "https://docs.rs/metaplex-indexer-core"
 readme = "../../README.md"
 repository = "https://github.com/holaplex/metaplex-indexer"
-license = "MIT OR Apache-2.0"
+license = "AGPL-3.0-or-later"
 keywords = ["solana", "metaplex", "holaplex", "web3"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 

@@ -56,8 +56,8 @@ pub struct Listing<'a> {
     pub token_mint: Cow<'a, str>,
     /// The owner of the store this auction was found from
     pub store_owner: Cow<'a, str>,
-    /// The amount of the last bid, if applicable
-    pub last_bid: Option<i64>,
+    /// The amount of the highest bid, if applicable
+    pub highest_bid: Option<i64>,
     /// The gap time of the auction, if applicable
     pub end_auction_gap: Option<NaiveDateTime>,
     /// The starting bid of the auction, if applicable
@@ -71,6 +71,8 @@ pub struct Listing<'a> {
     pub instant_sale_price: Option<i64>,
     /// The name of the listing
     pub name: Cow<'a, str>,
+    /// The timestamp of the last bid, if applicable and the auction has bids
+    pub last_bid_time: Option<NaiveDateTime>,
 }
 
 /// A row in the `master_editions` table
@@ -145,7 +147,7 @@ pub struct Storefront<'a> {
 
 /// Join record for the RPC getListings query
 #[derive(Debug, Clone, Queryable)]
-pub struct RpcGetListingsJoin {
+pub struct ListingsTripleJoinRow {
     // Table `listings`
     /// Listing address
     pub address: String,
@@ -155,8 +157,10 @@ pub struct RpcGetListingsJoin {
     pub created_at: NaiveDateTime,
     /// Listing ended flag
     pub ended: bool,
-    /// Listing last bid price
-    pub last_bid: Option<i64>,
+    /// Listing highest bid amount
+    pub highest_bid: Option<i64>,
+    /// The timestamp of the last bid on the listing, if available
+    pub last_bid_time: Option<NaiveDateTime>,
     /// Listing price floor
     pub price_floor: Option<i64>,
     /// Listing bid count

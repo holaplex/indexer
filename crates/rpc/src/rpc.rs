@@ -1,18 +1,16 @@
-use std::collections::hash_map::Entry;
-
-use indexer_core::{
-    db::{
-        models::RpcGetListingsJoin,
-        tables::{listing_metadatas, listings, metadatas, storefronts},
-        Pool, PooledConnection,
-    },
-    hash::HashMap,
+use indexer_core::db::{
+    models::{Metadata, Storefront},
+    queries::listings_triple_join,
+    tables::{listing_metadatas, metadatas, storefronts},
+    Pool, PooledConnection,
 };
 use jsonrpc_core::{Error, Result};
 use jsonrpc_derive::rpc;
-use serde::{Deserialize, Serialize};
 
-use crate::prelude::*;
+use crate::{
+    prelude::*,
+    rpc_models::{Listing, ListingItem, Storefront as RpcStorefront},
+};
 
 fn internal_error<E: Into<indexer_core::error::Error>>(
     msg: &'static str,
@@ -23,33 +21,18 @@ fn internal_error<E: Into<indexer_core::error::Error>>(
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Listing {
-    address: String,
-    ends_at: Option<String>,
-    created_at: String,
-    ended: bool,
-    last_bid: Option<i64>,
-    price_floor: Option<i64>,
-    total_uncancelled_bids: Option<i32>,
-    instant_sale_price: Option<i64>,
-    subdomain: String,
-    #[serde(rename = "storeTitle")]
-    store_title: String,
-    items: Vec<ListingItem>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ListingItem {
-    address: String,
-    name: String,
-    uri: String,
-}
-
 #[rpc]
 pub trait Rpc {
     #[rpc(name = "getListings")]
     fn get_listings(&self) -> Result<Vec<Listing>>;
+    #[rpc(name = "getStorefronts")]
+    fn get_storefronts(&self) -> Result<Vec<RpcStorefront>>;
+    #[rpc(name = "getStoreCount")]
+    fn get_store_count(&self) -> Result<i64>;
+    #[rpc(name = "getStoreListings")]
+    fn get_store_listings(&self, store_domain: String) -> Result<Vec<Listing>>;
+    #[rpc(name = "getListingMetadatas")]
+    fn get_listing_metadatas(&self, listing_address: String) -> Result<Vec<ListingItem>>;
 }
 
 pub struct Server {
@@ -72,78 +55,99 @@ impl Rpc for Server {
     fn get_listings(&self) -> Result<Vec<Listing>> {
         let db = self.db()?;
 
-        // TODO: figure out a less ugly way to perform this join
-        let items: Vec<RpcGetListingsJoin> = listings::table
-            .inner_join(listing_metadatas::table.inner_join(metadatas::table))
-            .inner_join(storefronts::table)
+        listings_triple_join::load(|q| q, &db, Local::now().naive_utc())
+            .map_err(internal_error("Failed to load listings"))
+    }
+
+    fn get_storefronts(&self) -> Result<Vec<RpcStorefront>> {
+        let db = self.db()?;
+        let rows: Vec<Storefront> = storefronts::table
+            .order_by(storefronts::owner_address)
+            .load(&db)
+            .map_err(internal_error("Failed to load storefronts"))?;
+
+        Ok(rows
+            .into_iter()
+            .map(
+                |Storefront {
+                     owner_address,
+                     subdomain,
+                     title,
+                     description,
+                     favicon_url,
+                     logo_url,
+                 }| RpcStorefront {
+                    owner_address: owner_address.into_owned(),
+                    subdomain: subdomain.into_owned(),
+                    title: title.into_owned(),
+                    description: description.into_owned(),
+                    favicon_url: favicon_url.into_owned(),
+                    logo_url: logo_url.into_owned(),
+                },
+            )
+            .collect())
+    }
+
+    fn get_store_count(&self) -> Result<i64> {
+        let db = self.db()?;
+        storefronts::table
+            .count()
+            .get_result(&db)
+            .map_err(internal_error("Failed to get store count"))
+    }
+
+    fn get_store_listings(&self, store_domain: String) -> Result<Vec<Listing>> {
+        let db = self.db()?;
+
+        listings_triple_join::load(
+            |q| q.filter(storefronts::subdomain.eq(store_domain)),
+            &db,
+            Local::now().naive_utc(),
+        )
+        .map_err(internal_error("Failed to load store listings"))
+    }
+
+    fn get_listing_metadatas(&self, listing_address: String) -> Result<Vec<ListingItem>> {
+        let db = self.db()?;
+        let rows: Vec<Metadata> = listing_metadatas::table
+            .inner_join(metadatas::table)
+            .filter(listing_metadatas::listing_address.eq(listing_address))
             .select((
-                listings::address,
-                listings::ends_at,
-                listings::created_at,
-                listings::ended,
-                listings::last_bid,
-                listings::price_floor,
-                listings::total_uncancelled_bids,
-                listings::instant_sale_price,
-                storefronts::subdomain,
-                storefronts::title,
                 metadatas::address,
                 metadatas::name,
+                metadatas::symbol,
                 metadatas::uri,
+                metadatas::seller_fee_basis_points,
+                metadatas::update_authority_address,
+                metadatas::mint_address,
+                metadatas::primary_sale_happened,
+                metadatas::is_mutable,
+                metadatas::edition_nonce,
             ))
-            .order_by((listings::address, listing_metadatas::metadata_index))
+            .order_by(listing_metadatas::metadata_index)
             .load(&db)
-            .map_err(internal_error("Failed to load listings"))?;
+            .map_err(internal_error("Failed to load listing metadatas"))?;
 
-        let mut listings = HashMap::default();
-
-        for RpcGetListingsJoin {
-            address,
-            ends_at,
-            created_at,
-            ended,
-            last_bid,
-            price_floor,
-            total_uncancelled_bids,
-            instant_sale_price,
-            subdomain,
-            store_title,
-            meta_address,
-            name,
-            uri,
-        } in items
-        {
-            match listings.entry(address.clone()) {
-                Entry::Vacant(v) => {
-                    v.insert(Listing {
-                        address,
-                        ends_at: ends_at.map(|e| e.to_string()),
-                        created_at: created_at.to_string(),
-                        ended,
-                        last_bid,
-                        price_floor,
-                        total_uncancelled_bids,
-                        instant_sale_price,
-                        subdomain,
-                        store_title,
-                        items: vec![ListingItem {
-                            address: meta_address,
-                            name,
-                            uri,
-                        }],
-                    });
+        Ok(rows
+            .into_iter()
+            .map(
+                |Metadata {
+                     address,
+                     name,
+                     symbol: _,
+                     uri,
+                     seller_fee_basis_points: _,
+                     update_authority_address: _,
+                     mint_address: _,
+                     primary_sale_happened: _,
+                     is_mutable: _,
+                     edition_nonce: _,
+                 }| ListingItem {
+                    address: address.into_owned(),
+                    name: name.into_owned(),
+                    uri: uri.into_owned(),
                 },
-                Entry::Occupied(o) => {
-                    let o = o.into_mut();
-                    o.items.push(ListingItem {
-                        address: meta_address,
-                        name,
-                        uri,
-                    });
-                },
-            }
-        }
-
-        Ok(listings.into_values().collect())
+            )
+            .collect())
     }
 }

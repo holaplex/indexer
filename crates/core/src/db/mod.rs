@@ -1,6 +1,7 @@
 //! Interface with the indexer database
 
 pub mod models;
+pub mod queries;
 #[allow(missing_docs)]
 mod schema;
 

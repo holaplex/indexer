@@ -1,0 +1,9 @@
+build:
+  docker:
+    web: Dockerfile
+run:
+  web: ./target/release/metaplex-indexer-rpc -p $PORT
+  worker:
+    command: 
+      - ./target/release/metaplex-indexer
+    image: web
