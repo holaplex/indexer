@@ -130,6 +130,8 @@ fn main() {
             })
             .context("Failed to initialize thread pool")?;
 
+        let start_time = Local::now();
+
         if let Some(store_list) = store_list {
             let list: Vec<String> = serde_json::from_reader(
                 std::fs::File::open(store_list).context("Couldn't open storefront list")?,
@@ -148,6 +150,33 @@ fn main() {
         }
 
         pool.join();
+
+        let end_time = Local::now();
+
+        let elapsed = {
+            use std::fmt::Write;
+
+            let duration = end_time - start_time;
+            let mut out = String::new();
+
+            let h = duration.num_hours();
+            if h > 0 {
+                write!(out, "{:02}:", h).unwrap();
+            }
+
+            write!(
+                out,
+                "{:02}:{:02}.{:03}",
+                duration.num_minutes().rem_euclid(60),
+                duration.num_seconds().rem_euclid(60),
+                duration.num_milliseconds().rem_euclid(1000)
+            )
+            .unwrap();
+
+            out
+        };
+
+        info!("Indexer run finished in {}", elapsed);
 
         Ok(())
     });
