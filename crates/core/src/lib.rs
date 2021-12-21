@@ -14,6 +14,8 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
+pub extern crate chrono;
+
 pub mod db;
 pub mod error;
 pub mod hash;
