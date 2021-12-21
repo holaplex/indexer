@@ -1,6 +1,6 @@
 use indexer_core::db::{
     models::{Metadata, Storefront},
-    queries::listings_triple_join,
+    queries::{listings_triple_join, store_denylist},
     tables::{listing_metadatas, metadatas, storefronts},
     Pool, PooledConnection,
 };
@@ -61,7 +61,7 @@ impl Rpc for Server {
 
     fn get_storefronts(&self) -> Result<Vec<RpcStorefront>> {
         let db = self.db()?;
-        let rows: Vec<Storefront> = storefronts::table
+        let rows: Vec<Storefront> = store_denylist::get_storefronts()
             .order_by(storefronts::owner_address)
             .load(&db)
             .map_err(internal_error("Failed to load storefronts"))?;
@@ -90,7 +90,7 @@ impl Rpc for Server {
 
     fn get_store_count(&self) -> Result<i64> {
         let db = self.db()?;
-        storefronts::table
+        store_denylist::get_storefronts()
             .count()
             .get_result(&db)
             .map_err(internal_error("Failed to get store count"))
