@@ -67,6 +67,12 @@ table! {
 }
 
 table! {
+    store_denylist (owner_address) {
+        owner_address -> Varchar,
+    }
+}
+
+table! {
     storefronts (owner_address) {
         owner_address -> Varchar,
         subdomain -> Text,
@@ -90,5 +96,6 @@ allow_tables_to_appear_in_same_query!(
     master_editions,
     metadata_creators,
     metadatas,
+    store_denylist,
     storefronts,
 );

@@ -10,7 +10,7 @@ pub mod tables {
 
     pub use super::schema::{
         editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
-        storefronts,
+        store_denylist, storefronts,
     };
 }
 

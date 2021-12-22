@@ -16,6 +16,7 @@ use diesel::{
 };
 use solana_sdk::native_token::sol_to_lamports;
 
+use super::store_denylist::{owner_address_ok, OwnerAddressOk};
 use crate::{
     db::{
         models::ListingsTripleJoinRow,
@@ -31,11 +32,15 @@ type EndsAfter = And<IsNotNull<listings::ends_at>, Gt<listings::ends_at, NaiveDa
 type EndedInstantSale = And<IsNull<listings::ends_at>, IsNotNull<listings::highest_bid>>;
 type PriceFloorGt = And<IsNotNull<listings::price_floor>, Gt<listings::price_floor, i64>>;
 
+type And3<A, B, C> = And<And<A, B>, C>;
 type Or4<A, B, C, D> = Or<Or<Or<A, B>, C>, D>;
 
 /// The type of the listing rejection filter
-pub type Rejected =
-    And<Eq<listings::ended, bool>, Not<Or4<EndsBefore, EndedInstantSale, EndsAfter, PriceFloorGt>>>;
+pub type Rejected = And3<
+    Eq<listings::ended, bool>,
+    Not<Or4<EndsBefore, EndedInstantSale, EndsAfter, PriceFloorGt>>,
+    OwnerAddressOk<storefronts::owner_address>,
+>;
 
 /// Filter an SQL query to reject listings we don't want to return
 #[must_use]
@@ -58,10 +63,13 @@ pub fn rejected(now: NaiveDateTime) -> Rejected {
         .is_not_null()
         .and(listings::price_floor.gt(too_expensive));
 
-    listings::ended.eq(false).and(not(already_ended
-        .or(ended_instant_sale)
-        .or(not_ending_soon)
-        .or(too_expensive)))
+    listings::ended
+        .eq(false)
+        .and(not(already_ended
+            .or(ended_instant_sale)
+            .or(not_ending_soon)
+            .or(too_expensive)))
+        .and(owner_address_ok(storefronts::owner_address))
 }
 
 /// The type of the required column layout
