@@ -30,6 +30,7 @@ dashmap = "4.0.2"
 # ORM
 diesel = { version = "1.4.8", features = ["postgres", "r2d2", "chrono"] }
 diesel_migrations = "1.4.0"
+diesel_full_text_search = "1.0.1"
 
 # Solana
 solana-sdk = "1.8.3"

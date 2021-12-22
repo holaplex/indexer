@@ -1,4 +1,7 @@
 table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     bids (listing_address, bidder_address) {
         listing_address -> Varchar,
         bidder_address -> Varchar,
@@ -9,6 +12,9 @@ table! {
 }
 
 table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     editions (address) {
         address -> Varchar,
         parent_address -> Varchar,
@@ -18,6 +24,9 @@ table! {
 }
 
 table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     listing_metadatas (listing_address, metadata_address) {
         listing_address -> Varchar,
         metadata_address -> Varchar,
@@ -26,6 +35,9 @@ table! {
 }
 
 table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     listings (address) {
         address -> Varchar,
         ends_at -> Nullable<Timestamp>,
@@ -46,6 +58,9 @@ table! {
 }
 
 table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     master_editions (address) {
         address -> Varchar,
         supply -> Int8,
@@ -55,6 +70,9 @@ table! {
 }
 
 table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     metadata_creators (metadata_address, creator_address) {
         metadata_address -> Varchar,
         creator_address -> Varchar,
@@ -64,6 +82,9 @@ table! {
 }
 
 table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     metadatas (address) {
         address -> Varchar,
         name -> Text,
@@ -79,12 +100,18 @@ table! {
 }
 
 table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     store_denylist (owner_address) {
         owner_address -> Varchar,
     }
 }
 
 table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     storefronts (owner_address) {
         owner_address -> Varchar,
         subdomain -> Text,

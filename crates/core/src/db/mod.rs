@@ -2,7 +2,7 @@
 
 pub mod models;
 pub mod queries;
-#[allow(missing_docs)]
+#[allow(missing_docs, unused_imports)]
 mod schema;
 
 pub mod tables {

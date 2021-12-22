@@ -1125,6 +1125,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "diesel_full_text_search"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ad3168d9d2008c58b8c9fabb79ddc38d1f9d511fa15e0dcbd6b987912b05783"
+dependencies = [
+ "diesel",
+]
+
+[[package]]
 name = "diesel_migrations"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2374,6 +2383,7 @@ dependencies = [
  "clap 3.0.0-beta.5",
  "dashmap",
  "diesel",
+ "diesel_full_text_search",
  "diesel_migrations",
  "dotenv",
  "env_logger",

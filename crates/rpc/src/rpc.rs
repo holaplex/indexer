@@ -65,6 +65,15 @@ impl Rpc for Server {
         let db = self.db()?;
         let rows: Vec<models::Storefront> = store_denylist::get_storefronts()
             .order_by(storefronts::owner_address)
+            .select((
+                storefronts::owner_address,
+                storefronts::subdomain,
+                storefronts::title,
+                storefronts::description,
+                storefronts::favicon_url,
+                storefronts::logo_url,
+                storefronts::updated_at,
+            ))
             .load(&db)
             .map_err(internal_error("Failed to load storefronts"))?;
 
