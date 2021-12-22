@@ -1,16 +1,35 @@
-use indexer_core::db::models::ListingsTripleJoinRow;
+use indexer_core::{chrono::prelude::*, db::models::ListingsTripleJoinRow};
 use serde::{Deserialize, Serialize};
+
+/// Wrapper to ensure timestamps returned from the indexer are properly
+/// formatted
+#[derive(Debug, Serialize, Deserialize)]
+#[repr(transparent)]
+#[serde(transparent)]
+pub struct Timestamp(String);
+
+impl Timestamp {
+    fn from_utc(utc: NaiveDateTime) -> Self {
+        Self::from(DateTime::from_utc(utc, Utc))
+    }
+}
+
+impl From<DateTime<Utc>> for Timestamp {
+    fn from(dt: DateTime<Utc>) -> Self {
+        Self(dt.to_rfc3339_opts(SecondsFormat::Secs, true))
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Listing {
     #[serde(rename = "listingAddress")]
     pub address: String,
-    pub ends_at: Option<String>,
-    pub created_at: String,
+    pub ends_at: Option<Timestamp>,
+    pub created_at: Timestamp,
     pub ended: bool,
     pub highest_bid: Option<i64>,
-    pub last_bid_time: Option<String>,
+    pub last_bid_time: Option<Timestamp>,
     pub price_floor: Option<i64>,
     pub total_uncancelled_bids: Option<i32>,
     pub instant_sale_price: Option<i64>,
@@ -40,11 +59,11 @@ impl From<ListingsTripleJoinRow> for Listing {
     ) -> Self {
         Self {
             address,
-            ends_at: ends_at.map(|e| e.to_string()),
-            created_at: created_at.to_string(),
+            ends_at: ends_at.map(Timestamp::from_utc),
+            created_at: Timestamp::from_utc(created_at),
             ended,
             highest_bid,
-            last_bid_time: last_bid_time.map(|t| t.to_string()),
+            last_bid_time: last_bid_time.map(Timestamp::from_utc),
             price_floor,
             total_uncancelled_bids,
             instant_sale_price,
