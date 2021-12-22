@@ -14,6 +14,8 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
+pub extern crate chrono;
+
 pub mod db;
 pub mod error;
 pub mod hash;
@@ -28,6 +30,7 @@ pub mod prelude {
 
     pub use chrono::{self, prelude::*};
     pub use diesel::{
+        dsl::{exists, not},
         expression_methods::*,
         query_dsl::{BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl},
     };
