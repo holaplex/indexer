@@ -92,6 +92,7 @@ table! {
         description -> Text,
         favicon_url -> Text,
         logo_url -> Text,
+        ts_index -> Tsvector,
         updated_at -> Nullable<Timestamp>,
     }
 }
