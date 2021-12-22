@@ -15,6 +15,8 @@ use crate::db::tables::{store_denylist, storefronts};
 // Would you believe it took me 2 hours to debug type errors for this module?
 
 type EqOwnerAddr<A> = Eq<store_denylist::owner_address, AsExprOf<A, VarChar>>;
+
+/// The resulting type of the [`owner_address_ok`] function
 pub type OwnerAddressOk<A> =
     Not<Exists<Filter<SelectStatement<store_denylist::table>, EqOwnerAddr<A>>>>;
 
@@ -32,6 +34,7 @@ where
 }
 
 /// Query all storefronts whose owner address is not in the denylist
+#[must_use]
 pub fn get_storefronts() -> Filter<storefronts::table, OwnerAddressOk<storefronts::owner_address>> {
     FilterDsl::filter(
         storefronts::table,
