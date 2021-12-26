@@ -182,3 +182,18 @@ pub struct ListingsTripleJoinRow {
     /// Metadata URI
     pub uri: String,
 }
+
+#[derive(Debug, Clone, Queryable)]
+pub struct EditionOuterJoin {
+    /// Left Join of 'Editions' table and 'Master_editions' table
+    /// master_edition address
+    pub master_edition_address: String,
+    /// edition address ('address' field of 'editions' table)
+    pub edition_address: Option<String>,
+    /// Edition number
+    pub edition: Option<i64>,
+    ///  supply of master edition
+    pub supply: i64,
+    /// max supply of master edition
+    pub max_supply: Option<i64>,
+}

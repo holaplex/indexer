@@ -1,15 +1,26 @@
-use indexer_core::db::{
-    models::{Metadata, Storefront},
-    queries::{listings_triple_join, store_denylist},
-    tables::{listing_metadatas, metadatas, storefronts},
-    Pool, PooledConnection,
+use indexer_core::{
+    db::{
+        models::{EditionOuterJoin, Listing, Metadata, MetadataCreator, Storefront},
+        queries::{listings_triple_join,
+        store_denylist},
+        tables::{
+            editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
+            storefronts,
+        },
+        Pool, PooledConnection,
+    },
+    pubkeys::find_edition,
 };
 use jsonrpc_core::{Error, Result};
 use jsonrpc_derive::rpc;
+use solana_sdk::pubkey::Pubkey;
 
 use crate::{
     prelude::*,
-    rpc_models::{Listing, ListingItem, Storefront as RpcStorefront},
+    rpc_models::{
+        Creator, EditionOuterJoin as RpcEditionOuterJoin, Listing as RpcListing, ListingInfo,
+        ListingItem, Storefront as RpcStorefront,
+    },
 };
 
 fn internal_error<E: Into<indexer_core::error::Error>>(
@@ -24,15 +35,17 @@ fn internal_error<E: Into<indexer_core::error::Error>>(
 #[rpc]
 pub trait Rpc {
     #[rpc(name = "getListings")]
-    fn get_listings(&self) -> Result<Vec<Listing>>;
+    fn get_listings(&self) -> Result<Vec<RpcListing>>;
     #[rpc(name = "getStorefronts")]
     fn get_storefronts(&self) -> Result<Vec<RpcStorefront>>;
     #[rpc(name = "getStoreCount")]
     fn get_store_count(&self) -> Result<i64>;
     #[rpc(name = "getStoreListings")]
-    fn get_store_listings(&self, store_domain: String) -> Result<Vec<Listing>>;
+    fn get_store_listings(&self, store_domain: String) -> Result<Vec<RpcListing>>;
     #[rpc(name = "getListingMetadatas")]
     fn get_listing_metadatas(&self, listing_address: String) -> Result<Vec<ListingItem>>;
+    #[rpc(name = "getListingInfo")]
+    fn get_listing_info(&self, listing_address: String) -> Result<ListingInfo>;
 }
 
 pub struct Server {
@@ -52,7 +65,7 @@ impl Server {
 }
 
 impl Rpc for Server {
-    fn get_listings(&self) -> Result<Vec<Listing>> {
+    fn get_listings(&self) -> Result<Vec<RpcListing>> {
         let db = self.db()?;
 
         listings_triple_join::load(|q| q, &db, Local::now().naive_utc())
@@ -96,7 +109,7 @@ impl Rpc for Server {
             .map_err(internal_error("Failed to get store count"))
     }
 
-    fn get_store_listings(&self, store_domain: String) -> Result<Vec<Listing>> {
+    fn get_store_listings(&self, store_domain: String) -> Result<Vec<RpcListing>> {
         let db = self.db()?;
 
         listings_triple_join::load(
@@ -149,5 +162,115 @@ impl Rpc for Server {
                 },
             )
             .collect())
+    }
+
+    fn get_listing_info(&self, listing_address: String) -> Result<ListingInfo> {
+        let db = self.db()?;
+
+        ///get metadata for the listing address
+        let metadatas: Vec<Metadata> = listing_metadatas::table
+            .inner_join(metadatas::table)
+            .filter(
+                listing_metadatas::listing_address
+                    .eq(&listing_address)
+                    .and(listing_metadatas::metadata_index.eq(0)),
+            )
+            .select((
+                metadatas::address,
+                metadatas::name,
+                metadatas::symbol,
+                metadatas::uri,
+                metadatas::seller_fee_basis_points,
+                metadatas::update_authority_address,
+                metadatas::mint_address,
+                metadatas::primary_sale_happened,
+                metadatas::is_mutable,
+                metadatas::edition_nonce,
+            ))
+            .load(&db)
+            .map_err(internal_error("Failed to load metadatas"))?;
+
+        let metadata: &Metadata = metadatas.get(0).ok_or(Error::internal_error())?;
+
+        ///get listing row from 'Listings' table
+        let listings: Vec<Listing> = listings::table
+            .filter(listings::address.eq(listing_address))
+            .load(&db)
+            .map_err(internal_error("Failed to load listing"))?;
+
+        let listing: &Listing = listings.get(0).ok_or(Error::internal_error())?;
+
+        ///get the creators of the listing
+        let creators: Vec<MetadataCreator> = metadata_creators::table
+            .filter(metadata_creators::metadata_address.eq(metadata.address.to_string()))
+            .load(&db)
+            .map_err(internal_error("Failed to load creators"))?;
+
+        ///edition pubkey using the pda function
+        let (edition_pubkey, _bump) = find_edition(&Pubkey::new(
+            &bs58::decode((metadata.address).to_string())
+                .into_vec()
+                .unwrap(),
+        ));
+
+        ///Left join of 'editions' and 'master_edition' tables
+        /// edition_pubkey could be 'master_edition' table address key or 'editions' table address key
+        let edition: Vec<EditionOuterJoin> = master_editions::table
+            .left_join(editions::table)
+            .filter(
+                master_editions::address
+                    .eq(bs58::encode(edition_pubkey).into_string())
+                    .or(editions::address.eq(bs58::encode(edition_pubkey).into_string())),
+            )
+            .select((
+                master_editions::address,
+                editions::address.nullable(),
+                editions::edition.nullable(),
+                master_editions::supply,
+                master_editions::max_supply,
+            ))
+            .load(&db)
+            .map_err(internal_error("Failed to load edition"))?;
+
+        Ok(ListingInfo {
+            address: metadata.address.to_string(),
+            name: metadata.name.to_string(),
+            uri: metadata.uri.to_string(),
+            ends_at: listing.ends_at.map(|e| e.to_string()),
+            created_at: listing.created_at.to_string(),
+            highest_bid: listing.highest_bid,
+            last_bid_time: listing.last_bid_time.map(|e| e.to_string()),
+            edition: edition
+                .into_iter()
+                .map(
+                    |EditionOuterJoin {
+                         master_edition_address,
+                         edition_address,
+                         edition,
+                         supply,
+                         max_supply,
+                     }| RpcEditionOuterJoin {
+                        master_edition_address,
+                        edition_address,
+                        edition,
+                        supply,
+                        max_supply,
+                    },
+                )
+                .collect(),
+            creators: creators
+                .into_iter()
+                .map(
+                    |MetadataCreator {
+                         metadata_address: _,
+                         creator_address,
+                         share: _,
+                         verified: _,
+                     }| Creator {
+                        creator_address: creator_address.to_string(),
+                    },
+                )
+                .collect(),
+        })
     }
 }
