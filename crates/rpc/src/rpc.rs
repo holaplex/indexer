@@ -189,27 +189,25 @@ impl Rpc for Server {
             .load(&db)
             .map_err(internal_error("Failed to load metadatas"))?;
 
+        let metadata: &Metadata = metadatas.get(0).ok_or(Error::internal_error())?;
+
         ///get listing row from 'Listings' table
-        let listing: Vec<Listing> = listings::table
+        let listings: Vec<Listing> = listings::table
             .filter(listings::address.eq(listing_address))
             .load(&db)
             .map_err(internal_error("Failed to load listing"))?;
 
+        let listing: &Listing = listings.get(0).ok_or(Error::internal_error())?;
+
         ///get the creators of the listing
         let creators: Vec<MetadataCreator> = metadata_creators::table
-            .filter(
-                metadata_creators::metadata_address.eq(metadatas
-                    .get(0)
-                    .ok_or(Error::internal_error())?
-                    .address
-                    .to_string()),
-            )
+            .filter(metadata_creators::metadata_address.eq(metadata.address.to_string()))
             .load(&db)
             .map_err(internal_error("Failed to load creators"))?;
 
         ///edition pubkey using the pda function
         let (edition_pubkey, _bump) = find_edition(&Pubkey::new(
-            &bs58::decode((metadatas.get(0).ok_or(Error::internal_error())?.address).to_string())
+            &bs58::decode((metadata.address).to_string())
                 .into_vec()
                 .unwrap(),
         ));
@@ -234,37 +232,13 @@ impl Rpc for Server {
             .map_err(internal_error("Failed to load edition"))?;
 
         Ok(ListingInfo {
-            address: metadatas
-                .get(0)
-                .ok_or(Error::internal_error())?
-                .address
-                .to_string(),
-            name: metadatas
-                .get(0)
-                .ok_or(Error::internal_error())?
-                .name
-                .to_string(),
-            uri: metadatas
-                .get(0)
-                .ok_or(Error::internal_error())?
-                .uri
-                .to_string(),
-            ends_at: listing
-                .get(0)
-                .ok_or(Error::internal_error())?
-                .ends_at
-                .map(|e| e.to_string()),
-            created_at: listing
-                .get(0)
-                .ok_or(Error::internal_error())?
-                .created_at
-                .to_string(),
-            highest_bid: listing.get(0).ok_or(Error::internal_error())?.highest_bid,
-            last_bid_time: listing
-                .get(0)
-                .ok_or(Error::internal_error())?
-                .last_bid_time
-                .map(|e| e.to_string()),
+            address: metadata.address.to_string(),
+            name: metadata.name.to_string(),
+            uri: metadata.uri.to_string(),
+            ends_at: listing.ends_at.map(|e| e.to_string()),
+            created_at: listing.created_at.to_string(),
+            highest_bid: listing.highest_bid,
+            last_bid_time: listing.last_bid_time.map(|e| e.to_string()),
             edition: edition
                 .into_iter()
                 .map(
