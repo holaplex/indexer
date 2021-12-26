@@ -1,8 +1,7 @@
 use indexer_core::{
     db::{
         models::{EditionOuterJoin, Listing, Metadata, MetadataCreator, Storefront},
-        queries::{listings_triple_join,
-        store_denylist},
+        queries::{listings_triple_join, store_denylist},
         tables::{
             editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
             storefronts,
