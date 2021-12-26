@@ -100,3 +100,34 @@ pub struct Storefront {
     pub favicon_url: String,
     pub logo_url: String,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Creator {
+    pub creator_address: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EditionOuterJoin {
+    pub master_edition_address: String,
+    pub edition_address: Option<String>,
+    pub edition: Option<i64>,
+    pub supply: i64,
+    pub max_supply: Option<i64>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListingInfo {
+    #[serde(rename = "metadataAddress")]
+    pub address: String,
+    pub name: String,
+    pub uri: String,
+    pub ends_at: Option<String>,
+    pub created_at: String,
+    pub highest_bid: Option<i64>,
+    pub last_bid_time: Option<String>,
+    pub edition: Vec<EditionOuterJoin>,
+    pub creators: Vec<Creator>,
+}
