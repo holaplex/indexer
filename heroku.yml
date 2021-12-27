@@ -1,9 +1,17 @@
 build:
   docker:
-    web: Dockerfile
+    indexer: Dockerfile
+
+release:
+  command:
+    - ./deployment-tasks.sh
+  image: indexer
 run:
-  web: ./target/release/metaplex-indexer-rpc -p $PORT
+  web:
+    command:
+      - ./target/release/metaplex-indexer-rpc -p $PORT
+    image: indexer
   worker:
     command: 
       - ./target/release/metaplex-indexer
-    image: web
+    image: indexer
