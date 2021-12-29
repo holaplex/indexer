@@ -1,4 +1,4 @@
-use chrono::{offset::Local, NaiveDateTime};
+use chrono::{offset::Local, Duration, NaiveDateTime};
 use indexer_core::{
     db::{insert_into, models::Listing, tables::listings},
     prelude::*,
@@ -56,23 +56,19 @@ pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle)
         },
     }
 
-    // TODO: what timezone is any of this in????
-    let row = Listing {
+    let now = Local::now().naive_utc();
+    let (ends_at, ended, last_bid_time) = get_end_info(&auction, now)?;
+
+    let values = Listing {
         address: Owned(bs58::encode(keys.auction).into_string()),
-        ends_at: auction
-            .ended_at
-            .map(|t| NaiveDateTime::from_timestamp(t, 0)),
+        ends_at,
         created_at: keys.created_at,
-        ended: auction
-            .ended(Local::now().naive_utc().timestamp())
-            .context("Failed to check if auction was ended")?,
+        ended,
         authority: Owned(bs58::encode(auction.authority).into_string()),
         token_mint: Owned(bs58::encode(auction.token_mint).into_string()),
         store_owner: Owned(bs58::encode(keys.store_owner).into_string()),
         highest_bid,
-        last_bid_time: auction
-            .last_bid
-            .map(|l| NaiveDateTime::from_timestamp(l, 0)),
+        last_bid_time,
         // TODO: horrible abuse of the NaiveDateTime struct but Metaplex does
         //       roughly the same thing with the solana UnixTimestamp struct.
         end_auction_gap: auction
@@ -107,12 +103,43 @@ pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle)
     let db = client.db()?;
 
     insert_into(listings::table)
-        .values(&row)
+        .values(&values)
         .on_conflict(listings::address)
         .do_update()
-        .set(&row)
+        .set(&values)
         .execute(&db)
         .context("Failed to insert listing")?;
 
     Ok(())
+}
+
+/// Returns a tuple of `(ends_at, ended, last_bid_time)`
+fn get_end_info(
+    auction: &AuctionData,
+    now: NaiveDateTime,
+) -> Result<(Option<NaiveDateTime>, bool, Option<NaiveDateTime>)> {
+    let ends_at = auction
+        .ended_at
+        .map(|t| NaiveDateTime::from_timestamp(t, 0));
+
+    let gap_time = auction.end_auction_gap.map(Duration::seconds);
+
+    let last_bid_time = auction
+        .last_bid
+        .map(|l| NaiveDateTime::from_timestamp(l, 0));
+
+    // Based on AuctionData::ended
+    let ends_at = match (ends_at, gap_time, last_bid_time) {
+        (Some(end), Some(gap), Some(last)) => Some(
+            end.max(
+                last.checked_add_signed(gap)
+                    .ok_or_else(|| anyhow!("Failed to adjust auction end by gap time"))?,
+            ),
+        ),
+        (end, ..) => end,
+    };
+
+    let ended = ends_at.map_or(false, |e| now > e);
+
+    Ok((ends_at, ended, last_bid_time))
 }
