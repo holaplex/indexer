@@ -1,4 +1,4 @@
-use std::{env, path::PathBuf};
+use std::{collections::BTreeSet, env, path::PathBuf, str::FromStr};
 
 use clap::Parser;
 use indexer_core::db;
@@ -69,6 +69,24 @@ pub enum Job {
     Auction(RcAuctionKeys),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum Entry {
+    GetStorefronts,
+    GetBidderMetadata,
+}
+
+impl FromStr for Entry {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        Ok(match s {
+            "storefromts" | "stores" => Self::GetStorefronts,
+            "bidder-metadata" | "bids" => Self::GetBidderMetadata,
+            s => bail!("Unexpected entrypoint {:?}", s),
+        })
+    }
+}
+
 /// Handle for scheduling jobs on the thread pool
 pub type ThreadPoolHandle<'a> = graph::Handle<threaded::Handle<'a, graph::Job<Job>>>;
 
@@ -82,13 +100,34 @@ struct Opts {
     /// The number of threads to use.  Defaults to available core count.
     #[clap(short = 'j')]
     thread_count: Option<usize>,
+
+    /// A comma-separated list of the root (entry) jobs to run.
+    ///
+    /// Valid values are 'stores' and 'bids'.  If not specified all root jobs
+    /// are run.
+    #[clap(short, long = "entry")]
+    entries: Option<Vec<Entry>>,
 }
 
 pub fn run() -> Result<()> {
     let Opts {
         thread_count,
         store_list,
+        entries,
     } = Opts::parse();
+
+    let entries = {
+        let mut entries: BTreeSet<_> = entries
+            .unwrap_or_else(|| vec![Entry::GetStorefronts, Entry::GetBidderMetadata])
+            .into_iter()
+            .collect();
+
+        if store_list.is_some() {
+            entries.insert(Entry::GetStorefronts);
+        }
+
+        entries
+    };
 
     let db = db::connect(
         env::var_os("DATABASE_WRITE_URL")
@@ -123,21 +162,30 @@ pub fn run() -> Result<()> {
 
     let start_time = Local::now();
 
-    if let Some(store_list) = store_list {
-        let list: Vec<String> = serde_json::from_reader(
-            std::fs::File::open(store_list).context("Couldn't open storefront list")?,
-        )
-        .context("Couldn't parse storefront list")?;
+    let mut store_list = store_list;
 
-        list.into_iter()
-            .filter_map(|i| {
-                Pubkey::try_from(&*i)
-                    .map_err(|e| error!("Failed to parse pubkey: {:?}", e))
-                    .ok()
-            })
-            .for_each(|k| pool.push(Job::StoreOwner(k)));
-    } else {
-        pool.push(Job::GetStorefronts);
+    for entry in entries {
+        match entry {
+            Entry::GetStorefronts => {
+                if let Some(store_list) = store_list.take() {
+                    let list: Vec<String> = serde_json::from_reader(
+                        std::fs::File::open(store_list).context("Couldn't open storefront list")?,
+                    )
+                    .context("Couldn't parse storefront list")?;
+
+                    list.into_iter()
+                        .filter_map(|i| {
+                            Pubkey::try_from(&*i)
+                                .map_err(|e| error!("Failed to parse pubkey: {:?}", e))
+                                .ok()
+                        })
+                        .for_each(|k| pool.push(Job::StoreOwner(k)));
+                } else {
+                    pool.push(Job::GetStorefronts);
+                }
+            },
+            Entry::GetBidderMetadata => pool.push(Job::GetBidderMetadata),
+        }
     }
 
     pool.join();
