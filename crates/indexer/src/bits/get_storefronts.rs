@@ -160,7 +160,8 @@ fn process_tags(
 
         handle.push(Job::StoreOwner(owner));
     } else {
-        trace!("Skipping duplicate owner {:?}", owner);
+        // This isn't terribly useful on its own as a trace log
+        // trace!("Skipping duplicate owner {:?}", owner);
     }
 
     Ok(())
