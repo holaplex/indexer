@@ -2,7 +2,7 @@ use std::{collections::BTreeSet, env, path::PathBuf, str::FromStr};
 
 use clap::Parser;
 use indexer_core::db;
-use topograph::{graph, threaded};
+use topograph::{graph, graph::AdoptableDependents, threaded};
 
 use crate::{
     bits::{
@@ -138,6 +138,9 @@ pub fn run() -> Result<()> {
     .context("Failed to connect to Postgres")?;
     let client = Client::new_rc(db).context("Failed to construct Client")?;
 
+    let bid_dependents = AdoptableDependents::new().rc();
+    let bid_map = bidder_metadata::BidMap::default();
+
     let pool = threaded::Builder::default()
         .num_threads(thread_count)
         .build_graph(move |job, handle| {
@@ -145,15 +148,17 @@ pub fn run() -> Result<()> {
 
             let res = match job {
                 Job::GetStorefronts => get_storefronts::run(&client, handle),
-                Job::GetBidderMetadata => bidder_metadata::get(&client, handle),
+                Job::GetBidderMetadata => bidder_metadata::get(&client, &bid_map, handle),
                 Job::StoreOwner(owner) => store_owner::process(&client, owner, handle),
-                Job::AuctionCache(store) => auction_cache::process(&client, store, handle),
+                Job::AuctionCache(store) => {
+                    auction_cache::process(&client, store, handle, &bid_dependents)
+                },
                 Job::ListingMetadata(lm) => {
                     auction_cache::process_listing_metadata(&client, lm, handle)
                 },
                 Job::Metadata(meta) => metadata::process(&client, meta, handle),
                 Job::EditionForMint(mint) => edition::process(&client, mint, handle),
-                Job::Auction(ref keys) => auction::process(&client, keys, handle),
+                Job::Auction(ref keys) => auction::process(&client, keys, &bid_map, handle),
             };
 
             res.map_err(|e| error!("Job {:?} failed: {:?}", job, e))

@@ -1,9 +1,35 @@
+use std::{panic::AssertUnwindSafe, sync::Arc};
+
 use indexer_core::{hash::HashMap, pubkeys};
 use metaplex_auction::processor::{BidderMetadata, BIDDER_METADATA_LEN};
+use parking_lot::RwLock;
 
-use crate::{client::prelude::*, prelude::*, util, Client, Job, ThreadPoolHandle};
+use crate::{client::prelude::*, prelude::*, util, Client, ThreadPoolHandle};
 
-pub fn get(client: &Client, handle: ThreadPoolHandle) -> Result<()> {
+type BidMapInner = RwLock<HashMap<Pubkey, Vec<BidderMetadata>>>;
+pub struct BidMap(AssertUnwindSafe<Arc<BidMapInner>>);
+
+impl std::ops::Deref for BidMap {
+    type Target = BidMapInner;
+
+    fn deref(&self) -> &Self::Target {
+        &*self.0
+    }
+}
+
+impl Default for BidMap {
+    fn default() -> Self {
+        Self(AssertUnwindSafe(Arc::new(RwLock::new(HashMap::default()))))
+    }
+}
+
+impl Clone for BidMap {
+    fn clone(&self) -> Self {
+        Self(AssertUnwindSafe(Arc::clone(&*self.0)))
+    }
+}
+
+pub fn get(client: &Client, bid_map: &BidMap, _handle: ThreadPoolHandle) -> Result<()> {
     let mut map = HashMap::default();
     let mut count: usize = 0;
 
@@ -40,10 +66,7 @@ pub fn get(client: &Client, handle: ThreadPoolHandle) -> Result<()> {
                 .push(acct);
         });
 
-    for (auction, bids) in map {
-        todo!();
-        // handle.push(Job::BidsForAuction(auction, bids));
-    }
+    *bid_map.write() = map;
 
     Ok(())
 }

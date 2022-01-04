@@ -6,10 +6,19 @@ use indexer_core::{
 };
 use metaplex_auction::processor::{AuctionData, AuctionDataExtended, BidState, PriceFloor};
 
+use super::bidder_metadata::BidMap;
 use crate::{prelude::*, util, Client, RcAuctionKeys, ThreadPoolHandle};
 
-pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle) -> Result<()> {
+pub fn process(
+    client: &Client,
+    keys: &RcAuctionKeys,
+    bid_map: &BidMap,
+    _handle: ThreadPoolHandle,
+) -> Result<()> {
     let (ext, _bump) = find_auction_data_extended(&keys.vault);
+
+    // TODO
+    assert!(!bid_map.read().is_empty());
 
     let mut acct = client
         .get_account(&keys.auction)

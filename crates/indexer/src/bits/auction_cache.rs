@@ -3,10 +3,16 @@ use std::sync::Arc;
 use chrono::NaiveDateTime;
 use indexer_core::db::{insert_into, models::ListingMetadata, tables::listing_metadatas};
 use metaplex::state::AuctionCache;
+use topograph::graph::{Dependents, RcAdoptableDependents};
 
 use crate::{prelude::*, util, AuctionCacheKeys, AuctionKeys, Client, Job, ThreadPoolHandle};
 
-pub fn process(client: &Client, keys: AuctionCacheKeys, handle: ThreadPoolHandle) -> Result<()> {
+pub fn process(
+    client: &Client,
+    keys: AuctionCacheKeys,
+    handle: ThreadPoolHandle,
+    bid_dependents: &RcAdoptableDependents<Job>,
+) -> Result<()> {
     let mut acct = client
         .get_account(&keys.cache)
         .context("Failed to get auction cache")?;
@@ -39,19 +45,25 @@ pub fn process(client: &Client, keys: AuctionCacheKeys, handle: ThreadPoolHandle
             2,
         );
 
-        auction_outs.push(deps.take());
-        handle.push_dependency(Job::Metadata(meta), Some(deps.take()));
+        auction_outs.push(deps.get_in_edge());
+        handle.push_dependency(Job::Metadata(meta), Some(deps.get_in_edge()));
     }
 
-    handle.push_dependency(
+    let mut auction = handle.create_node(
         Job::Auction(Arc::new(AuctionKeys {
             auction,
             vault,
             store_owner: keys.store_owner,
             created_at: NaiveDateTime::from_timestamp(timestamp, 0),
         })),
-        auction_outs,
+        1,
     );
+
+    auction
+        .set_dependents(Dependents::new(auction_outs))
+        .expect("Failed to sync auction outs - this shouldn't happen!");
+
+    bid_dependents.lock().push(&handle, auction.get_in_edge());
 
     Ok(())
 }
