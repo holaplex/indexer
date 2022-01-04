@@ -1,3 +1,5 @@
+//! This module contains the API-level logic for the RPC server.
+
 use indexer_core::db::{
     models,
     queries::{listings_triple_join, metadata_edition, store_denylist},
@@ -60,6 +62,12 @@ impl Server {
         self.db_pool
             .get()
             .map_err(internal_error("Failed to connect to the database"))
+    }
+}
+
+impl std::fmt::Debug for Server {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("Server").finish()
     }
 }
 

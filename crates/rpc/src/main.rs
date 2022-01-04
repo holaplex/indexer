@@ -21,7 +21,7 @@ mod prelude {
     pub use solana_sdk::{bs58, pubkey::Pubkey};
 }
 
-mod rpc;
+pub mod rpc;
 mod rpc_models;
 
 #[derive(Parser)]
