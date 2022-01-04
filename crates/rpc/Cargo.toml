@@ -18,6 +18,8 @@ jsonrpc-core = "18.0.0"
 jsonrpc-core-client = "18.0.0"
 jsonrpc-derive = "18.0.0"
 jsonrpc-http-server = "18.0.0"
+percent-encoding = "2.1.0"
+regex = "1.5.4"
 serde = { version = "1.0.130", features = ["derive"] }
 solana-sdk = "1.8.5"
 tokio = "1.14.0"
