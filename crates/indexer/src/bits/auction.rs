@@ -133,6 +133,8 @@ fn store_bids(
     auction_address: &str,
     db: &Connection,
 ) -> Result<()> {
+    debug_assert!(!bid_map.read().is_empty());
+
     for bid in bid_map.read().get(auction_key).into_iter().flatten() {
         debug_assert!(&bid.auction_pubkey == auction_key);
 

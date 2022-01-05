@@ -33,14 +33,23 @@ pub fn get(client: &Client, bid_map: &BidMap, _handle: ThreadPoolHandle) -> Resu
     let mut map = HashMap::default();
     let mut count: usize = 0;
 
-    client
-        .get_program_accounts(pubkeys::auction(), RpcProgramAccountsConfig {
-            filters: Some(vec![RpcFilterType::DataSize(
-                BIDDER_METADATA_LEN.try_into().unwrap(),
-            )]),
-            ..RpcProgramAccountsConfig::default()
-        })
-        .context("Failed to retrieve bids for auction")?
+    let start_time = Local::now();
+
+    let res = client.get_program_accounts(pubkeys::auction(), RpcProgramAccountsConfig {
+        filters: Some(vec![RpcFilterType::DataSize(
+            BIDDER_METADATA_LEN.try_into().unwrap(),
+        )]),
+        ..RpcProgramAccountsConfig::default()
+    });
+
+    let end_time = Local::now();
+
+    info!(
+        "Bidder metadata call completed in {}",
+        util::duration_hhmmssfff(end_time - start_time)
+    );
+
+    res.context("Failed to retrieve bids for auction")?
         .into_iter()
         .filter_map(|(key, mut acct)| {
             let parsed = BidderMetadata::from_account_info(&util::account_as_info(

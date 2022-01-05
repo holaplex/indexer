@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, env, path::PathBuf, str::FromStr};
+use std::{collections::BTreeSet, env, path::PathBuf, str::FromStr, sync::Arc};
 
 use clap::Parser;
 use indexer_core::db;
@@ -10,6 +10,7 @@ use crate::{
     },
     client::Client,
     prelude::*,
+    util,
 };
 
 /// Convenience record for passing data to a [`ListingMetadata`] job
@@ -87,6 +88,7 @@ impl FromStr for Entry {
     }
 }
 
+type ThreadPool = graph::Scheduler<Job, threaded::Executor<graph::Job<Job>>>;
 /// Handle for scheduling jobs on the thread pool
 pub type ThreadPoolHandle<'a> = graph::Handle<threaded::Handle<'a, graph::Job<Job>>>;
 
@@ -109,39 +111,15 @@ struct Opts {
     entries: Option<Vec<Entry>>,
 }
 
-pub fn run() -> Result<()> {
-    let Opts {
-        thread_count,
-        store_list,
-        entries,
-    } = Opts::parse();
+fn create_pool(
+    thread_count: Option<usize>,
+    client: Arc<Client>,
+    bid_map: bidder_metadata::BidMap,
+    bid_dependents: &graph::RcAdoptableDependents<Job>,
+) -> Result<ThreadPool> {
+    let bid_dependents = bid_dependents.clone();
 
-    let entries = {
-        let mut entries: BTreeSet<_> = entries
-            .unwrap_or_else(|| vec![Entry::GetStorefronts, Entry::GetBidderMetadata])
-            .into_iter()
-            .collect();
-
-        if store_list.is_some() {
-            entries.insert(Entry::GetStorefronts);
-        }
-
-        entries
-    };
-
-    let db = db::connect(
-        env::var_os("DATABASE_WRITE_URL")
-            .or_else(|| env::var_os("DATABASE_URL"))
-            .ok_or_else(|| anyhow!("No value found for DATABASE_WRITE_URL or DATABASE_URL"))
-            .map(move |v| v.to_string_lossy().into_owned())?,
-    )
-    .context("Failed to connect to Postgres")?;
-    let client = Client::new_rc(db).context("Failed to construct Client")?;
-
-    let bid_dependents = AdoptableDependents::new().rc();
-    let bid_map = bidder_metadata::BidMap::default();
-
-    let pool = threaded::Builder::default()
+    threaded::Builder::default()
         .num_threads(thread_count)
         .build_graph(move |job, handle| {
             trace!("{:?}", job);
@@ -163,11 +141,35 @@ pub fn run() -> Result<()> {
 
             res.map_err(|e| error!("Job {:?} failed: {:?}", job, e))
         })
-        .context("Failed to initialize thread pool")?;
+        .context("Failed to initialize thread pool")
+}
 
-    let start_time = Local::now();
+fn dispatch_entry_jobs(
+    entries: Option<Vec<Entry>>,
+    mut store_list: Option<PathBuf>,
+    pool: &ThreadPool,
+    bid_dependents: &graph::RcAdoptableDependents<Job>,
+) -> Result<()> {
+    let entries = {
+        let mut entries: BTreeSet<_> = entries
+            .unwrap_or_else(|| vec![Entry::GetStorefronts, Entry::GetBidderMetadata])
+            .into_iter()
+            .collect();
 
-    let mut store_list = store_list;
+        if store_list.is_some() {
+            entries.insert(Entry::GetStorefronts);
+        }
+
+        entries
+    };
+
+    if entries.contains(&Entry::GetBidderMetadata) {
+        if !entries.contains(&Entry::GetStorefronts) {
+            todo!("Indexing bids without auctions is not supported yet");
+        }
+    } else {
+        bid_dependents.lock().complete(pool).unwrap();
+    }
 
     for entry in entries {
         match entry {
@@ -189,38 +191,50 @@ pub fn run() -> Result<()> {
                     pool.push(Job::GetStorefronts);
                 }
             },
-            Entry::GetBidderMetadata => pool.push(Job::GetBidderMetadata),
+            Entry::GetBidderMetadata => {
+                let dependents = pool.push_dependency(Job::GetBidderMetadata, None);
+                bid_dependents.lock().adopt(pool, dependents).unwrap();
+            },
         }
     }
 
+    Ok(())
+}
+
+pub fn run() -> Result<()> {
+    let Opts {
+        thread_count,
+        store_list,
+        entries,
+    } = Opts::parse();
+
+    let db = db::connect(
+        env::var_os("DATABASE_WRITE_URL")
+            .or_else(|| env::var_os("DATABASE_URL"))
+            .ok_or_else(|| anyhow!("No value found for DATABASE_WRITE_URL or DATABASE_URL"))
+            .map(move |v| v.to_string_lossy().into_owned())?,
+    )
+    .context("Failed to connect to Postgres")?;
+
+    let bid_dependents = AdoptableDependents::new().rc();
+    let pool = create_pool(
+        thread_count,
+        Client::new_rc(db).context("Failed to construct Client")?,
+        bidder_metadata::BidMap::default(),
+        &bid_dependents,
+    )?;
+
+    // ---- BEGIN INDEXER RUN ----
+    let start_time = Local::now();
+    dispatch_entry_jobs(entries, store_list, &pool, &bid_dependents)?;
     pool.join();
-
     let end_time = Local::now();
+    // ---- END INDEXER RUN ----
 
-    let elapsed = {
-        use std::fmt::Write;
-
-        let duration = end_time - start_time;
-        let mut out = String::new();
-
-        let h = duration.num_hours();
-        if h > 0 {
-            write!(out, "{:02}:", h).unwrap();
-        }
-
-        write!(
-            out,
-            "{:02}:{:02}.{:03}",
-            duration.num_minutes().rem_euclid(60),
-            duration.num_seconds().rem_euclid(60),
-            duration.num_milliseconds().rem_euclid(1000)
-        )
-        .unwrap();
-
-        out
-    };
-
-    info!("Indexer run finished in {}", elapsed);
+    info!(
+        "Indexer run finished in {}",
+        util::duration_hhmmssfff(end_time - start_time)
+    );
 
     Ok(())
 }
