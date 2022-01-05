@@ -1,6 +1,11 @@
 use chrono::{offset::Local, Duration, NaiveDateTime};
 use indexer_core::{
-    db::{insert_into, models::Listing, tables::listings},
+    db::{
+        insert_into,
+        models::{Bid, Listing},
+        tables::{bids, listings},
+        Connection,
+    },
     prelude::*,
     pubkeys::find_auction_data_extended,
 };
@@ -16,9 +21,6 @@ pub fn process(
     _handle: ThreadPoolHandle,
 ) -> Result<()> {
     let (ext, _bump) = find_auction_data_extended(&keys.vault);
-
-    // TODO
-    assert!(!bid_map.read().is_empty());
 
     let mut acct = client
         .get_account(&keys.auction)
@@ -67,9 +69,10 @@ pub fn process(
 
     let now = Local::now().naive_utc();
     let (ends_at, ended, last_bid_time) = get_end_info(&auction, now)?;
+    let auction_address = bs58::encode(keys.auction).into_string();
 
     let values = Listing {
-        address: Owned(bs58::encode(keys.auction).into_string()),
+        address: Borrowed(&auction_address),
         ends_at,
         created_at: keys.created_at,
         ended,
@@ -118,6 +121,40 @@ pub fn process(
         .set(&values)
         .execute(&db)
         .context("Failed to insert listing")?;
+
+    store_bids(bid_map, &keys.auction, &auction_address, &db)?;
+
+    Ok(())
+}
+
+fn store_bids(
+    bid_map: &BidMap,
+    auction_key: &Pubkey,
+    auction_address: &str,
+    db: &Connection,
+) -> Result<()> {
+    for bid in bid_map.read().get(auction_key).into_iter().flatten() {
+        debug_assert!(&bid.auction_pubkey == auction_key);
+
+        let bid_row = Bid {
+            listing_address: Borrowed(auction_address),
+            bidder_address: Owned(bs58::encode(bid.bidder_pubkey).into_string()),
+            last_bid_time: NaiveDateTime::from_timestamp(bid.last_bid_timestamp, 0),
+            last_bid_amount: bid
+                .last_bid
+                .try_into()
+                .context("Last bid amount is too high to store!")?,
+            cancelled: bid.cancelled,
+        };
+
+        insert_into(bids::table)
+            .values(&bid_row)
+            .on_conflict((bids::listing_address, bids::bidder_address))
+            .do_update()
+            .set(&bid_row)
+            .execute(db)
+            .context("Failed to insert listing bid")?;
+    }
 
     Ok(())
 }

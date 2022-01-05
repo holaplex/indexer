@@ -8,9 +8,25 @@ use std::borrow::Cow;
 use chrono::NaiveDateTime;
 
 use super::schema::{
-    editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
+    bids, editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
     storefronts,
 };
+
+/// A row in the `bids` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[belongs_to(parent = "Listing<'_>", foreign_key = "listing_address")]
+pub struct Bid<'a> {
+    /// The auction being bid on
+    pub listing_address: Cow<'a, str>,
+    /// The wallet address of the bidding account
+    pub bidder_address: Cow<'a, str>,
+    /// The time the last bid by this user in this auction was placed
+    pub last_bid_time: NaiveDateTime,
+    /// The amount of the last bid
+    pub last_bid_amount: i64,
+    /// Whether the bid has been cancelled or redeemed
+    pub cancelled: bool,
+}
 
 /// A row in the `editions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]

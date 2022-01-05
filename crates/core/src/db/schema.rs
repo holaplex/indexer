@@ -1,4 +1,14 @@
 table! {
+    bids (listing_address, bidder_address) {
+        listing_address -> Varchar,
+        bidder_address -> Varchar,
+        last_bid_time -> Timestamp,
+        last_bid_amount -> Int8,
+        cancelled -> Bool,
+    }
+}
+
+table! {
     editions (address) {
         address -> Varchar,
         parent_address -> Varchar,
@@ -84,6 +94,7 @@ table! {
     }
 }
 
+joinable!(bids -> listings (listing_address));
 joinable!(editions -> master_editions (parent_address));
 joinable!(listing_metadatas -> listings (listing_address));
 joinable!(listing_metadatas -> metadatas (metadata_address));
@@ -91,6 +102,7 @@ joinable!(listings -> storefronts (store_owner));
 joinable!(metadata_creators -> metadatas (metadata_address));
 
 allow_tables_to_appear_in_same_query!(
+    bids,
     editions,
     listing_metadatas,
     listings,
