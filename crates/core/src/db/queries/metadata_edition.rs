@@ -19,7 +19,12 @@ use crate::{
 #[derive(Debug, Clone)]
 pub enum MetadataEdition<'a> {
     /// A non-master edition
-    Edition(Edition<'a>),
+    Edition {
+        /// The edition itself
+        edition: Edition<'a>,
+        /// The parent of the edition, containing supply information
+        parent: MasterEdition<'a>,
+    },
     /// A master edition
     MasterEdition(MasterEdition<'a>),
 }
@@ -66,23 +71,41 @@ pub fn load<'a>(
             bail!("Invalid metadata address");
         };
 
-    Ok(edition_addr
+    edition_addr
         .map(|address| {
-            MetadataEdition::Edition(Edition {
-                address: Cow::Owned(address),
-                parent_address: edition_parent.map_or_else(|| unreachable!(), Cow::Owned),
-                edition: edition_ord.unwrap_or_else(|| unreachable!()),
-                metadata_address: Cow::Borrowed(metadata_address),
+            let parent_address = edition_parent.unwrap_or_else(|| unreachable!());
+
+            let parent = master_editions::table
+                .filter(master_editions::address.eq(&parent_address))
+                .limit(1)
+                .load(conn)
+                .context("Failed to load edition parent")?;
+
+            let parent = if parent.len() == 1 {
+                parent.into_iter().next().unwrap_or_else(|| unreachable!())
+            } else {
+                bail!("Invalid edition parent");
+            };
+
+            Ok(MetadataEdition::Edition {
+                edition: Edition {
+                    address: Cow::Owned(address),
+                    parent_address: Cow::Owned(parent_address),
+                    edition: edition_ord.unwrap_or_else(|| unreachable!()),
+                    metadata_address: Cow::Borrowed(metadata_address),
+                },
+                parent,
             })
         })
         .or_else(|| {
             master_addr.map(|address| {
-                MetadataEdition::MasterEdition(MasterEdition {
+                Ok(MetadataEdition::MasterEdition(MasterEdition {
                     address: Cow::Owned(address),
                     supply: master_supply.unwrap_or_else(|| unreachable!()),
                     max_supply: master_max,
                     metadata_address: Cow::Borrowed(metadata_address),
-                })
+                }))
             })
-        }))
+        })
+        .transpose()
 }

@@ -158,43 +158,53 @@ impl<'a> From<MetadataCreator<'a>> for Creator {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged, rename_all = "camelCase")]
-pub enum Edition {
+pub enum ItemEdition {
     Edition {
         address: String,
-        metadata_address: String,
         parent_address: String,
         edition: i64,
+        supply: i64,
+        max_supply: Option<i64>,
     },
     MasterEdition {
         address: String,
-        metadata_address: String,
         supply: i64,
         max_supply: Option<i64>,
     },
 }
 
-impl<'a> From<MetadataEdition<'a>> for Edition {
+impl<'a> From<MetadataEdition<'a>> for ItemEdition {
     fn from(edition: MetadataEdition<'a>) -> Self {
         match edition {
-            MetadataEdition::Edition(models::Edition {
-                address,
-                parent_address,
-                edition,
-                metadata_address,
-            }) => Self::Edition {
+            MetadataEdition::Edition {
+                edition:
+                    models::Edition {
+                        address,
+                        parent_address,
+                        edition,
+                        metadata_address: _,
+                    },
+                parent:
+                    models::MasterEdition {
+                        address: _,
+                        supply,
+                        max_supply,
+                        metadata_address: _,
+                    },
+            } => Self::Edition {
                 address: address.into_owned(),
-                metadata_address: metadata_address.into_owned(),
                 parent_address: parent_address.into_owned(),
                 edition,
+                supply,
+                max_supply,
             },
             MetadataEdition::MasterEdition(models::MasterEdition {
                 address,
                 supply,
                 max_supply,
-                metadata_address,
+                metadata_address: _,
             }) => Self::MasterEdition {
                 address: address.into_owned(),
-                metadata_address: metadata_address.into_owned(),
                 supply,
                 max_supply,
             },
@@ -239,7 +249,7 @@ pub struct ListingExtra {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ItemExtra {
-    edition: Option<Edition>,
+    edition: Option<ItemEdition>,
     creators: Vec<Creator>,
 }
 
@@ -249,7 +259,7 @@ impl ListingDetails {
     pub fn new(
         listing: Listing,
         get_bidders: impl FnOnce(&Listing) -> Result<Vec<ListingBidder>>,
-        get_item_data: impl Fn(&ListingItem) -> Result<(Option<Edition>, Vec<Creator>)>,
+        get_item_data: impl Fn(&ListingItem) -> Result<(Option<ItemEdition>, Vec<Creator>)>,
     ) -> Result<Self> {
         let bidders = get_bidders(&listing).context("Failed to get listing bids")?;
 
