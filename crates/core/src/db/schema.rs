@@ -80,6 +80,7 @@ table! {
         description -> Text,
         favicon_url -> Text,
         logo_url -> Text,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 

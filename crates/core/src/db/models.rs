@@ -143,6 +143,8 @@ pub struct Storefront<'a> {
     pub favicon_url: Cow<'a, str>,
     /// The file URL for this store's log
     pub logo_url: Cow<'a, str>,
+    /// The timestamp this storefront was first uploaded to arweave
+    pub updated_at: Option<NaiveDateTime>,
 }
 
 /// Join record for the RPC getListings query

@@ -9,7 +9,7 @@ use jsonrpc_derive::rpc;
 
 use crate::{
     prelude::*,
-    rpc_models::{Listing, ListingItem, Storefront as RpcStorefront},
+    rpc_models::{Listing, ListingItem, Storefront as RpcStorefront, Timestamp},
 };
 
 fn internal_error<E: Into<indexer_core::error::Error>>(
@@ -76,6 +76,7 @@ impl Rpc for Server {
                      description,
                      favicon_url,
                      logo_url,
+                     updated_at,
                  }| RpcStorefront {
                     owner_address: owner_address.into_owned(),
                     subdomain: subdomain.into_owned(),
@@ -83,6 +84,7 @@ impl Rpc for Server {
                     description: description.into_owned(),
                     favicon_url: favicon_url.into_owned(),
                     logo_url: logo_url.into_owned(),
+                    updated_at: updated_at.map(Timestamp::from_utc),
                 },
             )
             .collect())
