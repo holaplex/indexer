@@ -4,9 +4,10 @@ use indexer_core::{hash::HashMap, pubkeys};
 use metaplex_auction::processor::{BidderMetadata, BIDDER_METADATA_LEN};
 use parking_lot::RwLock;
 
-use crate::{client::prelude::*, prelude::*, util, Client, ThreadPoolHandle};
+use crate::{client::prelude::*, prelude::*, util, Client, Job, ThreadPoolHandle};
 
-type BidMapInner = RwLock<HashMap<Pubkey, Vec<BidderMetadata>>>;
+pub type BidList = Vec<BidderMetadata>;
+type BidMapInner = RwLock<HashMap<Pubkey, BidList>>;
 pub struct BidMap(AssertUnwindSafe<Arc<BidMapInner>>);
 
 impl std::ops::Deref for BidMap {
@@ -29,9 +30,8 @@ impl Clone for BidMap {
     }
 }
 
-pub fn get(client: &Client, bid_map: &BidMap, _handle: ThreadPoolHandle) -> Result<()> {
+fn get_internal(client: &Client) -> Result<HashMap<Pubkey, BidList>> {
     let mut map = HashMap::default();
-    let mut count: usize = 0;
 
     let start_time = Local::now();
 
@@ -69,13 +69,21 @@ pub fn get(client: &Client, bid_map: &BidMap, _handle: ThreadPoolHandle) -> Resu
             Some(parsed)
         })
         .for_each(|acct| {
-            count += 1;
             map.entry(acct.auction_pubkey)
                 .or_insert_with(Vec::new)
                 .push(acct);
         });
 
-    *bid_map.write() = map;
+    Ok(map)
+}
 
-    Ok(())
+pub fn get(client: &Client, bid_map: &BidMap, _handle: ThreadPoolHandle) -> Result<()> {
+    get_internal(client).map(|m| *bid_map.write() = m)
+}
+
+pub fn get_solo(client: &Client, handle: ThreadPoolHandle) -> Result<()> {
+    get_internal(client).map(|m| {
+        m.into_iter()
+            .for_each(|(a, b)| handle.push(Job::SoloBidsForAuction(a, b)));
+    })
 }

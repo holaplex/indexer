@@ -1,18 +1,25 @@
+use std::borrow::Borrow;
+
 use chrono::{offset::Local, Duration, NaiveDateTime};
 use indexer_core::{
     db::{
         insert_into,
         models::{Bid, Listing},
+        select,
         tables::{bids, listings},
         Connection,
     },
     prelude::*,
     pubkeys::find_auction_data_extended,
 };
-use metaplex_auction::processor::{AuctionData, AuctionDataExtended, BidState, PriceFloor};
+use metaplex_auction::processor::{
+    AuctionData, AuctionDataExtended, BidState, BidderMetadata, PriceFloor,
+};
 
 use super::bidder_metadata::BidMap;
-use crate::{prelude::*, util, Client, RcAuctionKeys, ThreadPoolHandle};
+use crate::{
+    bits::bidder_metadata::BidList, prelude::*, util, Client, RcAuctionKeys, ThreadPoolHandle,
+};
 
 pub fn process(
     client: &Client,
@@ -122,20 +129,50 @@ pub fn process(
         .execute(&db)
         .context("Failed to insert listing")?;
 
-    store_bids(bid_map, &keys.auction, &auction_address, &db)?;
+    debug_assert!(!bid_map.read().is_empty());
+
+    store_bids(
+        &keys.auction,
+        &auction_address,
+        bid_map.read().get(&keys.auction).into_iter().flatten(),
+        &db,
+    )?;
 
     Ok(())
 }
 
-fn store_bids(
-    bid_map: &BidMap,
+pub fn process_solo_bids(
+    client: &Client,
+    auction: Pubkey,
+    bids: BidList,
+    _handle: ThreadPoolHandle,
+) -> Result<()> {
+    let db = client.db()?;
+    let auction_addr = bs58::encode(auction).into_string();
+
+    if select(exists(
+        listings::table.filter(listings::address.eq(&auction_addr)),
+    ))
+    .get_result(&db)
+    .context("Failed to check database for existing auction")?
+    {
+        store_bids(&auction, &auction_addr, bids, &db)?;
+    }
+
+    Ok(())
+}
+
+fn store_bids<B: Borrow<BidderMetadata>>(
     auction_key: &Pubkey,
     auction_address: &str,
+    bids: impl IntoIterator<Item = B>,
     db: &Connection,
 ) -> Result<()> {
-    debug_assert!(!bid_map.read().is_empty());
+    debug_assert!(bs58::encode(auction_key).into_string() == auction_address);
 
-    for bid in bid_map.read().get(auction_key).into_iter().flatten() {
+    for bid in bids {
+        let bid = bid.borrow();
+
         debug_assert!(&bid.auction_pubkey == auction_key);
 
         let bid_row = Bid {

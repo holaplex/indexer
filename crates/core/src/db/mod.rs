@@ -14,7 +14,7 @@ pub mod tables {
     };
 }
 
-pub use diesel::{insert_into, pg::upsert::excluded};
+pub use diesel::{insert_into, pg::upsert::excluded, select, update};
 use diesel::{pg, r2d2};
 
 use crate::prelude::*;

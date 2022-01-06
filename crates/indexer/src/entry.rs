@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, env, path::PathBuf, str::FromStr, sync::Arc};
+use std::{collections::BTreeSet, env, mem, path::PathBuf, str::FromStr, sync::Arc};
 
 use clap::Parser;
 use indexer_core::db;
@@ -65,6 +65,11 @@ pub enum Job {
     GetStorefronts,
     /// Fetch all bidder metadata accounts
     GetBidderMetadata,
+    /// Get bidder metadata with the expectation no other jobs will use it
+    ///
+    /// In this case, the job itself should attempt to optimistically insert
+    /// bids into the database where possible.
+    GetBidderMetadataSolo,
     /// Process data for a store owner pubkey
     StoreOwner(Pubkey),
     /// Process data for an auction cache pubkey
@@ -77,6 +82,8 @@ pub enum Job {
     EditionForMint(EditionKeys),
     /// Process data for an auction
     Auction(RcAuctionKeys),
+    /// Attempt to store bids for an auction without indexing the auction
+    SoloBidsForAuction(Pubkey, bidder_metadata::BidList),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -130,12 +137,13 @@ fn create_pool(
 
     threaded::Builder::default()
         .num_threads(thread_count)
-        .build_graph(move |job, handle| {
+        .build_graph(move |mut job, handle| {
             trace!("{:?}", job);
 
             let res = match job {
                 Job::GetStorefronts => get_storefronts::run(&client, handle),
                 Job::GetBidderMetadata => bidder_metadata::get(&client, &bid_map, handle),
+                Job::GetBidderMetadataSolo => bidder_metadata::get_solo(&client, handle),
                 Job::StoreOwner(owner) => store_owner::process(&client, owner, handle),
                 Job::AuctionCache(store) => {
                     auction_cache::process(&client, store, handle, &bid_dependents)
@@ -146,6 +154,9 @@ fn create_pool(
                 Job::Metadata(meta) => metadata::process(&client, meta, handle),
                 Job::EditionForMint(keys) => edition::process(&client, keys, handle),
                 Job::Auction(ref keys) => auction::process(&client, keys, &bid_map, handle),
+                Job::SoloBidsForAuction(key, ref mut bids) => {
+                    auction::process_solo_bids(&client, key, mem::take(bids), handle)
+                },
             };
 
             res.map_err(|e| error!("Job {:?} failed: {:?}", job, e))
@@ -172,9 +183,11 @@ fn dispatch_entry_jobs(
         entries
     };
 
+    let mut bids_run_solo = false;
+
     if entries.contains(&Entry::GetBidderMetadata) {
         if !entries.contains(&Entry::GetStorefronts) {
-            todo!("Indexing bids without auctions is not supported yet");
+            bids_run_solo = true;
         }
     } else {
         bid_dependents.lock().complete(pool).unwrap();
@@ -199,6 +212,10 @@ fn dispatch_entry_jobs(
                 } else {
                     pool.push(Job::GetStorefronts);
                 }
+            },
+            Entry::GetBidderMetadata if bids_run_solo => {
+                pool.push(Job::GetBidderMetadataSolo);
+                bid_dependents.lock().abandon().unwrap();
             },
             Entry::GetBidderMetadata => {
                 let dependents = pool.push_dependency(Job::GetBidderMetadata, None);
