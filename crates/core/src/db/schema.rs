@@ -13,6 +13,7 @@ table! {
         address -> Varchar,
         parent_address -> Varchar,
         edition -> Int8,
+        metadata_address -> Varchar,
     }
 }
 
@@ -49,6 +50,7 @@ table! {
         address -> Varchar,
         supply -> Int8,
         max_supply -> Nullable<Int8>,
+        metadata_address -> Varchar,
     }
 }
 
@@ -96,9 +98,11 @@ table! {
 
 joinable!(bids -> listings (listing_address));
 joinable!(editions -> master_editions (parent_address));
+joinable!(editions -> metadatas (metadata_address));
 joinable!(listing_metadatas -> listings (listing_address));
 joinable!(listing_metadatas -> metadatas (metadata_address));
 joinable!(listings -> storefronts (store_owner));
+joinable!(master_editions -> metadatas (metadata_address));
 joinable!(metadata_creators -> metadatas (metadata_address));
 
 allow_tables_to_appear_in_same_query!(

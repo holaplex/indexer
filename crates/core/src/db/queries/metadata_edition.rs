@@ -1,18 +1,18 @@
 //! Query utilities for looking up the edition associated with a metadata
 //! address.
 
+use std::borrow::Cow;
+
 use anyhow::Context;
 use diesel::prelude::*;
-use solana_sdk::pubkey::Pubkey;
 
 use crate::{
     db::{
         models::{Edition, MasterEdition},
-        tables::{editions, master_editions},
+        tables::{editions, master_editions, metadatas},
         Connection,
     },
-    error::Result,
-    pubkeys::find_edition,
+    error::prelude::*,
 };
 
 /// Edition information for a metadata address
@@ -31,33 +31,58 @@ pub enum MetadataEdition<'a> {
 /// This function returns an error if either of the two underlying database
 /// queries fail.
 pub fn load<'a>(
-    metadata_address: Pubkey,
+    metadata_address: &'a str,
     conn: &Connection,
-) -> Result<Option<MetadataEdition<'static>>> {
-    let (address, _bump) = find_edition(metadata_address);
-    let address = address.to_string();
+) -> Result<Option<MetadataEdition<'a>>> {
+    type Cols = (
+        Option<String>,
+        Option<String>,
+        Option<i64>,
+        Option<String>,
+        Option<i64>,
+        Option<i64>,
+    );
 
-    // TODO: This could probably all be one query if I were clever or Diesel had
-    //       full outer joins.
-    let editions: Vec<Edition> = editions::table
-        .filter(editions::address.eq(&address))
+    let metas = metadatas::table
+        .filter(metadatas::address.eq(metadata_address))
+        .left_join(editions::table)
+        .left_join(master_editions::table)
         .limit(1)
-        .load(conn)
+        .select((
+            editions::address.nullable(),
+            editions::parent_address.nullable(),
+            editions::edition.nullable(),
+            master_editions::address.nullable(),
+            master_editions::supply.nullable(),
+            master_editions::max_supply.nullable(),
+        ))
+        .load::<Cols>(conn)
         .context("Failed to load editions")?;
 
-    if let Some(edition) = editions.into_iter().next() {
-        return Ok(Some(MetadataEdition::Edition(edition)));
-    }
+    let (edition_addr, edition_parent, edition_ord, master_addr, master_supply, master_max) =
+        if metas.len() == 1 {
+            metas.into_iter().next().unwrap_or_else(|| unreachable!())
+        } else {
+            bail!("Invalid metadata address");
+        };
 
-    let master_editions: Vec<MasterEdition> = master_editions::table
-        .filter(master_editions::address.eq(&address))
-        .limit(1)
-        .load(conn)
-        .context("Failed to load master editions")?;
-
-    if let Some(master_edition) = master_editions.into_iter().next() {
-        return Ok(Some(MetadataEdition::MasterEdition(master_edition)));
-    }
-
-    Ok(None)
+    Ok(edition_addr
+        .map(|address| {
+            MetadataEdition::Edition(Edition {
+                address: Cow::Owned(address),
+                parent_address: edition_parent.map_or_else(|| unreachable!(), Cow::Owned),
+                edition: edition_ord.unwrap_or_else(|| unreachable!()),
+                metadata_address: Cow::Borrowed(metadata_address),
+            })
+        })
+        .or_else(|| {
+            master_addr.map(|address| {
+                MetadataEdition::MasterEdition(MasterEdition {
+                    address: Cow::Owned(address),
+                    supply: master_supply.unwrap_or_else(|| unreachable!()),
+                    max_supply: master_max,
+                    metadata_address: Cow::Borrowed(metadata_address),
+                })
+            })
+        }))
 }

@@ -185,7 +185,7 @@ impl Rpc for Server {
             },
             |i| {
                 Ok((
-                    metadata_edition::load(i.address.parse()?, &db)?.map(Into::into),
+                    metadata_edition::load(&i.address, &db)?.map(Into::into),
                     metadata_creators::table
                         .filter(metadata_creators::metadata_address.eq(&i.address))
                         .load::<models::MetadataCreator>(&db)

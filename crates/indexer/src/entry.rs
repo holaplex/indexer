@@ -49,6 +49,15 @@ pub struct AuctionKeys {
 /// Convenience alias for a shared `AuctionKeys`
 pub type RcAuctionKeys = std::sync::Arc<AuctionKeys>;
 
+/// The keys required to locate and associate a metadata's edition
+#[derive(Debug, Clone, Copy)]
+pub struct EditionKeys {
+    /// The `Metadata` account pubkey
+    pub metadata: Pubkey,
+    /// The item's mint pubkey
+    pub mint: Pubkey,
+}
+
 /// A job to be run on the process thread pool
 #[derive(Debug, Clone)]
 pub enum Job {
@@ -65,7 +74,7 @@ pub enum Job {
     /// Process data for an individual item
     Metadata(Pubkey),
     /// Locate and process the edition for a token mint
-    EditionForMint(Pubkey),
+    EditionForMint(EditionKeys),
     /// Process data for an auction
     Auction(RcAuctionKeys),
 }
@@ -135,7 +144,7 @@ fn create_pool(
                     auction_cache::process_listing_metadata(&client, lm, handle)
                 },
                 Job::Metadata(meta) => metadata::process(&client, meta, handle),
-                Job::EditionForMint(mint) => edition::process(&client, mint, handle),
+                Job::EditionForMint(keys) => edition::process(&client, keys, handle),
                 Job::Auction(ref keys) => auction::process(&client, keys, &bid_map, handle),
             };
 

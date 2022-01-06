@@ -161,11 +161,13 @@ impl<'a> From<MetadataCreator<'a>> for Creator {
 pub enum Edition {
     Edition {
         address: String,
+        metadata_address: String,
         parent_address: String,
         edition: i64,
     },
     MasterEdition {
         address: String,
+        metadata_address: String,
         supply: i64,
         max_supply: Option<i64>,
     },
@@ -178,8 +180,10 @@ impl<'a> From<MetadataEdition<'a>> for Edition {
                 address,
                 parent_address,
                 edition,
+                metadata_address,
             }) => Self::Edition {
                 address: address.into_owned(),
+                metadata_address: metadata_address.into_owned(),
                 parent_address: parent_address.into_owned(),
                 edition,
             },
@@ -187,8 +191,10 @@ impl<'a> From<MetadataEdition<'a>> for Edition {
                 address,
                 supply,
                 max_supply,
+                metadata_address,
             }) => Self::MasterEdition {
                 address: address.into_owned(),
+                metadata_address: metadata_address.into_owned(),
                 supply,
                 max_supply,
             },

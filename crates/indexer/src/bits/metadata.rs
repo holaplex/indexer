@@ -5,7 +5,7 @@ use indexer_core::db::{
 };
 use metaplex_token_metadata::state::Metadata as MetadataAccount;
 
-use crate::{prelude::*, util, Client, Job, ThreadPoolHandle};
+use crate::{prelude::*, util, Client, EditionKeys, Job, ThreadPoolHandle};
 
 pub fn process(client: &Client, meta_key: Pubkey, handle: ThreadPoolHandle) -> Result<()> {
     let mut acct = client
@@ -41,7 +41,10 @@ pub fn process(client: &Client, meta_key: Pubkey, handle: ThreadPoolHandle) -> R
         .execute(&db)
         .context("Failed to insert metadata")?;
 
-    handle.push(Job::EditionForMint(meta.mint));
+    handle.push(Job::EditionForMint(EditionKeys {
+        mint: meta.mint,
+        metadata: meta_key,
+    }));
 
     for creator in meta.data.creators.unwrap_or_else(Vec::new) {
         let row = MetadataCreator {

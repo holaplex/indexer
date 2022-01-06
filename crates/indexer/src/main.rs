@@ -19,7 +19,8 @@ pub mod util;
 
 pub use client::Client;
 pub use entry::{
-    AuctionCacheKeys, AuctionKeys, Job, ListingMetadata, RcAuctionKeys, ThreadPoolHandle,
+    AuctionCacheKeys, AuctionKeys, EditionKeys, Job, ListingMetadata, RcAuctionKeys,
+    ThreadPoolHandle,
 };
 
 mod prelude {
