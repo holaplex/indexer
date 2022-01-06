@@ -11,11 +11,12 @@ use metaplex_token_metadata::state::{
 };
 
 use crate::{
-    prelude::*, util, util::MasterEdition as MasterEditionAccount, Client, ThreadPoolHandle,
+    prelude::*, util, util::MasterEdition as MasterEditionAccount, Client, EditionKeys,
+    ThreadPoolHandle,
 };
 
-pub fn process(client: &Client, mint_key: Pubkey, _handle: ThreadPoolHandle) -> Result<()> {
-    let (edition_key, _bump) = find_edition(mint_key);
+pub fn process(client: &Client, keys: EditionKeys, _handle: ThreadPoolHandle) -> Result<()> {
+    let (edition_key, _bump) = find_edition(keys.mint);
 
     let acct = client
         .get_account_opt(&edition_key)
@@ -24,7 +25,7 @@ pub fn process(client: &Client, mint_key: Pubkey, _handle: ThreadPoolHandle) -> 
     let mut acct = if let Some(acct) = acct {
         acct
     } else {
-        debug!("No edition data found for mint {:?}", mint_key);
+        debug!("No edition data found for mint {:?}", keys.mint);
 
         return Ok(());
     };
@@ -33,18 +34,23 @@ pub fn process(client: &Client, mint_key: Pubkey, _handle: ThreadPoolHandle) -> 
 
     EditionAccount::from_account_info(&info)
         .map_err(Into::into)
-        .and_then(|e| process_edition(client, edition_key, &e))
+        .and_then(|e| process_edition(client, edition_key, &keys, &e))
         .or_else(|e| {
             debug!("Failed to parse Edition: {:?}", e);
 
             let master = MasterEditionAccount::from_account_info(&info)
                 .context("Failed to parse MasterEdition")?;
 
-            process_master(client, edition_key, &master)
+            process_master(client, edition_key, &keys, &master)
         })
 }
 
-fn process_edition(client: &Client, edition_key: Pubkey, edition: &EditionAccount) -> Result<()> {
+fn process_edition(
+    client: &Client,
+    edition_key: Pubkey,
+    keys: &EditionKeys,
+    edition: &EditionAccount,
+) -> Result<()> {
     let row = Edition {
         address: Owned(bs58::encode(edition_key).into_string()),
         parent_address: Owned(bs58::encode(edition.parent).into_string()),
@@ -52,6 +58,7 @@ fn process_edition(client: &Client, edition_key: Pubkey, edition: &EditionAccoun
             .edition
             .try_into()
             .context("Edition ID is too high to store")?,
+        metadata_address: Owned(bs58::encode(keys.metadata).into_string()),
     };
 
     let db = client.db()?;
@@ -68,7 +75,7 @@ fn process_edition(client: &Client, edition_key: Pubkey, edition: &EditionAccoun
     ))
     .context("Failed to parse edition's parent MasterEdition")?;
 
-    process_master(client, edition.parent, &master_edition)?;
+    process_master(client, edition.parent, keys, &master_edition)?;
 
     insert_into(editions::table)
         .values(&row)
@@ -84,6 +91,7 @@ fn process_edition(client: &Client, edition_key: Pubkey, edition: &EditionAccoun
 fn process_master(
     client: &Client,
     master_key: Pubkey,
+    keys: &EditionKeys,
     master_edition: &MasterEditionAccount,
 ) -> Result<()> {
     let row = MasterEdition {
@@ -99,6 +107,7 @@ fn process_master(
                     .context("Master edition max supply is too high to store")
             })
             .transpose()?,
+        metadata_address: Owned(bs58::encode(keys.metadata).into_string()),
     };
 
     let db = client.db()?;

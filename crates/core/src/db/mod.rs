@@ -9,12 +9,12 @@ pub mod tables {
     //! Diesel schema DSLs
 
     pub use super::schema::{
-        editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
+        bids, editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
         store_denylist, storefronts,
     };
 }
 
-pub use diesel::{insert_into, pg::upsert::excluded};
+pub use diesel::{insert_into, pg::upsert::excluded, select, update};
 use diesel::{pg, r2d2};
 
 use crate::prelude::*;

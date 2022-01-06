@@ -15,11 +15,12 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [dependencies]
 clap = "3.0.0-beta.5"
+parking_lot = "0.11.2"
 reqwest = "0.11.6"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.70"
 tokio = { version = "1.13.0", features = ["rt"] }
-topograph = "0.2.0-alpha.1"
+topograph = "0.3.0-alpha.1"
 
 # Solana & Metaplex
 metaplex = "0.0.1"
