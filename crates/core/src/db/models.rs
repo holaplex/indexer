@@ -8,13 +8,30 @@ use std::borrow::Cow;
 use chrono::NaiveDateTime;
 
 use super::schema::{
-    editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
+    bids, editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
     storefronts,
 };
+
+/// A row in the `bids` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[belongs_to(parent = "Listing<'_>", foreign_key = "listing_address")]
+pub struct Bid<'a> {
+    /// The auction being bid on
+    pub listing_address: Cow<'a, str>,
+    /// The wallet address of the bidding account
+    pub bidder_address: Cow<'a, str>,
+    /// The time the last bid by this user in this auction was placed
+    pub last_bid_time: NaiveDateTime,
+    /// The amount of the last bid
+    pub last_bid_amount: i64,
+    /// Whether the bid has been cancelled or redeemed
+    pub cancelled: bool,
+}
 
 /// A row in the `editions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[belongs_to(parent = "MasterEdition<'_>", foreign_key = "parent_address")]
+#[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
 pub struct Edition<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -22,6 +39,8 @@ pub struct Edition<'a> {
     pub parent_address: Cow<'a, str>,
     /// The ordinal of this edition
     pub edition: i64,
+    /// The metadata this edition refers to
+    pub metadata_address: Cow<'a, str>,
 }
 
 /// A row in the `listing_metadatas` table.  This is a join on `listings` and
@@ -76,7 +95,8 @@ pub struct Listing<'a> {
 }
 
 /// A row in the `master_editions` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
 pub struct MasterEdition<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -85,6 +105,8 @@ pub struct MasterEdition<'a> {
     /// The maximum printing supply of the master edition, or `None` if it is
     /// unlimited
     pub max_supply: Option<i64>,
+    /// The metadata this edition refers to
+    pub metadata_address: Cow<'a, str>,
 }
 
 /// A row in the `metadata_creators` table.  This is a join on `metadatas` and

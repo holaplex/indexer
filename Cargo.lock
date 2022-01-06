@@ -1894,6 +1894,7 @@ dependencies = [
  "metaplex-indexer-core",
  "metaplex-token-metadata",
  "metaplex-token-vault",
+ "parking_lot 0.11.2",
  "reqwest",
  "serde",
  "serde_json",
@@ -3901,15 +3902,16 @@ dependencies = [
 
 [[package]]
 name = "topograph"
-version = "0.2.0-alpha.1"
+version = "0.3.0-alpha.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5df278c9eca1e2922b86a545ee6264f57f5d47957d57ff001c7522805a7feb8b"
+checksum = "a28ab05a6b59c5516891ebcecbf93e8e11292386b1eceb810f5354e0cdfe577d"
 dependencies = [
  "crossbeam",
  "dispose",
  "log",
  "num_cpus",
  "parking_lot 0.11.2",
+ "thiserror",
 ]
 
 [[package]]

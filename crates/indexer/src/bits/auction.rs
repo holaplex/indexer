@@ -1,14 +1,32 @@
+use std::borrow::Borrow;
+
 use chrono::{offset::Local, Duration, NaiveDateTime};
 use indexer_core::{
-    db::{insert_into, models::Listing, tables::listings},
+    db::{
+        insert_into,
+        models::{Bid, Listing},
+        select,
+        tables::{bids, listings},
+        Connection,
+    },
     prelude::*,
     pubkeys::find_auction_data_extended,
 };
-use metaplex_auction::processor::{AuctionData, AuctionDataExtended, BidState, PriceFloor};
+use metaplex_auction::processor::{
+    AuctionData, AuctionDataExtended, BidState, BidderMetadata, PriceFloor,
+};
 
-use crate::{prelude::*, util, Client, RcAuctionKeys, ThreadPoolHandle};
+use super::bidder_metadata::BidMap;
+use crate::{
+    bits::bidder_metadata::BidList, prelude::*, util, Client, RcAuctionKeys, ThreadPoolHandle,
+};
 
-pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle) -> Result<()> {
+pub fn process(
+    client: &Client,
+    keys: &RcAuctionKeys,
+    bid_map: &BidMap,
+    _handle: ThreadPoolHandle,
+) -> Result<()> {
     let (ext, _bump) = find_auction_data_extended(&keys.vault);
 
     let mut acct = client
@@ -58,9 +76,10 @@ pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle)
 
     let now = Local::now().naive_utc();
     let (ends_at, ended, last_bid_time) = get_end_info(&auction, now)?;
+    let auction_address = bs58::encode(keys.auction).into_string();
 
     let values = Listing {
-        address: Owned(bs58::encode(keys.auction).into_string()),
+        address: Borrowed(&auction_address),
         ends_at,
         created_at: keys.created_at,
         ended,
@@ -109,6 +128,72 @@ pub fn process(client: &Client, keys: &RcAuctionKeys, _handle: ThreadPoolHandle)
         .set(&values)
         .execute(&db)
         .context("Failed to insert listing")?;
+
+    debug_assert!(!bid_map.read().is_empty());
+
+    store_bids(
+        &keys.auction,
+        &auction_address,
+        bid_map.read().get(&keys.auction).into_iter().flatten(),
+        &db,
+    )?;
+
+    Ok(())
+}
+
+pub fn process_solo_bids(
+    client: &Client,
+    auction: Pubkey,
+    bids: BidList,
+    _handle: ThreadPoolHandle,
+) -> Result<()> {
+    let db = client.db()?;
+    let auction_addr = bs58::encode(auction).into_string();
+
+    if select(exists(
+        listings::table.filter(listings::address.eq(&auction_addr)),
+    ))
+    .get_result(&db)
+    .context("Failed to check database for existing auction")?
+    {
+        store_bids(&auction, &auction_addr, bids, &db)?;
+    }
+
+    Ok(())
+}
+
+fn store_bids<B: Borrow<BidderMetadata>>(
+    auction_key: &Pubkey,
+    auction_address: &str,
+    bids: impl IntoIterator<Item = B>,
+    db: &Connection,
+) -> Result<()> {
+    debug_assert!(bs58::encode(auction_key).into_string() == auction_address);
+
+    for bid in bids {
+        let bid = bid.borrow();
+
+        debug_assert!(&bid.auction_pubkey == auction_key);
+
+        let bid_row = Bid {
+            listing_address: Borrowed(auction_address),
+            bidder_address: Owned(bs58::encode(bid.bidder_pubkey).into_string()),
+            last_bid_time: NaiveDateTime::from_timestamp(bid.last_bid_timestamp, 0),
+            last_bid_amount: bid
+                .last_bid
+                .try_into()
+                .context("Last bid amount is too high to store!")?,
+            cancelled: bid.cancelled,
+        };
+
+        insert_into(bids::table)
+            .values(&bid_row)
+            .on_conflict((bids::listing_address, bids::bidder_address))
+            .do_update()
+            .set(&bid_row)
+            .execute(db)
+            .context("Failed to insert listing bid")?;
+    }
 
     Ok(())
 }
