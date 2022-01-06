@@ -48,12 +48,18 @@ struct QueryNode {
     #[allow(dead_code)]
     owner: QueryOwner,
     tags: Vec<QueryTag>,
+    block: Timestamp,
 }
 
 #[derive(Debug, Deserialize)]
 struct QueryOwner {
     #[allow(dead_code)]
     address: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct Timestamp {
+    timestamp: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -84,14 +90,15 @@ const QUERY: &str = r#"query GetStorefronts($after: String, $first: Int) {
 
             node {
                 id
-
                 owner {
                     address
                 }
-
                 tags {
                     name
                     value
+                }
+                block {
+                    timestamp
                 }
             }
         }
@@ -102,6 +109,7 @@ const BATCH: usize = 1000;
 
 fn process_tags(
     mut tags: HashMap<String, String>,
+    timestamp: i64,
     db: &PooledConnection,
     handle: ThreadPoolHandle<'_>,
     known_pubkeys: &mut HashSet<Pubkey>,
@@ -130,6 +138,8 @@ fn process_tags(
             .remove("holaplex:theme:logo:url")
             .unwrap_or_else(String::new);
 
+        let updated_at = Some(NaiveDateTime::from_timestamp(timestamp, 0));
+
         let row = Storefront {
             owner_address: Owned(bs58::encode(owner).into_string()),
             subdomain: Owned(subdomain),
@@ -137,6 +147,7 @@ fn process_tags(
             description: Owned(description),
             favicon_url: Owned(favicon_url),
             logo_url: Owned(logo_url),
+            updated_at,
         };
 
         insert_into(storefronts::table)
@@ -207,6 +218,7 @@ async fn get_storefronts_async(client: &Client, handle: ThreadPoolHandle<'_>) ->
                     .into_iter()
                     .map(|QueryTag { name, value }| (name, value))
                     .collect(),
+                edge.node.block.timestamp,
                 &db,
                 handle,
                 &mut known_pubkeys,

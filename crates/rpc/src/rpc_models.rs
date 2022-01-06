@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 pub struct Timestamp(String);
 
 impl Timestamp {
-    fn from_utc(utc: NaiveDateTime) -> Self {
+    pub fn from_utc(utc: NaiveDateTime) -> Self {
         Self::from(DateTime::from_utc(utc, Utc))
     }
 }
@@ -118,4 +118,5 @@ pub struct Storefront {
     pub description: String,
     pub favicon_url: String,
     pub logo_url: String,
+    pub updated_at: Option<Timestamp>,
 }
