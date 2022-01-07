@@ -25,35 +25,69 @@ fn internal_error<E: Into<indexer_core::error::Error>>(
 }
 
 /// Query options for the [`getStorefronts`](Rpc::get_storefronts) method.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GetStorefrontsOpts {
     /// A query string to perform text search against
     pub query: Option<String>,
 }
 
 #[rpc]
+/// API specification for the indexer RPC server
 pub trait Rpc {
+    /// The RPC `getListings` method.
+    ///
+    /// Returns a vector of all indexed listings, showing a brief summary of
+    /// each listing.
     #[rpc(name = "getListings")]
     fn get_listings(&self) -> Result<Vec<Listing>>;
+
+    /// The RPC `getStorefronts` method.
+    ///
+    /// Returns a vector of indexed storefronts, showing the configured
+    /// storefront data stored on Arweave.  If no options are given, this
+    /// returns all storefronts.
     #[rpc(name = "getStorefronts")]
     fn get_storefronts(&self, opts: Option<GetStorefrontsOpts>) -> Result<Vec<Storefront>>;
+
+    /// The RPC `getStoreCount` method.
+    ///
+    /// Returns a count of all indexed storefronts.
     #[rpc(name = "getStoreCount")]
     fn get_store_count(&self) -> Result<i64>;
+
+    /// The RPC `getStoreListings` method.
+    ///
+    /// Returns a vector of all indexed listings associated with the given store
+    /// subdomain.
     #[rpc(name = "getStoreListings")]
     fn get_store_listings(&self, store_domain: String) -> Result<Vec<Listing>>;
+
+    /// The RPC `getListingMetadatas` method.
+    ///
+    /// Returns a vector of all items cached for the given listing address.
     #[rpc(name = "getListingMetadatas")]
     fn get_listing_metadatas(&self, listing_address: String) -> Result<Vec<ListingItem>>;
+
+    /// The RPC `getListingDetails` method.
+    ///
+    /// Returns a more detailed representation of a single listing, with more
+    /// item information and bid history.
     #[rpc(name = "getListingDetails")]
     fn get_listing_details(&self, listing_address: String) -> Result<ListingDetails>;
+
+    #[doc(hidden)]
     #[rpc(name = "getOwnerDenylist")]
     fn get_owner_denylist(&self) -> Result<Vec<String>>;
 }
 
+/// A server implementing the [`Rpc`] spec.
 pub struct Server {
     db_pool: Pool,
 }
 
 impl Server {
+    /// Construct a new server from a database connection pool
+    #[must_use]
     pub fn new(db_pool: Pool) -> Self {
         Self { db_pool }
     }
