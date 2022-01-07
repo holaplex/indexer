@@ -6,8 +6,8 @@ on:
     branches: [master]
 
 jobs:
-  check:
-    name: cargo check
+  doc:
+    name: cargo doc
     runs-on: ubuntu-latest
     steps:
       - name: install dependencies
@@ -24,17 +24,16 @@ jobs:
 
       - uses: actions-rs/cargo@v1
         with:
-          command: check
+          command: doc
           args: --all --all-features
 
       - uses: actions-rs/cargo@v1
         with:
-          command: check
+          command: doc
           args: --all --release --all-features
 
   test:
     name: cargo test
-    needs: check
     runs-on: ubuntu-latest
     steps:
       - name: install dependencies
@@ -61,7 +60,6 @@ jobs:
 
   clippy:
     name: cargo clippy
-    needs: check
     runs-on: ubuntu-latest
     steps:
       - name: install dependencies
