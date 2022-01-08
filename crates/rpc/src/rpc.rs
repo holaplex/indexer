@@ -57,7 +57,7 @@ impl Rpc for Server {
     fn get_listings(&self) -> Result<Vec<Listing>> {
         let db = self.db()?;
 
-        listings_triple_join::load(|q| q, &db, Local::now().naive_utc())
+        listings_triple_join::load_discoverable_listings(|q| q, &db, Local::now().naive_utc())
             .map_err(internal_error("Failed to load listings"))
     }
 
@@ -103,7 +103,7 @@ impl Rpc for Server {
     fn get_store_listings(&self, store_domain: String) -> Result<Vec<Listing>> {
         let db = self.db()?;
 
-        listings_triple_join::load(
+        listings_triple_join::load_discoverable_listings(
             |q| q.filter(storefronts::subdomain.eq(store_domain)),
             &db,
             Local::now().naive_utc(),
@@ -162,7 +162,6 @@ impl Rpc for Server {
         let listings: Vec<_> = listings_triple_join::load(
             |q| q.filter(listings::address.eq(listing_address)),
             &db,
-            Local::now().naive_utc(),
         )
         .map_err(internal_error("Failed to load store listings"))?;
 
