@@ -172,13 +172,35 @@ pub fn order<T: OrderDsl<Order>>(query: T) -> OrderBy<T> {
     query.order(ORDER)
 }
 
+fn group_rows<
+    T: From<ListingsTripleJoinRow> + Extend<ListingsTripleJoinRow>,
+    I: FromIterator<T>,
+>(
+    rows: Vec<ListingsTripleJoinRow>,
+) -> I {
+    let mut listings = HashMap::default();
+
+    for row in rows {
+        match listings.entry(row.address.clone()) {
+            Entry::Vacant(v) => {
+                v.insert(T::from(row));
+            },
+            Entry::Occupied(o) => {
+                o.into_mut().extend(Some(row));
+            },
+        }
+    }
+
+    listings.into_values().collect()
+}
+
 /// Load the given query on the listings triple join tables, group results
 /// include every listing, this is intended for API use only. BE CAREFUL when
 /// using this to power a UI, you can get listings with undesirable content
-/// 
+///
 /// # Errors
 /// This function fails if the underlying SQL query cannot successfully be executed
-pub fn load<Q, T: From<ListingsTripleJoinRow> + Extend<ListingsTripleJoinRow>, O: FromIterator<T>>(
+pub unsafe fn load_unfiltered<Q, T: From<ListingsTripleJoinRow> + Extend<ListingsTripleJoinRow>, O: FromIterator<T>>(
     query: impl FnOnce(OrderBy<Select<TripleJoin>>) -> Q,
     conn: &Connection,
 ) -> Result<O>
@@ -188,29 +210,20 @@ where
     let rows = query(order(select(join())))
         .load(conn)
         .context("Query for listings triple-join failed")?;
-    let mut listings = HashMap::default();
 
-    for row in rows {
-        match listings.entry(row.address.clone()) {
-            Entry::Vacant(v) => {
-                v.insert(T::from(row));
-            },
-            Entry::Occupied(o) => {
-                o.into_mut().extend(Some(row));
-            },
-        }
-    }
-
-    Ok(listings.into_values().collect())
+    Ok(group_rows(rows))
 }
 
-
 /// Load the given query on the listings triple join tables, and group the results.
-/// Rejects undesirable listings by price, ended date and others, see #reject
+/// Rejects undesirable listings by price, ended date and others, see [`reject`]
 ///
 /// # Errors
 /// This function fails if the underlying SQL query cannot successfully be executed
-pub fn load_discoverable_listings<Q, T: From<ListingsTripleJoinRow> + Extend<ListingsTripleJoinRow>, O: FromIterator<T>>(
+pub fn load<
+    Q,
+    T: From<ListingsTripleJoinRow> + Extend<ListingsTripleJoinRow>,
+    O: FromIterator<T>,
+>(
     query: impl FnOnce(OrderBy<Select<Filter<TripleJoin>>>) -> Q,
     conn: &Connection,
     now: NaiveDateTime,
@@ -220,19 +233,7 @@ where
 {
     let rows = query(order(select(filter(join(), now))))
         .load(conn)
-        .context("Query for listings triple-join failed")?;
-    let mut listings = HashMap::default();
+        .context("Query for filtered listings triple-join failed")?;
 
-    for row in rows {
-        match listings.entry(row.address.clone()) {
-            Entry::Vacant(v) => {
-                v.insert(T::from(row));
-            },
-            Entry::Occupied(o) => {
-                o.into_mut().extend(Some(row));
-            },
-        }
-    }
-
-    Ok(listings.into_values().collect())
+    Ok(group_rows(rows))
 }
