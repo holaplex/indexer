@@ -1,11 +1,49 @@
-use indexer_core::db::{
-    insert_into,
-    models::{Metadata, MetadataCreator},
-    tables::{metadata_creators, metadatas},
+use indexer_core::{
+    db::{
+        insert_into,
+        models::{Metadata, MetadataCreator},
+        tables::{metadata_creators, metadatas},
+    },
+    pubkeys,
 };
 use metaplex_token_metadata::state::Metadata as MetadataAccount;
 
-use crate::{prelude::*, util, Client, EditionKeys, Job, ThreadPoolHandle};
+use crate::{client::prelude::*, prelude::*, util, Client, EditionKeys, Job, ThreadPoolHandle};
+
+pub const MAX_NAME_LENGTH: usize = 32;
+pub const MAX_URI_LENGTH: usize = 200;
+pub const MAX_SYMBOL_LENGTH: usize = 10;
+pub const MAX_CREATOR_LEN: usize = 32 + 1 + 1;
+pub const FIRST_CREATOR_LENGTH: usize = 1 + // key
+32 + // update auth
+32 + // mint
+4 + // name string length
+MAX_NAME_LENGTH + // name
+4 + // uri string length
+MAX_URI_LENGTH + // uri*
+4 + // symbol string length
+MAX_SYMBOL_LENGTH + // symbol
+2 + // seller fee basis points
+1 + // whether or not there is a creators vec
+4 +
+0 * MAX_CREATOR_LEN; // creators vec length
+
+pub fn get_metadatas_by_primary_creator(
+    client: &Client,
+    creator_address: String,
+) -> Result<
+    Vec<(solana_sdk::pubkey::Pubkey, solana_sdk::account::Account)>,
+    solana_client::client_error::ClientError,
+> {
+    client.get_program_accounts(pubkeys::metadata(), RpcProgramAccountsConfig {
+        filters: Some(vec![RpcFilterType::Memcmp(Memcmp {
+            offset: FIRST_CREATOR_LENGTH,
+            bytes: MemcmpEncodedBytes::Base58(creator_address),
+            encoding: None,
+        })]),
+        ..RpcProgramAccountsConfig::default()
+    })
+}
 
 pub fn process(client: &Client, meta_key: Pubkey, handle: ThreadPoolHandle) -> Result<()> {
     let mut acct = client

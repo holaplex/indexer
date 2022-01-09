@@ -26,4 +26,3 @@ tokio = "1.14.0"
 package = "metaplex-indexer-core"
 version = "=0.1.0"
 path = "../core"
-
