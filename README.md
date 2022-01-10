@@ -1,6 +1,13 @@
 # `metaplex-indexer`
 
-An off-chain indexer for Metaplex stores
+An off-chain indexer for Metaplex programs.
+
+Available Indexes:
+
+- [X] Metaplex Auctions and bids
+- [X] Metaplex NFT for Auctions
+- [ ] Metaplex Auction houses
+- [ ] Metaplex NFTs by creator 
 
 ## Getting started
 
@@ -17,10 +24,9 @@ Then:
 $ cargo install diesel_cli --no-default-features --features postgres
 ```
 
-Once you have the requisite dependencies, you can get set up by running:
+Once you have the required dependencies, you can get get developing by running the datastore for the indexer within a container in the background. After the Postgres DB is running start whichever serves you are looking to develop on:
 
 ```sh
-$  brew services start postgresql
 $ ./start-developing.sh
 ```
 
@@ -32,7 +38,11 @@ To run the indexer, simply enter the repository root and run:
 $ cargo run --bin metaplex-indexer
 ```
 
-## Running `rpc`
+## Running HTTP Servers
+
+If port `3000` is already in use the `PORT` environment variable can be used chang the listener port of the servers:
+
+### `rpc`
 
 To run the RPC server, run the following (also from the repository root):
 
@@ -40,11 +50,12 @@ To run the RPC server, run the following (also from the repository root):
 $ cargo run --bin metaplex-indexer-rpc
 ```
 
-### If port `3000` is already in use
+### `graph`
 
-The `PORT` environment variable can be set to change the port `rpc` listens on:
+To run the GraphQL Server, execute the following command:
 
 ```sh
-$ PORT=3001 cargo run --bin metaplex-indexer-rpc
+$ cargo run --bin metaplex-graph-server
 ```
+
 
