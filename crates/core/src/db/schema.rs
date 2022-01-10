@@ -9,6 +9,14 @@ table! {
 }
 
 table! {
+    creators (address) {
+        address -> Bytea,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
+    }
+}
+
+table! {
     editions (address) {
         address -> Varchar,
         parent_address -> Varchar,
@@ -107,6 +115,7 @@ joinable!(metadata_creators -> metadatas (metadata_address));
 
 allow_tables_to_appear_in_same_query!(
     bids,
+    creators,
     editions,
     listing_metadatas,
     listings,

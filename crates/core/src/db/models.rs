@@ -8,10 +8,20 @@ use std::borrow::Cow;
 use chrono::NaiveDateTime;
 
 use super::schema::{
-    bids, editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
+    bids, editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas, creators,
     storefronts,
 };
 
+/// A row in the `creators` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+pub struct Creator<'a> {
+    /// The wallet address of the creator
+    pub address: Cow<'a, str>,
+    /// When creator was added
+    pub created_at: NaiveDateTime,
+    /// last time the creator was indexed
+    pub updated_at: Option<NaiveDateTime>,
+}
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[belongs_to(parent = "Listing<'_>", foreign_key = "listing_address")]
