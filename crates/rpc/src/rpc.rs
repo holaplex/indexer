@@ -36,8 +36,6 @@ pub trait Rpc {
     fn get_listing_metadatas(&self, listing_address: String) -> Result<Vec<ListingItem>>;
     #[rpc(name = "getListingDetails")]
     fn get_listing_details(&self, listing_address: String) -> Result<ListingDetails>;
-    #[rpc(name = "indexNftsByCreator")]
-    fn index_nfts_by_creator(&self, creator_address: String) -> Result<String>;
 }
 
 pub struct Server {
@@ -62,12 +60,6 @@ impl Rpc for Server {
 
         listings_triple_join::load(|q| q, &db, Local::now().naive_utc())
             .map_err(internal_error("Failed to load listings"))
-    }
-
-    fn index_nfts_by_creator(&self, creator_address: String) -> Result<String> {
-        let metadatas = get_metadatas_by_primary_creator(client, creator_address)
-
-        Ok(creator_address)
     }
 
     fn get_storefronts(&self) -> Result<Vec<Storefront>> {

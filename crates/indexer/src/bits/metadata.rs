@@ -28,7 +28,8 @@ MAX_SYMBOL_LENGTH + // symbol
 4 +
 0 * MAX_CREATOR_LEN; // creators vec length
 
-pub fn get_metadatas_by_primary_creator(
+#[allow(dead_code)]
+fn get_metadatas_by_primary_creator(
     client: &Client,
     creator_address: String,
 ) -> Result<
