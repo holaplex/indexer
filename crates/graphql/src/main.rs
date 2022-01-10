@@ -12,7 +12,7 @@ use std::{net::SocketAddr, sync::Arc};
 
 use actix_cors::Cors;
 use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
-use indexer_core::{clap, clap::Parser, ServerOpts};
+use indexer_core::{clap, clap::Parser, db, ServerOpts};
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
 
 use crate::schema::Schema;
@@ -56,6 +56,9 @@ fn main() {
         let Opts {
             server: ServerOpts { port },
         } = Opts::parse();
+
+        // TODO
+        let _ = db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
 
         let mut addr: SocketAddr = "0.0.0.0:3000".parse().unwrap();
         addr.set_port(port);

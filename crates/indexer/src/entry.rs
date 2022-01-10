@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, env, mem, path::PathBuf, str::FromStr, sync::Arc};
+use std::{collections::BTreeSet, mem, path::PathBuf, str::FromStr, sync::Arc};
 
 use clap::Parser;
 use indexer_core::db;
@@ -234,13 +234,7 @@ pub fn run() -> Result<()> {
         entries,
     } = Opts::parse();
 
-    let db = db::connect(
-        env::var_os("DATABASE_WRITE_URL")
-            .or_else(|| env::var_os("DATABASE_URL"))
-            .ok_or_else(|| anyhow!("No value found for DATABASE_WRITE_URL or DATABASE_URL"))
-            .map(move |v| v.to_string_lossy().into_owned())?,
-    )
-    .context("Failed to connect to Postgres")?;
+    let db = db::connect(db::ConnectMode::Write).context("Failed to connect to Postgres")?;
 
     let bid_dependents = AdoptableDependents::new().rc();
     let pool = create_pool(

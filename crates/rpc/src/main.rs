@@ -8,7 +8,7 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
-use std::{env, net::SocketAddr};
+use std::net::SocketAddr;
 
 use indexer_core::{clap, clap::Parser, db, ServerOpts};
 use jsonrpc_core::IoHandler;
@@ -36,13 +36,7 @@ fn main() {
             server: ServerOpts { port },
         } = Opts::parse();
 
-        let db = db::connect(
-            env::var_os("DATABASE_READ_URL")
-                .or_else(|| env::var_os("DATABASE_URL"))
-                .ok_or_else(|| anyhow!("No value found for DATABASE_READ_URL or DATABASE_URL"))
-                .map(move |v| v.to_string_lossy().into_owned())?,
-        )
-        .context("Failed to connect to Postgres")?;
+        let db = db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
 
         let mut io = IoHandler::new();
         io.extend_with(rpc::Server::new(db).to_delegate());
