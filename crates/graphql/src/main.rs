@@ -8,21 +8,31 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
-use std::sync::Arc;
+use std::{net::SocketAddr, sync::Arc};
 
 use actix_cors::Cors;
 use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
+use indexer_core::{clap, clap::Parser, ServerOpts};
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
 
 use crate::schema::Schema;
 
 mod schema;
 
-fn graphiql() -> HttpResponse {
-    let html = graphiql_source("http://127.0.0.1:3000", None);
-    HttpResponse::Ok()
-        .content_type("text/html; charset=utf-8")
-        .body(html)
+#[derive(Parser)]
+struct Opts {
+    #[clap(flatten)]
+    server: ServerOpts,
+}
+
+fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
+    move || {
+        let html = graphiql_source(&uri, None);
+
+        HttpResponse::Ok()
+            .content_type("text/html; charset=utf-8")
+            .body(html)
+    }
 }
 
 async fn graphql(
@@ -43,6 +53,15 @@ fn main() {
     use indexer_core::prelude::*;
 
     indexer_core::run(|| {
+        let Opts {
+            server: ServerOpts { port },
+        } = Opts::parse();
+
+        let mut addr: SocketAddr = "0.0.0.0:3000".parse().unwrap();
+        addr.set_port(port);
+
+        let graphiql_uri = format!("http://{}", addr);
+
         let schema = std::sync::Arc::new(schema::create());
 
         actix_web::rt::System::new("main")
@@ -59,9 +78,12 @@ fn main() {
                                 .finish(),
                         )
                         .service(web::resource("/").route(web::post().to(graphql)))
-                        .service(web::resource("/graphiql").route(web::get().to(graphiql)))
+                        .service(
+                            web::resource("/graphiql")
+                                .route(web::get().to(graphiql(graphiql_uri.clone()))),
+                        )
                 })
-                .bind("127.0.0.1:3000")?
+                .bind(addr)?
                 .run(),
             )
             .context("Actix server failed to run")

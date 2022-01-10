@@ -2371,6 +2371,7 @@ dependencies = [
  "ahash 0.7.6",
  "anyhow",
  "chrono",
+ "clap 3.0.0-beta.5",
  "dashmap",
  "diesel",
  "diesel_migrations",
@@ -2397,7 +2398,6 @@ dependencies = [
 name = "metaplex-indexer-rpc"
 version = "0.1.0"
 dependencies = [
- "clap 3.0.0-beta.5",
  "jsonrpc-core",
  "jsonrpc-core-client",
  "jsonrpc-derive",

@@ -7,24 +7,28 @@ Available Indexes:
 - [X] Metaplex Auctions and bids
 - [X] Metaplex NFT for Auctions
 - [ ] Metaplex Auction houses
-- [ ] Metaplex NFTs by creator 
+- [ ] Metaplex NFTs by creator
 
 ## Getting started
 
-To set up a development environment, you will need rustup, Cargo, Docker, `docker-compose`, and the
-Diesel CLI. Specifically, you will need `diesel_cli` installed with the `postgres` feature, which
-can be done like so:
+### Diesel
 
-Installing diesel will require `libpq` to be on your system (`brew install
-libpq` on mac). Also `brew install postgresql` if you don't already have it.
-
-Then:
+To set up a development environment, you will need `rustup`, Cargo, Docker,
+`docker-compose`, and the Diesel CLI. Specifically, you will need `diesel_cli`
+installed with the `postgres` feature, which can be done like so:
 
 ```sh
 $ cargo install diesel_cli --no-default-features --features postgres
 ```
 
-Once you have the required dependencies, you can get get developing by running the datastore for the indexer within a container in the background. After the Postgres DB is running start whichever serves you are looking to develop on:
+Installing diesel will require `libpq` to be on your system (`brew install
+postgresql` on Mac).
+
+### Migrating
+
+Once you have the required dependencies, you can get started by running the
+following script to initialize and migrate a containerized Postgres database in
+the background:
 
 ```sh
 $ ./start-developing.sh
@@ -38,9 +42,27 @@ To run the indexer, simply enter the repository root and run:
 $ cargo run --bin metaplex-indexer
 ```
 
+This will perform a single scan of the requested data and quit.  There are
+several configuration options available to change what is indexed, to see them
+run the following:
+
+```sh
+$ cargo run --bin metaplex-indexer -- --help
+```
+
 ## Running HTTP Servers
 
-If port `3000` is already in use the `PORT` environment variable can be used chang the listener port of the servers:
+### Configuration
+
+Both servers have some common configuration options.  For instance, both servers
+run on port `3000` by default, but this can be changed with the `-p`
+command-line flag or by setting the `PORT` environment variable.  To see more
+options for each server, run one of the following:
+
+```sh
+$ cargo run --bin metaplex-indexer-rpc -- --help
+$ cargo run --bin metaplex-indexer-graphql -- --help
+```
 
 ### `rpc`
 
@@ -55,7 +77,7 @@ $ cargo run --bin metaplex-indexer-rpc
 To run the GraphQL Server, execute the following command:
 
 ```sh
-$ cargo run --bin metaplex-graph-server
+$ cargo run --bin metaplex-indexer-graphql
 ```
 
 

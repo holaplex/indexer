@@ -10,8 +10,7 @@
 
 use std::{env, net::SocketAddr};
 
-use clap::Parser;
-use indexer_core::db;
+use indexer_core::{clap, clap::Parser, db, ServerOpts};
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
 use prelude::*;
@@ -27,14 +26,15 @@ mod rpc_models;
 
 #[derive(Parser)]
 struct Opts {
-    /// The port to listen on.
-    #[clap(short, long, default_value_t = 3000, env = "PORT")]
-    port: u16,
+    #[clap(flatten)]
+    server: ServerOpts,
 }
 
 fn main() {
     indexer_core::run(|| {
-        let Opts { port } = Opts::parse();
+        let Opts {
+            server: ServerOpts { port },
+        } = Opts::parse();
 
         let db = db::connect(
             env::var_os("DATABASE_READ_URL")
