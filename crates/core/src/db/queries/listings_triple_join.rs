@@ -200,6 +200,9 @@ fn group_rows<
 ///
 /// # Errors
 /// This function fails if the underlying SQL query cannot successfully be executed
+///
+/// # Safety
+/// This function will load listings from stores that have been banned, priced irrationally or very old
 pub unsafe fn load_unfiltered<
     Q,
     T: From<ListingsTripleJoinRow> + Extend<ListingsTripleJoinRow>,
