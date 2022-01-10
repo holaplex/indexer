@@ -159,11 +159,12 @@ impl Rpc for Server {
     fn get_listing_details(&self, listing_address: String) -> Result<ListingDetails> {
         let db = self.db()?;
 
-        let listings: Vec<_> = listings_triple_join::load(
-            |q| q.filter(listings::address.eq(listing_address)),
-            &db,
-            Local::now().naive_utc(),
-        )
+        let listings: Vec<_> = unsafe {
+            listings_triple_join::load_unfiltered(
+                |q| q.filter(listings::address.eq(listing_address)),
+                &db,
+            )
+        }
         .map_err(internal_error("Failed to load store listings"))?;
 
         let listing = if listings.len() == 1 {
