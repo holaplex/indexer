@@ -1318,19 +1318,6 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a19187fea3ac7e84da7dacf48de0c45d63c6a76f9490dae389aead16c243fce3"
-dependencies = [
- "atty",
- "humantime",
- "log",
- "regex",
- "termcolor",
-]
-
-[[package]]
-name = "env_logger"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b2cf0344971ee6c64c31be0d530793fba457d322dfec2810c453d0ef228f9c3"
@@ -2348,20 +2335,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "metaplex-graph-server"
-version = "0.1.0"
-dependencies = [
- "actix-cors",
- "actix-web",
- "env_logger 0.8.4",
- "juniper",
- "metaplex-indexer-core",
- "serde",
- "serde_derive",
- "serde_json",
-]
-
-[[package]]
 name = "metaplex-indexer"
 version = "0.1.0"
 dependencies = [
@@ -2402,10 +2375,22 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "dotenv",
- "env_logger 0.9.0",
+ "env_logger",
  "log",
  "rand 0.8.4",
  "solana-sdk",
+]
+
+[[package]]
+name = "metaplex-indexer-graphql"
+version = "0.1.0"
+dependencies = [
+ "actix-cors",
+ "actix-web",
+ "juniper",
+ "metaplex-indexer-core",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3778,7 +3763,7 @@ version = "1.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6eaf925bb665de46f96fcea2c8a900d0d870a96fd1f50cf2bad16e22a1da71c4"
 dependencies = [
- "env_logger 0.9.0",
+ "env_logger",
  "lazy_static",
  "log",
 ]
@@ -3799,7 +3784,7 @@ version = "1.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d7d103dd77acc8cbb39b85c170548bd4f51f19e0931d22f9621c5a1bb57b94c"
 dependencies = [
- "env_logger 0.9.0",
+ "env_logger",
  "gethostname",
  "lazy_static",
  "log",

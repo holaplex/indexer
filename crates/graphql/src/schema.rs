@@ -1,6 +1,4 @@
-use juniper::{EmptySubscription, FieldResult, RootNode};
-
-use juniper::{GraphQLObject, GraphQLInputObject};
+use juniper::{EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject, RootNode};
 
 #[derive(GraphQLObject)]
 #[graphql(description = "A Solana NFT")]
@@ -46,24 +44,22 @@ pub struct MutationRoot;
 #[juniper::graphql_object]
 impl MutationRoot {
     fn buyNft(_buy_nft: BuyNft) -> FieldResult<Nft> {
-        Ok(
-            Nft {
-                address: "abc123".to_owned(),
-                name: "foo".to_owned(),
-                symbol: "BAR".to_owned(),
-                uri: "https://ipfs.web/abc".to_owned(),
-                seller_fee_basis_points: 1000,
-                update_authority_address: "xyz123".to_owned(),
-                mint_address: "efg890".to_owned(),
-                primary_sale_happened: false,
-                is_mutable: true,
-            }
-        )
+        Ok(Nft {
+            address: "abc123".to_owned(),
+            name: "foo".to_owned(),
+            symbol: "BAR".to_owned(),
+            uri: "https://ipfs.web/abc".to_owned(),
+            seller_fee_basis_points: 1000,
+            update_authority_address: "xyz123".to_owned(),
+            mint_address: "efg890".to_owned(),
+            primary_sale_happened: false,
+            is_mutable: true,
+        })
     }
 }
 
 pub type Schema = RootNode<'static, QueryRoot, MutationRoot, EmptySubscription>;
 
-pub fn create_schema() -> Schema {
+pub fn create() -> Schema {
     Schema::new(QueryRoot {}, MutationRoot {}, EmptySubscription::new())
 }

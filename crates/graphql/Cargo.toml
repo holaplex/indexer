@@ -1,0 +1,26 @@
+[package]
+name = "metaplex-indexer-graphql"
+version = "0.1.0"
+authors = [
+  "Holaplex Engineering <hola@holaplex.com>"
+]
+edition = "2021"
+description = "GraphQL server for providing cached Metaplex data"
+documentation = "https://docs.rs/metaplex-indexer-graphql"
+readme = "../../README.md"
+repository = "https://github.com/holaplex/metaplex-indexer"
+license = "AGPL-3.0-or-later"
+keywords = ["solana", "metaplex", "holaplex", "web3", "graphql"]
+categories = ["cryptocurrency::cryptocurrencies", "web-programming"]
+
+[dependencies]
+actix-cors = "0.4.0"
+actix-web = "3.3.3"
+juniper = "0.15"
+serde = { version = "1.0.130", features = ["derive"] }
+serde_json = "1.0.44"
+
+[dependencies.indexer-core]
+package = "metaplex-indexer-core"
+version = "=0.1.0"
+path = "../core"
