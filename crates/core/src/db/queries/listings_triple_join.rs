@@ -200,7 +200,11 @@ fn group_rows<
 ///
 /// # Errors
 /// This function fails if the underlying SQL query cannot successfully be executed
-pub unsafe fn load_unfiltered<Q, T: From<ListingsTripleJoinRow> + Extend<ListingsTripleJoinRow>, O: FromIterator<T>>(
+pub unsafe fn load_unfiltered<
+    Q,
+    T: From<ListingsTripleJoinRow> + Extend<ListingsTripleJoinRow>,
+    O: FromIterator<T>,
+>(
     query: impl FnOnce(OrderBy<Select<TripleJoin>>) -> Q,
     conn: &Connection,
 ) -> Result<O>
@@ -219,11 +223,7 @@ where
 ///
 /// # Errors
 /// This function fails if the underlying SQL query cannot successfully be executed
-pub fn load<
-    Q,
-    T: From<ListingsTripleJoinRow> + Extend<ListingsTripleJoinRow>,
-    O: FromIterator<T>,
->(
+pub fn load<Q, T: From<ListingsTripleJoinRow> + Extend<ListingsTripleJoinRow>, O: FromIterator<T>>(
     query: impl FnOnce(OrderBy<Select<Filter<TripleJoin>>>) -> Q,
     conn: &Connection,
     now: NaiveDateTime,
