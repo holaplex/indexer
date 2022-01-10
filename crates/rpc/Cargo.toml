@@ -5,16 +5,15 @@ authors = [
   "ryans <ryans@holaplex.com>",
 ]
 edition = "2021"
-description = "JSONRPC read replica for providing cached Metaplex data"
+description = "JSONRPC HTTP server for providing cached Metaplex data"
 documentation = "https://docs.rs/metaplex-indexer-rpc"
 readme = "../../README.md"
 repository = "https://github.com/holaplex/metaplex-indexer"
 license = "AGPL-3.0-or-later"
-keywords = ["solana", "metaplex", "holaplex", "web3"]
+keywords = ["solana", "metaplex", "holaplex", "web3", "jsonrpc"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [dependencies]
-clap = "3.0.0-beta.5"
 jsonrpc-core = "18.0.0"
 jsonrpc-core-client = "18.0.0"
 jsonrpc-derive = "18.0.0"
