@@ -28,10 +28,9 @@ MAX_SYMBOL_LENGTH + // symbol
 4 +
 0 * MAX_CREATOR_LEN; // creators vec length
 
-#[allow(dead_code)]
 fn get_metadatas_by_primary_creator(
     client: &Client,
-    creator_address: String,
+    creator_address: Pubkey,
 ) -> Result<
     Vec<(solana_sdk::pubkey::Pubkey, solana_sdk::account::Account)>,
     solana_client::client_error::ClientError,
@@ -39,11 +38,26 @@ fn get_metadatas_by_primary_creator(
     client.get_program_accounts(pubkeys::metadata(), RpcProgramAccountsConfig {
         filters: Some(vec![RpcFilterType::Memcmp(Memcmp {
             offset: FIRST_CREATOR_LENGTH,
-            bytes: MemcmpEncodedBytes::Base58(creator_address),
+            bytes: MemcmpEncodedBytes::Base58(creator_address.to_string()),
             encoding: None,
         })]),
         ..RpcProgramAccountsConfig::default()
     })
+}
+
+pub fn get_metadata_by_creator(
+    client: &Client,
+    pubkey: Pubkey,
+    handle: ThreadPoolHandle,
+) -> Result<()> {
+    let metadatas = get_metadatas_by_primary_creator(client, pubkey)
+        .context("failed to get metadatas by creator")?;
+    
+    for metadata in metadatas {
+        handle.push(Job::Metadata(metadata.0));
+    }
+
+    Ok(())
 }
 
 pub fn process(client: &Client, meta_key: Pubkey, handle: ThreadPoolHandle) -> Result<()> {
