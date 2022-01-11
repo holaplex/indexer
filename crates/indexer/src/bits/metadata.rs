@@ -14,19 +14,19 @@ pub const MAX_NAME_LENGTH: usize = 32;
 pub const MAX_URI_LENGTH: usize = 200;
 pub const MAX_SYMBOL_LENGTH: usize = 10;
 pub const MAX_CREATOR_LEN: usize = 32 + 1 + 1;
-pub const FIRST_CREATOR_LENGTH: usize = 1 + // key
-32 + // update auth
-32 + // mint
-4 + // name string length
-MAX_NAME_LENGTH + // name
-4 + // uri string length
-MAX_URI_LENGTH + // uri*
-4 + // symbol string length
-MAX_SYMBOL_LENGTH + // symbol
-2 + // seller fee basis points
-1 + // whether or not there is a creators vec
-4 +
-0 * MAX_CREATOR_LEN; // creators vec length
+pub const FIRST_CREATOR_LENGTH: usize = 1
+    + 32
+    + 32
+    + 4
+    + MAX_NAME_LENGTH
+    + 4
+    + MAX_URI_LENGTH
+    + 4
+    + MAX_SYMBOL_LENGTH
+    + 2
+    + 1
+    + 4
+    + 0 * MAX_CREATOR_LEN;
 
 fn get_metadatas_by_primary_creator(
     client: &Client,
@@ -52,7 +52,7 @@ pub fn get_metadata_by_creator(
 ) -> Result<()> {
     let metadatas = get_metadatas_by_primary_creator(client, pubkey)
         .context("failed to get metadatas by creator")?;
-    
+
     for metadata in metadatas {
         handle.push(Job::Metadata(metadata.0));
     }

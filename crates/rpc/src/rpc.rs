@@ -7,7 +7,6 @@ use indexer_core::db::{
 use jsonrpc_core::{Error, Result};
 use jsonrpc_derive::rpc;
 
-
 use crate::{
     prelude::*,
     rpc_models::{Listing, ListingDetails, ListingItem, Storefront, Timestamp},

@@ -85,7 +85,7 @@ pub enum Job {
     /// Attempt to store bids for an auction without indexing the auction
     SoloBidsForAuction(Pubkey, bidder_metadata::BidList),
     // Index NFTs by creator
-    MetadataByCreator(Pubkey)
+    MetadataByCreator(Pubkey),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -146,7 +146,9 @@ fn create_pool(
                 Job::GetStorefronts => get_storefronts::run(&client, handle),
                 Job::GetBidderMetadata => bidder_metadata::get(&client, &bid_map, handle),
                 Job::GetBidderMetadataSolo => bidder_metadata::get_solo(&client, handle),
-                Job::MetadataByCreator(pubkey) => metadata::get_metadata_by_creator(&client, pubkey, handle),
+                Job::MetadataByCreator(pubkey) => {
+                    metadata::get_metadata_by_creator(&client, pubkey, handle)
+                },
                 Job::StoreOwner(owner) => store_owner::process(&client, owner, handle),
                 Job::AuctionCache(store) => {
                     auction_cache::process(&client, store, handle, &bid_dependents)

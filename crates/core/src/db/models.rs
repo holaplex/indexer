@@ -8,8 +8,8 @@ use std::borrow::Cow;
 use chrono::NaiveDateTime;
 
 use super::schema::{
-    bids, editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas, creators,
-    storefronts,
+    bids, creators, editions, listing_metadatas, listings, master_editions, metadata_creators,
+    metadatas, storefronts,
 };
 
 /// A row in the `creators` table
