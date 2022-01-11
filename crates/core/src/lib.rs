@@ -35,6 +35,7 @@ pub mod prelude {
         expression_methods::*,
         query_dsl::{BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl},
     };
+    pub use diesel_full_text_search::{TsQueryExtensions, TsVectorExtensions};
     pub use log::{debug, error, info, trace, warn};
 
     pub use super::error::prelude::*;

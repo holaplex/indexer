@@ -2,14 +2,14 @@ use indexer_core::db::{
     models,
     queries::{listings_triple_join, metadata_edition, store_denylist},
     tables::{bids, listing_metadatas, listings, metadata_creators, metadatas, storefronts},
-    Pool, PooledConnection,
+    websearch_to_tsquery, Pool, PooledConnection,
 };
 use jsonrpc_core::{Error, Result};
 use jsonrpc_derive::rpc;
 
 use crate::{
     prelude::*,
-    rpc_models::{Listing, ListingDetails, ListingItem, Storefront, Timestamp},
+    rpc_models::{Listing, ListingDetails, ListingItem, Storefront},
 };
 
 fn internal_error<E: Into<indexer_core::error::Error>>(
@@ -27,6 +27,8 @@ pub trait Rpc {
     fn get_listings(&self) -> Result<Vec<Listing>>;
     #[rpc(name = "getStorefronts")]
     fn get_storefronts(&self) -> Result<Vec<Storefront>>;
+    #[rpc(name = "searchStorefronts")]
+    fn search_storefronts(&self, query: String) -> Result<Vec<Storefront>>;
     #[rpc(name = "getStoreCount")]
     fn get_store_count(&self) -> Result<i64>;
     #[rpc(name = "getStoreListings")]
@@ -77,28 +79,27 @@ impl Rpc for Server {
             .load(&db)
             .map_err(internal_error("Failed to load storefronts"))?;
 
-        Ok(rows
-            .into_iter()
-            .map(
-                |models::Storefront {
-                     owner_address,
-                     subdomain,
-                     title,
-                     description,
-                     favicon_url,
-                     logo_url,
-                     updated_at,
-                 }| Storefront {
-                    owner_address: owner_address.into_owned(),
-                    subdomain: subdomain.into_owned(),
-                    title: title.into_owned(),
-                    description: description.into_owned(),
-                    favicon_url: favicon_url.into_owned(),
-                    logo_url: logo_url.into_owned(),
-                    updated_at: updated_at.map(Timestamp::from_utc),
-                },
-            )
-            .collect())
+        Ok(rows.into_iter().map(Into::into).collect())
+    }
+
+    fn search_storefronts(&self, query: String) -> Result<Vec<Storefront>> {
+        let db = self.db()?;
+        let rows: Vec<models::Storefront> = store_denylist::get_storefronts()
+            .filter(websearch_to_tsquery(query).matches(storefronts::ts_index))
+            .order_by(storefronts::owner_address)
+            .select((
+                storefronts::owner_address,
+                storefronts::subdomain,
+                storefronts::title,
+                storefronts::description,
+                storefronts::favicon_url,
+                storefronts::logo_url,
+                storefronts::updated_at,
+            ))
+            .load(&db)
+            .map_err(internal_error("Failed to load storefronts"))?;
+
+        Ok(rows.into_iter().map(Into::into).collect())
     }
 
     fn get_store_count(&self) -> Result<i64> {
