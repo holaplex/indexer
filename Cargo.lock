@@ -4599,9 +4599,9 @@ dependencies = [
 
 [[package]]
 name = "topograph"
-version = "0.3.0-alpha.1"
+version = "0.3.1-alpha.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a28ab05a6b59c5516891ebcecbf93e8e11292386b1eceb810f5354e0cdfe577d"
+checksum = "89f1d9e0476b3ebc4efde8210d6609bd9efcc7eba24d53f0a6932a8f36b37548"
 dependencies = [
  "crossbeam",
  "dispose",
