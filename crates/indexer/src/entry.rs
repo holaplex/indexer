@@ -84,7 +84,7 @@ pub enum Job {
     Auction(RcAuctionKeys),
     /// Attempt to store bids for an auction without indexing the auction
     SoloBidsForAuction(Pubkey, bidder_metadata::BidList),
-    // Index NFTs by creator
+    /// Index NFTs by creator
     MetadataByCreator(Pubkey),
 }
 

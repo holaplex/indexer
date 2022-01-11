@@ -6,14 +6,15 @@ use indexer_core::{
     },
     pubkeys,
 };
-use metaplex_token_metadata::state::Metadata as MetadataAccount;
+use metaplex_token_metadata::state::{
+    Metadata as MetadataAccount,
+    MAX_NAME_LENGTH,
+    MAX_URI_LENGTH,
+    MAX_SYMBOL_LENGTH,
+};
 
 use crate::{client::prelude::*, prelude::*, util, Client, EditionKeys, Job, ThreadPoolHandle};
-
-pub const MAX_NAME_LENGTH: usize = 32;
-pub const MAX_URI_LENGTH: usize = 200;
-pub const MAX_SYMBOL_LENGTH: usize = 10;
-pub const FIRST_CREATOR_LENGTH: usize =
+pub const FIRST_CREATOR_OFFSET: usize =
     1 + 32 + 32 + 4 + MAX_NAME_LENGTH + 4 + MAX_URI_LENGTH + 4 + MAX_SYMBOL_LENGTH + 2 + 1 + 4;
 
 fn get_metadatas_by_primary_creator(
@@ -25,7 +26,7 @@ fn get_metadatas_by_primary_creator(
 > {
     client.get_program_accounts(pubkeys::metadata(), RpcProgramAccountsConfig {
         filters: Some(vec![RpcFilterType::Memcmp(Memcmp {
-            offset: FIRST_CREATOR_LENGTH,
+            offset: FIRST_CREATOR_OFFSET,
             bytes: MemcmpEncodedBytes::Base58(creator_address.to_string()),
             encoding: None,
         })]),
