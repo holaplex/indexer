@@ -147,7 +147,7 @@ fn create_pool(
                 Job::GetBidderMetadata => bidder_metadata::get(&client, &bid_map, handle),
                 Job::GetBidderMetadataSolo => bidder_metadata::get_solo(&client, handle),
                 Job::MetadataByCreator(pubkey) => {
-                    metadata::get_metadata_by_creator(&client, pubkey, handle)
+                    metadata::handle_metadata_by_creator(&client, pubkey, handle)
                 },
                 Job::StoreOwner(owner) => store_owner::process(&client, owner, handle),
                 Job::AuctionCache(store) => {

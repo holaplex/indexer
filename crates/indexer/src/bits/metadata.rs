@@ -13,20 +13,8 @@ use crate::{client::prelude::*, prelude::*, util, Client, EditionKeys, Job, Thre
 pub const MAX_NAME_LENGTH: usize = 32;
 pub const MAX_URI_LENGTH: usize = 200;
 pub const MAX_SYMBOL_LENGTH: usize = 10;
-pub const MAX_CREATOR_LEN: usize = 32 + 1 + 1;
-pub const FIRST_CREATOR_LENGTH: usize = 1
-    + 32
-    + 32
-    + 4
-    + MAX_NAME_LENGTH
-    + 4
-    + MAX_URI_LENGTH
-    + 4
-    + MAX_SYMBOL_LENGTH
-    + 2
-    + 1
-    + 4
-    + 0 * MAX_CREATOR_LEN;
+pub const FIRST_CREATOR_LENGTH: usize =
+    1 + 32 + 32 + 4 + MAX_NAME_LENGTH + 4 + MAX_URI_LENGTH + 4 + MAX_SYMBOL_LENGTH + 2 + 1 + 4;
 
 fn get_metadatas_by_primary_creator(
     client: &Client,
@@ -45,7 +33,7 @@ fn get_metadatas_by_primary_creator(
     })
 }
 
-pub fn get_metadata_by_creator(
+pub fn handle_metadata_by_creator(
     client: &Client,
     pubkey: Pubkey,
     handle: ThreadPoolHandle,
