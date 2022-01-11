@@ -221,8 +221,9 @@ where
     Ok(group_rows(rows))
 }
 
-/// Load the given query on the listings triple join tables, and group the results.
-/// Rejects undesirable listings by price, ended date and others, see [`reject`]
+/// Load the given query on the listings triple join tables, and group the
+/// results. Rejects undesirable listings by price, ended date and others, see
+/// [`rejected`]
 ///
 /// # Errors
 /// This function fails if the underlying SQL query cannot successfully be executed
