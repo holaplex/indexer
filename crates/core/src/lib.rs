@@ -15,6 +15,7 @@ extern crate diesel;
 extern crate diesel_migrations;
 
 pub extern crate chrono;
+pub extern crate clap;
 
 pub mod db;
 pub mod error;
@@ -50,6 +51,14 @@ fn dotenv(name: impl AsRef<Path>) -> Result<Option<PathBuf>, dotenv::Error> {
         Err(dotenv::Error::Io(e)) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
         Err(e) => Err(e),
     }
+}
+
+/// Common options for all server crates.
+#[derive(Debug, Clone, Copy, clap::Parser)]
+pub struct ServerOpts {
+    /// The port to listen on
+    #[clap(short, long, default_value_t = 3000, env = "PORT")]
+    pub port: u16,
 }
 
 /// Process environment variables, initialize logging, and then execute the

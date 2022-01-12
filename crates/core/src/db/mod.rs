@@ -14,6 +14,8 @@ pub mod tables {
     };
 }
 
+use std::env;
+
 pub use diesel::{insert_into, pg::upsert::excluded, select, update};
 use diesel::{pg, r2d2};
 
@@ -30,13 +32,38 @@ pub type Pool = r2d2::Pool<ConnectionManager>;
 /// Pooled Postgres connection
 pub type PooledConnection = r2d2::PooledConnection<ConnectionManager>;
 
-/// Create a pooled connection to the Postgres database
+/// Hint indicating how the database should be connected
+#[derive(Debug, Clone, Copy)]
+pub enum ConnectMode {
+    /// Open the database for reading
+    ///
+    /// This will check for a `DATABASE_READ_URL` for read replicas.
+    Read,
+    /// Open the database for writing
+    ///
+    /// This will check for a `DATABASE_WRITE_URL` for a primary replica.
+    Write,
+}
+
+/// Create a pooled connection to the Postgres database.  This will check for
+/// the presence of `DATABASE_(READ|WRITE)_URL` (depending on the mode
+/// specified) or else `DATABASE_URL`.
 ///
 /// # Errors
-/// This function fails if Diesel fails to construct a connection pool or if any
-/// pending database migrations fail to run.
-pub fn connect(url: impl Into<String>) -> Result<Pool> {
-    let url = url.into();
+/// This function fails if neither of the above environment variables are found,
+/// if Diesel fails to construct a connection pool, or if any pending database
+/// migrations fail to run.
+pub fn connect(mode: ConnectMode) -> Result<Pool> {
+    let mode_env = match mode {
+        ConnectMode::Read => "DATABASE_READ_URL",
+        ConnectMode::Write => "DATABASE_WRITE_URL",
+    };
+
+    let url = env::var_os(mode_env)
+        .or_else(|| env::var_os("DATABASE_URL"))
+        .ok_or_else(|| anyhow!("No value found for {} or DATABASE_URL", mode_env))
+        .map(move |v| v.to_string_lossy().into_owned())?;
+
     debug!("Connecting to db: {:?}", url);
 
     let man = ConnectionManager::new(url);
