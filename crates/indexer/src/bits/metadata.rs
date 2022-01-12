@@ -7,10 +7,7 @@ use indexer_core::{
     pubkeys,
 };
 use metaplex_token_metadata::state::{
-    Metadata as MetadataAccount,
-    MAX_NAME_LENGTH,
-    MAX_URI_LENGTH,
-    MAX_SYMBOL_LENGTH,
+    Metadata as MetadataAccount, MAX_NAME_LENGTH, MAX_SYMBOL_LENGTH, MAX_URI_LENGTH,
 };
 
 use crate::{client::prelude::*, prelude::*, util, Client, EditionKeys, Job, ThreadPoolHandle};
