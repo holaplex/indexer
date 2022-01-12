@@ -23,7 +23,7 @@ struct BuyNft {
 pub struct QueryRoot;
 
 #[juniper::graphql_object]
-#[graphql_object(context = Database)]
+#[juniper::graphql_object(context = Database)]
 impl QueryRoot {
     fn nfts(#[graphql(description = "Address of NFT")] address: Option<String>) -> Vec<Nft> {
         let mut x: Vec<Nft> = Vec::new();
