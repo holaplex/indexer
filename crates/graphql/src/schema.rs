@@ -24,8 +24,14 @@ pub struct QueryRoot;
 
 #[juniper::graphql_object]
 impl QueryRoot {
-    fn nfts() -> FieldResult<Vec<Nft>> {
-        Ok(vec![Nft {
+    fn nfts(
+        #[graphql(description = "Address of NFT")] address: Option<String>,
+    ) -> FieldResult<Vec<Nft>> {
+        let addrValue = address.as_deref().unwrap_or("");
+        
+        let mut x = Vec::new();
+        
+        x.push(Nft {
             address: "abc123".to_owned(),
             name: "foo".to_owned(),
             symbol: "BAR".to_owned(),
@@ -35,10 +41,52 @@ impl QueryRoot {
             mint_address: "efg890".to_owned(),
             primary_sale_happened: false,
             is_mutable: true,
-        }])
+        });
+
+        x.push(Nft {
+            address: "xyz123".to_owned(),
+            name: "foo".to_owned(),
+            symbol: "BAR".to_owned(),
+            uri: "https://ipfs.web/abc".to_owned(),
+            seller_fee_basis_points: 1000,
+            update_authority_address: "xyz123".to_owned(),
+            mint_address: "efg890".to_owned(),
+            primary_sale_happened: false,
+            is_mutable: true,
+        });
+
+        x.push(Nft {
+            address: "abc".to_owned(),
+            name: "foo".to_owned(),
+            symbol: "BAR".to_owned(),
+            uri: "https://ipfs.web/abc".to_owned(),
+            seller_fee_basis_points: 1000,
+            update_authority_address: "xyz123".to_owned(),
+            mint_address: "efg890".to_owned(),
+            primary_sale_happened: false,
+            is_mutable: true,
+        });
+
+        x.push(Nft {
+            address: "123".to_owned(),
+            name: "foo".to_owned(),
+            symbol: "BAR".to_owned(),
+            uri: "https://ipfs.web/abc".to_owned(),
+            seller_fee_basis_points: 1000,
+            update_authority_address: "xyz123".to_owned(),
+            mint_address: "efg890".to_owned(),
+            primary_sale_happened: false,
+            is_mutable: true,
+        });
+
+        if addrValue.trim().is_empty(){
+            Ok(x);
+        }else{
+            let y: Vec<_> = x.iter().filter(|xx| xx.address.eq(addrValue)).collect();
+            Ok(y);
+        }
     }
 }
-
 pub struct MutationRoot;
 
 #[juniper::graphql_object]
