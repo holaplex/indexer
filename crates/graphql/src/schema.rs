@@ -27,8 +27,6 @@ impl QueryRoot {
     fn nfts(
         #[graphql(description = "Address of NFT")] address: Option<String>,
     ) -> FieldResult<Vec<Nft>> {
-        let addrValue = address.as_deref().unwrap_or("");
-        
         let mut x = Vec::new();
         
         x.push(Nft {
@@ -79,11 +77,11 @@ impl QueryRoot {
             is_mutable: true,
         });
 
-        if addrValue.trim().is_empty(){
-            Ok(x);
+        if let Some(address) = address {
+            let y: Vec<_> = x.into_iter().filter(|xx| xx.address.eq(&address)).collect();
+            Some(y);
         }else{
-            let y: Vec<_> = x.iter().filter(|xx| xx.address.eq(addrValue)).collect();
-            Ok(y);
+            Some(x);
         }
     }
 }
