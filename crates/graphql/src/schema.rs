@@ -26,8 +26,8 @@ pub struct QueryRoot;
 impl QueryRoot {
     fn nfts(
         #[graphql(description = "Address of NFT")] address: Option<String>,
-    ) -> FieldResult<Vec<Nft>> {
-        let mut x = Vec::new();
+    ) -> Vec<Nft>{
+        let mut x: Vec<Nft> = Vec::new();
         
         x.push(Nft {
             address: "abc123".to_owned(),
@@ -79,9 +79,9 @@ impl QueryRoot {
 
         if let Some(address) = address {
             let y: Vec<Nft> = x.into_iter().filter(|xx| xx.address.eq(&address)).collect();
-            Ok(y)
+            return y
         }
-        Ok(x)
+        return x
     }
 }
 pub struct MutationRoot;
