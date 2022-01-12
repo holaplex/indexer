@@ -24,11 +24,9 @@ pub struct QueryRoot;
 
 #[juniper::graphql_object]
 impl QueryRoot {
-    fn nfts(
-        #[graphql(description = "Address of NFT")] address: Option<String>,
-    ) -> Vec<Nft>{
+    fn nfts(#[graphql(description = "Address of NFT")] address: Option<String>) -> Vec<Nft> {
         let mut x: Vec<Nft> = Vec::new();
-        
+
         x.push(Nft {
             address: "abc123".to_owned(),
             name: "foo".to_owned(),
@@ -79,9 +77,9 @@ impl QueryRoot {
 
         if let Some(address) = address {
             let y: Vec<Nft> = x.into_iter().filter(|xx| xx.address.eq(&address)).collect();
-            return y
+            return y;
         }
-        return x
+        return x;
     }
 }
 pub struct MutationRoot;
