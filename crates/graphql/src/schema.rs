@@ -78,11 +78,10 @@ impl QueryRoot {
         });
 
         if let Some(address) = address {
-            let y: Vec<_> = x.into_iter().filter(|xx| xx.address.eq(&address)).collect();
-            Some(y);
-        }else{
-            Some(x);
+            let y: Vec<Nft> = x.into_iter().filter(|xx| xx.address.eq(&address)).collect();
+            Ok(y)
         }
+        Ok(x)
     }
 }
 pub struct MutationRoot;
