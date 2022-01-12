@@ -43,6 +43,9 @@ pub trait Rpc {
     fn get_listing_metadatas(&self, listing_address: String) -> Result<Vec<ListingItem>>;
     #[rpc(name = "getListingDetails")]
     fn get_listing_details(&self, listing_address: String) -> Result<ListingDetails>;
+
+    #[rpc(name = "checkStore")]
+    fn check_store(&self, owner: String) -> Result<bool>;
 }
 
 pub struct Server {
@@ -205,5 +208,13 @@ impl Rpc for Server {
             },
         )
         .map_err(internal_error("Failed to pull listing details"))
+    }
+
+    fn check_store(&self, owner: String) -> Result<bool> {
+        let db = self.db()?;
+
+        store_denylist::hard_banned(&db, &owner).map_err(internal_error(
+            "Failed to query store denylist for hard ban",
+        ))
     }
 }
