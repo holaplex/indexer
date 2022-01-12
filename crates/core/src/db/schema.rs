@@ -105,6 +105,7 @@ table! {
 
     store_denylist (owner_address) {
         owner_address -> Varchar,
+        hard_ban -> Bool,
     }
 }
 
