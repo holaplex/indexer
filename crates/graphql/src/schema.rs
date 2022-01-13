@@ -86,7 +86,7 @@ impl QueryRoot {
 
         if let Some(address) = address {
             let y: Vec<Nft> = x.into_iter().filter(|xx| xx.address.eq(&address)).collect();
-            y
+            return y
         }
         x
     }
