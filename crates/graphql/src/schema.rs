@@ -1,5 +1,11 @@
 use juniper::{EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject, RootNode};
-
+use crate::{
+    db::{
+        tables::{metadatas},
+        Connection,
+    },
+    // error::prelude::*, // is this needed
+};
 #[derive(GraphQLObject)]
 #[graphql(description = "A Solana NFT")]
 struct Nft {
@@ -23,10 +29,12 @@ struct BuyNft {
 pub struct QueryRoot;
 
 #[juniper::graphql_object]
-#[juniper::graphql_object(context = Database)]
 impl QueryRoot {
-    fn nfts(#[graphql(description = "Address of NFT")] address: Option<String>) -> Vec<Nft> {
-        let mut x: Vec<Nft> = Vec::new();
+    fn nfts(
+        // #[graphql(context)] conn: &Connection,
+        #[graphql(description = "Address of NFT")] address: Option<String>
+    ) -> Vec<Nft> {
+        let mut x: Vec<Nft> = vec![];
 
         x.push(Nft {
             address: "abc123".to_owned(),
@@ -78,9 +86,9 @@ impl QueryRoot {
 
         if let Some(address) = address {
             let y: Vec<Nft> = x.into_iter().filter(|xx| xx.address.eq(&address)).collect();
-            return y;
+            y
         }
-        return x;
+        x
     }
 }
 pub struct MutationRoot;
