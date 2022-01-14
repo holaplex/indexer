@@ -1,0 +1,32 @@
+[package]
+name = "metaplex-indexer-cli"
+version = "0.1.0"
+authors = [
+  "ryans <ryans@holaplex.com>",
+]
+edition = "2021"
+description = "CLI for interacting with the metaplex-indexer suite of packages"
+documentation = "https://docs.rs/metaplex-indexer-rpc"
+readme = "../../README.md"
+repository = "https://github.com/holaplex/metaplex-indexer-cli"
+license = "AGPL-3.0-or-later"
+keywords = ["solana", "metaplex", "holaplex", "web3", "jsonrpc"]
+categories = ["cryptography::cryptocurrencies", "web-programming"]
+
+[features]
+default = ["rpc", "rabbitmq"]
+rpc = []
+rabbitmq = []
+
+[[bin]]
+name = "mi-cli"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.52"
+clap = { version = "3.0.7", features = ["derive", "env"] }
+docbot = "0.2.0-alpha.1"
+env_logger = "0.9.0"
+log = "0.4.14"
+rustyline = "9.1.2"
+
