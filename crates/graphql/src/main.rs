@@ -57,7 +57,6 @@ fn main() {
             server: ServerOpts { port },
         } = Opts::parse();
 
-        // TODO
         let db_conn =
             db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
 
