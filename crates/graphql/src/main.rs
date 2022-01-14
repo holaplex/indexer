@@ -25,9 +25,6 @@ struct Opts {
     server: ServerOpts,
 }
 
-// To make our context usable by Juniper, we have to implement a marker trait.
-// impl juniper::Context for Context {}
-
 fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
     move || {
         let html = graphiql_source(&uri, None);
