@@ -1,6 +1,9 @@
+use indexer_core::{
+    db::{models, tables::metadatas, Pool},
+    prelude::*,
+};
 use juniper::{EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject, RootNode};
 
-use crate::db::{tables::metadatas, Connection};
 #[derive(GraphQLObject)]
 #[graphql(description = "A Solana NFT")]
 struct Nft {
@@ -15,75 +18,70 @@ struct Nft {
     is_mutable: bool,
 }
 
+impl<'a> From<models::Metadata<'a>> for Nft {
+    fn from(
+        models::Metadata {
+            address,
+            name,
+            symbol,
+            uri,
+            seller_fee_basis_points,
+            update_authority_address,
+            mint_address,
+            primary_sale_happened,
+            is_mutable,
+            edition_nonce: _,
+        }: models::Metadata,
+    ) -> Self {
+        Self {
+            address: address.into_owned(),
+            name: name.into_owned(),
+            uri: uri.into_owned(),
+            symbol: symbol.into_owned(),
+            seller_fee_basis_points,
+            update_authority_address: update_authority_address.into_owned(),
+            mint_address: mint_address.into_owned(),
+            primary_sale_happened,
+            is_mutable,
+        }
+    }
+}
+
 #[derive(GraphQLInputObject)]
 #[graphql(description = "Buy a NFT")]
 struct BuyNft {
     transaction: String,
 }
 
-pub struct QueryRoot;
+pub struct QueryRoot {
+    db: Pool,
+}
 
 #[juniper::graphql_object]
 impl QueryRoot {
     fn nfts(
-        // #[graphql(context)] conn: &Connection,
-        #[graphql(description = "Address of NFT")] address: Option<String>,
+        &self,
+        #[graphql(description = "Address of NFT")] creators: Option<Vec<String>>,
     ) -> Vec<Nft> {
-        let mut x: Vec<Nft> = vec![];
+        let conn = self.db.get().unwrap();
+        let rows: Vec<models::Metadata> = metadatas::table
+            .select(metadatas::all_columns)
+            .load(&conn)
+            .unwrap();
 
-        x.push(Nft {
-            address: "abc123".to_owned(),
-            name: "foo".to_owned(),
-            symbol: "BAR".to_owned(),
-            uri: "https://ipfs.web/abc".to_owned(),
-            seller_fee_basis_points: 1000,
-            update_authority_address: "xyz123".to_owned(),
-            mint_address: "efg890".to_owned(),
-            primary_sale_happened: false,
-            is_mutable: true,
-        });
+        rows.into_iter().map(Into::into).collect()
+    }
 
-        x.push(Nft {
-            address: "xyz123".to_owned(),
-            name: "foo".to_owned(),
-            symbol: "BAR".to_owned(),
-            uri: "https://ipfs.web/abc".to_owned(),
-            seller_fee_basis_points: 1000,
-            update_authority_address: "xyz123".to_owned(),
-            mint_address: "efg890".to_owned(),
-            primary_sale_happened: false,
-            is_mutable: true,
-        });
+    fn nft(&self, #[graphql(description = "Address of NFT")] address: String) -> Option<Nft> {
+        let conn = self.db.get().unwrap();
+        let mut rows: Vec<models::Metadata> = metadatas::table
+            .select(metadatas::all_columns)
+            .filter(metadatas::address.eq(address))
+            .limit(1)
+            .load(&conn)
+            .unwrap();
 
-        x.push(Nft {
-            address: "abc".to_owned(),
-            name: "foo".to_owned(),
-            symbol: "BAR".to_owned(),
-            uri: "https://ipfs.web/abc".to_owned(),
-            seller_fee_basis_points: 1000,
-            update_authority_address: "xyz123".to_owned(),
-            mint_address: "efg890".to_owned(),
-            primary_sale_happened: false,
-            is_mutable: true,
-        });
-
-        x.push(Nft {
-            address: "123".to_owned(),
-            name: "foo".to_owned(),
-            symbol: "BAR".to_owned(),
-            uri: "https://ipfs.web/abc".to_owned(),
-            seller_fee_basis_points: 1000,
-            update_authority_address: "xyz123".to_owned(),
-            mint_address: "efg890".to_owned(),
-            primary_sale_happened: false,
-            is_mutable: true,
-        });
-
-        if let Some(address) = address {
-            let y: Vec<Nft> = x.into_iter().filter(|xx| xx.address.eq(&address)).collect();
-            return y;
-        }
-        x
+        rows.pop().map(Into::into)
     }
 }
 pub struct MutationRoot;
@@ -107,6 +105,10 @@ impl MutationRoot {
 
 pub type Schema = RootNode<'static, QueryRoot, MutationRoot, EmptySubscription>;
 
-pub fn create() -> Schema {
-    Schema::new(QueryRoot {}, MutationRoot {}, EmptySubscription::new())
+pub fn create(db: Pool) -> Schema {
+    Schema::new(QueryRoot { db }, MutationRoot {}, EmptySubscription::new())
 }
+
+// pub fn getNFT(){
+
+// }

@@ -15,7 +15,7 @@ use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
 use indexer_core::{clap, clap::Parser, db, ServerOpts};
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
 
-use crate::schema::Schema;
+use crate::{db::Pool, schema::Schema};
 
 mod schema;
 
@@ -24,6 +24,9 @@ struct Opts {
     #[clap(flatten)]
     server: ServerOpts,
 }
+
+// To make our context usable by Juniper, we have to implement a marker trait.
+// impl juniper::Context for Context {}
 
 fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
     move || {
@@ -58,14 +61,15 @@ fn main() {
         } = Opts::parse();
 
         // TODO
-        let _ = db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
+        let db_conn =
+            db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
 
         let mut addr: SocketAddr = "0.0.0.0:3000".parse().unwrap();
         addr.set_port(port);
 
         let graphiql_uri = format!("http://{}", addr);
 
-        let schema = std::sync::Arc::new(schema::create());
+        let schema = std::sync::Arc::new(schema::create(db_conn));
 
         actix_web::rt::System::new("main")
             .block_on(
