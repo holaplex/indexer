@@ -137,6 +137,30 @@ pub struct Storefront {
     pub updated_at: Option<Timestamp>,
 }
 
+impl<'a> From<models::Storefront<'a>> for Storefront {
+    fn from(
+        models::Storefront {
+            owner_address,
+            subdomain,
+            title,
+            description,
+            favicon_url,
+            logo_url,
+            updated_at,
+        }: models::Storefront,
+    ) -> Self {
+        Self {
+            owner_address: owner_address.into_owned(),
+            subdomain: subdomain.into_owned(),
+            title: title.into_owned(),
+            description: description.into_owned(),
+            favicon_url: favicon_url.into_owned(),
+            logo_url: logo_url.into_owned(),
+            updated_at: updated_at.map(Timestamp::from_utc),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Creator {

@@ -3,3 +3,7 @@
 
 [print_schema]
 file = "src/db/schema.rs"
+import_types = [
+  "diesel::sql_types::*",
+  "diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery}",
+]

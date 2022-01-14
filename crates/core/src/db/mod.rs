@@ -2,7 +2,7 @@
 
 pub mod models;
 pub mod queries;
-#[allow(missing_docs)]
+#[allow(missing_docs, unused_imports)]
 mod schema;
 
 pub mod tables {
@@ -18,6 +18,9 @@ use std::env;
 
 pub use diesel::{insert_into, pg::upsert::excluded, select, update};
 use diesel::{pg, r2d2};
+pub use diesel_full_text_search::{
+    websearch_to_tsquery, TsQuery, TsQueryExtensions, TsVector, TsVectorExtensions,
+};
 
 use crate::prelude::*;
 
