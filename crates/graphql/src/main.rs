@@ -15,7 +15,7 @@ use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
 use indexer_core::{clap, clap::Parser, db, ServerOpts};
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
 
-use crate::{db::Pool, schema::Schema};
+use crate::schema::Schema;
 
 mod schema;
 
