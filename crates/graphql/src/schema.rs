@@ -1,5 +1,9 @@
 use indexer_core::{
-    db::{models, tables::metadatas, Pool},
+    db::{
+        models,
+        tables::{metadata_creators, metadatas},
+        Pool,
+    },
     prelude::*,
 };
 use juniper::{EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject, RootNode};
@@ -64,12 +68,25 @@ impl QueryRoot {
         #[graphql(description = "Address of NFT")] creators: Option<Vec<String>>,
     ) -> Vec<Nft> {
         let conn = self.db.get().unwrap();
-        let rows: Vec<models::Metadata> = metadatas::table
-            .select(metadatas::all_columns)
-            .load(&conn)
-            .unwrap();
+        
+        // Create mutable vector for all rows returned
+        let mut all_rows: Vec<models::Metadata> = Vec::new();
 
-        rows.into_iter().map(Into::into).collect()
+        // Iterate across creators passed into function
+        for creator in creators.unwrap().iter() {
+
+            // Database stuff
+            let mut rows: Vec<models::Metadata> = metadata_creators::table
+                .select(metadata_creators::all_columns)
+                .filter(metadata_creators::creator_address.eq(creator))
+                .load(&conn)
+                .unwrap();
+
+            // Append found rows to all rows vector
+            all_rows.append(&rows);
+        }
+        let returned_rows = all_rows.map(Into::into);
+        returned_rows
     }
 
     fn nft(&self, #[graphql(description = "Address of NFT")] address: String) -> Option<Nft> {
