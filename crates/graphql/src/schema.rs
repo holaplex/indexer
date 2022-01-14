@@ -66,34 +66,34 @@ impl QueryRoot {
     fn nfts(
         &self,
         #[graphql(description = "Filter on creator address")] creators: Option<Vec<String>>,
-        #[graphql(description = "Filter on update authority addres")] update_authority: Option<Vec<String>>,
+        #[graphql(description = "Filter on update authority addres")] update_authority: Option<
+            Vec<String>,
+        >,
     ) -> Vec<Nft> {
         let conn = self.db.get().unwrap();
-        
+
         // Create mutable vector for all rows returned
         let mut all_rows: Vec<String> = Vec::new();
 
         // Iterate across creators passed into function
-        for creator in creators.into_iter().flatten(){
-
+        for creator in creators.into_iter().flatten() {
             // Database stuff
             let mut rows: Vec<String> = metadata_creators::table
                 .select(metadata_creators::metadata_address)
                 .filter(metadata_creators::creator_address.eq(creator))
-                .load(&conn) 
+                .load(&conn)
                 .unwrap();
 
             // Append found rows to all rows vector
             all_rows.append(&mut rows);
         }
 
-        for ua in update_authority.into_iter().flatten(){
-
+        for ua in update_authority.into_iter().flatten() {
             // Database stuff
             let mut rows: Vec<String> = metadatas::table
                 .select(metadatas::address)
                 .filter(metadatas::update_authority_address.eq(ua))
-                .load(&conn) 
+                .load(&conn)
                 .unwrap();
 
             // Append found rows to all rows vector
@@ -102,14 +102,13 @@ impl QueryRoot {
 
         // now find all nfts
         let rows: Vec<models::Metadata> = metadatas::table
-        .select(metadatas::all_columns)
-        .filter(metadatas::address.eq(any(all_rows)))
-        .load(&conn)
-        .unwrap();
+            .select(metadatas::all_columns)
+            .filter(metadatas::address.eq(any(all_rows)))
+            .load(&conn)
+            .unwrap();
 
         // Cast Models::Metadata to Nft and return
-        let returned_rows = rows.into_iter().map(Into::into).collect();
-        returned_rows
+        rows.into_iter().map(Into::into).collect()
     }
 
     fn nft(&self, #[graphql(description = "Address of NFT")] address: String) -> Option<Nft> {
@@ -148,7 +147,3 @@ pub type Schema = RootNode<'static, QueryRoot, MutationRoot, EmptySubscription>;
 pub fn create(db: Pool) -> Schema {
     Schema::new(QueryRoot { db }, MutationRoot {}, EmptySubscription::new())
 }
-
-// pub fn getNFT(){
-
-// }
