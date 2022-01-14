@@ -31,7 +31,7 @@ pub mod prelude {
 
     pub use chrono::{self, prelude::*};
     pub use diesel::{
-        dsl::{exists, not},
+        dsl::{exists, not, any},
         expression_methods::*,
         query_dsl::{BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl},
     };
