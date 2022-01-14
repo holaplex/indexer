@@ -1,0 +1,46 @@
+name: Diesel Schema
+
+on:
+  pull_request:
+  push:
+    branches: [master, dev]
+
+jobs:
+  schema:
+    name: Diesel schema check
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14.1
+
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: ci
+
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-11-09
+          components: cargo, rustc
+          profile: minimal
+
+      - name: install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libpq-dev
+          cargo install diesel_cli --no-default-features --features postgres
+
+      - name: run check
+        run: |
+          cd crates/core
+          export DATABASE_URL='postgres://ci:ci@127.0.0.1:5432/ci'
+          diesel setup || diesel migration run
+          diff <(diesel print-schema) src/db/schema.rs
