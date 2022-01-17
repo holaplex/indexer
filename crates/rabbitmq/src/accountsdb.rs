@@ -19,6 +19,7 @@ pub enum Message {
     InstructionNotify {
         program: Pubkey,
         data: Vec<u8>,
+        accounts: Vec<Pubkey>,
     },
 }
 
@@ -32,7 +33,7 @@ impl crate::QueueType<Message> for QueueType {
 
     async fn init_producer(chan: &Channel) -> Result<()> {
         chan.exchange_declare(
-            "accounts",
+            Self::EXCHANGE,
             ExchangeKind::Fanout,
             ExchangeDeclareOptions::default(),
             FieldTable::default(),
