@@ -11,7 +11,19 @@
 
 pub(crate) use solana_accountsdb_plugin_interface::accountsdb_plugin_interface as interface;
 
+pub(crate) mod prelude {
+    pub use std::result::Result as StdResult;
+
+    pub use anyhow::{anyhow, bail, Context, Error};
+    pub use log::{debug, error, info, trace, warn};
+    pub use solana_program::pubkey::Pubkey;
+
+    pub type Result<T, E = Error> = StdResult<T, E>;
+}
+
+pub(crate) mod config;
 mod plugin;
+pub(crate) mod selectors;
 
 pub use plugin::AccountsDbPluginRabbitMq;
 
