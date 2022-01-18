@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
-use lapin::{Channel, Connection};
+use futures_util::StreamExt;
+use lapin::{options::BasicAckOptions, Channel, Connection};
 
 use crate::{serialize::deserialize, QueueType, Result};
 
@@ -11,7 +12,7 @@ pub struct Consumer<T, Q> {
     _p: PhantomData<(T, Q)>,
 }
 
-impl<'a, T: serde::Deserialize<'a>, Q: QueueType<T>> Consumer<T, Q> {
+impl<T: for<'a> serde::Deserialize<'a>, Q: QueueType<T>> Consumer<T, Q> {
     pub async fn new(conn: &Connection) -> Result<Self> {
         let chan = conn.create_channel().await?;
 
@@ -24,7 +25,14 @@ impl<'a, T: serde::Deserialize<'a>, Q: QueueType<T>> Consumer<T, Q> {
         })
     }
 
-    pub async fn consume(&self) -> Result<T> {
-        todo!()
+    pub async fn consume(&mut self) -> Result<Option<T>> {
+        let (_chan, delivery) = match self.consumer.next().await {
+            Some(d) => d?,
+            None => return Ok(None),
+        };
+
+        delivery.ack(BasicAckOptions::default()).await?;
+
+        deserialize(std::io::Cursor::new(delivery.data)).map_err(Into::into)
     }
 }
