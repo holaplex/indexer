@@ -71,16 +71,14 @@ impl crate::QueueType<Message> for QueueType {
         )
         .await?;
 
-        let consumer = chan
-            .basic_consume(
-                Self::QUEUE,
-                Self::QUEUE,
-                BasicConsumeOptions::default(),
-                FieldTable::default(),
-            )
-            .await?;
-
-        Ok(consumer)
+        chan.basic_consume(
+            Self::QUEUE,
+            Self::QUEUE,
+            BasicConsumeOptions::default(),
+            FieldTable::default(),
+        )
+        .await
+        .map_err(Into::into)
     }
 
     fn publish_opts(_: &Message) -> BasicPublishOptions {
