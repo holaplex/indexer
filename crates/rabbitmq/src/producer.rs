@@ -1,9 +1,12 @@
+//! An AMQP producer configured from a [`QueueType`]
+
 use std::marker::PhantomData;
 
 use lapin::{Channel, Connection};
 
 use crate::{serialize::serialize, QueueType, Result};
 
+/// A producer consisting of a configured channel and additional queue config
 #[derive(Debug)]
 pub struct Producer<T, Q> {
     chan: Channel,
@@ -12,6 +15,11 @@ pub struct Producer<T, Q> {
 }
 
 impl<T: serde::Serialize, Q: QueueType<T>> Producer<T, Q> {
+    /// Construct a new producer from a [`QueueType`]
+    ///
+    /// # Errors
+    /// This function fails if the channel cannot be created and configured
+    /// successfully.
     pub async fn new(conn: &Connection, ty: Q) -> Result<Self> {
         let chan = conn.create_channel().await?;
 
@@ -24,6 +32,11 @@ impl<T: serde::Serialize, Q: QueueType<T>> Producer<T, Q> {
         })
     }
 
+    /// Write a single message to this producer
+    ///
+    /// # Errors
+    /// This function fails if the value cannot be serialized or the serialized
+    /// payload cannot be transmitted.
     pub async fn write(&self, val: impl std::borrow::Borrow<T>) -> Result<()> {
         let val = val.borrow();
 

@@ -10,6 +10,6 @@ pub enum RpcCommand {
     GetStorefronts(Vec<String>),
 }
 
-pub fn handle(cmd: RpcCommand) -> super::Result {
+pub fn handle(_cmd: RpcCommand) -> super::Result {
     todo!()
 }

@@ -10,6 +10,6 @@ pub enum RmqCommand {
     Todo(String),
 }
 
-pub fn handle(cmd: RmqCommand) -> super::Result {
+pub fn handle(_cmd: RmqCommand) -> super::Result {
     todo!()
 }
