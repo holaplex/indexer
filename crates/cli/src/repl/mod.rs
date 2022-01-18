@@ -42,23 +42,23 @@ pub fn run() -> Result {
             },
         };
 
-        handle(line, |e| Ok(log::error!("{:?}", e)))
+        handle(line, |e| log::error!("{:?}", e))
             .map_err(|e| log::error!("Command failed: {:?}", e))
             .ok();
     }
 }
 
 pub fn run_one(s: impl AsRef<str>) -> Result {
-    handle(s, |e| Ok(log::error!("{:?}", e)))
+    handle(s, |e| log::error!("{:?}", e))
 }
 
-fn handle(
-    s: impl AsRef<str>,
-    parse_error: impl FnOnce(docbot::CommandParseError) -> Result,
-) -> Result {
+fn handle(s: impl AsRef<str>, parse_error: impl FnOnce(docbot::CommandParseError)) -> Result {
     let cmd = match BaseCommand::parse(docbot::tokenize_str_simple(s.as_ref())) {
         Ok(c) => c,
-        Err(e) => return parse_error(e),
+        Err(e) => {
+            parse_error(e);
+            return Ok(());
+        },
     };
 
     match cmd {

@@ -1,3 +1,6 @@
+//! Queue configuration for Solana `accountsdb` plugins intended to communicate
+//! with `metaplex-indexer`.
+
 use std::borrow::Cow;
 
 use lapin::{
@@ -12,40 +15,58 @@ use serde::{Deserialize, Serialize};
 
 use crate::Result;
 
+/// A 256-bit Solana public key
 pub type Pubkey = [u8; 32];
 
+/// A message transmitted by an `accountsdb` plugin
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Message {
+    /// Indicates an account should be updated
     AccountUpdate {
+        /// The account's public key
         key: Pubkey,
+        /// The Solana program controlling this account
         owner: Pubkey,
+        /// The binary data stored on this account
         data: Vec<u8>,
     },
+    /// Indicates an instruction was included in a **successful** transaction
     InstructionNotify {
+        /// The program this instruction was executed with
         program: Pubkey,
+        /// The binary instruction opcode
         data: Vec<u8>,
+        /// The account inputs to this instruction
         accounts: Vec<Pubkey>,
     },
 }
 
+/// AMQP configuration for `accountsdb` plugins
 #[derive(Debug, Clone)]
 pub struct QueueType {
     exchange: String,
     queue: String,
 }
 
+/// Network hint for declaring exchange and queue names
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, strum::EnumString, strum::Display)]
 #[strum(serialize_all = "camelCase")]
 pub enum Network {
+    /// Use the network ID `"mainnet"`
     Mainnet,
+    /// Use the network ID `"devnet"`
     Devnet,
+    /// Use the network ID `"testnet"`
     Testnet,
 }
 
 impl QueueType {
+    /// Construct a new queue configuration given the network this validator is
+    /// connected to.
+    #[must_use]
     pub fn new(network: Network) -> Self {
-        let exchange = todo!();
-        let queue = todo!();
+        let exchange = format!("{}.accounts", network);
+        let queue = format!("{}.accounts.indexer", network);
 
         Self { exchange, queue }
     }
@@ -116,7 +137,9 @@ impl crate::QueueType<Message> for QueueType {
     }
 }
 
+/// The type of an `accountsdb` producer
 #[cfg(feature = "producer")]
 pub type Producer = crate::producer::Producer<Message, QueueType>;
+/// The type of an `accountsdb` consumer
 #[cfg(feature = "consumer")]
 pub type Consumer = crate::consumer::Consumer<Message, QueueType>;

@@ -10,6 +10,7 @@
 
 pub extern crate lapin;
 
+/// Common traits and re-exports
 pub mod prelude {
     pub use lapin;
 
@@ -20,17 +21,21 @@ pub mod prelude {
     pub use crate::queue_type::QueueTypeProducerExt;
 }
 
+/// An error originating in this crate
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    /// An error propagated from [`lapin`]
     #[error("A RabbitMQ error occurred")]
     Lapin(#[from] lapin::Error),
+    /// An error propagated from [`rmp_serde`] during encoding
     #[error("An error occurred while encoding a message")]
     MsgEncode(#[from] rmp_serde::encode::Error),
+    /// An error propagated from [`rmp_serde`] during decoding
     #[error("An error occurred while decoding a message")]
     MsgDecode(#[from] rmp_serde::decode::Error),
 }
 
-pub type Result<T, E = Error> = std::result::Result<T, E>;
+pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[cfg(any(test, feature = "accountsdb"))]
 pub mod accountsdb;

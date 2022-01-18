@@ -10,7 +10,7 @@ use crate::{
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
-    amqp: AmqpConfig,
+    amqp: Amqp,
 
     #[serde(default)]
     account_owners: HashSet<String>,
@@ -22,7 +22,7 @@ pub struct Config {
 #[serde_with::serde_as]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AmqpConfig {
+pub struct Amqp {
     pub address: String,
 
     #[serde_as(as = "serde_with::DisplayFromStr")]
@@ -37,7 +37,7 @@ impl Config {
         Ok(cfg)
     }
 
-    pub fn into_parts(self) -> Result<(AmqpConfig, AccountSelector, InstructionSelector)> {
+    pub fn into_parts(self) -> Result<(Amqp, AccountSelector, InstructionSelector)> {
         let Self {
             amqp,
             account_owners,
