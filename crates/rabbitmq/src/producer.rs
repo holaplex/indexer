@@ -7,17 +7,19 @@ use crate::{serialize::serialize, QueueType, Result};
 #[derive(Debug)]
 pub struct Producer<T, Q> {
     chan: Channel,
-    _p: PhantomData<(T, Q)>,
+    ty: Q,
+    _p: PhantomData<T>,
 }
 
 impl<T: serde::Serialize, Q: QueueType<T>> Producer<T, Q> {
-    pub async fn new(conn: &Connection) -> Result<Self> {
+    pub async fn new(conn: &Connection, ty: Q) -> Result<Self> {
         let chan = conn.create_channel().await?;
 
-        Q::init_producer(&chan).await?;
+        ty.init_producer(&chan).await?;
 
         Ok(Self {
             chan,
+            ty,
             _p: PhantomData::default(),
         })
     }
@@ -30,11 +32,11 @@ impl<T: serde::Serialize, Q: QueueType<T>> Producer<T, Q> {
 
         self.chan
             .basic_publish(
-                Q::EXCHANGE,
-                Q::QUEUE,
-                Q::publish_opts(val),
+                self.ty.exchange().as_ref(),
+                self.ty.queue().as_ref(),
+                self.ty.publish_opts(val),
                 vec,
-                Q::properties(val),
+                self.ty.properties(val),
             )
             .await?
             .await?;

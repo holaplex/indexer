@@ -7,19 +7,19 @@ use crate::{serialize::deserialize, QueueType, Result};
 
 #[derive(Debug)]
 pub struct Consumer<T, Q> {
-    chan: Channel,
+    // chan: Channel,
     consumer: lapin::Consumer,
     _p: PhantomData<(T, Q)>,
 }
 
 impl<T: for<'a> serde::Deserialize<'a>, Q: QueueType<T>> Consumer<T, Q> {
-    pub async fn new(conn: &Connection) -> Result<Self> {
+    pub async fn new(conn: &Connection, ty: Q) -> Result<Self> {
         let chan = conn.create_channel().await?;
 
-        let consumer = Q::init_consumer(&chan).await?;
+        let consumer = ty.init_consumer(&chan).await?;
 
         Ok(Self {
-            chan,
+            // chan,
             consumer,
             _p: PhantomData::default(),
         })

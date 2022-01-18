@@ -10,6 +10,16 @@
 
 pub extern crate lapin;
 
+pub mod prelude {
+    pub use lapin;
+
+    pub use crate::queue_type::QueueType;
+    #[cfg(any(test, feature = "consumer"))]
+    pub use crate::queue_type::QueueTypeConsumerExt;
+    #[cfg(any(test, feature = "producer"))]
+    pub use crate::queue_type::QueueTypeProducerExt;
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("A RabbitMQ error occurred")]
