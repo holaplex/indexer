@@ -37,7 +37,7 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
     fn on_load(&mut self, cfg: &str) -> Result<()> {
         solana_logger::setup_with_default("info");
 
-        let (acct, ins) = Config::read(cfg)
+        let (acct, ins, amqp_address) = Config::read(cfg)
             .and_then(Config::into_parts)
             .map_err(custom_err)?;
 
@@ -45,9 +45,10 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
         self.ins_sel = Some(ins);
 
         smol::block_on(async {
-            let conn = Connection::connect("todo", ConnectionProperties::default().with_smol())
-                .await
-                .map_err(custom_err)?;
+            let conn =
+                Connection::connect(&amqp_address, ConnectionProperties::default().with_smol())
+                    .await
+                    .map_err(custom_err)?;
 
             self.producer = Some(Producer::new(&conn).await.map_err(custom_err)?);
 
