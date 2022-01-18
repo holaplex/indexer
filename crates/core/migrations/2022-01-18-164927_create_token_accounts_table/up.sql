@@ -3,6 +3,5 @@ create table token_accounts (
   mint_address varchar(48) not null,
   owner_address varchar(48) not null,
   amount bigint default 0,
-  created_at timestamp not null,
-  updated_at timestamp
+  updated_at timestamp not null
 )

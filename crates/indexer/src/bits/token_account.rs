@@ -1,30 +1,50 @@
-use std::borrow::Borrow;
-
-use chrono::{offset::Local, Duration, NaiveDateTime};
+use chrono::offset::Local;
 use indexer_core::{
     db::{
         insert_into,
-        models::{Bid, Listing},
+        models::TokenAccount as TokenAccountModel,
         select,
-        tables::{bids, listings},
-        Connection,
+        tables::{metadatas, token_accounts},
     },
     prelude::*,
-    pubkeys::find_auction_data_extended,
 };
-use metaplex_auction::processor::{
-    AuctionData, AuctionDataExtended, BidState, BidderMetadata, PriceFloor,
-};
+use spl_token::state::Account as TokenAccount;
 
-use super::bidder_metadata::BidMap;
-use crate::{
-    bits::bidder_metadata::BidList, prelude::*, util, Client, RcAuctionKeys, ThreadPoolHandle,
-};
+use crate::{prelude::*, Client};
 
-pub fn process(
-    client: &Client,
-    token_account: Pubkey,
-) -> Result<()> {
-  
-  Ok(())
+pub fn process(client: &Client, pubkey: Pubkey, token_account: TokenAccount) -> Result<()> {
+    let mint = token_account.mint.to_string();
+    let owner = token_account.owner.to_string();
+    let pubkey = pubkey.to_string();
+    let db = client.db()?;
+    let now = Local::now().naive_utc();
+
+    if !select(exists(
+        metadatas::table.filter(metadatas::mint_address.eq(&mint)),
+    ))
+    .get_result(&db)
+    .context("Failed to check mint address for existing mint")?
+    {
+        return Ok(());
+    }
+
+    let amount = token_account.amount as i64;
+
+    let values = TokenAccountModel {
+        address: Borrowed(&pubkey),
+        amount,
+        mint_address: Borrowed(&mint),
+        owner_address: Borrowed(&owner),
+        updated_at: now,
+    };
+
+    insert_into(token_accounts::table)
+        .values(&values)
+        .on_conflict(token_accounts::address)
+        .do_update()
+        .set(&values)
+        .execute(&db)
+        .context("failed to insert token account")?;
+
+    Ok(())
 }

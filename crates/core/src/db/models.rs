@@ -9,7 +9,7 @@ use chrono::NaiveDateTime;
 
 use super::schema::{
     bids, editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
-    storefronts, token_accounts
+    storefronts, token_accounts,
 };
 
 /// A row in the `bids` table
@@ -136,10 +136,8 @@ pub struct TokenAccount<'a> {
     pub owner_address: Cow<'a, str>,
     /// The amount of the token, often 1
     pub amount: i64,
-    /// created_at
-    pub created_at: NaiveDateTime,
     /// updated_at
-    pub updated_at: Option<NaiveDateTime>,
+    pub updated_at: NaiveDateTime,
 }
 
 /// A row in the `metadatas` table

@@ -133,8 +133,7 @@ table! {
         mint_address -> Varchar,
         owner_address -> Varchar,
         amount -> Nullable<Int8>,
-        created_at -> Timestamp,
-        updated_at -> Nullable<Timestamp>,
+        updated_at -> Timestamp,
     }
 }
 
