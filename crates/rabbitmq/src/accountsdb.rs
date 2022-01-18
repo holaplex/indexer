@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use lapin::{
     options::{
         BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions, QueueBindOptions,
@@ -26,17 +28,41 @@ pub enum Message {
     },
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct QueueType;
+#[derive(Debug, Clone)]
+pub struct QueueType {
+    exchange: String,
+    queue: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, strum::EnumString, strum::Display)]
+#[strum(serialize_all = "camelCase")]
+pub enum Network {
+    Mainnet,
+    Devnet,
+    Testnet,
+}
+
+impl QueueType {
+    pub fn new(network: Network) -> Self {
+        let exchange = todo!();
+        let queue = todo!();
+
+        Self { exchange, queue }
+    }
+}
 
 #[async_trait::async_trait]
 impl crate::QueueType<Message> for QueueType {
-    const EXCHANGE: &'static str = "accounts";
-    const QUEUE: &'static str = "indexer-accounts";
+    fn exchange(&self) -> Cow<str> {
+        Cow::Borrowed(&self.exchange)
+    }
+    fn queue(&self) -> Cow<str> {
+        Cow::Borrowed(&self.queue)
+    }
 
-    async fn init_producer(chan: &Channel) -> Result<()> {
+    async fn init_producer(&self, chan: &Channel) -> Result<()> {
         chan.exchange_declare(
-            Self::EXCHANGE,
+            self.exchange().as_ref(),
             ExchangeKind::Fanout,
             ExchangeDeclareOptions::default(),
             FieldTable::default(),
@@ -46,9 +72,9 @@ impl crate::QueueType<Message> for QueueType {
         Ok(())
     }
 
-    async fn init_consumer(chan: &Channel) -> Result<lapin::Consumer> {
+    async fn init_consumer(&self, chan: &Channel) -> Result<lapin::Consumer> {
         chan.exchange_declare(
-            Self::EXCHANGE,
+            self.exchange().as_ref(),
             ExchangeKind::Fanout,
             ExchangeDeclareOptions::default(),
             FieldTable::default(),
@@ -56,15 +82,15 @@ impl crate::QueueType<Message> for QueueType {
         .await?;
 
         chan.queue_declare(
-            Self::QUEUE,
+            self.queue().as_ref(),
             QueueDeclareOptions::default(),
             FieldTable::default(),
         )
         .await?;
 
         chan.queue_bind(
-            Self::QUEUE,
-            Self::EXCHANGE,
+            self.queue().as_ref(),
+            self.exchange().as_ref(),
             "",
             QueueBindOptions::default(),
             FieldTable::default(),
@@ -72,8 +98,8 @@ impl crate::QueueType<Message> for QueueType {
         .await?;
 
         chan.basic_consume(
-            Self::QUEUE,
-            Self::QUEUE,
+            self.queue().as_ref(),
+            self.queue().as_ref(),
             BasicConsumeOptions::default(),
             FieldTable::default(),
         )
@@ -81,11 +107,11 @@ impl crate::QueueType<Message> for QueueType {
         .map_err(Into::into)
     }
 
-    fn publish_opts(_: &Message) -> BasicPublishOptions {
+    fn publish_opts(&self, _: &Message) -> BasicPublishOptions {
         BasicPublishOptions::default()
     }
 
-    fn properties(_: &Message) -> BasicProperties {
+    fn properties(&self, _: &Message) -> BasicProperties {
         BasicProperties::default()
     }
 }

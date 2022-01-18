@@ -17,7 +17,7 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 default = ["consumer"]
 producer = []
 consumer = []
-accountsdb = []
+accountsdb = ["strum"]
 
 [dependencies]
 async-trait = "0.1.52"
@@ -25,4 +25,5 @@ futures-util = "0.3.19"
 lapin = "1.9.0"
 rmp-serde = "1.0.0-beta.2"
 serde = { version = "1.0.133", features = ["derive"] }
+strum = { version = "0.23.0", features = ["derive"], optional = true }
 thiserror = "1.0.30"

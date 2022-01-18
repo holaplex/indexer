@@ -1,6 +1,7 @@
 use indexer_rabbitmq::{
-    accountsdb::{Message, Producer},
+    accountsdb::{Message, Producer, QueueType},
     lapin::{Connection, ConnectionProperties},
+    prelude::*,
 };
 use lapinou::LapinSmolExt;
 use solana_program::{instruction::CompiledInstruction, message::SanitizedMessage};
@@ -37,7 +38,7 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
     fn on_load(&mut self, cfg: &str) -> Result<()> {
         solana_logger::setup_with_default("info");
 
-        let (acct, ins, amqp_address) = Config::read(cfg)
+        let (amqp, acct, ins) = Config::read(cfg)
             .and_then(Config::into_parts)
             .map_err(custom_err)?;
 
@@ -46,11 +47,16 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
 
         smol::block_on(async {
             let conn =
-                Connection::connect(&amqp_address, ConnectionProperties::default().with_smol())
+                Connection::connect(&amqp.address, ConnectionProperties::default().with_smol())
                     .await
                     .map_err(custom_err)?;
 
-            self.producer = Some(Producer::new(&conn).await.map_err(custom_err)?);
+            self.producer = Some(
+                QueueType::new(amqp.network)
+                    .producer(&conn)
+                    .await
+                    .map_err(custom_err)?,
+            );
 
             Ok(())
         })

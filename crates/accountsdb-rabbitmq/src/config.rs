@@ -10,13 +10,23 @@ use crate::{
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
+    amqp: AmqpConfig,
+
     #[serde(default)]
     account_owners: HashSet<String>,
 
     #[serde(default)]
     instruction_programs: HashSet<String>,
+}
 
-    amqp_address: String,
+#[serde_with::serde_as]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AmqpConfig {
+    pub address: String,
+
+    #[serde_as(as = "serde_with::DisplayFromStr")]
+    pub network: indexer_rabbitmq::accountsdb::Network,
 }
 
 impl Config {
@@ -27,11 +37,11 @@ impl Config {
         Ok(cfg)
     }
 
-    pub fn into_parts(self) -> Result<(AccountSelector, InstructionSelector, String)> {
+    pub fn into_parts(self) -> Result<(AmqpConfig, AccountSelector, InstructionSelector)> {
         let Self {
+            amqp,
             account_owners,
             instruction_programs,
-            amqp_address,
         } = self;
 
         let acct = AccountSelector::from_config(account_owners)
@@ -39,6 +49,6 @@ impl Config {
         let ins = InstructionSelector::from_config(instruction_programs)
             .context("Failed to create instruction selector")?;
 
-        Ok((acct, ins, amqp_address))
+        Ok((amqp, acct, ins))
     }
 }
