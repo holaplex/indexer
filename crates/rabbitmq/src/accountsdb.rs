@@ -1,5 +1,8 @@
 use lapin::{
-    options::{BasicPublishOptions, ExchangeDeclareOptions},
+    options::{
+        BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions, QueueBindOptions,
+        QueueDeclareOptions,
+    },
     types::FieldTable,
     BasicProperties, Channel, ExchangeKind,
 };
@@ -29,7 +32,7 @@ pub struct QueueType;
 #[async_trait::async_trait]
 impl crate::QueueType<Message> for QueueType {
     const EXCHANGE: &'static str = "accounts";
-    const QUEUE: &'static str = "";
+    const QUEUE: &'static str = "indexer-accounts";
 
     async fn init_producer(chan: &Channel) -> Result<()> {
         chan.exchange_declare(
@@ -43,10 +46,41 @@ impl crate::QueueType<Message> for QueueType {
         Ok(())
     }
 
-    async fn init_consumer(chan: &Channel) -> Result<()> {
-        todo!();
+    async fn init_consumer(chan: &Channel) -> Result<lapin::Consumer> {
+        chan.exchange_declare(
+            Self::EXCHANGE,
+            ExchangeKind::Fanout,
+            ExchangeDeclareOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
 
-        Ok(())
+        chan.queue_declare(
+            Self::QUEUE,
+            QueueDeclareOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+
+        chan.queue_bind(
+            Self::QUEUE,
+            Self::EXCHANGE,
+            "",
+            QueueBindOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+
+        let consumer = chan
+            .basic_consume(
+                Self::QUEUE,
+                Self::QUEUE,
+                BasicConsumeOptions::default(),
+                FieldTable::default(),
+            )
+            .await?;
+
+        Ok(consumer)
     }
 
     fn publish_opts(_: &Message) -> BasicPublishOptions {

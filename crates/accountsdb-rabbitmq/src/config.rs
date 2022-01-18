@@ -15,6 +15,8 @@ pub struct Config {
 
     #[serde(default)]
     instruction_programs: HashSet<String>,
+
+    amqp_address: String,
 }
 
 impl Config {
@@ -25,10 +27,11 @@ impl Config {
         Ok(cfg)
     }
 
-    pub fn into_parts(self) -> Result<(AccountSelector, InstructionSelector)> {
+    pub fn into_parts(self) -> Result<(AccountSelector, InstructionSelector, String)> {
         let Self {
             account_owners,
             instruction_programs,
+            amqp_address,
         } = self;
 
         let acct = AccountSelector::from_config(account_owners)
@@ -36,6 +39,6 @@ impl Config {
         let ins = InstructionSelector::from_config(instruction_programs)
             .context("Failed to create instruction selector")?;
 
-        Ok((acct, ins))
+        Ok((acct, ins, amqp_address))
     }
 }
