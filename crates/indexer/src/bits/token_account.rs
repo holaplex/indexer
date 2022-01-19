@@ -25,7 +25,10 @@ pub fn process(client: &Client, pubkey: Pubkey, token_account: TokenAccount) -> 
         return Ok(());
     }
 
+    let pubkey = pubkey.to_string();
     let amount = token_account.amount as i64;
+    let owner = token_account.owner.to_string();
+    let now = Local::now().naive_utc();
 
     let values = TokenAccountModel {
         address: Borrowed(&pubkey),
