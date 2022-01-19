@@ -185,7 +185,7 @@ pub struct MutationRoot;
 #[juniper::graphql_object]
 impl MutationRoot {
     fn buyNft(_buy_nft: BuyNft) -> FieldResult<Nft> {
-        let creators: Vec<String> = Vec::new();
+        let _creators: Vec<String> = Vec::new();
         Ok(Nft {
             address: "abc123".to_owned(),
             name: "foo".to_owned(),
@@ -196,7 +196,7 @@ impl MutationRoot {
             mint_address: "efg890".to_owned(),
             primary_sale_happened: false,
             is_mutable: true,
-            creators: creators
+            creators: _creators
         })
     }
 }
