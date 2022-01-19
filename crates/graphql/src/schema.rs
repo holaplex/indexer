@@ -67,7 +67,7 @@ impl QueryRoot {
     fn nfts(
         &self,
         #[graphql(description = "Filter on creator address")] creators: Option<Vec<String>>,
-        #[graphql(description = "Filter on update authority addres")] update_authority: Option<
+        #[graphql(description = "Filter on update authority addres")] _update_authority: Option<
             Vec<String>,
         >,
     ) -> Vec<Nft> {
