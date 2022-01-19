@@ -164,20 +164,18 @@ impl QueryRoot {
 
         // rows.pop().map(Into::into)
         let creators_vec: Vec<String> = Vec::new();
-        return
-            Nft { 
-                address: rows[0].address.to_string(), 
-                name: rows[0].name.to_string(), 
-                symbol: rows[0].symbol.to_string(), 
-                uri: rows[0].uri.to_string(), 
-                seller_fee_basis_points: rows[0].seller_fee_basis_points,
-                update_authority_address: "".to_owned(), 
-                mint_address: rows[0].mint_address.to_string(), 
-                primary_sale_happened: rows[0].primary_sale_happened, 
-                is_mutable: rows[0].is_mutable, 
-                creators: creators_vec
-            }
-        
+        Nft { 
+            address: rows[0].address.to_string(), 
+            name: rows[0].name.to_string(), 
+            symbol: rows[0].symbol.to_string(), 
+            uri: rows[0].uri.to_string(), 
+            seller_fee_basis_points: rows[0].seller_fee_basis_points,
+            update_authority_address: "".to_owned(), 
+            mint_address: rows[0].mint_address.to_string(), 
+            primary_sale_happened: rows[0].primary_sale_happened, 
+            is_mutable: rows[0].is_mutable, 
+            creators: creators_vec
+        }
     }
 }
 pub struct MutationRoot;
