@@ -90,7 +90,7 @@ impl QueryRoot {
                 .unwrap();
             
             // get nft from token address
-            for address in tokens.iter(){
+            for address in &tokens{
 
                 // get the token metadata
                 let token: Vec<models::Metadata> = metadatas::table
@@ -102,7 +102,7 @@ impl QueryRoot {
 
                 // get the nft from the hashmap or create a new object
                 let creators_vec: Vec<String> = Vec::new();
-                let nft = nfts_hash.entry(address.to_owned()).or_insert(
+                let nft = nfts_hash.entry(address.clone()).or_insert(
                     Nft { 
                         address: token[0].address.to_string(), 
                         name: token[0].name.to_string(), 
@@ -183,7 +183,7 @@ pub struct MutationRoot;
 #[juniper::graphql_object]
 impl MutationRoot {
     fn buyNft(_buy_nft: BuyNft) -> FieldResult<Nft> {
-        let _creators: Vec<String> = Vec::new();
+        let creator_vec: Vec<String> = Vec::new();
         Ok(Nft {
             address: "abc123".to_owned(),
             name: "foo".to_owned(),
@@ -194,7 +194,7 @@ impl MutationRoot {
             mint_address: "efg890".to_owned(),
             primary_sale_happened: false,
             is_mutable: true,
-            creators: _creators
+            creators: creator_vec
         })
     }
 }
