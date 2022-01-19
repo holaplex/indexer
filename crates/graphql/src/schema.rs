@@ -122,8 +122,8 @@ impl QueryRoot {
             }
         }
 
-        let all_nfts: Vec<Nft> = nfts_hash.into_iter().map(|(_id, v)| v  ).collect();
-        return all_nfts
+        nfts_hash.into_iter().map(|(_id, v)| v  ).collect();
+        
         // // Find all creators
         // let creator_list: Vec<String> = creators.into_iter().flatten().collect(); 
         // let mut rows: Vec<String> = metadata_creators::table
