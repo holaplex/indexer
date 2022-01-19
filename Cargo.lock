@@ -1481,22 +1481,23 @@ checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
 name = "docbot"
-version = "0.2.0-alpha.1"
+version = "0.3.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b731327bb4bad6beb4a82b4f44848272f7b44b5536c3ddfd53bac838970bad7"
+checksum = "a873bac9a0ed5c765e33cf5604c292b80884e3d8a076c19f2efab45c08a4ce72"
 dependencies = [
  "anyhow",
  "docbot-derive",
  "lazy_static",
  "regex",
+ "strsim 0.10.0",
  "thiserror",
 ]
 
 [[package]]
 name = "docbot-derive"
-version = "0.2.0-alpha.1"
+version = "0.3.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f558b00d8b2545e11300da443a5ded6aa6cd0515778521ce5c1acc94b1cc7a4b"
+checksum = "30e633091ce44af9958b15ea5c9269b073efe83127267862938ba87335287a13"
 dependencies = [
  "anyhow",
  "lazy_static",
@@ -2727,8 +2728,11 @@ dependencies = [
  "clap 3.0.7",
  "docbot",
  "env_logger",
+ "lapinou",
  "log",
+ "metaplex-indexer-rabbitmq",
  "rustyline",
+ "smol",
 ]
 
 [[package]]
