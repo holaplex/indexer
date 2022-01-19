@@ -14,10 +14,7 @@ use crate::{prelude::*, Client};
 
 pub fn process(client: &Client, pubkey: Pubkey, token_account: TokenAccount) -> Result<()> {
     let mint = token_account.mint.to_string();
-    let owner = token_account.owner.to_string();
-    let pubkey = pubkey.to_string();
     let db = client.db()?;
-    let now = Local::now().naive_utc();
 
     if !select(exists(
         metadatas::table.filter(metadatas::mint_address.eq(&mint)),
