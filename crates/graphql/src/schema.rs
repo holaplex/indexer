@@ -110,13 +110,17 @@ impl QueryRoot {
                     mint_address: token[0].mint_address.to_string(),
                     primary_sale_happened: token[0].primary_sale_happened,
                     is_mutable: token[0].is_mutable,
-                    creators: vec![]
+                    creators: vec![],
                 });
             }
         }
 
         // for every update authority in ua parameter
-        for ua in update_authority.into_iter().flatten().collect::<Vec<String>>() {
+        for ua in update_authority
+            .into_iter()
+            .flatten()
+            .collect::<Vec<String>>()
+        {
             // get all token addresses by creator
             let tokens: Vec<String> = metadata_creators::table
                 .select(metadata_creators::metadata_address)
@@ -145,21 +149,21 @@ impl QueryRoot {
                     mint_address: token[0].mint_address.to_string(),
                     primary_sale_happened: token[0].primary_sale_happened,
                     is_mutable: token[0].is_mutable,
-                    creators: vec![]
+                    creators: vec![],
                 });
             }
         }
-        
+
         let mut all_nfts: Vec<Nft> = Vec::new();
-        for (_k, mut nft) in nfts_hash.into_iter(){
+        for (_k, mut nft) in nfts_hash.into_iter() {
             let mut creators: Vec<String> = metadata_creators::table
                 .select(metadata_creators::creator_address)
                 .filter(metadata_creators::metadata_address.eq(&nft.address))
                 .load(&conn)
                 .unwrap();
-            
-                nft.creators.append(&mut creators);
-                all_nfts.push(nft);
+
+            nft.creators.append(&mut creators);
+            all_nfts.push(nft);
         }
 
         all_nfts
