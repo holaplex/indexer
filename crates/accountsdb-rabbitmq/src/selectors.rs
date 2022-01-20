@@ -22,7 +22,7 @@ impl AccountSelector {
 
     #[inline]
     pub fn is_selected(&self, acct: &ReplicaAccountInfo) -> bool {
-        self.owners.is_empty() || self.owners.contains(acct.pubkey)
+        self.owners.is_empty() || self.owners.contains(acct.owner)
     }
 }
 
