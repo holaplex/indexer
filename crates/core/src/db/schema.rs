@@ -124,6 +124,19 @@ table! {
     }
 }
 
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    token_accounts (address) {
+        address -> Varchar,
+        mint_address -> Varchar,
+        owner_address -> Varchar,
+        amount -> Nullable<Int8>,
+        updated_at -> Timestamp,
+    }
+}
+
 joinable!(bids -> listings (listing_address));
 joinable!(editions -> master_editions (parent_address));
 joinable!(editions -> metadatas (metadata_address));
@@ -143,4 +156,5 @@ allow_tables_to_appear_in_same_query!(
     metadatas,
     store_denylist,
     storefronts,
+    token_accounts,
 );

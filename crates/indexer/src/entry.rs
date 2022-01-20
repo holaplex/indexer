@@ -2,11 +2,13 @@ use std::{collections::BTreeSet, mem, path::PathBuf, str::FromStr, sync::Arc};
 
 use clap::Parser;
 use indexer_core::db;
+use spl_token::state::Account as TokenAccount;
 use topograph::{graph, graph::AdoptableDependents, threaded};
 
 use crate::{
     bits::{
         auction, auction_cache, bidder_metadata, edition, get_storefronts, metadata, store_owner,
+        token_account,
     },
     client::Client,
     prelude::*,
@@ -84,6 +86,8 @@ pub enum Job {
     Auction(RcAuctionKeys),
     /// Attempt to store bids for an auction without indexing the auction
     SoloBidsForAuction(Pubkey, bidder_metadata::BidList),
+    /// Index token accounts so we can know who holds what NFTs
+    TokenAccount(Pubkey, TokenAccount),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -156,6 +160,9 @@ fn create_pool(
                 Job::Auction(ref keys) => auction::process(&client, keys, &bid_map, handle),
                 Job::SoloBidsForAuction(key, ref mut bids) => {
                     auction::process_solo_bids(&client, key, mem::take(bids), handle)
+                },
+                Job::TokenAccount(ref pubkey, token_account) => {
+                    token_account::process(&client, *pubkey, token_account)
                 },
             };
 
