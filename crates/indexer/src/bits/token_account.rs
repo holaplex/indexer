@@ -26,7 +26,10 @@ pub fn process(client: &Client, pubkey: Pubkey, token_account: TokenAccount) -> 
     }
 
     let pubkey = pubkey.to_string();
-    let amount = token_account.amount as i64;
+    let amount: i64 = token_account
+        .amount
+        .try_into()
+        .context("Token amount was too big to store")?;
     let owner = token_account.owner.to_string();
     let now = Local::now().naive_utc();
 
