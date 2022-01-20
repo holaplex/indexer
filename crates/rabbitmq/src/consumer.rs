@@ -40,7 +40,7 @@ impl<T: for<'a> serde::Deserialize<'a>, Q: QueueType<T>> Consumer<T, Q> {
     /// # Errors
     /// This function fails if the delivery cannot be successfully performed or
     /// the payload cannot be deserialized.
-    pub async fn consume(&mut self) -> Result<Option<T>> {
+    pub async fn read(&mut self) -> Result<Option<T>> {
         let (_chan, delivery) = match self.consumer.next().await {
             Some(d) => d?,
             None => return Ok(None),
