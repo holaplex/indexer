@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use indexer_core::{
     db::{
         models,
@@ -7,7 +9,6 @@ use indexer_core::{
     prelude::*,
 };
 use juniper::{EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject, RootNode};
-use std::collections::HashMap;
 #[derive(GraphQLObject)]
 #[graphql(description = "A Solana NFT")]
 struct Nft {
@@ -74,24 +75,22 @@ impl QueryRoot {
         let conn = self.db.get().unwrap();
 
         // Create a hashmap for all Nfts found
-        let mut nfts_hash:HashMap<String, Nft> = HashMap::new();
+        let mut nfts_hash: HashMap<String, Nft> = HashMap::new();
 
         // Create mutable vector for all rows returned
         // let mut all_rows: Vec<String> = Vec::new();
 
         // for every creator in creators parameter
-        for creator in creators.into_iter().flatten().collect::<Vec<String>>(){
-
-            // get all token addresses by creator 
+        for creator in creators.into_iter().flatten().collect::<Vec<String>>() {
+            // get all token addresses by creator
             let tokens: Vec<String> = metadata_creators::table
                 .select(metadata_creators::metadata_address)
                 .filter(metadata_creators::creator_address.eq(&creator))
                 .load(&conn)
                 .unwrap();
-            
-            // get nft from token address
-            for address in &tokens{
 
+            // get nft from token address
+            for address in &tokens {
                 // get the token metadata
                 let token: Vec<models::Metadata> = metadatas::table
                     .select(metadatas::all_columns)
@@ -102,37 +101,35 @@ impl QueryRoot {
 
                 // get the nft from the hashmap or create a new object
                 let creators_vec: Vec<String> = Vec::new();
-                let nft = nfts_hash.entry(address.clone()).or_insert(
-                    Nft { 
-                        address: token[0].address.to_string(), 
-                        name: token[0].name.to_string(), 
-                        symbol: token[0].symbol.to_string(), 
-                        uri: token[0].uri.to_string(), 
-                        seller_fee_basis_points: token[0].seller_fee_basis_points,
-                        update_authority_address: "".to_owned(), 
-                        mint_address: token[0].mint_address.to_string(), 
-                        primary_sale_happened: token[0].primary_sale_happened, 
-                        is_mutable: token[0].is_mutable, 
-                        creators: creators_vec,
-                    }
-                );
+                let nft = nfts_hash.entry(address.clone()).or_insert(Nft {
+                    address: token[0].address.to_string(),
+                    name: token[0].name.to_string(),
+                    symbol: token[0].symbol.to_string(),
+                    uri: token[0].uri.to_string(),
+                    seller_fee_basis_points: token[0].seller_fee_basis_points,
+                    update_authority_address: "".to_owned(),
+                    mint_address: token[0].mint_address.to_string(),
+                    primary_sale_happened: token[0].primary_sale_happened,
+                    is_mutable: token[0].is_mutable,
+                    creators: creators_vec,
+                });
 
                 // push the creator to the creators vector
                 nft.creators.push(creator.clone());
             }
         }
 
-        let all_nfts: Vec<Nft> = nfts_hash.into_iter().map(|(_id, v)| v  ).collect();
+        let all_nfts: Vec<Nft> = nfts_hash.into_iter().map(|(_id, v)| v).collect();
         all_nfts
         // // Find all creators
-        // let creator_list: Vec<String> = creators.into_iter().flatten().collect(); 
+        // let creator_list: Vec<String> = creators.into_iter().flatten().collect();
         // let mut rows: Vec<String> = metadata_creators::table
         //     .select(metadata_creators::metadata_address)
         //     .filter(metadata_creators::creator_address.eq(any(creator_list)))
         //     .load(&conn)
         //     .unwrap();
         // all_rows.append(&mut rows);
-        
+
         // // Find all update authorities
         // let update_authority_list: Vec<String> = update_authority.into_iter().flatten().collect();
         // let mut rows: Vec<String> = metadatas::table
@@ -141,7 +138,7 @@ impl QueryRoot {
         //     .load(&conn)
         //     .unwrap();
         // all_rows.append(&mut rows);
-        
+
         // // Find all NFTs
         // let rows: Vec<models::Metadata> = metadatas::table
         //     .select(metadatas::all_columns)
@@ -164,16 +161,16 @@ impl QueryRoot {
 
         // rows.pop().map(Into::into)
         let creators_vec: Vec<String> = Vec::new();
-        Nft { 
-            address: rows[0].address.to_string(), 
-            name: rows[0].name.to_string(), 
-            symbol: rows[0].symbol.to_string(), 
-            uri: rows[0].uri.to_string(), 
+        Nft {
+            address: rows[0].address.to_string(),
+            name: rows[0].name.to_string(),
+            symbol: rows[0].symbol.to_string(),
+            uri: rows[0].uri.to_string(),
             seller_fee_basis_points: rows[0].seller_fee_basis_points,
-            update_authority_address: "".to_owned(), 
-            mint_address: rows[0].mint_address.to_string(), 
-            primary_sale_happened: rows[0].primary_sale_happened, 
-            is_mutable: rows[0].is_mutable, 
+            update_authority_address: "".to_owned(),
+            mint_address: rows[0].mint_address.to_string(),
+            primary_sale_happened: rows[0].primary_sale_happened,
+            is_mutable: rows[0].is_mutable,
             creators: creators_vec,
         }
     }
@@ -194,7 +191,7 @@ impl MutationRoot {
             mint_address: "efg890".to_owned(),
             primary_sale_happened: false,
             is_mutable: true,
-            creators: creator_vec
+            creators: creator_vec,
         })
     }
 }
