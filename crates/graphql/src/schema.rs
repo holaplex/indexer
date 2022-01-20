@@ -113,7 +113,7 @@ impl QueryRoot {
                         mint_address: token[0].mint_address.to_string(), 
                         primary_sale_happened: token[0].primary_sale_happened, 
                         is_mutable: token[0].is_mutable, 
-                        creators: creators_vec
+                        creators: creators_vec,
                     }
                 );
 
@@ -174,7 +174,7 @@ impl QueryRoot {
             mint_address: rows[0].mint_address.to_string(), 
             primary_sale_happened: rows[0].primary_sale_happened, 
             is_mutable: rows[0].is_mutable, 
-            creators: creators_vec
+            creators: creators_vec,
         }
     }
 }
