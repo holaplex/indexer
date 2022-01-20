@@ -8,7 +8,7 @@ use lapin::{
         BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions, QueueBindOptions,
         QueueDeclareOptions,
     },
-    types::FieldTable,
+    types::{AMQPValue, FieldTable},
     BasicProperties, Channel, ExchangeKind,
 };
 use serde::{Deserialize, Serialize};
@@ -102,10 +102,13 @@ impl crate::QueueType<Message> for QueueType {
         )
         .await?;
 
+        let mut queue_options = FieldTable::default();
+        queue_options.insert("x-message-ttl".into(), AMQPValue::LongUInt(60000)); // ten minutes
+
         chan.queue_declare(
             self.queue().as_ref(),
             QueueDeclareOptions::default(),
-            FieldTable::default(),
+            queue_options,
         )
         .await?;
 
