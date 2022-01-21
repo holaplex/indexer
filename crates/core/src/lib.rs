@@ -31,10 +31,11 @@ pub mod prelude {
 
     pub use chrono::{self, prelude::*};
     pub use diesel::{
-        dsl::{exists, not},
+        dsl::{any, exists, not},
         expression_methods::*,
         query_dsl::{BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl},
     };
+    pub use diesel_full_text_search::{TsQueryExtensions, TsVectorExtensions};
     pub use log::{debug, error, info, trace, warn};
 
     pub use super::error::prelude::*;
@@ -57,7 +58,7 @@ fn dotenv(name: impl AsRef<Path>) -> Result<Option<PathBuf>, dotenv::Error> {
 #[derive(Debug, Clone, Copy, clap::Parser)]
 pub struct ServerOpts {
     /// The port to listen on
-    #[clap(short, long, default_value_t = 3000, env = "PORT")]
+    #[clap(short, long, default_value_t = 3000, env)]
     pub port: u16,
 }
 

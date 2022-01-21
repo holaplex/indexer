@@ -57,15 +57,15 @@ fn main() {
             server: ServerOpts { port },
         } = Opts::parse();
 
-        // TODO
-        let _ = db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
+        let db_conn =
+            db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
 
         let mut addr: SocketAddr = "0.0.0.0:3000".parse().unwrap();
         addr.set_port(port);
 
         let graphiql_uri = format!("http://{}", addr);
 
-        let schema = std::sync::Arc::new(schema::create());
+        let schema = std::sync::Arc::new(schema::create(db_conn));
 
         actix_web::rt::System::new("main")
             .block_on(

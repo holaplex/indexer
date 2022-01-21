@@ -14,7 +14,6 @@ keywords = ["solana", "metaplex", "holaplex", "web3"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [dependencies]
-clap = "3.0.0-beta.5"
 parking_lot = "0.11.2"
 reqwest = "0.11.6"
 serde = { version = "1.0.130", features = ["derive"] }
@@ -30,6 +29,7 @@ metaplex-token-vault = "0.0.1"
 solana-client = "1.8.3"
 solana-program = "1.8.3"
 solana-sdk = "1.8.3"
+spl-token = "3.2.0"
 
 [dependencies.indexer-core]
 package = "metaplex-indexer-core"
