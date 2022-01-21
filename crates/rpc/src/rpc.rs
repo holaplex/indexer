@@ -152,13 +152,14 @@ impl Rpc for Server {
                      seller_fee_basis_points: _,
                      update_authority_address: _,
                      mint_address: _,
-                     primary_sale_happened: _,
+                     primary_sale_happened,
                      is_mutable: _,
                      edition_nonce: _,
                  }| ListingItem {
                     address: address.into_owned(),
                     name: name.into_owned(),
                     uri: uri.into_owned(),
+                    primary_sale_happened,
                     extra: (),
                 },
             )
