@@ -1,0 +1,7 @@
+/.git
+/.github
+/fixtures
+/target
+.env.dev
+.env.local
+.DS_Store

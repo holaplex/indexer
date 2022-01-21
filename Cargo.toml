@@ -5,3 +5,7 @@ members = ["crates/*"]
 opt-level = 3
 lto = "fat"
 
+[profile.heroku]
+inherits = "release"
+opt-level = "z"
+lto = false
