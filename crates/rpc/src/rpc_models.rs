@@ -66,6 +66,7 @@ impl From<ListingsTripleJoinRow> for Listing {
             meta_address,
             name,
             uri,
+            primary_sale_happened,
         }: ListingsTripleJoinRow,
     ) -> Self {
         Self {
@@ -84,6 +85,7 @@ impl From<ListingsTripleJoinRow> for Listing {
                 address: meta_address,
                 name,
                 uri,
+                primary_sale_happened,
                 extra: (),
             }],
             extra: (),
@@ -99,6 +101,7 @@ impl Extend<ListingsTripleJoinRow> for Listing {
                  meta_address,
                  name,
                  uri,
+                 primary_sale_happened,
                  ..
              }| {
                 assert!(address == self.address);
@@ -107,6 +110,7 @@ impl Extend<ListingsTripleJoinRow> for Listing {
                     address: meta_address,
                     name,
                     uri,
+                    primary_sale_happened,
                     extra: (),
                 }
             },
@@ -121,6 +125,7 @@ pub struct ListingItem<I = ()> {
     pub address: String,
     pub name: String,
     pub uri: String,
+    pub primary_sale_happened: bool,
     #[serde(flatten)]
     pub extra: I,
 }
@@ -312,6 +317,7 @@ impl ListingDetails {
                     address,
                     name,
                     uri,
+                    primary_sale_happened,
                     extra: (),
                 } = item;
 
@@ -319,6 +325,7 @@ impl ListingDetails {
                     address,
                     name,
                     uri,
+                    primary_sale_happened,
                     extra: ItemExtra { edition, creators },
                 })
             })

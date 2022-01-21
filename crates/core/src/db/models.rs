@@ -221,4 +221,6 @@ pub struct ListingsTripleJoinRow {
     pub name: String,
     /// Metadata URI
     pub uri: String,
+    /// Listing has already been sold once
+    pub primary_sale_happened: bool,
 }
