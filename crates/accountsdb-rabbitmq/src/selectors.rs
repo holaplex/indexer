@@ -22,7 +22,7 @@ impl AccountSelector {
 
     #[inline]
     pub fn is_selected(&self, acct: &ReplicaAccountInfo) -> bool {
-        self.owners.is_empty() || self.owners.contains(acct.owner)
+        self.owners.contains(acct.owner)
     }
 }
 
@@ -49,6 +49,6 @@ impl InstructionSelector {
         pgm: &[u8; 32],
         _accts: &[[u8; 32]],
     ) -> bool {
-        self.programs.is_empty() || self.programs.contains(pgm)
+        self.programs.contains(pgm)
     }
 }
