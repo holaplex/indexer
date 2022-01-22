@@ -2,6 +2,19 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    attributes (id) {
+        metadata_address -> Varchar,
+        name -> Nullable<Text>,
+        value -> Nullable<Text>,
+        trait_type -> Nullable<Text>,
+        id -> Int4,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     bids (listing_address, bidder_address) {
         listing_address -> Varchar,
         bidder_address -> Varchar,
@@ -20,6 +33,18 @@ table! {
         parent_address -> Varchar,
         edition -> Int8,
         metadata_address -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    files (id) {
+        metadata_address -> Varchar,
+        uri -> Nullable<Text>,
+        file_type -> Nullable<Text>,
+        id -> Int4,
     }
 }
 
@@ -73,11 +98,40 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    metadata_collections (id) {
+        metadata_address -> Varchar,
+        name -> Nullable<Text>,
+        family -> Nullable<Text>,
+        id -> Int4,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     metadata_creators (metadata_address, creator_address) {
         metadata_address -> Varchar,
         creator_address -> Varchar,
         share -> Int4,
         verified -> Bool,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    metadata_jsons (metadata_address) {
+        metadata_address -> Varchar,
+        fingerprint -> Nullable<Bytea>,
+        description -> Nullable<Text>,
+        image -> Nullable<Text>,
+        animation_url -> Nullable<Text>,
+        external_url -> Nullable<Text>,
+        category -> Nullable<Text>,
+        updated_at -> Nullable<Timestamp>,
+        raw_content -> Nullable<Jsonb>,
     }
 }
 
@@ -130,61 +184,28 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
-    metadata_jsons (metadata_address) {
-        metadata_address -> Varchar,
-        fingerprint -> Bytea,
+    token_accounts (address) {
+        address -> Varchar,
+        mint_address -> Varchar,
+        owner_address -> Varchar,
+        amount -> Nullable<Int8>,
         updated_at -> Timestamp,
-        description -> Text,
-        image -> Text,
-        animation_url -> Nullable<Text>,
-        external_url -> Nullable<Text>,
-        category -> Nullable<Text>,
-        raw_content -> Jsonb,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-
-    files (metadata_address,uri,file_type) {
-        metadata_address -> Varchar,
-        uri -> Nullable<Text>,
-        file_type -> Nullable<Text>,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-
-    attributes (metadata_address,name,value,trait_type) {
-        metadata_address -> Varchar,
-        name ->  Nullable<Text>,
-        value -> Nullable<Text>,
-        trait_type ->Nullable<Text>,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-
-    metadata_collections (metadata_address,name,family) {
-        metadata_address -> Varchar,
-        name ->  Nullable<Text>,
-        family -> Nullable<Text>,
     }
 }
 
 allow_tables_to_appear_in_same_query!(
+    attributes,
     bids,
     editions,
+    files,
     listing_metadatas,
     listings,
     master_editions,
+    metadata_collections,
     metadata_creators,
+    metadata_jsons,
     metadatas,
     store_denylist,
     storefronts,
+    token_accounts,
 );

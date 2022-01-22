@@ -11,3 +11,29 @@ create table metadata_jsons
     raw_content jsonb
 );
 
+create table attributes
+(
+    metadata_address varchar(48) not null,
+    name text,
+    value text,
+    trait_type text,
+    id SERIAL PRIMARY KEY
+);
+
+create table files
+(
+    metadata_address varchar(48) not null,
+    uri text,
+    file_type text,
+    id SERIAL PRIMARY KEY
+);
+
+
+
+create table metadata_collections
+(
+    metadata_address varchar(48) not null,
+    name text,
+    family text,
+    id SERIAL PRIMARY KEY
+);
