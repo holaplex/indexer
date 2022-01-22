@@ -274,6 +274,8 @@ pub struct MetadataCollection<'a> {
     pub family: Option<String>,
 }
 
+/// A row in the `token_accounts` table
+/// helpful for tracking exchanges of tokens
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct TokenAccount<'a> {
     /// The address of this account
