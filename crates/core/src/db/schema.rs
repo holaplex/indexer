@@ -130,12 +130,50 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
-    token_accounts (address) {
-        address -> Varchar,
-        mint_address -> Varchar,
-        owner_address -> Varchar,
-        amount -> Nullable<Int8>,
+    metadata_jsons (metadata_address) {
+        metadata_address -> Varchar,
+        fingerprint -> Bytea,
         updated_at -> Timestamp,
+        description -> Text,
+        image -> Text,
+        animation_url -> Nullable<Text>,
+        external_url -> Nullable<Text>,
+        category -> Nullable<Text>,
+        raw_content -> Jsonb,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    files (metadata_address,uri,file_type) {
+        metadata_address -> Varchar,
+        uri -> Nullable<Text>,
+        file_type -> Nullable<Text>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    attributes (metadata_address,name,value,trait_type) {
+        metadata_address -> Varchar,
+        name ->  Nullable<Text>,
+        value -> Nullable<Text>,
+        trait_type ->Nullable<Text>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    metadata_collections (metadata_address,name,family) {
+        metadata_address -> Varchar,
+        name ->  Nullable<Text>,
+        family -> Nullable<Text>,
     }
 }
 
@@ -149,5 +187,4 @@ allow_tables_to_appear_in_same_query!(
     metadatas,
     store_denylist,
     storefronts,
-    token_accounts,
 );

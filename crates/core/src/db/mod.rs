@@ -9,8 +9,9 @@ pub mod tables {
     //! Diesel schema DSLs
 
     pub use super::schema::{
-        bids, editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
-        store_denylist, storefronts, token_accounts,
+        attributes, bids, editions, files, listing_metadatas, listings, master_editions,
+        metadata_collections, metadata_creators, metadata_jsons, metadatas, store_denylist,
+        storefronts,
     };
 }
 

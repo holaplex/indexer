@@ -1,9 +1,11 @@
 use std::{borrow::Borrow, env, panic::AssertUnwindSafe, sync::Arc};
 
+use cid::Cid;
 use indexer_core::{
     db::{Pool, PooledConnection},
     prelude::*,
 };
+use reqwest::Url;
 use solana_client::{
     client_error::{ClientErrorKind, Result as ClientResult},
     rpc_client::RpcClient,
@@ -12,19 +14,25 @@ use solana_client::{
 };
 use solana_sdk::{account::Account, pubkey::Pubkey};
 
+pub mod prelude {
+    pub use solana_client::{
+        rpc_config::RpcProgramAccountsConfig,
+        rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType},
+    };
+}
+
+/// An Arweave transaction ID
+#[derive(Debug, Clone, Copy)]
+pub struct ArTxid(pub [u8; 32]);
+
 // RpcClient doesn't implement Debug for some reason
 #[allow(missing_debug_implementations)]
 /// Wrapper for handling Solana JSONRPC client logic.
 pub struct Client {
     db: AssertUnwindSafe<Pool>,
     rpc: AssertUnwindSafe<RpcClient>,
-}
-
-pub mod prelude {
-    pub use solana_client::{
-        rpc_config::RpcProgramAccountsConfig,
-        rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType},
-    };
+    ipfs_cdn: Url,
+    arweave_cdn: Url,
 }
 
 impl Client {
@@ -33,13 +41,15 @@ impl Client {
     /// # Errors
     /// This function fails if no `SOLANA_ENDPOINT` environment variable can be
     /// located.
-    pub fn new_rc(db: Pool) -> Result<Arc<Self>> {
+    pub fn new_rc(db: Pool, ipfs_cdn: Url, arweave_cdn: Url) -> Result<Arc<Self>> {
         let endpoint = env::var("SOLANA_ENDPOINT").context("Couldn't get Solana endpoint")?;
         info!("Connecting to endpoint: {:?}", endpoint);
 
         Ok(Arc::new(Self {
             db: AssertUnwindSafe(db),
             rpc: AssertUnwindSafe(RpcClient::new(endpoint)),
+            ipfs_cdn,
+            arweave_cdn,
         }))
     }
 
@@ -105,5 +115,23 @@ impl Client {
         self.rpc
             .0
             .get_program_accounts_with_config(program.borrow(), config)
+    }
+
+    /// Construct an IPFS link from an IPFS CID
+    ///
+    /// # Errors
+    /// This function fails if the CID provided is not URL safe.
+    pub fn ipfs_link(&self, cid: &Cid) -> Result<Url> {
+        self.ipfs_cdn.join(&cid.to_string()).map_err(Into::into)
+    }
+
+    /// Construct an Arweave link from a valid Arweave transaction ID
+    ///
+    /// # Errors
+    /// This function fails if the transaction ID provided is not URL safe
+    pub fn arweave_link(&self, txid: &ArTxid) -> Result<Url> {
+        self.arweave_cdn
+            .join(&base64::encode_config(&txid.0, base64::URL_SAFE_NO_PAD))
+            .map_err(Into::into)
     }
 }

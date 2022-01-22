@@ -1,13 +1,13 @@
 use std::{collections::BTreeSet, mem, path::PathBuf, str::FromStr, sync::Arc};
 
-use indexer_core::{clap, clap::Parser, db};
-use spl_token::state::Account as TokenAccount;
+use clap::Parser;
+use indexer_core::db;
 use topograph::{graph, graph::AdoptableDependents, threaded};
 
 use crate::{
     bits::{
-        auction, auction_cache, bidder_metadata, edition, get_storefronts, metadata, store_owner,
-        token_account,
+        auction, auction_cache, bidder_metadata, edition, get_storefronts, metadata, metadata_uri,
+        store_owner,
     },
     client::Client,
     prelude::*,
@@ -79,14 +79,14 @@ pub enum Job {
     ListingMetadata(ListingMetadata),
     /// Process data for an individual item
     Metadata(Pubkey),
+    /// Process the associated metadata URI for an item
+    MetadataUri(Pubkey, String),
     /// Locate and process the edition for a token mint
     EditionForMint(EditionKeys),
     /// Process data for an auction
     Auction(RcAuctionKeys),
     /// Attempt to store bids for an auction without indexing the auction
     SoloBidsForAuction(Pubkey, bidder_metadata::BidList),
-    /// Index token accounts so we can know who holds what NFTs
-    TokenAccount(Pubkey, TokenAccount),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -128,6 +128,14 @@ struct Opts {
     /// are run.
     #[clap(short, long = "entry")]
     entries: Option<Vec<Entry>>,
+
+    /// A valid base URL to use when fetching IPFS links
+    #[clap(long, env = "IPFS_CDN")]
+    ipfs_cdn: Option<String>,
+
+    /// A valid base URL to use when fetching Arweave links
+    #[clap(long, env = "ARWEAVE_CDN")]
+    arweave_cdn: Option<String>,
 }
 
 fn create_pool(
@@ -155,13 +163,13 @@ fn create_pool(
                     auction_cache::process_listing_metadata(&client, lm, handle)
                 },
                 Job::Metadata(meta) => metadata::process(&client, meta, handle),
+                Job::MetadataUri(meta, ref uri) => {
+                    metadata_uri::process(&client, meta, uri.clone(), handle)
+                },
                 Job::EditionForMint(keys) => edition::process(&client, keys, handle),
                 Job::Auction(ref keys) => auction::process(&client, keys, &bid_map, handle),
                 Job::SoloBidsForAuction(key, ref mut bids) => {
                     auction::process_solo_bids(&client, key, mem::take(bids), handle)
-                },
-                Job::TokenAccount(ref pubkey, token_account) => {
-                    token_account::process(&client, *pubkey, token_account)
                 },
             };
 
@@ -245,6 +253,8 @@ pub fn run() -> Result<()> {
         thread_count,
         store_list,
         entries,
+        arweave_cdn,
+        ipfs_cdn,
     } = Opts::parse();
 
     let db = db::connect(db::ConnectMode::Write).context("Failed to connect to Postgres")?;
@@ -252,7 +262,18 @@ pub fn run() -> Result<()> {
     let bid_dependents = AdoptableDependents::new().rc();
     let pool = create_pool(
         thread_count,
-        Client::new_rc(db).context("Failed to construct Client")?,
+        Client::new_rc(
+            db,
+            ipfs_cdn
+                .ok_or_else(|| anyhow!("Missing IPFS CDN"))?
+                .parse()
+                .context("Failed to parse IPFS CDN URL")?,
+            arweave_cdn
+                .ok_or_else(|| anyhow!("Missing Arweave CDN"))?
+                .parse()
+                .context("Failed to parse Arweave CDN URL")?,
+        )
+        .context("Failed to construct Client")?,
         bidder_metadata::BidMap::default(),
         &bid_dependents,
     )?;

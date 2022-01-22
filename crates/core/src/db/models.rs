@@ -8,8 +8,8 @@ use std::borrow::Cow;
 use chrono::NaiveDateTime;
 
 use super::schema::{
-    bids, editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
-    storefronts, token_accounts,
+    attributes, bids, editions, files, listing_metadatas, listings, master_editions,
+    metadata_collections, metadata_creators, metadata_jsons, metadatas, storefronts,
 };
 
 /// A row in the `bids` table
@@ -124,22 +124,6 @@ pub struct MetadataCreator<'a> {
     pub verified: bool,
 }
 
-/// A row in the `token_accounts` table
-/// helpful for tracking exchanges of tokens
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
-pub struct TokenAccount<'a> {
-    /// The address of this account
-    pub address: Cow<'a, str>,
-    /// The mint address of the token
-    pub mint_address: Cow<'a, str>,
-    /// The owner token
-    pub owner_address: Cow<'a, str>,
-    /// The amount of the token, often 1
-    pub amount: i64,
-    /// updated_at
-    pub updated_at: NaiveDateTime,
-}
-
 /// A row in the `metadatas` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct Metadata<'a> {
@@ -225,4 +209,66 @@ pub struct ListingsTripleJoinRow {
     pub uri: String,
     /// Listing has already been sold once
     pub primary_sale_happened: bool,
+}
+
+/// A row in the `metadata_jsons` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct MetadataJson<'a> {
+    // Table 'metadata_jsons'
+    /// Metadata Address
+    pub metadata_address: Cow<'a, str>,
+    /// Metadata URI fingerprint - Cid for Ipfs and ArTxid for Arweave
+    pub fingerprint: Cow<'a, Vec<u8>>,
+    /// Metadata Timestamp
+    pub updated_at: NaiveDateTime,
+    /// Metadata description
+    pub description: Option<String>,
+    /// Metadata Image url
+    pub image: Cow<'a, str>,
+    /// Metadata Animation url
+    pub animation_url: Option<String>,
+    /// Metadata External Url
+    pub external_url: Option<String>,
+    /// Metadata Category
+    pub category: Option<String>,
+    /// Metadata URI raw json
+    pub raw_content: Cow<'a, serde_json::Value>,
+}
+
+/// A row in 'files' table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct File<'a> {
+    // Table 'files'
+    /// Metadata address
+    pub metadata_address: Cow<'a, str>,
+    /// File URI attribute
+    pub uri: Option<String>,
+    /// File type attribute
+    pub file_type: Option<String>,
+}
+
+/// A row in 'attributes' table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct Attribute<'a> {
+    // Table 'attributes'
+    /// Metadata address
+    pub metadata_address: Cow<'a, str>,
+    /// Attribute name
+    pub name: Option<String>,
+    /// Attribute value
+    pub value: Option<String>,
+    /// Attribute trait type
+    pub trait_type: Option<String>,
+}
+
+/// A row in 'metadata_collection' table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct MetadataCollection<'a> {
+    // Table 'metadata_collection'
+    /// Metadata address
+    pub metadata_address: Cow<'a, str>,
+    /// Collection name
+    pub name: Option<String>,
+    /// Collection family
+    pub family: Option<String>,
 }

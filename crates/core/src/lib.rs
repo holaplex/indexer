@@ -58,7 +58,7 @@ fn dotenv(name: impl AsRef<Path>) -> Result<Option<PathBuf>, dotenv::Error> {
 #[derive(Debug, Clone, Copy, clap::Parser)]
 pub struct ServerOpts {
     /// The port to listen on
-    #[clap(short, long, default_value_t = 3000, env)]
+    #[clap(short, long, default_value_t = 3000, env = "PORT")]
     pub port: u16,
 }
 
