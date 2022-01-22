@@ -1,7 +1,7 @@
 use std::{collections::BTreeSet, mem, path::PathBuf, str::FromStr, sync::Arc};
 
-use clap::Parser;
-use indexer_core::db;
+use indexer_core::{clap, clap::Parser, db};
+use spl_token::state::Account as TokenAccount;
 use topograph::{graph, graph::AdoptableDependents, threaded};
 
 use crate::{

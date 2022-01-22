@@ -10,6 +10,7 @@ use chrono::NaiveDateTime;
 use super::schema::{
     attributes, bids, editions, files, listing_metadatas, listings, master_editions,
     metadata_collections, metadata_creators, metadata_jsons, metadatas, storefronts,
+    token_accounts,
 };
 
 /// A row in the `bids` table
@@ -271,4 +272,18 @@ pub struct MetadataCollection<'a> {
     pub name: Option<String>,
     /// Collection family
     pub family: Option<String>,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct TokenAccount<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// The mint address of the token
+    pub mint_address: Cow<'a, str>,
+    /// The owner token
+    pub owner_address: Cow<'a, str>,
+    /// The amount of the token, often 1
+    pub amount: i64,
+    /// updated_at
+    pub updated_at: NaiveDateTime,
 }

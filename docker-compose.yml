@@ -9,9 +9,9 @@ services:
     ports:
       - "5337:5432"
     volumes:
-      - db_data_1:/hdd
+      - db_data:/var/lib/postgresql/data
 
 volumes:
-  db_data_1:
+  db_data:
     driver: local
     name: metaplex_indexer.dev_db_data
