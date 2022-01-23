@@ -5,3 +5,4 @@ alter table editions drop constraint editions_metadata_address_fkey;
 alter table editions drop constraint editions_parent_address_fkey;
 alter table bids drop constraint bids_listing_address_fkey;
 alter table listings drop constraint listings_store_owner_fkey;
+alter table master_editions drop constraint master_editions_metadata_address_fkey;

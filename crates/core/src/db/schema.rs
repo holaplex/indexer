@@ -137,8 +137,6 @@ table! {
     }
 }
 
-joinable!(master_editions -> metadatas (metadata_address));
-
 allow_tables_to_appear_in_same_query!(
     bids,
     editions,
