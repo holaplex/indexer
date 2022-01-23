@@ -1,2 +1,7 @@
 [workspace]
 members = ["crates/*"]
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+

@@ -6,84 +6,6 @@ on:
     branches: [master]
 
 jobs:
-  doc:
-    name: cargo doc
-    runs-on: ubuntu-latest
-    steps:
-      - name: install dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libudev-dev
-
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2021-11-09
-          components: cargo, rustc
-          profile: minimal
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: doc
-          args: --all --all-features
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: doc
-          args: --all --release --all-features
-
-  test:
-    name: cargo test
-    runs-on: ubuntu-latest
-    steps:
-      - name: install dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libudev-dev
-
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2021-11-09
-          components: cargo, rustc
-          profile: minimal
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all --all-features
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all --release --all-features
-
-  clippy:
-    name: cargo clippy
-    runs-on: ubuntu-latest
-    steps:
-      - name: install dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libudev-dev
-
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2021-11-09
-          components: cargo, rustc, clippy
-          profile: minimal
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all --all-features
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all --release --all-features
-
   fmt:
     name: cargo fmt
     runs-on: ubuntu-latest
@@ -99,3 +21,98 @@ jobs:
         with:
           command: fmt
           args: --all --check
+
+  debug-check:
+    name: cargo check/doc/clippy (debug profile)
+    runs-on: ubuntu-latest
+    steps:
+      - name: install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libudev-dev
+
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-11-09
+          components: cargo, rustc
+          profile: minimal
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all --all-features
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --all --all-features
+
+  debug-build:
+    name: cargo build/test (debug profile)
+    runs-on: ubuntu-latest
+    steps:
+      - name: install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libudev-dev
+
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-11-09
+          components: cargo, rustc
+          profile: minimal
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all --all-features
+
+  release-check:
+    name: cargo check/doc/clippy (release profile)
+    runs-on: ubuntu-latest
+    steps:
+      - name: install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libudev-dev
+
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-11-09
+          components: cargo, rustc
+          profile: minimal
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all --all-features --release
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --all --all-features --release
+
+  release-build:
+    name: cargo build/test (release profile)
+    runs-on: ubuntu-latest
+    steps:
+      - name: install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libudev-dev
+
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-11-09
+          components: cargo, rustc
+          profile: minimal
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all --all-features --release
+

@@ -88,6 +88,7 @@ pub type Columns = (
     metadatas::address,
     metadatas::name,
     metadatas::uri,
+    metadatas::primary_sale_happened,
 );
 
 /// Required column layout for a listings triple-join
@@ -106,6 +107,7 @@ pub const COLUMNS: Columns = (
     metadatas::address,
     metadatas::name,
     metadatas::uri,
+    metadatas::primary_sale_happened,
 );
 
 /// The type of the expected ORDER BY clause

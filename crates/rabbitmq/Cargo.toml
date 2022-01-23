@@ -1,0 +1,29 @@
+[package]
+name = "metaplex-indexer-rabbitmq"
+version = "0.1.0"
+authors = [
+  "ryans <ryans@holaplex.com>",
+]
+edition = "2021"
+description = "RabbitMQ transport components for metaplex-indexer"
+documentation = "https://docs.rs/metaplex-indexer-rabbitmq"
+readme = "../../README.md"
+repository = "https://github.com/holaplex/metaplex-indexer"
+license = "AGPL-3.0-or-later"
+keywords = ["solana", "metaplex", "holaplex", "web3", "rabbitmq"]
+categories = ["cryptography::cryptocurrencies", "web-programming"]
+
+[features]
+default = ["consumer"]
+producer = []
+consumer = []
+accountsdb = ["strum"]
+
+[dependencies]
+async-trait = "0.1.52"
+futures-util = "0.3.19"
+lapin = "1.9.0"
+rmp-serde = "1.0.0-beta.2"
+serde = { version = "1.0.133", features = ["derive"] }
+strum = { version = "0.23.0", features = ["derive"], optional = true }
+thiserror = "1.0.30"
