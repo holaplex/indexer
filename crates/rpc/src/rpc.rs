@@ -80,6 +80,7 @@ impl Rpc for Server {
             storefronts::favicon_url,
             storefronts::logo_url,
             storefronts::updated_at,
+            storefronts::banner_url,
         );
 
         let db = self.db()?;
