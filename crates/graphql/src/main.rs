@@ -15,7 +15,8 @@ use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
 use indexer_core::{clap, clap::Parser, db, ServerOpts};
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
 
-use crate::schema::Schema;
+
+use crate::schema::{Schema,AppContext};
 
 mod schema;
 
@@ -24,6 +25,7 @@ struct Opts {
     #[clap(flatten)]
     server: ServerOpts,
 }
+
 
 fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
     move || {
@@ -39,11 +41,11 @@ async fn graphql(
     st: web::Data<Arc<Schema>>,
     data: web::Json<GraphQLRequest>,
 ) -> Result<HttpResponse, Error> {
-    let json = web::block(move || {
-        let res = data.execute_sync(&st, &());
-        serde_json::to_string(&res)
-    })
-    .await?;
+    let ctx = AppContext::new();
+    let res = data.execute(&st, &ctx).await;
+
+    let json = serde_json::to_string(&res)?;
+
     Ok(HttpResponse::Ok()
         .content_type("application/json")
         .body(json))

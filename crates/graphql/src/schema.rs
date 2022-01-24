@@ -6,10 +6,20 @@ use indexer_core::{
     },
     prelude::*,
 };
-use juniper::{EmptyMutation, EmptySubscription, GraphQLInputObject, GraphQLObject, RootNode};
+use juniper::{EmptyMutation, EmptySubscription, GraphQLObject, RootNode, FieldResult, FieldError};
+use std::{collections::HashMap, hash::Hash};
+use async_trait::async_trait;
+use dataloader::non_cached::Loader;
+use dataloader::BatchFn;
 
-#[derive(GraphQLObject)]
-#[graphql(description = "A Solana NFT")]
+#[derive(Debug, Clone, GraphQLObject)]
+struct NftDetail {
+    title: String,
+    description: String,
+    image: String,
+}
+
+#[derive(Debug, Clone)]
 struct Nft {
     address: String,
     name: String,
@@ -20,6 +30,23 @@ struct Nft {
     mint_address: String,
     primary_sale_happened: bool,
     is_mutable: bool,
+}
+
+#[juniper::graphql_object(Context = AppContext)]
+impl Nft {
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn uri(&self) -> String {
+        self.uri.clone()
+    }
+
+    pub async fn details(&self, ctx: &AppContext) -> Option<NftDetail> {
+        let fut = ctx.nft_detail_loader.load(self.address.clone());
+
+        Some(fut.await)
+    }
 }
 
 impl<'a> From<models::Metadata<'a>> for Nft {
@@ -88,17 +115,44 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
     }
 }
 
-#[derive(GraphQLInputObject)]
-#[graphql(description = "Buy a NFT")]
-struct BuyNft {
-    transaction: String,
-}
 
 pub struct QueryRoot {
     db: Pool,
 }
 
-#[juniper::graphql_object]
+pub struct NftDetailBatcher;
+
+
+impl BatchFn<String, NftDetail> for NftDetailBatcher {
+    async fn load(&mut self, keys: &[String]) -> HashMap<String, NftDetail> {
+        let mut hash_map = HashMap::new();
+        
+        println!("{:?}", keys);
+
+        for key in keys {
+            hash_map.insert(key.clone(), NftDetail{ title: "foo".into(), description: "bar".into(), image: "image".into() });
+        }
+
+        hash_map
+    }
+}
+
+#[derive(Clone)]
+pub struct AppContext {
+    nft_detail_loader: Loader<String, NftDetail, NftDetailBatcher>,
+}
+
+impl AppContext {
+    pub fn new() -> AppContext {
+        Self {
+            nft_detail_loader: Loader::new(NftDetailBatcher),
+        }
+    }
+}
+
+impl juniper::Context for AppContext {}
+
+#[juniper::graphql_object(Context = AppContext)]
 impl QueryRoot {
     fn nfts(
         &self,
@@ -185,7 +239,7 @@ impl QueryRoot {
     }
 }
 
-pub type Schema = RootNode<'static, QueryRoot, EmptyMutation, EmptySubscription>;
+pub type Schema = RootNode<'static, QueryRoot, EmptyMutation<AppContext>, EmptySubscription<AppContext>>;
 
 pub fn create(db: Pool) -> Schema {
     Schema::new(
