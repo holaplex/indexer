@@ -122,7 +122,6 @@ table! {
         logo_url -> Text,
         ts_index -> Tsvector,
         updated_at -> Nullable<Timestamp>,
-        banner_url -> Text,
     }
 }
 
