@@ -5,3 +5,8 @@ members = ["crates/*"]
 opt-level = 3
 lto = "fat"
 
+[profile.heroku]
+inherits = "release"
+# Uncomment below if build performance declines
+# opt-level = "z"
+# lto = false
