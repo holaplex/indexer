@@ -5,7 +5,7 @@ name: Deploy to heroku.
 # Run workflow on every push to master branch.
 on:
   push:
-    branches: [ryans/optimize-dockerfile]
+    branches: [dev]
 
 # Your workflows jobs.
 jobs:
@@ -15,6 +15,15 @@ jobs:
       # Check-out your repository.
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Cargo Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+            ${{ runner.os }}-cargo
 
 
       - name: Build, Push and Release a Docker container to Heroku. # Your custom step name
