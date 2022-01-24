@@ -140,7 +140,6 @@ pub struct Storefront {
     pub favicon_url: String,
     pub logo_url: String,
     pub updated_at: Option<Timestamp>,
-    pub banner_url: String,
 }
 
 impl<'a> From<models::Storefront<'a>> for Storefront {
@@ -153,7 +152,6 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
             favicon_url,
             logo_url,
             updated_at,
-            banner_url,
         }: models::Storefront,
     ) -> Self {
         Self {
@@ -164,7 +162,6 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
             favicon_url: favicon_url.into_owned(),
             logo_url: logo_url.into_owned(),
             updated_at: updated_at.map(Timestamp::from_utc),
-            banner_url: banner_url.into_owned(),
         }
     }
 }
@@ -173,6 +170,7 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
 #[serde(rename_all = "camelCase")]
 pub struct Creator {
     pub wallet_address: String,
+    // TODO: add share/profile info?
 }
 
 impl<'a> From<MetadataCreator<'a>> for Creator {
