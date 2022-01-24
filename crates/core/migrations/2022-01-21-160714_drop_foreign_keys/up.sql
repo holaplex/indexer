@@ -1,0 +1,8 @@
+alter table metadata_creators drop constraint metadata_creators_metadata_address_fkey;
+alter table listing_metadatas drop constraint listing_metadatas_listing_address_fkey;
+alter table listing_metadatas drop constraint listing_metadatas_metadata_address_fkey;
+alter table editions drop constraint editions_metadata_address_fkey;
+alter table editions drop constraint editions_parent_address_fkey;
+alter table bids drop constraint bids_listing_address_fkey;
+alter table listings drop constraint listings_store_owner_fkey;
+alter table master_editions drop constraint master_editions_metadata_address_fkey;

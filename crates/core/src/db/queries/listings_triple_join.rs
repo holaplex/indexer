@@ -7,7 +7,7 @@ use anyhow::Context;
 use chrono::{Duration, NaiveDateTime};
 use diesel::{
     dsl::not,
-    expression::{nullable::Nullable, operators::Eq as SqlEq},
+    expression::operators::Eq as SqlEq,
     helper_types::{not as Not, And, Eq, Gt, IsNotNull, IsNull, Lt, Or},
     prelude::*,
     query_builder::SelectStatement,
@@ -126,28 +126,31 @@ pub type TripleJoin = SelectStatement<
                     SelectStatement<
                         JoinOn<
                             Join<listing_metadatas::table, metadatas::table, Inner>,
-                            SqlEq<
-                                Nullable<listing_metadatas::metadata_address>,
-                                Nullable<metadatas::address>,
-                            >,
+                            SqlEq<listing_metadatas::metadata_address, metadatas::address>,
                         >,
                     >,
                     Inner,
                 >,
-                SqlEq<Nullable<listing_metadatas::listing_address>, Nullable<listings::address>>,
+                SqlEq<listing_metadatas::listing_address, listings::address>,
             >,
             storefronts::table,
             Inner,
         >,
-        SqlEq<Nullable<listings::store_owner>, Nullable<storefronts::owner_address>>,
+        SqlEq<storefronts::owner_address, listings::store_owner>,
     >,
 >;
 
 /// Join the four input tables
 pub fn join() -> TripleJoin {
     listings::table
-        .inner_join(listing_metadatas::table.inner_join(metadatas::table))
-        .inner_join(storefronts::table)
+        .inner_join(
+            listing_metadatas::table
+                .inner_join(
+                    metadatas::table.on(listing_metadatas::metadata_address.eq(metadatas::address)),
+                )
+                .on(listing_metadatas::listing_address.eq(listings::address)),
+        )
+        .inner_join(storefronts::table.on(storefronts::owner_address.eq(listings::store_owner)))
 }
 
 /// The resulting type of the required WHERE clause

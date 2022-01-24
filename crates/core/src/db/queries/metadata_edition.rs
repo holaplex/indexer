@@ -50,8 +50,10 @@ pub fn load<'a>(
 
     let metas = metadatas::table
         .filter(metadatas::address.eq(metadata_address))
-        .left_join(editions::table)
-        .left_join(master_editions::table)
+        .left_join(editions::table.on(editions::metadata_address.eq(metadata_address)))
+        .left_join(
+            master_editions::table.on(master_editions::metadata_address.eq(metadata_address)),
+        )
         .limit(1)
         .select((
             editions::address.nullable(),

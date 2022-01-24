@@ -123,7 +123,9 @@ impl Rpc for Server {
     fn get_listing_metadatas(&self, listing_address: String) -> Result<Vec<ListingItem>> {
         let db = self.db()?;
         let rows: Vec<models::Metadata> = listing_metadatas::table
-            .inner_join(metadatas::table)
+            .inner_join(
+                metadatas::table.on(listing_metadatas::metadata_address.eq(metadatas::address)),
+            )
             .filter(listing_metadatas::listing_address.eq(listing_address))
             .select((
                 metadatas::address,
