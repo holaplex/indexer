@@ -3,7 +3,3 @@ build:
     web: Dockerfile
 run:
   web: ./bin/metaplex-indexer-rpc -p $PORT
-  worker:
-    command:
-      - ./bin/metaplex-indexer
-    image: web

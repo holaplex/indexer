@@ -7,5 +7,6 @@ lto = "fat"
 
 [profile.heroku]
 inherits = "release"
-opt-level = "z"
-lto = false
+# Uncomment below if build performance declines
+# opt-level = "z"
+# lto = false
