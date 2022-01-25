@@ -8,15 +8,14 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
-use std::{net::SocketAddr, sync::Arc};
+use std::{future::Future, net::SocketAddr, pin::Pin, sync::Arc};
 
 use actix_cors::Cors;
 use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
-use indexer_core::{clap, clap::Parser, db, ServerOpts};
+use indexer_core::{clap, clap::Parser, db, db::Pool, prelude::*, ServerOpts};
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
-use indexer_core::prelude::*;
 
-use crate::schema::{Schema,AppContext};
+use crate::schema::{AppContext, Schema};
 
 mod schema;
 
@@ -25,7 +24,6 @@ struct Opts {
     #[clap(flatten)]
     server: ServerOpts,
 }
-
 
 fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
     move || {
@@ -37,23 +35,29 @@ fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
     }
 }
 
-async fn graphql(
-    st: web::Data<Arc<Schema>>,
-    data: web::Json<GraphQLRequest>,
-) -> Result<HttpResponse, Error> {
-    let db_pool =
-    db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres").unwrap();
+fn graphql(
+    db_pool: &Arc<Pool>,
+) -> impl Fn(
+    web::Data<Arc<Schema>>,
+    web::Json<GraphQLRequest>,
+) -> Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>>
++ Clone {
+    let db_pool = Arc::clone(db_pool);
 
-    let db_connection = db_pool.get().unwrap();
+    move |st, data| {
+        let db_connection = db_pool.get().unwrap();
 
-    let ctx = AppContext::new(db_connection);
-    let res = data.execute(&st, &ctx).await;
+        Box::pin(async move {
+            let ctx = AppContext::new(db_connection);
+            let res = data.execute(&st, &ctx).await;
 
-    let json = serde_json::to_string(&res)?;
+            let json = serde_json::to_string(&res)?;
 
-    Ok(HttpResponse::Ok()
-        .content_type("application/json")
-        .body(json))
+            Ok(HttpResponse::Ok()
+                .content_type("application/json")
+                .body(json))
+        })
+    }
 }
 
 fn main() {
@@ -62,8 +66,8 @@ fn main() {
             server: ServerOpts { port },
         } = Opts::parse();
 
-        let db_conn =
-            db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
+        let db_pool =
+            Arc::new(db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?);
 
         let mut addr: SocketAddr = "0.0.0.0:3000".parse().unwrap();
         addr.set_port(port);
@@ -71,7 +75,7 @@ fn main() {
 
         let graphiql_uri = format!("http://{}", addr);
 
-        let schema = std::sync::Arc::new(schema::create(db_conn));
+        let schema = Arc::new(schema::create(db_pool.clone()));
 
         actix_web::rt::System::new("main")
             .block_on(
@@ -86,7 +90,7 @@ fn main() {
                                 .max_age(3600)
                                 .finish(),
                         )
-                        .service(web::resource("/").route(web::post().to(graphql)))
+                        .service(web::resource("/").route(web::post().to(graphql(&db_pool))))
                         .service(
                             web::resource("/graphiql")
                                 .route(web::get().to(graphiql(graphiql_uri.clone()))),

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash};
+use std::{borrow::Cow, collections::HashMap, hash::Hash, sync::Arc};
 
 use async_trait::async_trait;
 use dataloader::{non_cached::Loader, BatchFn};
@@ -120,7 +120,7 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
 }
 
 pub struct QueryRoot {
-    db: Pool,
+    db: Arc<Pool>,
 }
 
 pub struct NftDetailBatcher {
@@ -149,21 +149,11 @@ impl BatchFn<String, Option<NftDetail>> for NftDetailBatcher {
             ..
         } in nft_details
         {
-            let desc = match description {
-                Some(val) => val.into_owned(),
-                None => "".to_string(),
-            };
-
-            let img = match image {
-                Some(val) => val.into_owned(),
-                None => "".to_string(),
-            };
-
             hash_map.insert(
                 metadata_address.into_owned().to_string(),
                 Some(NftDetail {
-                    description: desc,
-                    image: img,
+                    description: description.map_or_else(String::new, Cow::into_owned),
+                    image: image.map_or_else(String::new, Cow::into_owned),
                 }),
             );
         }
@@ -277,7 +267,7 @@ impl QueryRoot {
 pub type Schema =
     RootNode<'static, QueryRoot, EmptyMutation<AppContext>, EmptySubscription<AppContext>>;
 
-pub fn create(db: Pool) -> Schema {
+pub fn create(db: Arc<Pool>) -> Schema {
     Schema::new(
         QueryRoot { db },
         EmptyMutation::new(),
