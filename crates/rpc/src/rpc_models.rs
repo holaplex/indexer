@@ -164,7 +164,7 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
             favicon_url: favicon_url.into_owned(),
             logo_url: logo_url.into_owned(),
             updated_at: updated_at.map(Timestamp::from_utc),
-            banner_url: banner_url.unwrap().into_owned(),
+            banner_url: banner_url.map_or_else(String::new, Cow::into_owned),
         }
     }
 }

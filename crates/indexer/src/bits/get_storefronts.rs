@@ -137,9 +137,7 @@ fn process_tags(
         let logo_url = tags
             .remove("holaplex:theme:logo:url")
             .unwrap_or_else(String::new);
-        let banner_url = tags
-            .remove("holaplex:theme:banner:url")
-            .unwrap_or_else(String::new);
+        let banner_url = tags.remove("holaplex:theme:banner:url");
 
         let row = Storefront {
             owner_address: Owned(bs58::encode(owner).into_string()),
@@ -148,7 +146,7 @@ fn process_tags(
             description: Owned(description),
             favicon_url: Owned(favicon_url),
             logo_url: Owned(logo_url),
-            banner_url: Some(Owned(banner_url)),
+            banner_url: banner_url.map(Owned),
             updated_at,
         };
 
