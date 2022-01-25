@@ -2943,6 +2943,7 @@ dependencies = [
  "dataloader",
  "juniper",
  "metaplex-indexer-core",
+ "percent-encoding 2.1.0",
  "serde",
  "serde_json",
 ]
@@ -2987,6 +2988,8 @@ dependencies = [
  "jsonrpc-derive",
  "jsonrpc-http-server",
  "metaplex-indexer-core",
+ "percent-encoding 2.1.0",
+ "regex",
  "serde",
  "solana-sdk",
  "tokio 1.15.0",

@@ -90,7 +90,16 @@ fn main() {
                                 .max_age(3600)
                                 .finish(),
                         )
-                        .service(web::resource("/").route(web::post().to(graphql(&db_pool))))
+                        .service(
+                            web::resource(
+                                percent_encoding::utf8_percent_encode(
+                                    &format!("/v{}", env!("CARGO_PKG_VERSION")),
+                                    percent_encoding::NON_ALPHANUMERIC,
+                                )
+                                .to_string(),
+                            )
+                            .route(web::post().to(graphql(&db_pool))),
+                        )
                         .service(
                             web::resource("/graphiql")
                                 .route(web::get().to(graphiql(graphiql_uri.clone()))),
