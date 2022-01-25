@@ -113,17 +113,38 @@ type ThreadPool = graph::Scheduler<Job, threaded::Executor<graph::Job<Job>>>;
 /// Handle for scheduling jobs on the thread pool
 pub type ThreadPoolHandle<'a> = graph::Handle<threaded::Handle<'a, graph::Job<Job>>>;
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct Opts {
-    /// Load a predefined list of storefront owner keys, rather than fetching
-    /// from Holaplex.  Provided file should be a JSON array of strings.
-    #[clap(long)]
-    store_list: Option<PathBuf>,
+    /// A valid base URL to use when fetching IPFS links
+    #[clap(long, env)]
+    ipfs_cdn: Option<String>,
 
+    /// A valid base URL to use when fetching Arweave links
+    #[clap(long, env)]
+    arweave_cdn: Option<String>,
+
+    // Arguments passed to `create_pool`
+    #[clap(flatten)]
+    pool_cfg: ThreadPoolConfig,
+
+    // Arguments passed to `dispatch_entry_jobs`
+    #[clap(flatten)]
+    entry_cfg: EntryConfig,
+}
+
+#[derive(Debug, Parser)]
+struct ThreadPoolConfig {
     /// The number of threads to use.  Defaults to available core count.
     #[clap(short = 'j')]
     thread_count: Option<usize>,
 
+    /// Pull off-chain JSON data for metadata accounts
+    #[clap(long, parse(from_flag), env)]
+    metadata_json: bool,
+}
+
+#[derive(Debug, Parser)]
+struct EntryConfig {
     /// A comma-separated list of the root (entry) jobs to run.
     ///
     /// Valid values are 'stores' and 'bids'.  If not specified all root jobs
@@ -131,21 +152,28 @@ struct Opts {
     #[clap(short, long = "entry")]
     entries: Option<Vec<Entry>>,
 
-    /// A valid base URL to use when fetching IPFS links
-    #[clap(long, env = "IPFS_CDN")]
-    ipfs_cdn: Option<String>,
-
-    /// A valid base URL to use when fetching Arweave links
-    #[clap(long, env = "ARWEAVE_CDN")]
-    arweave_cdn: Option<String>,
+    /// Load a predefined list of storefront owner keys, rather than fetching
+    /// from Holaplex.  Provided file should be a JSON array of strings.
+    #[clap(long)]
+    store_list: Option<PathBuf>,
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn create_pool(
-    thread_count: Option<usize>,
+    cfg: ThreadPoolConfig,
     client: Arc<Client>,
     bid_map: bidder_metadata::BidMap,
     bid_dependents: &graph::RcAdoptableDependents<Job>,
 ) -> Result<ThreadPool> {
+    let ThreadPoolConfig {
+        thread_count,
+        metadata_json,
+    } = cfg;
+
+    if !metadata_json {
+        warn!("Skipping metadata JSON");
+    }
+
     let bid_dependents = bid_dependents.clone();
 
     let scheduler = threaded::Builder::default()
@@ -165,6 +193,7 @@ fn create_pool(
                     auction_cache::process_listing_metadata(&client, lm, handle)
                 },
                 Job::Metadata(meta) => metadata::process(&client, meta, handle),
+                Job::MetadataUri(..) if !metadata_json => Ok(()),
                 Job::MetadataUri(meta, ref uri) => {
                     metadata_uri::process(&client, meta, uri.clone(), handle)
                 },
@@ -191,11 +220,15 @@ fn create_pool(
 }
 
 fn dispatch_entry_jobs(
-    entries: Option<Vec<Entry>>,
-    mut store_list: Option<PathBuf>,
+    cfg: EntryConfig,
     pool: &ThreadPool,
     bid_dependents: &graph::RcAdoptableDependents<Job>,
 ) -> Result<()> {
+    let EntryConfig {
+        entries,
+        mut store_list,
+    } = cfg;
+
     let entries = {
         let mut entries: BTreeSet<_> = entries
             .unwrap_or_else(|| vec![Entry::GetStorefronts, Entry::GetBidderMetadata])
@@ -254,19 +287,22 @@ fn dispatch_entry_jobs(
 }
 
 pub fn run() -> Result<()> {
+    let opts = Opts::parse();
+
+    debug!("{:#?}", opts);
+
     let Opts {
-        thread_count,
-        store_list,
-        entries,
         arweave_cdn,
         ipfs_cdn,
-    } = Opts::parse();
+        pool_cfg,
+        entry_cfg,
+    } = opts;
 
     let db = db::connect(db::ConnectMode::Write).context("Failed to connect to Postgres")?;
 
     let bid_dependents = AdoptableDependents::new().rc();
     let pool = create_pool(
-        thread_count,
+        pool_cfg,
         Client::new_rc(
             db,
             ipfs_cdn
@@ -285,7 +321,7 @@ pub fn run() -> Result<()> {
 
     // ---- BEGIN INDEXER RUN ----
     let start_time = Local::now();
-    dispatch_entry_jobs(entries, store_list, &pool, &bid_dependents)?;
+    dispatch_entry_jobs(entry_cfg, &pool, &bid_dependents)?;
     pool.join();
     let end_time = Local::now();
     // ---- END INDEXER RUN ----
