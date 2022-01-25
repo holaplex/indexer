@@ -1,4 +1,4 @@
-FROM rust:1.52.0-slim
+FROM rust:1.58.1-slim
 WORKDIR /metaplex-indexer
 
 RUN apt-get update -y && \
@@ -10,7 +10,7 @@ RUN apt-get update -y && \
   && \
   rm -rf /var/lib/apt/lists/*
 
-RUN rustup toolchain uninstall 1.52.0
+RUN rustup toolchain uninstall 1.58.1
 
 COPY rust-toolchain.toml ./
 
