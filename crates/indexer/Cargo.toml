@@ -14,6 +14,8 @@ keywords = ["solana", "metaplex", "holaplex", "web3"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [dependencies]
+base64 = "0.13.0"
+cid = "0.7.0"
 parking_lot = "0.11.2"
 reqwest = "0.11.6"
 serde = { version = "1.0.130", features = ["derive"] }

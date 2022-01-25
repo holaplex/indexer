@@ -1,15 +1,25 @@
+use std::{collections::HashMap, sync::Arc};
+
+use async_trait::async_trait;
+use dataloader::{non_cached::Loader, BatchFn};
 use indexer_core::{
     db::{
         models,
-        tables::{metadata_creators, metadatas, storefronts},
-        Pool,
+        tables::{metadata_creators, metadata_jsons, metadatas, storefronts},
+        Pool, PooledConnection,
     },
     prelude::*,
 };
-use juniper::{EmptyMutation, EmptySubscription, GraphQLInputObject, GraphQLObject, RootNode};
+use juniper::{EmptyMutation, EmptySubscription, GraphQLObject, RootNode};
 
-#[derive(GraphQLObject)]
-#[graphql(description = "A Solana NFT")]
+#[derive(Debug, Clone, GraphQLObject)]
+struct NftDetail {
+    description: String,
+    image: String,
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct Nft {
     address: String,
     name: String,
@@ -20,6 +30,28 @@ struct Nft {
     mint_address: String,
     primary_sale_happened: bool,
     is_mutable: bool,
+}
+
+#[juniper::graphql_object(Context = AppContext)]
+impl Nft {
+    pub fn address(&self) -> String {
+        self.address.clone()
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn uri(&self) -> String {
+        self.uri.clone()
+    }
+
+    pub async fn details(&self, ctx: &AppContext) -> Option<NftDetail> {
+        let fut = ctx.nft_detail_loader.load(self.address.clone());
+        let result = fut.await;
+
+        result
+    }
 }
 
 impl<'a> From<models::Metadata<'a>> for Nft {
@@ -88,17 +120,65 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
     }
 }
 
-#[derive(GraphQLInputObject)]
-#[graphql(description = "Buy a NFT")]
-struct BuyNft {
-    transaction: String,
-}
-
 pub struct QueryRoot {
-    db: Pool,
+    db: Arc<Pool>,
 }
 
-#[juniper::graphql_object]
+pub struct NftDetailBatcher {
+    db_connection: PooledConnection,
+}
+
+#[async_trait]
+impl BatchFn<String, Option<NftDetail>> for NftDetailBatcher {
+    async fn load(&mut self, keys: &[String]) -> HashMap<String, Option<NftDetail>> {
+        let conn = &self.db_connection;
+        let mut hash_map = HashMap::new();
+
+        for key in keys {
+            hash_map.insert(key.clone(), None);
+        }
+
+        let nft_details: Vec<models::MetadataJson> = metadata_jsons::table
+            .filter(metadata_jsons::metadata_address.eq(any(keys)))
+            .load(conn)
+            .unwrap();
+
+        for models::MetadataJson {
+            metadata_address,
+            image,
+            description,
+            ..
+        } in nft_details
+        {
+            hash_map.insert(
+                metadata_address.into_owned().to_string(),
+                Some(NftDetail {
+                    description: description.map_or_else(String::new, Cow::into_owned),
+                    image: image.map_or_else(String::new, Cow::into_owned),
+                }),
+            );
+        }
+
+        hash_map
+    }
+}
+
+#[derive(Clone)]
+pub struct AppContext {
+    nft_detail_loader: Loader<String, Option<NftDetail>, NftDetailBatcher>,
+}
+
+impl AppContext {
+    pub fn new(db_connection: PooledConnection) -> AppContext {
+        Self {
+            nft_detail_loader: Loader::new(NftDetailBatcher { db_connection }),
+        }
+    }
+}
+
+impl juniper::Context for AppContext {}
+
+#[juniper::graphql_object(Context = AppContext)]
 impl QueryRoot {
     fn nfts(
         &self,
@@ -185,9 +265,10 @@ impl QueryRoot {
     }
 }
 
-pub type Schema = RootNode<'static, QueryRoot, EmptyMutation, EmptySubscription>;
+pub type Schema =
+    RootNode<'static, QueryRoot, EmptyMutation<AppContext>, EmptySubscription<AppContext>>;
 
-pub fn create(db: Pool) -> Schema {
+pub fn create(db: Arc<Pool>) -> Schema {
     Schema::new(
         QueryRoot { db },
         EmptyMutation::new(),
