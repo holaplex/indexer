@@ -37,3 +37,5 @@ create table metadata_collections
     family text,
     id SERIAL PRIMARY KEY
 );
+
+create index metadata_jsons_metadata_address_index ON metadata_jsons (metadata_address);
