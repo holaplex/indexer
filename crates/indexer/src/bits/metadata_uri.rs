@@ -373,9 +373,14 @@ async fn process_async<'a>(
 
     insert_into(metadata_jsons::table)
         .values(&row)
-        .on_conflict_do_nothing()
+        .on_conflict(metadata_jsons::metadata_address)
+        .do_update()
+        .set(&row)
         .execute(&db)
         .context("Failed to insert metadata")?;
+
+    // TODO: if the row updates the following functions do not clear the
+    //       previous rows from the old metadata JSON:
 
     process_files(&db, &addr, files)?;
     process_attributes(&db, &addr, json.attributes)?;
