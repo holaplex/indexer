@@ -219,21 +219,21 @@ pub struct MetadataJson<'a> {
     /// Metadata Address
     pub metadata_address: Cow<'a, str>,
     /// Metadata URI fingerprint - Cid for Ipfs and ArTxid for Arweave
-    pub fingerprint: Cow<'a, Vec<u8>>,
-    /// Metadata Timestamp
-    pub updated_at: NaiveDateTime,
+    pub fingerprint: Option<Cow<'a, Vec<u8>>>,
     /// Metadata description
-    pub description: Option<String>,
+    pub description: Option<Cow<'a, str>>,
     /// Metadata Image url
-    pub image: Cow<'a, str>,
+    pub image: Option<Cow<'a, str>>,
     /// Metadata Animation url
     pub animation_url: Option<String>,
     /// Metadata External Url
     pub external_url: Option<String>,
     /// Metadata Category
     pub category: Option<String>,
+    /// Metadata Timestamp
+    pub updated_at: Option<NaiveDateTime>,
     /// Metadata URI raw json
-    pub raw_content: Cow<'a, serde_json::Value>,
+    pub raw_content: Option<Cow<'a, serde_json::Value>>,
 }
 
 /// A row in 'files' table

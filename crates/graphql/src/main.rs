@@ -14,7 +14,7 @@ use actix_cors::Cors;
 use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
 use indexer_core::{clap, clap::Parser, db, ServerOpts};
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
-
+use indexer_core::prelude::*;
 
 use crate::schema::{Schema,AppContext};
 
@@ -41,7 +41,12 @@ async fn graphql(
     st: web::Data<Arc<Schema>>,
     data: web::Json<GraphQLRequest>,
 ) -> Result<HttpResponse, Error> {
-    let ctx = AppContext::new();
+    let db_pool =
+    db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres").unwrap();
+
+    let db_connection = db_pool.get().unwrap();
+
+    let ctx = AppContext::new(db_connection);
     let res = data.execute(&st, &ctx).await;
 
     let json = serde_json::to_string(&res)?;
@@ -52,8 +57,6 @@ async fn graphql(
 }
 
 fn main() {
-    use indexer_core::prelude::*;
-
     indexer_core::run(|| {
         let Opts {
             server: ServerOpts { port },

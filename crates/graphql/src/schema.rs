@@ -1,20 +1,19 @@
+use std::{collections::HashMap, hash::Hash};
+
+use async_trait::async_trait;
+use dataloader::{non_cached::Loader, BatchFn};
 use indexer_core::{
     db::{
         models,
-        tables::{metadata_creators, metadatas, storefronts},
-        Pool,
+        tables::{metadata_creators, metadata_jsons, metadatas, storefronts},
+        Pool, PooledConnection,
     },
     prelude::*,
 };
-use juniper::{EmptyMutation, EmptySubscription, GraphQLObject, RootNode, FieldResult, FieldError};
-use std::{collections::HashMap, hash::Hash};
-use async_trait::async_trait;
-use dataloader::non_cached::Loader;
-use dataloader::BatchFn;
+use juniper::{EmptyMutation, EmptySubscription, GraphQLObject, RootNode};
 
 #[derive(Debug, Clone, GraphQLObject)]
 struct NftDetail {
-    title: String,
     description: String,
     image: String,
 }
@@ -34,6 +33,10 @@ struct Nft {
 
 #[juniper::graphql_object(Context = AppContext)]
 impl Nft {
+    pub fn address(&self) -> String {
+        self.address.clone()
+    }
+
     pub fn name(&self) -> String {
         self.name.clone()
     }
@@ -44,8 +47,9 @@ impl Nft {
 
     pub async fn details(&self, ctx: &AppContext) -> Option<NftDetail> {
         let fut = ctx.nft_detail_loader.load(self.address.clone());
+        let result = fut.await;
 
-        Some(fut.await)
+        result
     }
 }
 
@@ -115,22 +119,53 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
     }
 }
 
-
 pub struct QueryRoot {
     db: Pool,
 }
 
-pub struct NftDetailBatcher;
+pub struct NftDetailBatcher {
+    db_connection: PooledConnection,
+}
 
-
-impl BatchFn<String, NftDetail> for NftDetailBatcher {
-    async fn load(&mut self, keys: &[String]) -> HashMap<String, NftDetail> {
+#[async_trait]
+impl BatchFn<String, Option<NftDetail>> for NftDetailBatcher {
+    async fn load(&mut self, keys: &[String]) -> HashMap<String, Option<NftDetail>> {
+        let conn = &self.db_connection;
         let mut hash_map = HashMap::new();
-        
-        println!("{:?}", keys);
 
         for key in keys {
-            hash_map.insert(key.clone(), NftDetail{ title: "foo".into(), description: "bar".into(), image: "image".into() });
+            hash_map.insert(key.clone(), None);
+        }
+
+        let nft_details: Vec<models::MetadataJson> = metadata_jsons::table
+            .filter(metadata_jsons::metadata_address.eq(any(keys)))
+            .load(conn)
+            .unwrap();
+
+        for models::MetadataJson {
+            metadata_address,
+            image,
+            description,
+            ..
+        } in nft_details
+        {
+            let desc = match description {
+                Some(val) => val.into_owned(),
+                None => "".to_string(),
+            };
+
+            let img = match image {
+                Some(val) => val.into_owned(),
+                None => "".to_string(),
+            };
+
+            hash_map.insert(
+                metadata_address.into_owned().to_string(),
+                Some(NftDetail {
+                    description: desc,
+                    image: img,
+                }),
+            );
         }
 
         hash_map
@@ -139,13 +174,13 @@ impl BatchFn<String, NftDetail> for NftDetailBatcher {
 
 #[derive(Clone)]
 pub struct AppContext {
-    nft_detail_loader: Loader<String, NftDetail, NftDetailBatcher>,
+    nft_detail_loader: Loader<String, Option<NftDetail>, NftDetailBatcher>,
 }
 
 impl AppContext {
-    pub fn new() -> AppContext {
+    pub fn new(db_connection: PooledConnection) -> AppContext {
         Self {
-            nft_detail_loader: Loader::new(NftDetailBatcher),
+            nft_detail_loader: Loader::new(NftDetailBatcher { db_connection }),
         }
     }
 }
@@ -239,7 +274,8 @@ impl QueryRoot {
     }
 }
 
-pub type Schema = RootNode<'static, QueryRoot, EmptyMutation<AppContext>, EmptySubscription<AppContext>>;
+pub type Schema =
+    RootNode<'static, QueryRoot, EmptyMutation<AppContext>, EmptySubscription<AppContext>>;
 
 pub fn create(db: Pool) -> Schema {
     Schema::new(

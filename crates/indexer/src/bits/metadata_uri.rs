@@ -193,8 +193,8 @@ async fn process_async<'a>(
 
     let row = DbMetadataJson {
         metadata_address: Borrowed(&addr),
-        fingerprint: Borrowed(&fingerprint),
-        updated_at: NaiveDateTime::from_timestamp(
+        fingerprint: Some(Borrowed(&fingerprint)),
+        updated_at: Some(NaiveDateTime::from_timestamp(
             (SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .unwrap()
@@ -202,16 +202,16 @@ async fn process_async<'a>(
                 .try_into()
                 .unwrap(),
             0,
-        ),
+        )),
         description: json.description.as_ref().map(Into::into),
-        image: Borrowed(&json.image),
+        image: Some(Borrowed(&json.image)),
         animation_url: json.animation_url.as_ref().map(Into::into),
         external_url: json.external_url.as_ref().map(Into::into),
         category: match properties {
             Some(a) => a.category.as_ref().map(Into::into),
             None => None,
         },
-        raw_content: Borrowed(&raw_content),
+        raw_content: Some(Borrowed(&raw_content)),
     };
 
     insert_into(metadata_jsons::table)
