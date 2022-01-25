@@ -1,12 +1,12 @@
 use indexer_core::{
     db::{
         models,
-        tables::{metadata_creators, metadatas},
+        tables::{metadata_creators, metadatas, storefronts},
         Pool,
     },
     prelude::*,
 };
-use juniper::{EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject, RootNode};
+use juniper::{EmptyMutation, EmptySubscription, GraphQLInputObject, GraphQLObject, RootNode};
 
 #[derive(GraphQLObject)]
 #[graphql(description = "A Solana NFT")]
@@ -47,6 +47,43 @@ impl<'a> From<models::Metadata<'a>> for Nft {
             mint_address: mint_address.into_owned(),
             primary_sale_happened,
             is_mutable,
+        }
+    }
+}
+
+#[derive(GraphQLObject)]
+#[graphql(description = "A Metaplex storefront")]
+pub struct Storefront {
+    pub owner_address: String,
+    pub subdomain: String,
+    pub title: String,
+    pub description: String,
+    pub favicon_url: String,
+    pub logo_url: String,
+    pub banner_url: String,
+}
+
+impl<'a> From<models::Storefront<'a>> for Storefront {
+    fn from(
+        models::Storefront {
+            owner_address,
+            subdomain,
+            title,
+            description,
+            favicon_url,
+            logo_url,
+            banner_url,
+            ..
+        }: models::Storefront,
+    ) -> Self {
+        Self {
+            owner_address: owner_address.into_owned(),
+            subdomain: subdomain.into_owned(),
+            title: title.into_owned(),
+            description: description.into_owned(),
+            favicon_url: favicon_url.into_owned(),
+            logo_url: logo_url.into_owned(),
+            banner_url: banner_url.into_owned(),
         }
     }
 }
@@ -122,28 +159,38 @@ impl QueryRoot {
 
         rows.pop().map(Into::into)
     }
-}
-pub struct MutationRoot;
 
-#[juniper::graphql_object]
-impl MutationRoot {
-    fn buyNft(_buy_nft: BuyNft) -> FieldResult<Nft> {
-        Ok(Nft {
-            address: "abc123".to_owned(),
-            name: "foo".to_owned(),
-            symbol: "BAR".to_owned(),
-            uri: "https://ipfs.web/abc".to_owned(),
-            seller_fee_basis_points: 1000,
-            update_authority_address: "xyz123".to_owned(),
-            mint_address: "efg890".to_owned(),
-            primary_sale_happened: false,
-            is_mutable: true,
-        })
+    #[graphql(description = "A storefront")]
+    fn storefront(&self, subdomain: String) -> Option<Storefront> {
+        let columns = (
+            storefronts::owner_address,
+            storefronts::subdomain,
+            storefronts::title,
+            storefronts::description,
+            storefronts::favicon_url,
+            storefronts::logo_url,
+            storefronts::updated_at,
+            storefronts::banner_url,
+        );
+
+        let conn = self.db.get().unwrap();
+        let mut rows: Vec<models::Storefront> = storefronts::table
+            .filter(storefronts::subdomain.eq(subdomain))
+            .select(columns)
+            .limit(1)
+            .load(&conn)
+            .unwrap();
+
+        rows.pop().map(Into::into)
     }
 }
 
-pub type Schema = RootNode<'static, QueryRoot, MutationRoot, EmptySubscription>;
+pub type Schema = RootNode<'static, QueryRoot, EmptyMutation, EmptySubscription>;
 
 pub fn create(db: Pool) -> Schema {
-    Schema::new(QueryRoot { db }, MutationRoot {}, EmptySubscription::new())
+    Schema::new(
+        QueryRoot { db },
+        EmptyMutation::new(),
+        EmptySubscription::new(),
+    )
 }

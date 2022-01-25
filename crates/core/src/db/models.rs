@@ -179,10 +179,12 @@ pub struct Storefront<'a> {
     pub description: Cow<'a, str>,
     /// The file URL for this store's favicon
     pub favicon_url: Cow<'a, str>,
-    /// The file URL for this store's log
+    /// The file URL for this store's logo
     pub logo_url: Cow<'a, str>,
     /// The timestamp this storefront was first uploaded to arweave
     pub updated_at: Option<NaiveDateTime>,
+    /// The file URL for this store's banner
+    pub banner_url: Cow<'a, str>,
 }
 
 /// Join record for the RPC getListings query
