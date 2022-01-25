@@ -148,7 +148,7 @@ fn process_tags(
             description: Owned(description),
             favicon_url: Owned(favicon_url),
             logo_url: Owned(logo_url),
-            banner_url: Owned(banner_url),
+            banner_url: Some(Owned(banner_url)),
             updated_at,
         };
 

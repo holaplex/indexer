@@ -184,7 +184,7 @@ pub struct Storefront<'a> {
     /// The timestamp this storefront was first uploaded to arweave
     pub updated_at: Option<NaiveDateTime>,
     /// The file URL for this store's banner
-    pub banner_url: Cow<'a, str>,
+    pub banner_url: Option<Cow<'a, str>>,
 }
 
 /// Join record for the RPC getListings query

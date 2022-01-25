@@ -83,7 +83,7 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
             description: description.into_owned(),
             favicon_url: favicon_url.into_owned(),
             logo_url: logo_url.into_owned(),
-            banner_url: banner_url.into_owned(),
+            banner_url: banner_url.unwrap().into_owned(),
         }
     }
 }
