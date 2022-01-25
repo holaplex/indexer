@@ -2943,6 +2943,7 @@ dependencies = [
  "dataloader",
  "juniper",
  "metaplex-indexer-core",
+ "percent-encoding 2.1.0",
  "serde",
  "serde_json",
 ]
