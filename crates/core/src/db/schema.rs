@@ -42,8 +42,8 @@ table! {
 
     files (id) {
         metadata_address -> Varchar,
-        uri -> Nullable<Text>,
-        file_type -> Nullable<Text>,
+        uri -> Text,
+        file_type -> Text,
         id -> Uuid,
     }
 }
@@ -124,14 +124,14 @@ table! {
 
     metadata_jsons (metadata_address) {
         metadata_address -> Varchar,
-        fingerprint -> Nullable<Bytea>,
+        fingerprint -> Bytea,
+        updated_at -> Timestamp,
         description -> Nullable<Text>,
         image -> Nullable<Text>,
         animation_url -> Nullable<Text>,
         external_url -> Nullable<Text>,
         category -> Nullable<Text>,
-        updated_at -> Nullable<Timestamp>,
-        raw_content -> Nullable<Jsonb>,
+        raw_content -> Jsonb,
     }
 }
 

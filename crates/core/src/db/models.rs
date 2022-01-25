@@ -234,21 +234,21 @@ pub struct MetadataJson<'a> {
     /// Metadata Address
     pub metadata_address: Cow<'a, str>,
     /// Metadata URI fingerprint - Cid for Ipfs and ArTxid for Arweave
-    pub fingerprint: Option<Cow<'a, Vec<u8>>>,
+    pub fingerprint: Cow<'a, Vec<u8>>,
+    /// Metadata Timestamp
+    pub updated_at: NaiveDateTime,
     /// Metadata description
     pub description: Option<Cow<'a, str>>,
     /// Metadata Image url
     pub image: Option<Cow<'a, str>>,
     /// Metadata Animation url
-    pub animation_url: Option<String>,
+    pub animation_url: Option<Cow<'a, str>>,
     /// Metadata External Url
-    pub external_url: Option<String>,
+    pub external_url: Option<Cow<'a, str>>,
     /// Metadata Category
-    pub category: Option<String>,
-    /// Metadata Timestamp
-    pub updated_at: Option<NaiveDateTime>,
+    pub category: Option<Cow<'a, str>>,
     /// Metadata URI raw json
-    pub raw_content: Option<Cow<'a, serde_json::Value>>,
+    pub raw_content: Cow<'a, serde_json::Value>,
 }
 
 /// A row in the `files` table
@@ -257,9 +257,9 @@ pub struct File<'a> {
     /// Metadata address
     pub metadata_address: Cow<'a, str>,
     /// File URI attribute
-    pub uri: Option<String>,
+    pub uri: Cow<'a, str>,
     /// File type attribute
-    pub file_type: Option<String>,
+    pub file_type: Cow<'a, str>,
 }
 
 /// A row in the `attributes` table
@@ -268,11 +268,11 @@ pub struct Attribute<'a> {
     /// Metadata address
     pub metadata_address: Cow<'a, str>,
     /// Attribute name
-    pub name: Option<String>,
+    pub name: Option<Cow<'a, str>>,
     /// Attribute value
-    pub value: Option<String>,
+    pub value: Option<Cow<'a, str>>,
     /// Attribute trait type
-    pub trait_type: Option<String>,
+    pub trait_type: Option<Cow<'a, str>>,
 }
 
 /// A row in the `metadata_collections` table
@@ -281,7 +281,7 @@ pub struct MetadataCollection<'a> {
     /// Metadata address
     pub metadata_address: Cow<'a, str>,
     /// Collection name
-    pub name: Option<String>,
+    pub name: Option<Cow<'a, str>>,
     /// Collection family
-    pub family: Option<String>,
+    pub family: Option<Cow<'a, str>>,
 }

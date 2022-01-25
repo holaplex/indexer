@@ -1,7 +1,4 @@
-use std::{
-    fmt::{self, Debug},
-    time::SystemTime,
-};
+use std::fmt::{self, Debug};
 
 use cid::Cid;
 use indexer_core::{
@@ -11,14 +8,16 @@ use indexer_core::{
             Attribute as DbAttribute, File as DbFile, MetadataCollection,
             MetadataJson as DbMetadataJson,
         },
+        select,
         tables::{attributes, files, metadata_collections, metadata_jsons},
+        Connection,
     },
     hash::HashMap,
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 
-use crate::{client::ArTxid, prelude::*, Client, ThreadPoolHandle};
+use crate::{client::ArTxid, prelude::*, util, Client, ThreadPoolHandle};
 
 #[derive(Debug, Clone, Copy)]
 struct AssetIdentifier {
@@ -96,8 +95,9 @@ impl AssetIdentifier {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct File {
-    uri: String,
-    r#type: String,
+    uri: Option<String>,
+    #[serde(rename = "type")]
+    ty: Option<String>,
 }
 #[derive(Serialize, Deserialize, Debug)]
 struct Creator {
@@ -143,7 +143,7 @@ struct MetadataJson {
     symbol: Option<String>,
     description: Option<String>,
     seller_fee_basis_points: i64,
-    image: String,
+    image: Option<String>,
     animation_url: Option<String>,
     collection: Option<Collection>,
     attributes: Option<Vec<Attribute>>,
@@ -153,65 +153,222 @@ struct MetadataJson {
     extra: HashMap<String, serde_json::Value>,
 }
 
+async fn fetch_json(
+    http_client: reqwest::Client,
+    meta_key: Pubkey,
+    url: Result<Url>,
+) -> Result<MetadataJson> {
+    let start_time = Local::now();
+    let url = url.context("Failed to create asset URL")?;
+
+    let json = http_client
+        .get(url.clone())
+        .send()
+        .await
+        .context("Metadata JSON request failed")?
+        .json()
+        .await
+        .context("Failed to parse metadata JSON")?;
+
+    let end_time = Local::now();
+
+    debug!(
+        "Metadata JSON URI {:?} for {} fetched in {}",
+        url,
+        meta_key,
+        util::duration_hhmmssfff(end_time - start_time)
+    );
+
+    Ok(json)
+}
+
+async fn try_locate_json(
+    client: &Client,
+    url: &Url,
+    id: &AssetIdentifier,
+    meta_key: Pubkey,
+) -> Result<(MetadataJson, Vec<u8>)> {
+    let http_client = reqwest::Client::new();
+    let mut resp = None;
+
+    for (url, fingerprint) in id
+        .ipfs
+        .map(|c| (client.ipfs_link(&c), c.to_bytes()))
+        .into_iter()
+        .chain(id.arweave.map(|t| (client.arweave_link(&t), t.0.to_vec())))
+    {
+        let url_str = url.as_ref().map_or("???", Url::as_str).to_owned();
+
+        match fetch_json(http_client.clone(), meta_key, url).await {
+            Ok(j) => {
+                debug!("Using fetch from {:?} for metadata {}", url_str, meta_key);
+                resp = Some((j, fingerprint));
+            },
+            Err(e) => warn!(
+                "Metadata fetch {:?} for {} failed: {:?}",
+                url_str, meta_key, e
+            ),
+        }
+    }
+
+    Ok(if let Some(r) = resp {
+        r
+    } else {
+        (
+            fetch_json(http_client, meta_key, Ok(url.clone()))
+                .await
+                .with_context(|| {
+                    format!(
+                        "Last-resort metadata fetch {:?} for {} failed",
+                        url.as_str(),
+                        meta_key,
+                    )
+                })?,
+            vec![],
+        )
+    })
+}
+
+fn process_files(db: &Connection, addr: &str, files: Option<Vec<File>>) -> Result<()> {
+    for File { uri, ty } in files.unwrap_or_else(Vec::new) {
+        let (uri, ty) = if let Some(v) = uri.zip(ty) {
+            v
+        } else {
+            debug!("Skipping malformed file in JSON");
+            continue;
+        };
+
+        let row = DbFile {
+            metadata_address: Borrowed(addr),
+            uri: Owned(uri),
+            file_type: Owned(ty),
+        };
+
+        insert_into(files::table)
+            .values(&row)
+            .on_conflict_do_nothing()
+            .execute(db)
+            .context("Failed to insert file!")?;
+    }
+
+    Ok(())
+}
+
+#[inline]
+fn process_attributes(
+    db: &Connection,
+    addr: &str,
+    attributes: Option<Vec<Attribute>>,
+) -> Result<()> {
+    for Attribute {
+        name,
+        trait_type,
+        value,
+    } in attributes.unwrap_or_else(Vec::new)
+    {
+        let row = DbAttribute {
+            metadata_address: Borrowed(addr),
+            name: name.map(Owned),
+            trait_type: trait_type.map(Owned),
+            value: value.as_ref().map(|v| Owned(v.to_string())),
+        };
+
+        insert_into(attributes::table)
+            .values(&row)
+            .on_conflict_do_nothing()
+            .execute(db)
+            .context("Failed to insert attribute!")?;
+    }
+
+    Ok(())
+}
+
+#[inline]
+fn process_collection(db: &Connection, addr: &str, collection: Option<Collection>) -> Result<()> {
+    if let Some(Collection { name, family }) = collection {
+        let row = MetadataCollection {
+            metadata_address: Borrowed(addr),
+            name: name.map(Owned),
+            family: family.map(Owned),
+        };
+
+        insert_into(metadata_collections::table)
+            .values(&row)
+            .on_conflict_do_nothing()
+            .execute(db)
+            .context("Failed to insert collection!")?;
+    }
+
+    Ok(())
+}
+
 async fn process_async<'a>(
     client: &Client,
     meta_key: Pubkey,
     uri_str: String,
     _handle: ThreadPoolHandle<'a>,
 ) -> Result<()> {
-    let http_client = reqwest::Client::new();
     let url = Url::parse(&uri_str).context("Couldn't parse metadata JSON URL")?;
-
     let id = AssetIdentifier::new(&url);
+    let db = client.db()?;
+
+    let possible_fingerprints: Vec<_> = id
+        .ipfs
+        .iter()
+        .map(Cid::to_bytes)
+        .chain(id.arweave.map(|a| a.0.to_vec()))
+        .collect();
+    let addr = bs58::encode(meta_key).into_string();
+
+    if select(exists(
+        metadata_jsons::table.filter(
+            metadata_jsons::metadata_address
+                .eq(&addr)
+                .and(metadata_jsons::fingerprint.eq(any(possible_fingerprints))),
+        ),
+    ))
+    .get_result(&db)
+    .context("Failed to check for already-indexed metadata JSON")?
+    {
+        debug!("Skipping already-indexed metadata JSON for {}", meta_key);
+
+        return Ok(());
+    }
 
     debug!("{:?} -> {:?}", url.as_str(), id);
 
-    let db = client.db()?;
+    let (json, fingerprint) = try_locate_json(client, &url, &id, meta_key).await?;
 
-    let response = http_client
-        .get(uri_str)
-        .send()
-        .await
-        .context("Metadata JSON request failed")?;
+    let raw_content: serde_json::Value =
+        serde_json::value::to_value(&json).context("Failed to upcast metadata JSON")?;
 
-    let json = &response
-        .json::<MetadataJson>()
-        .await
-        .context("Failed to parse!")?;
+    let MetadataJson {
+        description,
+        image,
+        animation_url,
+        external_url,
+        ..
+    } = json;
 
-    let raw_content: serde_json::Value = serde_json::value::to_value(json).unwrap();
-
-    let addr = bs58::encode(meta_key).into_string();
-
-    let fingerprint;
-    if id.ipfs.is_some() {
-        fingerprint = id.ipfs.unwrap().to_bytes();
-    } else {
-        fingerprint = id.arweave.unwrap().0.to_vec();
-    }
-    let properties = json.properties.as_ref();
+    let (files, category, _creators) = json.properties.map_or(
+        (None, None, None),
+        |Property {
+             files,
+             category,
+             creators,
+         }| (files, category, creators),
+    );
 
     let row = DbMetadataJson {
         metadata_address: Borrowed(&addr),
-        fingerprint: Some(Borrowed(&fingerprint)),
-        updated_at: Some(NaiveDateTime::from_timestamp(
-            (SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs() as u64)
-                .try_into()
-                .unwrap(),
-            0,
-        )),
-        description: json.description.as_ref().map(Into::into),
-        image: Some(Borrowed(&json.image)),
-        animation_url: json.animation_url.as_ref().map(Into::into),
-        external_url: json.external_url.as_ref().map(Into::into),
-        category: match properties {
-            Some(a) => a.category.as_ref().map(Into::into),
-            None => None,
-        },
-        raw_content: Some(Borrowed(&raw_content)),
+        fingerprint: Owned(fingerprint),
+        updated_at: Local::now().naive_utc(),
+        description: description.map(Owned),
+        image: image.map(Owned),
+        animation_url: animation_url.map(Owned),
+        external_url: external_url.map(Owned),
+        category: category.map(Owned),
+        raw_content: Owned(raw_content),
     };
 
     insert_into(metadata_jsons::table)
@@ -220,73 +377,13 @@ async fn process_async<'a>(
         .execute(&db)
         .context("Failed to insert metadata")?;
 
-    if let Some(a) = properties {
-        match &a.files {
-            Some(files) => {
-                for File { uri, r#type } in files {
-                    let row = DbFile {
-                        metadata_address: Borrowed(&addr),
-                        uri: Some(uri.to_string()),
-                        file_type: Some(r#type.to_string()),
-                    };
-                    insert_into(files::table)
-                        .values(&row)
-                        .on_conflict_do_nothing()
-                        .execute(&db)
-                        .context("Failed to insert file!")?;
-                }
-            },
-            None => {},
-        }
-    }
+    process_files(&db, &addr, files)?;
+    process_attributes(&db, &addr, json.attributes)?;
+    process_collection(&db, &addr, json.collection)?;
 
-    let attributes = json.attributes.as_ref();
-    if let Some(attributes) = attributes {
-        for Attribute {
-            name,
-            trait_type,
-            value,
-        } in attributes
-        {
-            let row = DbAttribute {
-                metadata_address: Borrowed(&addr),
-                name: name.as_ref().map(|a| a.to_string()),
-                value: match value {
-                    Some(a) => match &a {
-                        ValueDataType::String(val) => Some(val.to_string()),
-                        ValueDataType::Number(val) => Some(val.to_string()),
-                    },
-                    None => None,
-                },
-                trait_type: trait_type.as_ref().map(|a| a.to_string()),
-            };
-            insert_into(attributes::table)
-                .values(&row)
-                .on_conflict_do_nothing()
-                .execute(&db)
-                .context("Failed to insert attribute!")?;
-        }
-    }
-
-    match &json.collection {
-        Some(collection) => {
-            let row = MetadataCollection {
-                metadata_address: Borrowed(&addr),
-                name: collection.name.as_ref().map(Into::into),
-                family: collection.family.as_ref().map(Into::into),
-            };
-            insert_into(metadata_collections::table)
-                .values(&row)
-                .on_conflict_do_nothing()
-                .execute(&db)
-                .context("Failed to insert collection!")?;
-        },
-        None => {},
-    };
-
-    trace!("{}: {:#?}", meta_key, json);
     Ok(())
 }
+
 pub fn process(
     client: &Client,
     meta_key: Pubkey,
