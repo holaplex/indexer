@@ -7,7 +7,7 @@ table! {
         name -> Nullable<Text>,
         value -> Nullable<Text>,
         trait_type -> Nullable<Text>,
-        id -> Int4,
+        id -> Uuid,
     }
 }
 
@@ -44,7 +44,7 @@ table! {
         metadata_address -> Varchar,
         uri -> Nullable<Text>,
         file_type -> Nullable<Text>,
-        id -> Int4,
+        id -> Uuid,
     }
 }
 
@@ -102,7 +102,7 @@ table! {
         metadata_address -> Varchar,
         name -> Nullable<Text>,
         family -> Nullable<Text>,
-        id -> Int4,
+        id -> Uuid,
     }
 }
 

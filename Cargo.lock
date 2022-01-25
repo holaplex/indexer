@@ -2872,7 +2872,6 @@ version = "0.1.0"
 dependencies = [
  "base64 0.13.0",
  "cid",
- "clap 3.0.7",
  "metaplex",
  "metaplex-auction",
  "metaplex-indexer-core",

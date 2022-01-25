@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap, hash::Hash, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use dataloader::{non_cached::Loader, BatchFn};
@@ -19,6 +19,7 @@ struct NftDetail {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct Nft {
     address: String,
     name: String,

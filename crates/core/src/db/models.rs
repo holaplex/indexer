@@ -125,6 +125,22 @@ pub struct MetadataCreator<'a> {
     pub verified: bool,
 }
 
+/// A row in the `token_accounts` table
+/// helpful for tracking exchanges of tokens
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct TokenAccount<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// The mint address of the token
+    pub mint_address: Cow<'a, str>,
+    /// The owner token
+    pub owner_address: Cow<'a, str>,
+    /// The amount of the token, often 1
+    pub amount: i64,
+    /// updated_at
+    pub updated_at: NaiveDateTime,
+}
+
 /// A row in the `metadatas` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct Metadata<'a> {
@@ -215,7 +231,6 @@ pub struct ListingsTripleJoinRow {
 /// A row in the `metadata_jsons` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct MetadataJson<'a> {
-    // Table 'metadata_jsons'
     /// Metadata Address
     pub metadata_address: Cow<'a, str>,
     /// Metadata URI fingerprint - Cid for Ipfs and ArTxid for Arweave
@@ -236,10 +251,9 @@ pub struct MetadataJson<'a> {
     pub raw_content: Option<Cow<'a, serde_json::Value>>,
 }
 
-/// A row in 'files' table
+/// A row in the `files` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct File<'a> {
-    // Table 'files'
     /// Metadata address
     pub metadata_address: Cow<'a, str>,
     /// File URI attribute
@@ -248,10 +262,9 @@ pub struct File<'a> {
     pub file_type: Option<String>,
 }
 
-/// A row in 'attributes' table
+/// A row in the `attributes` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct Attribute<'a> {
-    // Table 'attributes'
     /// Metadata address
     pub metadata_address: Cow<'a, str>,
     /// Attribute name
@@ -262,30 +275,13 @@ pub struct Attribute<'a> {
     pub trait_type: Option<String>,
 }
 
-/// A row in 'metadata_collection' table
+/// A row in the `metadata_collections` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct MetadataCollection<'a> {
-    // Table 'metadata_collection'
     /// Metadata address
     pub metadata_address: Cow<'a, str>,
     /// Collection name
     pub name: Option<String>,
     /// Collection family
     pub family: Option<String>,
-}
-
-/// A row in the `token_accounts` table
-/// helpful for tracking exchanges of tokens
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
-pub struct TokenAccount<'a> {
-    /// The address of this account
-    pub address: Cow<'a, str>,
-    /// The mint address of the token
-    pub mint_address: Cow<'a, str>,
-    /// The owner token
-    pub owner_address: Cow<'a, str>,
-    /// The amount of the token, often 1
-    pub amount: i64,
-    /// updated_at
-    pub updated_at: NaiveDateTime,
 }

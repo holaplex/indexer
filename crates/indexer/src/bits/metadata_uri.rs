@@ -18,7 +18,7 @@ use indexer_core::{
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 
-use crate::{client::ArTxid, prelude::*, util, Client, ThreadPoolHandle};
+use crate::{client::ArTxid, prelude::*, Client, ThreadPoolHandle};
 
 #[derive(Debug, Clone, Copy)]
 struct AssetIdentifier {
