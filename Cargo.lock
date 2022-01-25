@@ -2942,7 +2942,6 @@ dependencies = [
  "actix-web",
  "async-trait",
  "dataloader",
- "futures 0.3.19",
  "juniper",
  "metaplex-indexer-core",
  "serde",
