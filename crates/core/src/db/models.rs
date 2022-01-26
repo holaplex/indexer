@@ -13,8 +13,6 @@ use super::schema::{
     token_accounts,
 };
 
-use uuid::Uuid;
-
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[belongs_to(parent = "Listing<'_>", foreign_key = "listing_address")]
@@ -266,8 +264,8 @@ pub struct File<'a> {
 
 /// A row in the `attributes` table
 #[derive(Debug, Clone, Insertable, AsChangeset)]
-#[table_name="attributes"]
-pub struct NewMetadataAttribute<'a> {
+#[table_name = "attributes"]
+pub struct MetadataAttributeWrite<'a> {
     /// Metadata address
     pub metadata_address: Cow<'a, str>,
     /// Attribute name
@@ -290,7 +288,7 @@ pub struct MetadataAttribute<'a> {
     /// Attribute trait type
     pub trait_type: Option<Cow<'a, str>>,
     /// Attribute generated id
-    pub id: Cow<'a, uuid::Uuid>
+    pub id: Cow<'a, uuid::Uuid>,
 }
 
 /// A row in the `metadata_collections` table
