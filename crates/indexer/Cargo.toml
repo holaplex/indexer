@@ -38,3 +38,11 @@ package = "metaplex-indexer-core"
 version = "=0.1.0"
 path = "../core"
 
+
+[dependencies.indexer-rabbitmq]
+package = "metaplex-indexer-rabbitmq"
+version = "=0.1.0"
+path = "../rabbitmq"
+features = ["accountsdb"]
+
+
