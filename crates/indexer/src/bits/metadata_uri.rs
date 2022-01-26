@@ -5,7 +5,7 @@ use indexer_core::{
     db::{
         insert_into,
         models::{
-            Attribute as DbAttribute, File as DbFile, MetadataCollection,
+            NewMetadataAttribute, File as DbFile, MetadataCollection,
             MetadataJson as DbMetadataJson,
         },
         select,
@@ -266,7 +266,7 @@ fn process_attributes(
         value,
     } in attributes.unwrap_or_else(Vec::new)
     {
-        let row = DbAttribute {
+        let row = NewMetadataAttribute {
             metadata_address: Borrowed(addr),
             name: name.map(Owned),
             trait_type: trait_type.map(Owned),

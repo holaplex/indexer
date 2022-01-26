@@ -1494,6 +1494,7 @@ dependencies = [
  "pq-sys",
  "r2d2",
  "serde_json",
+ "uuid",
 ]
 
 [[package]]
@@ -2931,6 +2932,7 @@ dependencies = [
  "rand 0.8.4",
  "serde_json",
  "solana-sdk",
+ "uuid",
 ]
 
 [[package]]

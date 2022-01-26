@@ -3,14 +3,57 @@ use std::{collections::HashMap, sync::Arc};
 use async_trait::async_trait;
 use dataloader::{non_cached::Loader, BatchFn};
 use indexer_core::{
+    clap::App,
     db::{
         models,
-        tables::{metadata_creators, metadata_jsons, metadatas, storefronts},
+        tables::{metadata_creators, metadata_jsons, metadatas, storefronts, attributes},
         Pool,
     },
     prelude::*,
 };
 use juniper::{EmptyMutation, EmptySubscription, GraphQLObject, RootNode};
+
+#[derive(Debug, Clone)]
+struct Creator {
+    address: String,
+}
+
+#[juniper::graphql_object(Context = AppContext)]
+impl Creator {
+    fn address(&self) -> String {
+        self.address.clone()
+    }
+    
+    pub fn properties(&self, context: &AppContext) -> Vec<Property> {
+        let conn = context.db_pool.get().unwrap();
+
+        let metadatas: Vec<String> = metadata_creators::table
+            .select(metadata_creators::metadata_address)
+            .filter(metadata_creators::creator_address.eq(self.address.clone()))
+            .load(&conn)
+            .unwrap();
+
+        let metadata_attributes: Vec<models::MetadataAttribute> = attributes::table
+            .load(&conn)
+            .unwrap();
+
+        println!("{:?}", metadata_attributes);
+
+        vec![]
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+struct PropertyVariant {
+    name: String,
+    count: i32,
+}
+
+#[derive(Debug, GraphQLObject)]
+struct Property {
+    name: String,
+    variants: Vec<PropertyVariant>,
+}
 
 #[derive(Debug, Clone, GraphQLObject)]
 struct NftDetail {
@@ -182,6 +225,14 @@ impl juniper::Context for AppContext {}
 
 #[juniper::graphql_object(Context = AppContext)]
 impl QueryRoot {
+    fn creator(
+        &self,
+        _context: &AppContext,
+        #[graphql(description = "Address of creator")] address: String,
+    ) -> Creator {
+        Creator { address }
+    }
+
     fn nfts(
         &self,
         context: &AppContext,
