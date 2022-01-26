@@ -12,11 +12,9 @@ use lapin::{
     BasicProperties, Channel, ExchangeKind,
 };
 use serde::{Deserialize, Serialize};
+use solana_sdk::pubkey::Pubkey;
 
 use crate::Result;
-
-/// A 256-bit Solana public key
-pub type Pubkey = [u8; 32];
 
 /// A message transmitted by an `accountsdb` plugin
 #[derive(Debug, Clone, Serialize, Deserialize)]
