@@ -45,6 +45,10 @@ pub fn process(client: &Client, meta_key: Pubkey, handle: ThreadPoolHandle) -> R
         mint: meta.mint,
         metadata: meta_key,
     }));
+    handle.push(Job::MetadataUri(
+        meta_key,
+        meta.data.uri.trim_end_matches('\0').to_owned(),
+    ));
 
     for creator in meta.data.creators.unwrap_or_else(Vec::new) {
         let row = MetadataCreator {

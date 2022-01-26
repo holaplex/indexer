@@ -8,8 +8,9 @@ use std::borrow::Cow;
 use chrono::NaiveDateTime;
 
 use super::schema::{
-    bids, editions, listing_metadatas, listings, master_editions, metadata_creators, metadatas,
-    storefronts,
+    attributes, bids, editions, files, listing_metadatas, listings, master_editions,
+    metadata_collections, metadata_creators, metadata_jsons, metadatas, storefronts,
+    token_accounts,
 };
 
 /// A row in the `bids` table
@@ -124,6 +125,22 @@ pub struct MetadataCreator<'a> {
     pub verified: bool,
 }
 
+/// A row in the `token_accounts` table
+/// helpful for tracking exchanges of tokens
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct TokenAccount<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// The mint address of the token
+    pub mint_address: Cow<'a, str>,
+    /// The owner token
+    pub owner_address: Cow<'a, str>,
+    /// The amount of the token, often 1
+    pub amount: i64,
+    /// updated_at
+    pub updated_at: NaiveDateTime,
+}
+
 /// A row in the `metadatas` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct Metadata<'a> {
@@ -163,10 +180,12 @@ pub struct Storefront<'a> {
     pub description: Cow<'a, str>,
     /// The file URL for this store's favicon
     pub favicon_url: Cow<'a, str>,
-    /// The file URL for this store's log
+    /// The file URL for this store's logo
     pub logo_url: Cow<'a, str>,
     /// The timestamp this storefront was first uploaded to arweave
     pub updated_at: Option<NaiveDateTime>,
+    /// The file URL for this store's banner
+    pub banner_url: Option<Cow<'a, str>>,
 }
 
 /// Join record for the RPC getListings query
@@ -205,4 +224,64 @@ pub struct ListingsTripleJoinRow {
     pub name: String,
     /// Metadata URI
     pub uri: String,
+    /// Listing has already been sold once
+    pub primary_sale_happened: bool,
+}
+
+/// A row in the `metadata_jsons` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct MetadataJson<'a> {
+    /// Metadata Address
+    pub metadata_address: Cow<'a, str>,
+    /// Metadata URI fingerprint - Cid for Ipfs and ArTxid for Arweave
+    pub fingerprint: Cow<'a, Vec<u8>>,
+    /// Metadata Timestamp
+    pub updated_at: NaiveDateTime,
+    /// Metadata description
+    pub description: Option<Cow<'a, str>>,
+    /// Metadata Image url
+    pub image: Option<Cow<'a, str>>,
+    /// Metadata Animation url
+    pub animation_url: Option<Cow<'a, str>>,
+    /// Metadata External Url
+    pub external_url: Option<Cow<'a, str>>,
+    /// Metadata Category
+    pub category: Option<Cow<'a, str>>,
+    /// Metadata URI raw json
+    pub raw_content: Cow<'a, serde_json::Value>,
+}
+
+/// A row in the `files` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct File<'a> {
+    /// Metadata address
+    pub metadata_address: Cow<'a, str>,
+    /// File URI attribute
+    pub uri: Cow<'a, str>,
+    /// File type attribute
+    pub file_type: Cow<'a, str>,
+}
+
+/// A row in the `attributes` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct Attribute<'a> {
+    /// Metadata address
+    pub metadata_address: Cow<'a, str>,
+    /// Attribute name
+    pub name: Option<Cow<'a, str>>,
+    /// Attribute value
+    pub value: Option<Cow<'a, str>>,
+    /// Attribute trait type
+    pub trait_type: Option<Cow<'a, str>>,
+}
+
+/// A row in the `metadata_collections` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct MetadataCollection<'a> {
+    /// Metadata address
+    pub metadata_address: Cow<'a, str>,
+    /// Collection name
+    pub name: Option<Cow<'a, str>>,
+    /// Collection family
+    pub family: Option<Cow<'a, str>>,
 }

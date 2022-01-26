@@ -1,16 +1,27 @@
-use std::collections::HashMap;
 
+use std::{collections::HashMap, sync::Arc};
+
+use async_trait::async_trait;
+use dataloader::{non_cached::Loader, BatchFn};
 use indexer_core::{
     db::{
         models,
-        tables::{metadata_creators, metadatas},
-        Pool,
+        tables::{metadata_creators, metadata_jsons, metadatas, storefronts},
+        Pool, PooledConnection,
     },
     prelude::*,
 };
-use juniper::{EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject, RootNode};
-#[derive(GraphQLObject)]
-#[graphql(description = "A Solana NFT")]
+
+use juniper::{EmptyMutation, EmptySubscription, GraphQLObject, RootNode};
+
+#[derive(Debug, Clone, GraphQLObject)]
+struct NftDetail {
+    description: String,
+    image: String,
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct Nft {
     address: String,
     name: String,
@@ -24,46 +35,153 @@ struct Nft {
     creators: Vec<String>,
 }
 
-// impl<'a> From<models::Metadata<'a>> for Nft {
-//     fn from(
-//         models::Metadata {
-//             address,
-//             name,
-//             symbol,
-//             uri,
-//             seller_fee_basis_points,
-//             update_authority_address,
-//             mint_address,
-//             primary_sale_happened,
-//             is_mutable,
-//             edition_nonce: _,
-//         }: models::Metadata,
-//     ) -> Self {
-//         Self {
-//             address: address.into_owned(),
-//             name: name.into_owned(),
-//             uri: uri.into_owned(),
-//             symbol: symbol.into_owned(),
-//             seller_fee_basis_points,
-//             update_authority_address: update_authority_address.into_owned(),
-//             mint_address: mint_address.into_owned(),
-//             primary_sale_happened,
-//             is_mutable,
-//         }
-//     }
-// }
+#[juniper::graphql_object(Context = AppContext)]
+impl Nft {
+    pub fn address(&self) -> String {
+        self.address.clone()
+    }
 
-#[derive(GraphQLInputObject)]
-#[graphql(description = "Buy a NFT")]
-struct BuyNft {
-    transaction: String,
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn uri(&self) -> String {
+        self.uri.clone()
+    }
+
+    pub async fn details(&self, ctx: &AppContext) -> Option<NftDetail> {
+        let fut = ctx.nft_detail_loader.load(self.address.clone());
+        let result = fut.await;
+
+        result
+    }
+}
+
+impl<'a> From<models::Metadata<'a>> for Nft {
+    fn from(
+        models::Metadata {
+            address,
+            name,
+            symbol,
+            uri,
+            seller_fee_basis_points,
+            update_authority_address,
+            mint_address,
+            primary_sale_happened,
+            is_mutable,
+            edition_nonce: _,
+        }: models::Metadata,
+    ) -> Self {
+        Self {
+            address: address.into_owned(),
+            name: name.into_owned(),
+            uri: uri.into_owned(),
+            symbol: symbol.into_owned(),
+            seller_fee_basis_points,
+            update_authority_address: update_authority_address.into_owned(),
+            mint_address: mint_address.into_owned(),
+            primary_sale_happened,
+            is_mutable,
+        }
+    }
+}
+
+#[derive(GraphQLObject)]
+#[graphql(description = "A Metaplex storefront")]
+pub struct Storefront {
+    pub owner_address: String,
+    pub subdomain: String,
+    pub title: String,
+    pub description: String,
+    pub favicon_url: String,
+    pub logo_url: String,
+    pub banner_url: String,
+}
+
+impl<'a> From<models::Storefront<'a>> for Storefront {
+    fn from(
+        models::Storefront {
+            owner_address,
+            subdomain,
+            title,
+            description,
+            favicon_url,
+            logo_url,
+            banner_url,
+            ..
+        }: models::Storefront,
+    ) -> Self {
+        Self {
+            owner_address: owner_address.into_owned(),
+            subdomain: subdomain.into_owned(),
+            title: title.into_owned(),
+            description: description.into_owned(),
+            favicon_url: favicon_url.into_owned(),
+            logo_url: logo_url.into_owned(),
+            banner_url: banner_url.map_or_else(String::new, Cow::into_owned),
+        }
+    }
 }
 
 pub struct QueryRoot {
-    db: Pool,
+    db: Arc<Pool>,
 }
 
-#[juniper::graphql_object]
+pub struct NftDetailBatcher {
+    db_connection: PooledConnection,
+}
+
+#[async_trait]
+impl BatchFn<String, Option<NftDetail>> for NftDetailBatcher {
+    async fn load(&mut self, keys: &[String]) -> HashMap<String, Option<NftDetail>> {
+        let conn = &self.db_connection;
+        let mut hash_map = HashMap::new();
+
+        for key in keys {
+            hash_map.insert(key.clone(), None);
+        }
+
+        let nft_details: Vec<models::MetadataJson> = metadata_jsons::table
+            .filter(metadata_jsons::metadata_address.eq(any(keys)))
+            .load(conn)
+            .unwrap();
+
+        for models::MetadataJson {
+            metadata_address,
+            image,
+            description,
+            ..
+        } in nft_details
+        {
+            hash_map.insert(
+                metadata_address.into_owned().to_string(),
+                Some(NftDetail {
+                    description: description.map_or_else(String::new, Cow::into_owned),
+                    image: image.map_or_else(String::new, Cow::into_owned),
+                }),
+            );
+        }
+
+        hash_map
+    }
+}
+
+#[derive(Clone)]
+pub struct AppContext {
+    nft_detail_loader: Loader<String, Option<NftDetail>, NftDetailBatcher>,
+}
+
+impl AppContext {
+    pub fn new(db_connection: PooledConnection) -> AppContext {
+        Self {
+            nft_detail_loader: Loader::new(NftDetailBatcher { db_connection }),
+        }
+    }
+}
+
+impl juniper::Context for AppContext {}
+
+#[juniper::graphql_object(Context = AppContext)]
 impl QueryRoot {
     fn nfts(
         &self,
@@ -192,6 +310,7 @@ impl QueryRoot {
             creators: vec![],
         }
     }
+
 }
 pub struct MutationRoot;
 
@@ -210,11 +329,40 @@ impl MutationRoot {
             is_mutable: true,
             creators: vec![],
         })
+
+
+    #[graphql(description = "A storefront")]
+    fn storefront(&self, subdomain: String) -> Option<Storefront> {
+        let columns = (
+            storefronts::owner_address,
+            storefronts::subdomain,
+            storefronts::title,
+            storefronts::description,
+            storefronts::favicon_url,
+            storefronts::logo_url,
+            storefronts::updated_at,
+            storefronts::banner_url,
+        );
+
+        let conn = self.db.get().unwrap();
+        let mut rows: Vec<models::Storefront> = storefronts::table
+            .filter(storefronts::subdomain.eq(subdomain))
+            .select(columns)
+            .limit(1)
+            .load(&conn)
+            .unwrap();
+
+        rows.pop().map(Into::into)
     }
 }
 
-pub type Schema = RootNode<'static, QueryRoot, MutationRoot, EmptySubscription>;
+pub type Schema =
+    RootNode<'static, QueryRoot, EmptyMutation<AppContext>, EmptySubscription<AppContext>>;
 
-pub fn create(db: Pool) -> Schema {
-    Schema::new(QueryRoot { db }, MutationRoot {}, EmptySubscription::new())
+pub fn create(db: Arc<Pool>) -> Schema {
+    Schema::new(
+        QueryRoot { db },
+        EmptyMutation::new(),
+        EmptySubscription::new(),
+    )
 }

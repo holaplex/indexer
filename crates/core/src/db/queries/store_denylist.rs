@@ -1,5 +1,6 @@
 //! Query utilities for using the store denylist table.
 
+use anyhow::Context;
 use diesel::{
     dsl::{exists, not, AsExprOf, Filter},
     expression::{exists::Exists, operators::Eq, AsExpression},
@@ -10,7 +11,13 @@ use diesel::{
     sql_types::VarChar,
 };
 
-use crate::db::tables::{store_denylist, storefronts};
+use crate::{
+    db::{
+        tables::{store_denylist, storefronts},
+        Connection,
+    },
+    error::Result,
+};
 
 // Would you believe it took me 2 hours to debug type errors for this module?
 
@@ -40,4 +47,15 @@ pub fn get_storefronts() -> Filter<storefronts::table, OwnerAddressOk<storefront
         storefronts::table,
         owner_address_ok(storefronts::owner_address),
     )
+}
+
+/// Return entries in the store denylist that have been marked as hard-banned
+///
+/// # Errors
+/// This function fails if the underlying query fails to execute.
+pub fn get_hard_banned(conn: &Connection) -> Result<Vec<String>> {
+    FilterDsl::filter(store_denylist::table, store_denylist::hard_ban)
+        .select(store_denylist::owner_address)
+        .load(conn)
+        .context("Query for hard-ban list failed")
 }
