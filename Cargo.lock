@@ -2876,6 +2876,7 @@ dependencies = [
  "metaplex",
  "metaplex-auction",
  "metaplex-indexer-core",
+ "metaplex-indexer-rabbitmq",
  "metaplex-token-metadata",
  "metaplex-token-vault",
  "parking_lot",
@@ -2959,6 +2960,7 @@ dependencies = [
  "lapin",
  "rmp-serde",
  "serde",
+ "solana-sdk",
  "strum",
  "thiserror",
 ]
@@ -2979,6 +2981,7 @@ dependencies = [
  "solana-accountsdb-plugin-interface",
  "solana-logger",
  "solana-program",
+ "solana-sdk",
 ]
 
 [[package]]
