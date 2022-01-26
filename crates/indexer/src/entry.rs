@@ -1,6 +1,7 @@
 use std::{collections::BTreeSet, mem, path::PathBuf, str::FromStr, sync::Arc};
 
-use indexer_core::{clap, clap::Parser, db};
+use indexer_core::{clap, clap::Parser, db, pubkeys};
+use indexer_rabbitmq::accountsdb::Message;
 use spl_token::state::Account as TokenAccount;
 use topograph::{graph, graph::AdoptableDependents, threaded};
 
@@ -13,6 +14,15 @@ use crate::{
     prelude::*,
     util,
 };
+
+fn process_message(msg: Message, client: Arc<Client>, handle: ThreadPoolHandle) -> Result<()> {
+    match msg {
+        Message::AccountUpdate { owner, key, data } if owner == pubkeys::metadata() => {
+            metadata::process(&client, handle, key, data)
+        },
+        Message::AccountUpdate { .. } | Message::InstructionNotify { .. } => Ok(()),
+    }
+}
 
 /// Convenience record for passing data to a [`ListingMetadata`] job
 #[derive(Debug, Clone, Copy)]
@@ -78,8 +88,6 @@ pub enum Job {
     /// Process the join record for a listing item
     ListingMetadata(ListingMetadata),
     /// Process data for an individual item
-    Metadata(Pubkey),
-    /// Process the associated metadata URI for an item
     MetadataUri(Pubkey, String),
     /// Locate and process the edition for a token mint
     EditionForMint(EditionKeys),
@@ -192,7 +200,6 @@ fn create_pool(
                 Job::ListingMetadata(lm) => {
                     auction_cache::process_listing_metadata(&client, lm, handle)
                 },
-                Job::Metadata(meta) => metadata::process(&client, meta, handle),
                 Job::MetadataUri(..) if !metadata_json => Ok(()),
                 Job::MetadataUri(meta, ref uri) => {
                     metadata_uri::process(&client, meta, uri.clone(), handle)

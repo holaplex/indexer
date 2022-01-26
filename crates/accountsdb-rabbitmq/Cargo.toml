@@ -29,6 +29,7 @@ smol = "1.2.5"
 solana-accountsdb-plugin-interface = "1.9.4"
 solana-logger = "1.9.4"
 solana-program = "1.9.4"
+solana-sdk = "1.9.4"
 
 [dependencies.indexer-rabbitmq]
 package = "metaplex-indexer-rabbitmq"

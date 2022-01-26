@@ -27,3 +27,4 @@ rmp-serde = "1.0.0-beta.2"
 serde = { version = "1.0.133", features = ["derive"] }
 strum = { version = "0.23.0", features = ["derive"], optional = true }
 thiserror = "1.0.30"
+solana-sdk = "1.9.4"
