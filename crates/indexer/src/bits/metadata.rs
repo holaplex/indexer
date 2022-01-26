@@ -3,19 +3,23 @@ use indexer_core::db::{
     models::{Metadata, MetadataCreator},
     tables::{metadata_creators, metadatas},
 };
-use metaplex_token_metadata::state::Metadata as MetadataAccount;
+use metaplex_token_metadata::{
+    utils::{try_from_slice_checked},
+    state::{Metadata as MetadataAccount, Key, MAX_METADATA_LEN}
+};
 
-use crate::{prelude::*, util, Client, EditionKeys, Job, ThreadPoolHandle};
+use crate::{prelude::*, Client, Job, ThreadPoolHandle};
 
-pub fn process(client: &Client, meta_key: Pubkey, handle: ThreadPoolHandle) -> Result<()> {
-    let mut acct = client
-        .get_account(&meta_key)
-        .context("Failed to get item metadata")?;
+pub fn process(
+    client: &Client, 
+    handle: ThreadPoolHandle,
+    meta_key: Pubkey,
+    data: Vec<u8>
+) -> Result<()> {
 
-    let meta = MetadataAccount::from_account_info(&util::account_as_info(
-        &meta_key, false, false, &mut acct,
-    ))
-    .context("Failed tintegeio parse Metadata")?;
+    let meta: MetadataAccount =
+    try_from_slice_checked(&data, Key::MetadataV1, MAX_METADATA_LEN)?;
+
 
     let addr = bs58::encode(meta_key).into_string();
     let row = Metadata {
@@ -41,10 +45,6 @@ pub fn process(client: &Client, meta_key: Pubkey, handle: ThreadPoolHandle) -> R
         .execute(&db)
         .context("Failed to insert metadata")?;
 
-    handle.push(Job::EditionForMint(EditionKeys {
-        mint: meta.mint,
-        metadata: meta_key,
-    }));
     handle.push(Job::MetadataUri(
         meta_key,
         meta.data.uri.trim_end_matches('\0').to_owned(),
