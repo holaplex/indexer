@@ -36,19 +36,17 @@ fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
 }
 
 fn graphql(
-    db_pool: &Arc<Pool>,
+    db_pool: Arc<Pool>,
 ) -> impl Fn(
     web::Data<Arc<Schema>>,
     web::Json<GraphQLRequest>,
 ) -> Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>>
 + Clone {
-    let db_pool = Arc::clone(db_pool);
-
     move |st, data| {
-        let db_connection = db_pool.get().unwrap();
+        let pool = Arc::clone(&db_pool);
 
         Box::pin(async move {
-            let ctx = AppContext::new(db_connection);
+            let ctx = AppContext::new(pool);
             let res = data.execute(&st, &ctx).await;
 
             let json = serde_json::to_string(&res)?;
@@ -75,7 +73,7 @@ fn main() {
 
         let graphiql_uri = format!("http://{}", addr);
 
-        let schema = Arc::new(schema::create(db_pool.clone()));
+        let schema = Arc::new(schema::create());
 
         actix_web::rt::System::new("main")
             .block_on(
@@ -91,14 +89,14 @@ fn main() {
                                 .finish(),
                         )
                         .service(
-                            web::resource(
+                            web::resource(format!(
+                                "/v{}",
                                 percent_encoding::utf8_percent_encode(
-                                    &format!("/v{}", env!("CARGO_PKG_VERSION")),
+                                    env!("CARGO_PKG_VERSION_MAJOR"),
                                     percent_encoding::NON_ALPHANUMERIC,
                                 )
-                                .to_string(),
-                            )
-                            .route(web::post().to(graphql(&db_pool))),
+                            ))
+                            .route(web::post().to(graphql(db_pool.clone()))),
                         )
                         .service(
                             web::resource("/graphiql")

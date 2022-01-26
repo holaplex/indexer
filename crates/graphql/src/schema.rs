@@ -6,7 +6,7 @@ use indexer_core::{
     db::{
         models,
         tables::{metadata_creators, metadata_jsons, metadatas, storefronts},
-        Pool, PooledConnection,
+        Pool,
     },
     prelude::*,
 };
@@ -120,18 +120,16 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
     }
 }
 
-pub struct QueryRoot {
-    db: Arc<Pool>,
-}
+pub struct QueryRoot {}
 
 pub struct NftDetailBatcher {
-    db_connection: PooledConnection,
+    db_pool: Arc<Pool>,
 }
 
 #[async_trait]
 impl BatchFn<String, Option<NftDetail>> for NftDetailBatcher {
     async fn load(&mut self, keys: &[String]) -> HashMap<String, Option<NftDetail>> {
-        let conn = &self.db_connection;
+        let conn = self.db_pool.get().unwrap();
         let mut hash_map = HashMap::new();
 
         for key in keys {
@@ -140,7 +138,7 @@ impl BatchFn<String, Option<NftDetail>> for NftDetailBatcher {
 
         let nft_details: Vec<models::MetadataJson> = metadata_jsons::table
             .filter(metadata_jsons::metadata_address.eq(any(keys)))
-            .load(conn)
+            .load(&conn)
             .unwrap();
 
         for models::MetadataJson {
@@ -166,12 +164,16 @@ impl BatchFn<String, Option<NftDetail>> for NftDetailBatcher {
 #[derive(Clone)]
 pub struct AppContext {
     nft_detail_loader: Loader<String, Option<NftDetail>, NftDetailBatcher>,
+    db_pool: Arc<Pool>,
 }
 
 impl AppContext {
-    pub fn new(db_connection: PooledConnection) -> AppContext {
+    pub fn new(db_pool: Arc<Pool>) -> AppContext {
         Self {
-            nft_detail_loader: Loader::new(NftDetailBatcher { db_connection }),
+            nft_detail_loader: Loader::new(NftDetailBatcher {
+                db_pool: db_pool.clone(),
+            }),
+            db_pool,
         }
     }
 }
@@ -182,12 +184,13 @@ impl juniper::Context for AppContext {}
 impl QueryRoot {
     fn nfts(
         &self,
+        context: &AppContext,
         #[graphql(description = "Filter on creator address")] creators: Option<Vec<String>>,
         #[graphql(description = "Filter on update authority addres")] update_authority: Option<
             Vec<String>,
         >,
     ) -> Vec<Nft> {
-        let conn = self.db.get().unwrap();
+        let conn = context.db_pool.get().unwrap();
 
         // Create mutable vector for all rows returned
         let mut all_rows: Vec<String> = Vec::new();
@@ -228,8 +231,12 @@ impl QueryRoot {
         rows.into_iter().map(Into::into).collect()
     }
 
-    fn nft(&self, #[graphql(description = "Address of NFT")] address: String) -> Option<Nft> {
-        let conn = self.db.get().unwrap();
+    fn nft(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Address of NFT")] address: String,
+    ) -> Option<Nft> {
+        let conn = context.db_pool.get().unwrap();
         let mut rows: Vec<models::Metadata> = metadatas::table
             .select(metadatas::all_columns)
             .filter(metadatas::address.eq(address))
@@ -241,7 +248,7 @@ impl QueryRoot {
     }
 
     #[graphql(description = "A storefront")]
-    fn storefront(&self, subdomain: String) -> Option<Storefront> {
+    fn storefront(&self, context: &AppContext, subdomain: String) -> Option<Storefront> {
         let columns = (
             storefronts::owner_address,
             storefronts::subdomain,
@@ -253,7 +260,7 @@ impl QueryRoot {
             storefronts::banner_url,
         );
 
-        let conn = self.db.get().unwrap();
+        let conn = context.db_pool.get().unwrap();
         let mut rows: Vec<models::Storefront> = storefronts::table
             .filter(storefronts::subdomain.eq(subdomain))
             .select(columns)
@@ -265,12 +272,17 @@ impl QueryRoot {
     }
 }
 
+impl QueryRoot {
+    fn new() -> Self {
+        Self {}
+    }
+}
 pub type Schema =
     RootNode<'static, QueryRoot, EmptyMutation<AppContext>, EmptySubscription<AppContext>>;
 
-pub fn create(db: Arc<Pool>) -> Schema {
+pub fn create() -> Schema {
     Schema::new(
-        QueryRoot { db },
+        QueryRoot::new(),
         EmptyMutation::new(),
         EmptySubscription::new(),
     )
