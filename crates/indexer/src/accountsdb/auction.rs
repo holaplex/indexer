@@ -16,10 +16,13 @@ use metaplex_auction::processor::{
     AuctionData, AuctionDataExtended, BidState, BidderMetadata, PriceFloor,
 };
 
-use super::bidder_metadata::BidMap;
-use crate::{bits::bidder_metadata::BidList, prelude::*, util, Client, RcAuctionKeys};
+use super::{
+    bidder_metadata::{BidList, BidMap},
+    RcAuctionKeys,
+};
+use crate::{prelude::*, util, Client};
 
-pub async fn process(client: &Client, keys: &RcAuctionKeys, bid_map: &BidMap) -> Result<()> {
+pub(super) async fn process(client: &Client, keys: &RcAuctionKeys, bid_map: &BidMap) -> Result<()> {
     let (ext, _bump) = find_auction_data_extended(&keys.vault);
 
     let mut acct = client
