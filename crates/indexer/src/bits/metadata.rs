@@ -4,22 +4,14 @@ use indexer_core::db::{
     tables::{metadata_creators, metadatas},
 };
 use metaplex_token_metadata::{
-    utils::{try_from_slice_checked},
-    state::{Metadata as MetadataAccount, Key, MAX_METADATA_LEN}
+    state::{Key, Metadata as MetadataAccount, MAX_METADATA_LEN},
+    utils::try_from_slice_checked,
 };
 
-use crate::{prelude::*, Client, Job, ThreadPoolHandle};
+use crate::{prelude::*, Client};
 
-pub fn process(
-    client: &Client, 
-    handle: ThreadPoolHandle,
-    meta_key: Pubkey,
-    data: Vec<u8>
-) -> Result<()> {
-
-    let meta: MetadataAccount =
-    try_from_slice_checked(&data, Key::MetadataV1, MAX_METADATA_LEN)?;
-
+pub fn process(client: &Client, meta_key: Pubkey, data: Vec<u8>) -> Result<()> {
+    let meta: MetadataAccount = try_from_slice_checked(&data, Key::MetadataV1, MAX_METADATA_LEN)?;
 
     let addr = bs58::encode(meta_key).into_string();
     let row = Metadata {
@@ -45,10 +37,11 @@ pub fn process(
         .execute(&db)
         .context("Failed to insert metadata")?;
 
-    handle.push(Job::MetadataUri(
-        meta_key,
-        meta.data.uri.trim_end_matches('\0').to_owned(),
-    ));
+    // TODO
+    // handle.push(Job::MetadataUri(
+    //     meta_key,
+    //     meta.data.uri.trim_end_matches('\0').to_owned(),
+    // ));
 
     for creator in meta.data.creators.unwrap_or_else(Vec::new) {
         let row = MetadataCreator {
