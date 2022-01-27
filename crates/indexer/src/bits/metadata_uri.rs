@@ -1,11 +1,11 @@
-use std::fmt::{self, Debug};
+use std::fmt::{self, Debug, Display};
 
 use cid::Cid;
 use indexer_core::{
     db::{
         insert_into,
         models::{
-            Attribute as DbAttribute, File as DbFile, MetadataCollection,
+            File as DbFile, MetadataAttributeWrite, MetadataCollection,
             MetadataJson as DbMetadataJson,
         },
         select,
@@ -119,11 +119,15 @@ enum ValueDataType {
     String(String),
 }
 
-impl fmt::Display for ValueDataType {
+impl Display for ValueDataType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            Self::Number(n) => Display::fmt(n, f),
+            Self::String(s) => Display::fmt(s, f),
+        }
     }
 }
+
 #[derive(Serialize, Deserialize, Debug)]
 struct Attribute {
     name: Option<String>,
@@ -266,7 +270,7 @@ fn process_attributes(
         value,
     } in attributes.unwrap_or_else(Vec::new)
     {
-        let row = DbAttribute {
+        let row = MetadataAttributeWrite {
             metadata_address: Borrowed(addr),
             name: name.map(Owned),
             trait_type: trait_type.map(Owned),

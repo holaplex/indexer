@@ -263,8 +263,9 @@ pub struct File<'a> {
 }
 
 /// A row in the `attributes` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
-pub struct Attribute<'a> {
+#[derive(Debug, Clone, Insertable, AsChangeset)]
+#[table_name = "attributes"]
+pub struct MetadataAttributeWrite<'a> {
     /// Metadata address
     pub metadata_address: Cow<'a, str>,
     /// Attribute name
@@ -273,6 +274,21 @@ pub struct Attribute<'a> {
     pub value: Option<Cow<'a, str>>,
     /// Attribute trait type
     pub trait_type: Option<Cow<'a, str>>,
+}
+
+/// A row in the `attributes` table
+#[derive(Debug, Clone, Queryable)]
+pub struct MetadataAttribute<'a> {
+    /// Metadata address
+    pub metadata_address: Cow<'a, str>,
+    /// Attribute name
+    pub name: Option<Cow<'a, str>>,
+    /// Attribute value
+    pub value: Option<Cow<'a, str>>,
+    /// Attribute trait type
+    pub trait_type: Option<Cow<'a, str>>,
+    /// Attribute generated id
+    pub id: Cow<'a, uuid::Uuid>,
 }
 
 /// A row in the `metadata_collections` table

@@ -871,7 +871,7 @@ dependencies = [
  "rand 0.7.3",
  "serde",
  "serde_json",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -1494,6 +1494,7 @@ dependencies = [
  "pq-sys",
  "r2d2",
  "serde_json",
+ "uuid 0.7.4",
 ]
 
 [[package]]
@@ -2619,7 +2620,7 @@ dependencies = [
  "smartstring",
  "static_assertions",
  "url 2.2.2",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -2931,6 +2932,7 @@ dependencies = [
  "rand 0.8.4",
  "serde_json",
  "solana-sdk",
+ "uuid 0.7.4",
 ]
 
 [[package]]
@@ -5666,6 +5668,12 @@ name = "utf8parse"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "936e4b492acfd135421d8dca4b1aa80a7bfc26e702ef3af710e0752684df5372"
+
+[[package]]
+name = "uuid"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90dbc611eb48397705a6b0f6e917da23ae517e4d127123d2cf7674206627d32a"
 
 [[package]]
 name = "uuid"
