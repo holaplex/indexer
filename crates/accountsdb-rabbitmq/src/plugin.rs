@@ -52,7 +52,7 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                     .map_err(custom_err)?;
 
             self.producer = Some(
-                QueueType::new(amqp.network)
+                QueueType::new(amqp.network, None)
                     .producer(&conn)
                     .await
                     .map_err(custom_err)?,
@@ -86,8 +86,12 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                         .as_ref()
                         .ok_or_else(uninit)?
                         .write(Message::AccountUpdate {
-                            key: acct.pubkey.try_into().map_err(custom_err)?,
-                            owner: acct.owner.try_into().map_err(custom_err)?,
+                            key: Pubkey::new_from_array(
+                                acct.pubkey.try_into().map_err(custom_err)?,
+                            ),
+                            owner: Pubkey::new_from_array(
+                                acct.owner.try_into().map_err(custom_err)?,
+                            ),
                             data: acct.data.to_owned(),
                         })
                         .await
@@ -116,10 +120,9 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
             prod: &Producer,
         ) -> StdResult<(), anyhow::Error> {
             // TODO: no clue if this is right.
-            let program = msg
+            let program = *msg
                 .get_account_key(ins.program_id_index as usize)
-                .ok_or_else(|| anyhow!("Couldn't get program ID for instruction"))?
-                .to_bytes();
+                .ok_or_else(|| anyhow!("Couldn't get program ID for instruction"))?;
 
             // TODO: ...or this.
             let accounts = ins
@@ -128,7 +131,7 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                 .map(|i| {
                     msg.get_account_key(*i as usize).map_or_else(
                         || Err(anyhow!("Couldn't get input account for instruction")),
-                        |k| Ok(k.to_bytes()),
+                        |k| Ok(*k),
                     )
                 })
                 .collect::<StdResult<Vec<_>, _>>()?;

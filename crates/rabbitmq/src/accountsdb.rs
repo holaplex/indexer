@@ -12,7 +12,7 @@ use lapin::{
     BasicProperties, Channel, ExchangeKind,
 };
 use serde::{Deserialize, Serialize};
-use solana_sdk::pubkey::Pubkey;
+pub use solana_sdk::pubkey::Pubkey;
 
 use crate::Result;
 
