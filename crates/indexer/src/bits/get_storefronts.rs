@@ -8,7 +8,7 @@ use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{prelude::*, Client, Job, ThreadPoolHandle};
+use crate::{prelude::*, Client};
 
 #[derive(Serialize)]
 struct Query {
@@ -111,7 +111,6 @@ fn process_tags(
     mut tags: HashMap<String, String>,
     updated_at: Option<NaiveDateTime>,
     db: &PooledConnection,
-    handle: ThreadPoolHandle<'_>,
     known_pubkeys: &mut HashSet<Pubkey>,
 ) -> Result<()> {
     let owner = Pubkey::try_from(
@@ -158,7 +157,8 @@ fn process_tags(
             .execute(db)
             .context("Failed to insert storefront")?;
 
-        handle.push(Job::StoreOwner(owner));
+        // TODO
+        // handle.push(Job::StoreOwner(owner));
     } else {
         // This isn't terribly useful on its own as a trace log
         // trace!("Skipping duplicate owner {:?}", owner);
@@ -167,7 +167,7 @@ fn process_tags(
     Ok(())
 }
 
-async fn get_storefronts_async(client: &Client, handle: ThreadPoolHandle<'_>) -> Result<()> {
+async fn get_storefronts_async(client: &Client) -> Result<()> {
     let db = client.db()?;
 
     let http_client = reqwest::Client::new();
@@ -223,7 +223,6 @@ async fn get_storefronts_async(client: &Client, handle: ThreadPoolHandle<'_>) ->
                     .block
                     .map(|b| NaiveDateTime::from_timestamp(b.timestamp, 0)),
                 &db,
-                handle,
                 &mut known_pubkeys,
             )
             .map_err(|e| error!("{:?}", e))
@@ -249,10 +248,10 @@ async fn get_storefronts_async(client: &Client, handle: ThreadPoolHandle<'_>) ->
     Ok(())
 }
 
-pub fn run(client: &Client, handle: ThreadPoolHandle) -> Result<()> {
+pub fn run(client: &Client) -> Result<()> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .context("Failed to create async executor")?
-        .block_on(get_storefronts_async(client, handle))
+        .block_on(get_storefronts_async(client))
 }

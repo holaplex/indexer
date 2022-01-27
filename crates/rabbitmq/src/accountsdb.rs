@@ -62,9 +62,13 @@ impl QueueType {
     /// Construct a new queue configuration given the network this validator is
     /// connected to.
     #[must_use]
-    pub fn new(network: Network) -> Self {
+    pub fn new(network: Network, id: Option<&str>) -> Self {
         let exchange = format!("{}.accounts", network);
-        let queue = format!("{}.accounts.indexer", network);
+        let mut queue = format!("{}.accounts.indexer", network);
+
+        if let Some(id) = id {
+            queue = format!("{}.{}", queue, id);
+        }
 
         Self { exchange, queue }
     }

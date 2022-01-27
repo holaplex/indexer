@@ -1,18 +1,9 @@
-use std::sync::Arc;
-
-use chrono::NaiveDateTime;
 use indexer_core::db::{insert_into, models::ListingMetadata, tables::listing_metadatas};
 use metaplex::state::AuctionCache;
-use topograph::graph::{Dependents, RcAdoptableDependents};
 
-use crate::{prelude::*, util, AuctionCacheKeys, AuctionKeys, Client, Job, ThreadPoolHandle};
+use crate::{prelude::*, util, AuctionCacheKeys, Client};
 
-pub fn process(
-    client: &Client,
-    keys: AuctionCacheKeys,
-    handle: ThreadPoolHandle,
-    bid_dependents: &RcAdoptableDependents<Job>,
-) -> Result<()> {
+pub fn process(client: &Client, keys: AuctionCacheKeys) -> Result<()> {
     let mut acct = client
         .get_account(&keys.cache)
         .context("Failed to get auction cache")?;
@@ -33,37 +24,39 @@ pub fn process(
         ..
     } = cache;
 
-    let mut auction_outs = Vec::new();
+    // TODO: store listing metadata
+    // let mut auction_outs = Vec::new();
 
-    for (index, meta) in metadata.into_iter().enumerate() {
-        let mut deps = handle.create_node(
-            Job::ListingMetadata(crate::ListingMetadata {
-                listing: auction,
-                metadata: meta,
-                index,
-            }),
-            2,
-        );
+    // for (index, meta) in metadata.into_iter().enumerate() {
+    //     let mut deps = handle.create_node(
+    //         Job::ListingMetadata(crate::ListingMetadata {
+    //             listing: auction,
+    //             metadata: meta,
+    //             index,
+    //         }),
+    //         2,
+    //     );
 
-        auction_outs.push(deps.get_in_edge());
-        handle.push_dependency(Job::Metadata(meta), Some(deps.get_in_edge()));
-    }
+    //     auction_outs.push(deps.get_in_edge());
+    //     handle.push_dependency(Job::Metadata(meta), Some(deps.get_in_edge()));
+    // }
 
-    let mut auction = handle.create_node(
-        Job::Auction(Arc::new(AuctionKeys {
-            auction,
-            vault,
-            store_owner: keys.store_owner,
-            created_at: NaiveDateTime::from_timestamp(timestamp, 0),
-        })),
-        1,
-    );
+    // TODO: store auction
+    // let mut auction = handle.create_node(
+    //     Job::Auction(Arc::new(AuctionKeys {
+    //         auction,
+    //         vault,
+    //         store_owner: keys.store_owner,
+    //         created_at: NaiveDateTime::from_timestamp(timestamp, 0),
+    //     })),
+    //     1,
+    // );
 
-    auction
-        .set_dependents(Dependents::new(auction_outs))
-        .expect("Failed to sync auction outs - this shouldn't happen!");
+    // auction
+    //     .set_dependents(Dependents::new(auction_outs))
+    //     .expect("Failed to sync auction outs - this shouldn't happen!");
 
-    bid_dependents.lock().push(&handle, auction.get_in_edge());
+    // bid_dependents.lock().push(&handle, auction.get_in_edge());
 
     Ok(())
 }
@@ -75,7 +68,6 @@ pub fn process_listing_metadata(
         metadata,
         index,
     }: crate::ListingMetadata,
-    _handle: ThreadPoolHandle,
 ) -> Result<()> {
     let db = client.db()?;
 
