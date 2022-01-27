@@ -9,22 +9,23 @@ use lapinou::LapinSmolExt;
 
 #[derive(Docbot)]
 pub enum RmqCommand {
-    /// `listen <network> <address>`
+    /// `listen <network> <address> <suffix>`
     /// Open an AMQP connection to the specified address
     ///
     /// # Arguments
     /// network: The network identifier of the server to listen for
     /// address: The address to connect to
-    Listen(Network, String),
+    /// suffix: A unique identifier to suffix a new queue with
+    Listen(Network, String, String),
 }
 
 pub fn handle(cmd: RmqCommand) -> super::Result {
     match cmd {
-        RmqCommand::Listen(network, addr) => smol::block_on(async {
+        RmqCommand::Listen(network, addr, suffix) => smol::block_on(async {
             let conn = Connection::connect(&addr, ConnectionProperties::default().with_smol())
                 .await
                 .context("Failed to connect to the AMQP server")?;
-            let mut consumer = QueueType::new(network)
+            let mut consumer = QueueType::new(network, Some(&suffix))
                 .consumer(&conn)
                 .await
                 .context("Failed to create a consumer")?;
