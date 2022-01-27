@@ -1,9 +1,10 @@
 use indexer_core::db::{insert_into, models::ListingMetadata, tables::listing_metadatas};
 use metaplex::state::AuctionCache;
 
-use crate::{prelude::*, util, AuctionCacheKeys, Client};
+use super::AuctionCacheKeys;
+use crate::{prelude::*, util, Client};
 
-pub fn process(client: &Client, keys: AuctionCacheKeys) -> Result<()> {
+pub(super) fn process(client: &Client, keys: AuctionCacheKeys) -> Result<()> {
     let mut acct = client
         .get_account(&keys.cache)
         .context("Failed to get auction cache")?;
@@ -61,13 +62,13 @@ pub fn process(client: &Client, keys: AuctionCacheKeys) -> Result<()> {
     Ok(())
 }
 
-pub fn process_listing_metadata(
+pub(super) fn process_listing_metadata(
     client: &Client,
-    crate::ListingMetadata {
+    super::ListingMetadata {
         listing,
         metadata,
         index,
-    }: crate::ListingMetadata,
+    }: super::ListingMetadata,
 ) -> Result<()> {
     let db = client.db()?;
 

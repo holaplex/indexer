@@ -1,9 +1,19 @@
+mod auction;
+mod auction_cache;
+mod bidder_metadata;
+mod edition;
+mod get_storefronts;
+mod metadata;
+mod metadata_uri;
+mod store_owner;
+mod token_account;
+
 use std::{path::PathBuf, str::FromStr};
 
 use indexer_core::{clap, clap::Parser, pubkeys};
 use indexer_rabbitmq::accountsdb::Message;
 
-use crate::{bits::metadata, client::Client, prelude::*};
+use crate::{client::Client, prelude::*};
 
 pub fn process_message(msg: Message, client: &Client) -> Result<()> {
     match msg {
@@ -16,7 +26,7 @@ pub fn process_message(msg: Message, client: &Client) -> Result<()> {
 
 /// Convenience record for passing data to a [`ListingMetadata`] job
 #[derive(Debug, Clone, Copy)]
-pub struct ListingMetadata {
+struct ListingMetadata {
     /// The public key of the auction
     pub listing: Pubkey,
     /// The public key of the auction item
@@ -27,7 +37,7 @@ pub struct ListingMetadata {
 
 /// Identifying information about an auction cache account
 #[derive(Debug, Clone, Copy)]
-pub struct AuctionCacheKeys {
+struct AuctionCacheKeys {
     /// The auction cache account key
     pub cache: Pubkey,
     /// The store owner's wallet address
@@ -36,7 +46,7 @@ pub struct AuctionCacheKeys {
 
 /// Identifying information about an auction from its cache account
 #[derive(Debug, Clone, Copy)]
-pub struct AuctionKeys {
+struct AuctionKeys {
     /// The `AuctionData` account pubkey
     pub auction: Pubkey,
     /// The auction's vault pubkey
@@ -48,11 +58,11 @@ pub struct AuctionKeys {
 }
 
 /// Convenience alias for a shared `AuctionKeys`
-pub type RcAuctionKeys = std::sync::Arc<AuctionKeys>;
+type RcAuctionKeys = std::sync::Arc<AuctionKeys>;
 
 /// The keys required to locate and associate a metadata's edition
 #[derive(Debug, Clone, Copy)]
-pub struct EditionKeys {
+struct EditionKeys {
     /// The `Metadata` account pubkey
     pub metadata: Pubkey,
     /// The item's mint pubkey
@@ -61,7 +71,7 @@ pub struct EditionKeys {
 
 /// A job to be run on the process thread pool
 #[derive(Debug, Clone)]
-pub enum Job {
+enum Job {
     // /// Fetch the storefront list from the Holaplex API
 // GetStorefronts,
 // /// Fetch all bidder metadata accounts
@@ -279,7 +289,7 @@ struct EntryConfig {
 //     Ok(())
 // }
 
-// pub fn run() -> Result<()> {
+// fn run() -> Result<()> {
 //     let opts = Opts::parse();
 
 //     debug!("{:#?}", opts);
