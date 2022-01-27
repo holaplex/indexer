@@ -10,12 +10,9 @@ use metaplex_token_metadata::state::{
     Edition as EditionAccount, MasterEdition as MasterEditionTrait,
 };
 
-use crate::{
-    prelude::*, util, util::MasterEdition as MasterEditionAccount, Client, EditionKeys,
-    ThreadPoolHandle,
-};
+use crate::{prelude::*, util, util::MasterEdition as MasterEditionAccount, Client, EditionKeys};
 
-pub fn process(client: &Client, keys: EditionKeys, _handle: ThreadPoolHandle) -> Result<()> {
+pub fn process(client: &Client, keys: EditionKeys) -> Result<()> {
     let (edition_key, _bump) = find_edition(keys.mint);
 
     let acct = client
