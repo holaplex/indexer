@@ -13,7 +13,10 @@ impl AccountSelector {
     pub fn from_config(owners: HashSet<String>) -> Result<Self> {
         let owners = owners
             .into_iter()
-            .map(|s| bs58::decode(s).into_vec().map(Vec::into_boxed_slice))
+            .map(|s| {
+                s.parse()
+                    .map(|k: Pubkey| k.to_bytes().to_vec().into_boxed_slice())
+            })
             .collect::<Result<_, _>>()
             .context("Failed to parse account owner keys")?;
 
@@ -28,14 +31,14 @@ impl AccountSelector {
 
 #[derive(Debug)]
 pub struct InstructionSelector {
-    programs: HashSet<[u8; 32]>,
+    programs: HashSet<Pubkey>,
 }
 
 impl InstructionSelector {
     pub fn from_config(programs: HashSet<String>) -> Result<Self> {
         let programs = programs
             .into_iter()
-            .map(|s| s.parse().map(Pubkey::to_bytes))
+            .map(|s| s.parse())
             .collect::<Result<_, _>>()
             .context("Failed to parse instruction program keys")?;
 
@@ -43,12 +46,7 @@ impl InstructionSelector {
     }
 
     #[inline]
-    pub fn is_selected(
-        &self,
-        _ins: &CompiledInstruction,
-        pgm: &[u8; 32],
-        _accts: &[[u8; 32]],
-    ) -> bool {
+    pub fn is_selected(&self, _ins: &CompiledInstruction, pgm: &Pubkey, _accts: &[Pubkey]) -> bool {
         self.programs.contains(pgm)
     }
 }
