@@ -11,7 +11,8 @@ use metaplex_token_metadata::{
 use crate::{prelude::*, Client};
 
 pub fn process(client: &Client, meta_key: Pubkey, data: Vec<u8>) -> Result<()> {
-    let meta: MetadataAccount = try_from_slice_checked(&data, Key::MetadataV1, MAX_METADATA_LEN)?;
+    let meta: MetadataAccount = try_from_slice_checked(&data, Key::MetadataV1, MAX_METADATA_LEN)
+        .context("failed to parse metadata")?;
 
     let addr = bs58::encode(meta_key).into_string();
     let row = Metadata {
