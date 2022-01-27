@@ -15,10 +15,13 @@ use indexer_rabbitmq::accountsdb::Message;
 
 use crate::{client::Client, prelude::*};
 
-pub fn process_message(msg: Message, client: &Client) -> Result<()> {
+pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
     match msg {
-        Message::AccountUpdate { owner, key, data } if owner == pubkeys::metadata() => {
-            metadata::process(client, key, data)
+        // Message::AccountUpdate { owner, key, data } if owner == pubkeys::metadata() => {
+        //     metadata::process(client, key, data)
+        // },
+        Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction() => {
+            auction::process(client, key, data, owner).await
         },
         Message::AccountUpdate { .. } | Message::InstructionNotify { .. } => Ok(()),
     }
