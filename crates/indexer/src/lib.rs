@@ -8,16 +8,15 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
-mod bits;
+#[cfg(any(test, feature = "accountsdb"))]
+pub mod accountsdb;
 mod client;
-mod entry;
 pub(crate) mod util;
 
 pub(crate) use client::Client;
-pub use entry::process_message;
-pub(crate) use entry::{AuctionCacheKeys, EditionKeys, ListingMetadata, RcAuctionKeys};
 pub use runtime::{create_consumer, run};
 
+/// Common traits and re-exports
 pub mod prelude {
     pub use indexer_core::prelude::*;
     pub use solana_sdk::{bs58, pubkey::Pubkey};
@@ -103,6 +102,11 @@ mod runtime {
         })
     }
 
+    /// Create a new AMQP consumer from the given URL and queue type
+    ///
+    /// # Errors
+    /// This function fails if a connection cannot be established or the
+    /// consumer configuration fails.
     pub async fn create_consumer<T: for<'a> serde::Deserialize<'a>, Q: QueueType<T>>(
         addr: impl AsRef<str>,
         queue_type: Q,
