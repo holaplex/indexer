@@ -50,7 +50,7 @@ package = "metaplex-indexer-rabbitmq"
 version = "=0.1.0"
 path = "../rabbitmq"
 
-[targets.metaplex-indexer.dependencies.indexer-rabbitmq]
+[target.metaplex-indexer.dependencies.indexer-rabbitmq]
 package = "metaplex-indexer-rabbitmq"
 version = "=0.1.0"
 path = "../rabbitmq"

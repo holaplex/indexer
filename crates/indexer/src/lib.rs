@@ -93,7 +93,7 @@ mod runtime {
                     b.worker_threads(thread_count);
                 }
 
-                b.enable_io()
+                b.enable_all()
                     .build()
                     .context("Failed to initialize async runtime")?
             };

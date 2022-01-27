@@ -41,7 +41,10 @@ fn main() {
                 .await
                 .context("Failed to read message from RabbitMQ")?
             {
-                metaplex_indexer::accountsdb::process_message(msg, &*client)?;
+                match metaplex_indexer::accountsdb::process_message(msg, &*client).await {
+                    Ok(()) => (),
+                    Err(e) => error!("we have a problem {:?}", e)
+                }
             }
 
             Ok(())
