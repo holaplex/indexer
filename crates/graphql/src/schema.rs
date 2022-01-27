@@ -10,7 +10,7 @@ use indexer_core::{
     },
     prelude::*,
 };
-use juniper::{EmptyMutation, EmptySubscription, GraphQLObject, RootNode};
+use juniper::{EmptyMutation, EmptySubscription, GraphQLInputObject, GraphQLObject, RootNode};
 
 #[derive(Debug, Clone)]
 struct Creator {
@@ -23,7 +23,7 @@ impl Creator {
         self.address.clone()
     }
 
-    pub fn attribute_groups(&self, context: &AppContext) -> Vec<Property> {
+    pub fn attribute_groups(&self, context: &AppContext) -> Vec<AttributeGroup> {
         let conn = context.db_pool.get().unwrap();
 
         let metadatas: Vec<String> = metadata_creators::table
@@ -59,14 +59,14 @@ impl Creator {
             .map(|(name, vars)| {
                 let name = name.map_or_else(String::new, Cow::into_owned);
 
-                Property {
+                AttributeGroup {
                     name,
                     variants: vars
                         .into_iter()
                         .map(|(name, count)| {
                             let name = name.map_or_else(String::new, Cow::into_owned);
 
-                            PropertyVariant { name, count }
+                            AttributeVariant { name, count }
                         })
                         .collect(),
                 }
@@ -76,15 +76,22 @@ impl Creator {
 }
 
 #[derive(Debug, Clone, GraphQLObject)]
-struct PropertyVariant {
+struct AttributeVariant {
     name: String,
     count: i32,
 }
 
 #[derive(Debug, GraphQLObject)]
-struct Property {
+struct AttributeGroup {
     name: String,
-    variants: Vec<PropertyVariant>,
+    variants: Vec<AttributeVariant>,
+}
+
+#[derive(GraphQLInputObject, Clone, Debug)]
+#[graphql(description = "Filter on NFT attributes")]
+struct AttributeFilter {
+    trait_type: String,
+    values: Vec<String>,
 }
 
 #[derive(Debug, Clone, GraphQLObject)]
@@ -268,49 +275,38 @@ impl QueryRoot {
     fn nfts(
         &self,
         context: &AppContext,
-        #[graphql(description = "Filter on creator address")] creators: Option<Vec<String>>,
-        #[graphql(description = "Filter on update authority addres")] update_authority: Option<
-            Vec<String>,
-        >,
+        #[graphql(description = "Filter on creator address")] creators: Vec<String>,
+        #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
     ) -> Vec<Nft> {
         let conn = context.db_pool.get().unwrap();
 
-        // Create mutable vector for all rows returned
-        let mut all_rows: Vec<String> = Vec::new();
+        let query = metadatas::table.select(metadatas::all_columns).into_boxed();
 
-        // Iterate across creators passed into function
-        for creator in creators.into_iter().flatten() {
-            // Database stuff
-            let mut rows: Vec<String> = metadata_creators::table
-                .select(metadata_creators::metadata_address)
-                .filter(metadata_creators::creator_address.eq(creator))
-                .load(&conn)
-                .unwrap();
+        let query = attributes.unwrap_or_else(Vec::new).into_iter().fold(
+            query,
+            |acc, AttributeFilter { trait_type, values }| {
+                let sub = attributes::table
+                    .select(attributes::metadata_address)
+                    .filter(
+                        attributes::trait_type
+                            .eq(trait_type)
+                            .and(attributes::value.eq(any(values))),
+                    );
 
-            // Append found rows to all rows vector
-            all_rows.append(&mut rows);
-        }
+                acc.filter(metadatas::address.eq(any(sub)))
+            },
+        );
 
-        for ua in update_authority.into_iter().flatten() {
-            // Database stuff
-            let mut rows: Vec<String> = metadatas::table
-                .select(metadatas::address)
-                .filter(metadatas::update_authority_address.eq(ua))
-                .load(&conn)
-                .unwrap();
-
-            // Append found rows to all rows vector
-            all_rows.append(&mut rows);
-        }
-
-        // now find all nfts
-        let rows: Vec<models::Metadata> = metadatas::table
-            .select(metadatas::all_columns)
-            .filter(metadatas::address.eq(any(all_rows)))
+        let rows: Vec<models::Metadata> = query
+            .filter(
+                metadatas::address.eq(any(metadata_creators::table
+                    .select(metadata_creators::metadata_address)
+                    .filter(metadata_creators::creator_address.eq(any(creators))))),
+            )
+            .order_by(metadatas::name.desc())
             .load(&conn)
             .unwrap();
 
-        // Cast Models::Metadata to Nft and return
         rows.into_iter().map(Into::into).collect()
     }
 
