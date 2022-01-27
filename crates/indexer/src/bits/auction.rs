@@ -17,16 +17,9 @@ use metaplex_auction::processor::{
 };
 
 use super::bidder_metadata::BidMap;
-use crate::{
-    bits::bidder_metadata::BidList, prelude::*, util, Client, RcAuctionKeys, ThreadPoolHandle,
-};
+use crate::{bits::bidder_metadata::BidList, prelude::*, util, Client, RcAuctionKeys};
 
-pub fn process(
-    client: &Client,
-    keys: &RcAuctionKeys,
-    bid_map: &BidMap,
-    _handle: ThreadPoolHandle,
-) -> Result<()> {
+pub async fn process(client: &Client, keys: &RcAuctionKeys, bid_map: &BidMap) -> Result<()> {
     let (ext, _bump) = find_auction_data_extended(&keys.vault);
 
     let mut acct = client
@@ -129,24 +122,24 @@ pub fn process(
         .execute(&db)
         .context("Failed to insert listing")?;
 
-    debug_assert!(!bid_map.read().is_empty());
+    debug_assert!(!bid_map.read().await.is_empty());
 
     store_bids(
         &keys.auction,
         &auction_address,
-        bid_map.read().get(&keys.auction).into_iter().flatten(),
+        bid_map
+            .read()
+            .await
+            .get(&keys.auction)
+            .into_iter()
+            .flatten(),
         &db,
     )?;
 
     Ok(())
 }
 
-pub fn process_solo_bids(
-    client: &Client,
-    auction: Pubkey,
-    bids: BidList,
-    _handle: ThreadPoolHandle,
-) -> Result<()> {
+pub fn process_solo_bids(client: &Client, auction: Pubkey, bids: BidList) -> Result<()> {
     let db = client.db()?;
     let auction_addr = bs58::encode(auction).into_string();
 

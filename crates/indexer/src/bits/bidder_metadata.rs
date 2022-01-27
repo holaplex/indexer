@@ -2,9 +2,9 @@ use std::{panic::AssertUnwindSafe, sync::Arc};
 
 use indexer_core::{hash::HashMap, pubkeys};
 use metaplex_auction::processor::{BidderMetadata, BIDDER_METADATA_LEN};
-use parking_lot::RwLock;
+use tokio::sync::RwLock;
 
-use crate::{client::prelude::*, prelude::*, util, Client, Job, ThreadPoolHandle};
+use crate::{client::prelude::*, prelude::*, util, Client};
 
 pub type BidList = Vec<BidderMetadata>;
 type BidMapInner = RwLock<HashMap<Pubkey, BidList>>;
@@ -77,13 +77,18 @@ fn get_internal(client: &Client) -> Result<HashMap<Pubkey, BidList>> {
     Ok(map)
 }
 
-pub fn get(client: &Client, bid_map: &BidMap, _handle: ThreadPoolHandle) -> Result<()> {
-    get_internal(client).map(|m| *bid_map.write() = m)
+pub async fn get(client: &Client, bid_map: &BidMap) -> Result<()> {
+    get_internal(client)
+        .map(|m| async { *bid_map.write().await = m })?
+        .await;
+
+    Ok(())
 }
 
-pub fn get_solo(client: &Client, handle: ThreadPoolHandle) -> Result<()> {
+pub fn get_solo(client: &Client) -> Result<()> {
     get_internal(client).map(|m| {
-        m.into_iter()
-            .for_each(|(a, b)| handle.push(Job::SoloBidsForAuction(a, b)));
+        // TODO
+        // m.into_iter()
+        //     .for_each(|(a, b)| handle.push(Job::SoloBidsForAuction(a, b)));
     })
 }

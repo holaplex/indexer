@@ -17,7 +17,7 @@ use indexer_core::{
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 
-use crate::{client::ArTxid, prelude::*, util, Client, ThreadPoolHandle};
+use crate::{client::ArTxid, prelude::*, util, Client};
 
 #[derive(Debug, Clone, Copy)]
 struct AssetIdentifier {
@@ -299,12 +299,7 @@ fn process_collection(db: &Connection, addr: &str, collection: Option<Collection
     Ok(())
 }
 
-async fn process_async<'a>(
-    client: &Client,
-    meta_key: Pubkey,
-    uri_str: String,
-    _handle: ThreadPoolHandle<'a>,
-) -> Result<()> {
+async fn process_async<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> Result<()> {
     let url = Url::parse(&uri_str).context("Couldn't parse metadata JSON URL")?;
     let id = AssetIdentifier::new(&url);
     let db = client.db()?;
@@ -386,15 +381,10 @@ async fn process_async<'a>(
     Ok(())
 }
 
-pub fn process(
-    client: &Client,
-    meta_key: Pubkey,
-    uri: String,
-    handle: ThreadPoolHandle,
-) -> Result<()> {
+pub fn process(client: &Client, meta_key: Pubkey, uri: String) -> Result<()> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .context("Failed to create async executor")?
-        .block_on(process_async(client, meta_key, uri, handle))
+        .block_on(process_async(client, meta_key, uri))
 }
