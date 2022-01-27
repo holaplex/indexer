@@ -38,44 +38,40 @@ impl Creator {
             .load(&conn)
             .unwrap();
 
-        let attribute_group_lookup =
-            metadata_attributes
-                .into_iter()
-                .fold(HashMap::new(), |mut acc, attribute| {
-                    let trait_type_name = attribute
-                        .trait_type
-                        .map_or_else(String::new, Cow::into_owned);
-                    let value_name = attribute.value.map_or_else(String::new, Cow::into_owned);
+        metadata_attributes
+            .into_iter()
+            .fold(
+                HashMap::new(),
+                |mut groups,
+                 models::MetadataAttribute {
+                     trait_type, value, ..
+                 }| {
+                    *groups
+                        .entry(trait_type)
+                        .or_insert_with(HashMap::new)
+                        .entry(value)
+                        .or_insert(0) += 1;
 
-                    let trait_type = acc.entry(trait_type_name).or_insert_with(HashMap::new);
+                    groups
+                },
+            )
+            .into_iter()
+            .map(|(name, vars)| {
+                let name = name.map_or_else(String::new, Cow::into_owned);
 
-                    let value_count = trait_type.entry(value_name.clone()).or_insert(0);
-                    let next_value_count = *value_count + 1;
+                Property {
+                    name,
+                    variants: vars
+                        .into_iter()
+                        .map(|(name, count)| {
+                            let name = name.map_or_else(String::new, Cow::into_owned);
 
-                    trait_type.insert(value_name, next_value_count);
-
-                    acc
-                });
-
-        let mut attribute_groups: Vec<Property> = vec![];
-
-        for (attribute_group_name, attribute_group) in attribute_group_lookup {
-            let mut variants: Vec<PropertyVariant> = vec![];
-
-            for (variant_name, count) in attribute_group {
-                variants.push(PropertyVariant {
-                    name: variant_name,
-                    count,
-                });
-            }
-
-            attribute_groups.push(Property {
-                name: attribute_group_name,
-                variants,
-            });
-        }
-
-        attribute_groups
+                            PropertyVariant { name, count }
+                        })
+                        .collect(),
+                }
+            })
+            .collect::<Vec<_>>()
     }
 }
 
