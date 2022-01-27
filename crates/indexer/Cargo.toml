@@ -13,6 +13,14 @@ license = "AGPL-3.0-or-later"
 keywords = ["solana", "metaplex", "holaplex", "web3"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
+[features]
+default = []
+accountsdb = []
+
+[[bin]]
+name = "metaplex-indexer"
+required-features = ["accountsdb"]
+
 [dependencies]
 base64 = "0.13.0"
 cid = "0.7.0"
@@ -38,6 +46,11 @@ version = "=0.1.0"
 path = "../core"
 
 [dependencies.indexer-rabbitmq]
+package = "metaplex-indexer-rabbitmq"
+version = "=0.1.0"
+path = "../rabbitmq"
+
+[targets.metaplex-indexer.dependencies.indexer-rabbitmq]
 package = "metaplex-indexer-rabbitmq"
 version = "=0.1.0"
 path = "../rabbitmq"
