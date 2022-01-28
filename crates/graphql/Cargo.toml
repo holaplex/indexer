@@ -15,9 +15,11 @@ categories = ["cryptocurrency::cryptocurrencies", "web-programming"]
 
 [dependencies]
 actix-cors = "0.4.0"
-actix-web = "3.3.3"
+actix-web = "4.0.0-beta.21"
 async-trait = "0.1"
+solana-client = "1.8.14"
 dataloader = "0.14.0"
+reqwest = "0.11.6"
 juniper = "0.15"
 percent-encoding = "2.1.0"
 serde = { version = "1.0.130", features = ["derive"] }

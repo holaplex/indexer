@@ -23,6 +23,9 @@ mod schema;
 struct Opts {
     #[clap(flatten)]
     server: ServerOpts,
+
+    #[clap(long, env)]
+    twitter_bearer_token: Option<String>,
 }
 
 fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
@@ -37,6 +40,8 @@ fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
 
 fn graphql(
     db_pool: Arc<Pool>,
+    solana_client: Arc<solana_client::rpc_client::RpcClient>,
+    twitter_bearer_token: Arc<String>,
 ) -> impl Fn(
     web::Data<Arc<Schema>>,
     web::Json<GraphQLRequest>,
@@ -44,9 +49,11 @@ fn graphql(
 + Clone {
     move |st, data| {
         let pool = Arc::clone(&db_pool);
+        let twitter_bearer_token = Arc::clone(&twitter_bearer_token);
+        let solana_client = Arc::clone(&solana_client);
 
         Box::pin(async move {
-            let ctx = AppContext::new(pool);
+            let ctx = AppContext::new(pool, solana_client, twitter_bearer_token);
             let res = data.execute(&st, &ctx).await;
 
             let json = serde_json::to_string(&res)?;
@@ -62,41 +69,46 @@ fn main() {
     indexer_core::run(|| {
         let Opts {
             server: ServerOpts { port },
+            twitter_bearer_token,
         } = Opts::parse();
+
+        let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
+
+        let twitter_bearer_token = Arc::new(twitter_bearer_token);
 
         let db_pool =
             Arc::new(db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?);
 
+        let solana_client = Arc::new(solana_client::rpc_client::RpcClient::new(
+            "https://holaplex.rpcpool.com/".to_string(),
+        ));
+        let version_extension = format!(
+            "/v{}",
+            percent_encoding::utf8_percent_encode(
+                env!("CARGO_PKG_VERSION_MAJOR"),
+                percent_encoding::NON_ALPHANUMERIC,
+            )
+        );
         let mut addr: SocketAddr = "0.0.0.0:3000".parse().unwrap();
         addr.set_port(port);
         info!("Listening on {}", addr);
 
-        let graphiql_uri = format!("http://{}", addr);
+        let graphiql_uri = format!("http://localhost:{}{}", port, &version_extension);
 
         let schema = Arc::new(schema::create());
 
-        actix_web::rt::System::new("main")
+        actix_web::rt::System::new()
             .block_on(
                 HttpServer::new(move || {
                     App::new()
-                        .data(schema.clone())
+                        .app_data(actix_web::web::Data::new(schema.clone()))
                         .wrap(middleware::Logger::default())
-                        .wrap(
-                            Cors::new()
-                                .allowed_methods(vec!["POST", "GET"])
-                                .supports_credentials()
-                                .max_age(3600)
-                                .finish(),
-                        )
                         .service(
-                            web::resource(format!(
-                                "/v{}",
-                                percent_encoding::utf8_percent_encode(
-                                    env!("CARGO_PKG_VERSION_MAJOR"),
-                                    percent_encoding::NON_ALPHANUMERIC,
-                                )
-                            ))
-                            .route(web::post().to(graphql(db_pool.clone()))),
+                            web::resource(&version_extension).route(web::post().to(graphql(
+                                db_pool.clone(),
+                                solana_client.clone(),
+                                twitter_bearer_token.clone(),
+                            ))),
                         )
                         .service(
                             web::resource("/graphiql")

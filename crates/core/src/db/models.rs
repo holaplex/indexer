@@ -188,6 +188,24 @@ pub struct Storefront<'a> {
     pub banner_url: Option<Cow<'a, str>>,
 }
 
+/// Join of metadata and metadata_json for an NFT
+#[derive(Debug, Clone, Queryable)]
+pub struct Nft {
+    /// Table metadata
+
+    /// The address of this account
+    pub address: String,
+    /// The name of this item
+    pub name: String,
+
+    /// Table metadata_json
+
+    /// Metadata description
+    pub description: Option<String>,
+    /// Metadata Image url
+    pub image: Option<String>,
+}
+
 /// Join record for the RPC getListings query
 #[derive(Debug, Clone, Queryable)]
 pub struct ListingsTripleJoinRow {
