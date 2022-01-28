@@ -6,8 +6,8 @@ use topograph::{graph, graph::AdoptableDependents, threaded};
 
 use crate::{
     bits::{
-        auction, auction_cache, bidder_metadata, edition, get_storefronts, metadata, metadata_uri,
-        store_owner, token_account,
+        auction, auction_cache, auction_house, bidder_metadata, edition, get_storefronts, metadata,
+        metadata_uri, store_owner, token_account,
     },
     client::Client,
     prelude::*,
@@ -89,6 +89,8 @@ pub enum Job {
     SoloBidsForAuction(Pubkey, bidder_metadata::BidList),
     /// Index token accounts so we can know who holds what NFTs
     TokenAccount(Pubkey, TokenAccount),
+    /// Index auction houses
+    AuctionHouse,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -205,6 +207,7 @@ fn create_pool(
                 Job::TokenAccount(ref pubkey, token_account) => {
                     token_account::process(&client, *pubkey, token_account)
                 },
+                Job::AuctionHouse => auction_house::process(&client),
             };
 
             res.map_err(|e| error!("Job {:?} failed: {:?}", job, e))
@@ -282,7 +285,7 @@ fn dispatch_entry_jobs(
             },
         }
     }
-
+    pool.push(Job::AuctionHouse);
     Ok(())
 }
 

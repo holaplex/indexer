@@ -16,7 +16,7 @@ use solana_sdk::{account::Account, pubkey::Pubkey};
 
 pub mod prelude {
     pub use solana_client::{
-        rpc_config::RpcProgramAccountsConfig,
+        rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
         rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType},
     };
 }

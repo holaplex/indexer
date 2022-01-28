@@ -1,5 +1,6 @@
 pub mod auction;
 pub mod auction_cache;
+pub mod auction_house;
 pub mod bidder_metadata;
 pub mod edition;
 pub mod get_storefronts;

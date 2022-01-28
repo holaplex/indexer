@@ -32,6 +32,9 @@ solana-client = "1.8.3"
 solana-program = "1.8.3"
 solana-sdk = "1.8.3"
 spl-token = "3.2.0"
+solana-account-decoder = "1.7.1"
+mpl-auction-house =  { git = "https://github.com/metaplex-foundation/metaplex-program-library" ,branch = "master"}
+anchor-lang = "0.19.0"
 
 [dependencies.indexer-core]
 package = "metaplex-indexer-core"
