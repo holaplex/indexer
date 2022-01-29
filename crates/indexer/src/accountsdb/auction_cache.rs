@@ -70,23 +70,24 @@ pub(super) fn process_listing_metadata(
         index,
     }: super::ListingMetadata,
 ) -> Result<()> {
-    let db = client.db()?;
+    todo!();
+    // let db = client.db()?;
 
-    insert_into(listing_metadatas::table)
-        .values(ListingMetadata {
-            listing_address: Owned(bs58::encode(listing).into_string()),
-            metadata_address: Owned(bs58::encode(metadata).into_string()),
-            metadata_index: index
-                .try_into()
-                .context("Metadata index too big to store")?,
-        })
-        .on_conflict((
-            listing_metadatas::listing_address,
-            listing_metadatas::metadata_address,
-        ))
-        .do_nothing()
-        .execute(&db)
-        .context("Failed to insert listing-metadata join")?;
+    // insert_into(listing_metadatas::table)
+    //     .values(ListingMetadata {
+    //         listing_address: Owned(bs58::encode(listing).into_string()),
+    //         metadata_address: Owned(bs58::encode(metadata).into_string()),
+    //         metadata_index: index
+    //             .try_into()
+    //             .context("Metadata index too big to store")?,
+    //     })
+    //     .on_conflict((
+    //         listing_metadatas::listing_address,
+    //         listing_metadatas::metadata_address,
+    //     ))
+    //     .do_nothing()
+    //     .execute(&db)
+    //     .context("Failed to insert listing-metadata join")?;
 
     Ok(())
 }

@@ -13,7 +13,12 @@ use metaplex_token_metadata::state::{
 use super::EditionKeys;
 use crate::{prelude::*, util, util::MasterEdition as MasterEditionAccount, Client};
 
-pub(super) fn process(client: &Client, keys: EditionKeys) -> Result<()> {
+pub(super) async fn process(client: &Client, keys: EditionKeys) -> Result<()> {
+    enum Type {
+        Edition(EditionAccount),
+        Master(MasterEditionAccount),
+    }
+
     let (edition_key, _bump) = find_edition(keys.mint);
 
     let acct = client
@@ -30,20 +35,22 @@ pub(super) fn process(client: &Client, keys: EditionKeys) -> Result<()> {
 
     let info = util::account_as_info(&edition_key, false, false, &mut acct);
 
-    EditionAccount::from_account_info(&info)
-        .map_err(Into::into)
-        .and_then(|e| process_edition(client, edition_key, &keys, &e))
+    match EditionAccount::from_account_info(&info)
+        .context("Failed to parse Edition")
+        .map(Type::Edition)
         .or_else(|e| {
             debug!("Failed to parse Edition: {:?}", e);
 
-            let master = MasterEditionAccount::from_account_info(&info)
-                .context("Failed to parse MasterEdition")?;
-
-            process_master(client, edition_key, &keys, &master)
-        })
+            MasterEditionAccount::from_account_info(&info)
+                .context("Failed to parse MasterEdition")
+                .map(Type::Master)
+        })? {
+        Type::Edition(e) => process_edition(client, edition_key, &keys, &e).await,
+        Type::Master(m) => process_master(client, edition_key, &keys, &m).await,
+    }
 }
 
-fn process_edition(
+async fn process_edition(
     client: &Client,
     edition_key: Pubkey,
     keys: &EditionKeys,
@@ -59,8 +66,6 @@ fn process_edition(
         metadata_address: Owned(bs58::encode(keys.metadata).into_string()),
     };
 
-    let db = client.db()?;
-
     let mut acct = client
         .get_account(&edition.parent)
         .context("Failed to get item master edition")?;
@@ -73,20 +78,24 @@ fn process_edition(
     ))
     .context("Failed to parse edition's parent MasterEdition")?;
 
-    process_master(client, edition.parent, keys, &master_edition)?;
+    process_master(client, edition.parent, keys, &master_edition).await?;
 
-    insert_into(editions::table)
-        .values(&row)
-        .on_conflict(editions::address)
-        .do_update()
-        .set(&row)
-        .execute(&db)
+    client
+        .db(move |db| {
+            insert_into(editions::table)
+                .values(&row)
+                .on_conflict(editions::address)
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
         .context("Failed to insert edition")?;
 
     Ok(())
 }
 
-fn process_master(
+async fn process_master(
     client: &Client,
     master_key: Pubkey,
     keys: &EditionKeys,
@@ -108,14 +117,16 @@ fn process_master(
         metadata_address: Owned(bs58::encode(keys.metadata).into_string()),
     };
 
-    let db = client.db()?;
-
-    insert_into(master_editions::table)
-        .values(&row)
-        .on_conflict(master_editions::address)
-        .do_update()
-        .set(&row)
-        .execute(&db)
+    client
+        .db(move |db| {
+            insert_into(master_editions::table)
+                .values(&row)
+                .on_conflict(master_editions::address)
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
         .context("Failed to insert master edition")?;
 
     Ok(())

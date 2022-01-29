@@ -57,18 +57,8 @@ pub fn account_data_as_info<'a>(
     owner: &'a Pubkey,
     lamports: &'a mut u64,
 ) -> AccountInfo<'a> {
-    AccountInfo::new(
-        key,
-        false,
-        false,
-        lamports,
-        data,
-        owner,
-        false,
-        0,
-    )
+    AccountInfo::new(key, false, false, lamports, data, owner, false, 0)
 }
-
 
 /// Convenience wrapper for Metaplex's [`MasterEdition`] trait and structs
 #[derive(Debug)]
