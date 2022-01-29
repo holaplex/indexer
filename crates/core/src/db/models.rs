@@ -32,7 +32,6 @@ pub struct Bid<'a> {
 /// A row in the `editions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[belongs_to(parent = "MasterEdition<'_>", foreign_key = "parent_address")]
-#[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
 pub struct Edition<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -40,8 +39,7 @@ pub struct Edition<'a> {
     pub parent_address: Cow<'a, str>,
     /// The ordinal of this edition
     pub edition: i64,
-    /// The metadata this edition refers to
-    pub metadata_address: Cow<'a, str>,
+   
 }
 
 /// A row in the `listing_metadatas` table.  This is a join on `listings` and
@@ -96,8 +94,7 @@ pub struct Listing<'a> {
 }
 
 /// A row in the `master_editions` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
-#[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct MasterEdition<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -106,8 +103,6 @@ pub struct MasterEdition<'a> {
     /// The maximum printing supply of the master edition, or `None` if it is
     /// unlimited
     pub max_supply: Option<i64>,
-    /// The metadata this edition refers to
-    pub metadata_address: Cow<'a, str>,
 }
 
 /// A row in the `metadata_creators` table.  This is a join on `metadatas` and
@@ -165,6 +160,8 @@ pub struct Metadata<'a> {
     pub is_mutable: bool,
     /// Metaplex isn't clear about what this is.  Assume reserved.
     pub edition_nonce: Option<i32>,
+    /// edition pda derived from account
+    pub edition_pda: Cow<'a, str>,
 }
 
 /// A row in the `storefronts` table
