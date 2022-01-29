@@ -76,7 +76,6 @@ table! {
         address -> Varchar,
         parent_address -> Varchar,
         edition -> Int8,
-        metadata_address -> Varchar,
     }
 }
 
@@ -111,7 +110,6 @@ table! {
         address -> Varchar,
         supply -> Int8,
         max_supply -> Nullable<Int8>,
-        metadata_address -> Varchar,
     }
 }
 
@@ -171,6 +169,7 @@ table! {
         primary_sale_happened -> Bool,
         is_mutable -> Bool,
         edition_nonce -> Nullable<Int4>,
+        edition_pda -> Varchar,
     }
 }
 
