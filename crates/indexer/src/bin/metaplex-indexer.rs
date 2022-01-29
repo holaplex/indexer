@@ -43,7 +43,7 @@ fn main() {
             {
                 match metaplex_indexer::accountsdb::process_message(msg, &*client).await {
                     Ok(()) => (),
-                    Err(e) => error!("we have a problem {:?}", e)
+                    Err(e) => error!("we have a problem {:?}", e),
                 }
             }
 
