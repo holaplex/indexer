@@ -299,10 +299,9 @@ fn process_collection(db: &Connection, addr: &str, collection: Option<Collection
     Ok(())
 }
 
-async fn process_async<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> Result<()> {
+pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> Result<()> {
     let url = Url::parse(&uri_str).context("Couldn't parse metadata JSON URL")?;
     let id = AssetIdentifier::new(&url);
-    let db = client.db()?;
 
     let possible_fingerprints: Vec<_> = id
         .ipfs
@@ -312,16 +311,24 @@ async fn process_async<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -
         .collect();
     let addr = bs58::encode(meta_key).into_string();
 
-    if select(exists(
-        metadata_jsons::table.filter(
-            metadata_jsons::metadata_address
-                .eq(&addr)
-                .and(metadata_jsons::fingerprint.eq(any(possible_fingerprints))),
-        ),
-    ))
-    .get_result(&db)
-    .context("Failed to check for already-indexed metadata JSON")?
-    {
+    let is_present = client
+        .db({
+            let addr = addr.clone();
+            move |db| {
+                select(exists(
+                    metadata_jsons::table.filter(
+                        metadata_jsons::metadata_address
+                            .eq(addr)
+                            .and(metadata_jsons::fingerprint.eq(any(possible_fingerprints))),
+                    ),
+                ))
+                .get_result(db)
+            }
+        })
+        .await
+        .context("Failed to check for already-indexed metadata JSON")?;
+
+    if is_present {
         debug!("Skipping already-indexed metadata JSON for {}", meta_key);
 
         return Ok(());
@@ -352,7 +359,7 @@ async fn process_async<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -
     );
 
     let row = DbMetadataJson {
-        metadata_address: Borrowed(&addr),
+        metadata_address: Owned(addr.clone()),
         fingerprint: Owned(fingerprint),
         updated_at: Local::now().naive_utc(),
         description: description.map(Owned),
@@ -363,28 +370,22 @@ async fn process_async<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -
         raw_content: Owned(raw_content),
     };
 
-    insert_into(metadata_jsons::table)
-        .values(&row)
-        .on_conflict(metadata_jsons::metadata_address)
-        .do_update()
-        .set(&row)
-        .execute(&db)
-        .context("Failed to insert metadata")?;
+    client
+        .db(move |db| {
+            insert_into(metadata_jsons::table)
+                .values(&row)
+                .on_conflict(metadata_jsons::metadata_address)
+                .do_update()
+                .set(&row)
+                .execute(db)
+                .context("Failed to insert metadata")?;
 
-    // TODO: if the row updates the following functions do not clear the
-    //       previous rows from the old metadata JSON:
+            // TODO: if the row updates the following functions do not clear the
+            //       previous rows from the old metadata JSON:
 
-    process_files(&db, &addr, files)?;
-    process_attributes(&db, &addr, json.attributes)?;
-    process_collection(&db, &addr, json.collection)?;
-
-    Ok(())
-}
-
-pub fn process(client: &Client, meta_key: Pubkey, uri: String) -> Result<()> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .context("Failed to create async executor")?
-        .block_on(process_async(client, meta_key, uri))
+            process_files(db, &addr, files)?;
+            process_attributes(db, &addr, json.attributes)?;
+            process_collection(db, &addr, json.collection)
+        })
+        .await
 }

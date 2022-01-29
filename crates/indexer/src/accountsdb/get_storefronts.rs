@@ -1,8 +1,8 @@
-use std::env;
+use std::{env, sync::Arc};
 
 use indexer_core::{
     db::{insert_into, models::Storefront, tables::storefronts, PooledConnection},
-    hash::{HashMap, HashSet},
+    hash::{DashSet, HashMap},
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
@@ -111,7 +111,7 @@ fn process_tags(
     mut tags: HashMap<String, String>,
     updated_at: Option<NaiveDateTime>,
     db: &PooledConnection,
-    known_pubkeys: &mut HashSet<Pubkey>,
+    known_pubkeys: Arc<DashSet<Pubkey>>,
 ) -> Result<()> {
     let owner = Pubkey::try_from(
         tags.remove("solana:pubkey")
@@ -167,9 +167,7 @@ fn process_tags(
     Ok(())
 }
 
-async fn get_storefronts_async(client: &Client) -> Result<()> {
-    let db = client.db()?;
-
+async fn run(client: &Client) -> Result<()> {
     let http_client = reqwest::Client::new();
     let url = env::var("ARWEAVE_URL")
         .context("Couldn't get Arweave URL")
@@ -179,7 +177,7 @@ async fn get_storefronts_async(client: &Client) -> Result<()> {
             u
         })?;
     let mut after = String::new();
-    let mut known_pubkeys = HashSet::default();
+    let known_pubkeys = Arc::new(DashSet::default());
 
     loop {
         let QueryResponse {
@@ -213,20 +211,26 @@ async fn get_storefronts_async(client: &Client) -> Result<()> {
         let mut next_after = None;
 
         for edge in edges {
-            process_tags(
-                edge.node
-                    .tags
-                    .into_iter()
-                    .map(|QueryTag { name, value }| (name, value))
-                    .collect(),
-                edge.node
-                    .block
-                    .map(|b| NaiveDateTime::from_timestamp(b.timestamp, 0)),
-                &db,
-                &mut known_pubkeys,
-            )
-            .map_err(|e| error!("{:?}", e))
-            .ok();
+            let known_pubkeys = Arc::clone(&known_pubkeys);
+
+            client
+                .db(|db| {
+                    process_tags(
+                        edge.node
+                            .tags
+                            .into_iter()
+                            .map(|QueryTag { name, value }| (name, value))
+                            .collect(),
+                        edge.node
+                            .block
+                            .map(|b| NaiveDateTime::from_timestamp(b.timestamp, 0)),
+                        db,
+                        known_pubkeys,
+                    )
+                })
+                .await
+                .map_err(|e| error!("{:?}", e))
+                .ok();
 
             next_after = Some(edge.cursor);
         }
@@ -246,12 +250,4 @@ async fn get_storefronts_async(client: &Client) -> Result<()> {
     }
 
     Ok(())
-}
-
-pub fn run(client: &Client) -> Result<()> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .context("Failed to create async executor")?
-        .block_on(get_storefronts_async(client))
 }

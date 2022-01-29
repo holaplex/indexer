@@ -10,16 +10,16 @@ use metaplex_token_metadata::{
 
 use crate::{prelude::*, Client};
 
-pub fn process(client: &Client, meta_key: Pubkey, data: Vec<u8>) -> Result<()> {
+pub async fn process(client: &Client, meta_key: Pubkey, data: Vec<u8>) -> Result<()> {
     let meta: MetadataAccount = try_from_slice_checked(&data, Key::MetadataV1, MAX_METADATA_LEN)
         .context("failed to parse metadata")?;
 
     let addr = bs58::encode(meta_key).into_string();
     let row = Metadata {
-        address: Borrowed(&addr),
-        name: Borrowed(meta.data.name.trim_end_matches('\0')),
-        symbol: Borrowed(meta.data.symbol.trim_end_matches('\0')),
-        uri: Borrowed(meta.data.uri.trim_end_matches('\0')),
+        address: Owned(addr.clone()),
+        name: Owned(meta.data.name.trim_end_matches('\0').to_owned()),
+        symbol: Owned(meta.data.symbol.trim_end_matches('\0').to_owned()),
+        uri: Owned(meta.data.uri.trim_end_matches('\0').to_owned()),
         seller_fee_basis_points: meta.data.seller_fee_basis_points.into(),
         update_authority_address: Owned(bs58::encode(meta.update_authority).into_string()),
         mint_address: Owned(bs58::encode(meta.mint).into_string()),
@@ -28,14 +28,16 @@ pub fn process(client: &Client, meta_key: Pubkey, data: Vec<u8>) -> Result<()> {
         edition_nonce: meta.edition_nonce.map(Into::into),
     };
 
-    let db = client.db()?;
-
-    insert_into(metadatas::table)
-        .values(&row)
-        .on_conflict(metadatas::address)
-        .do_update()
-        .set(&row)
-        .execute(&db)
+    client
+        .db(move |db| {
+            insert_into(metadatas::table)
+                .values(&row)
+                .on_conflict(metadatas::address)
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
         .context("Failed to insert metadata")?;
 
     // TODO
@@ -46,21 +48,25 @@ pub fn process(client: &Client, meta_key: Pubkey, data: Vec<u8>) -> Result<()> {
 
     for creator in meta.data.creators.unwrap_or_else(Vec::new) {
         let row = MetadataCreator {
-            metadata_address: Borrowed(&addr),
+            metadata_address: Owned(addr.clone()),
             creator_address: Owned(bs58::encode(creator.address).into_string()),
             share: creator.share.into(),
             verified: creator.verified,
         };
 
-        insert_into(metadata_creators::table)
-            .values(&row)
-            .on_conflict((
-                metadata_creators::metadata_address,
-                metadata_creators::creator_address,
-            ))
-            .do_update()
-            .set(&row)
-            .execute(&db)
+        client
+            .db(move |db| {
+                insert_into(metadata_creators::table)
+                    .values(&row)
+                    .on_conflict((
+                        metadata_creators::metadata_address,
+                        metadata_creators::creator_address,
+                    ))
+                    .do_update()
+                    .set(&row)
+                    .execute(db)
+            })
+            .await
             .context("Failed to insert metadata creator")?;
     }
 
