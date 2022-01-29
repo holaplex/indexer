@@ -14,16 +14,25 @@ use indexer_core::{clap, clap::Parser, pubkeys};
 use indexer_rabbitmq::accountsdb::Message;
 
 use crate::{client::Client, prelude::*};
+fn log_and_return(owner: Pubkey, data: Vec<u8>) -> Result<()> {
+
+    info!("owner: {:?}, data: {:?}", owner, data);
+    Ok(())
+}
 
 pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
     match msg {
-        // Message::AccountUpdate { owner, key, data } if owner == pubkeys::metadata() => {
-        //     metadata::process(client, key, data)
-        // },
-        Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction() => {
-            auction::process(client, key, data, owner).await
+        Message::AccountUpdate { owner, key, data } if owner == pubkeys::metadata() => {
+            metadata::process(client, key, data).await
         },
-        Message::AccountUpdate { .. } | Message::InstructionNotify { .. } => Ok(()),
+        // Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction() => {
+        //     log_and_return(owner, data)
+        // },
+        // Message::AccountUpdate { owner, key, data } if owner == pubkeys::token() => {
+        //     token_account::process(client, key, data)
+        // },
+        Message::AccountUpdate { .. } => Ok(()),
+        Message::InstructionNotify { .. } => Ok(()),
     }
 }
 
