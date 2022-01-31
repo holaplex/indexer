@@ -28,10 +28,10 @@ pub enum Error {
     #[error("AMQP error: {0:?}")]
     Lapin(#[from] lapin::Error),
     /// An error propagated from [`rmp_serde`] during encoding
-    #[error("An error occurred while encoding a message")]
+    #[error("MsgPack encode error: {0:?}")]
     MsgEncode(#[from] rmp_serde::encode::Error),
     /// An error propagated from [`rmp_serde`] during decoding
-    #[error("An error occurred while decoding a message")]
+    #[error("MsgPack decode error: {0:?}")]
     MsgDecode(#[from] rmp_serde::decode::Error),
 }
 
