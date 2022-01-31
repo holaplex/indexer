@@ -3,6 +3,7 @@ services:
   db:
     image: postgres:14.1
     container_name: metaplex_indexer.dev_db
+    command: ["postgres", "-c", "log_statement=all"]
     environment:
       POSTGRES_DB: ${DATABASE_NAME}
       POSTGRES_PASSWORD: ${DATABASE_PASSWD}
