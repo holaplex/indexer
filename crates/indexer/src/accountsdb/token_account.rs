@@ -13,10 +13,8 @@ use spl_token::state::Account as TokenAccount;
 use crate::{prelude::*, Client};
 
 pub fn process(client: &Client, pubkey: Pubkey, token_account_data: Vec<u8>) -> Result<()> {
-
     info!("token account {:?}", token_account_data);
     Ok(())
-
 
     // let mint = token_account.mint.to_string();
     // let db = client.db()?;

@@ -7,9 +7,8 @@ use indexer_core::{
     pubkeys::find_edition,
 };
 use metaplex_token_metadata::state::{
-    Edition as EditionAccount, 
+    Edition as EditionAccount, MasterEdition as MasterEditionTrait,
     MasterEditionV2 as MasterEditionV2Account,
-    MasterEdition as MasterEditionTrait,
 };
 
 use super::EditionKeys;
@@ -30,7 +29,6 @@ pub fn process_edition(
     };
 
     let db = client.db()?;
-
 
     insert_into(editions::table)
         .values(&row)
