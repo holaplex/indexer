@@ -14,7 +14,7 @@ keywords = ["solana", "metaplex", "holaplex", "web3", "graphql"]
 categories = ["cryptocurrency::cryptocurrencies", "web-programming"]
 
 [dependencies]
-actix-cors = "0.4.0"
+actix-cors = "0.6.0-beta.8"
 actix-web = "4.0.0-beta.21"
 async-trait = "0.1"
 dataloader = "0.14.0"

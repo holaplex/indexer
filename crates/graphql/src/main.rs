@@ -10,7 +10,8 @@
 
 use std::{future::Future, net::SocketAddr, pin::Pin, sync::Arc};
 
-use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
+use actix_cors::Cors;
+use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer};
 use indexer_core::{clap, clap::Parser, db, db::Pool, prelude::*, ServerOpts};
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
 
@@ -96,6 +97,17 @@ fn main() {
                     App::new()
                         .app_data(actix_web::web::Data::new(schema.clone()))
                         .wrap(middleware::Logger::default())
+                        .wrap(
+                            Cors::default()
+                                .allow_any_origin()
+                                .allowed_methods(vec!["GET", "POST"])
+                                .allowed_headers(vec![
+                                    http::header::AUTHORIZATION,
+                                    http::header::ACCEPT,
+                                ])
+                                .allowed_header(http::header::CONTENT_TYPE)
+                                .max_age(3600),
+                        )
                         .service(web::resource(&version_extension).route(
                             web::post().to(graphql(db_pool.clone(), twitter_bearer_token.clone())),
                         ))
