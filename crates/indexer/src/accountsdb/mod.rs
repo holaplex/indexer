@@ -15,7 +15,6 @@ use indexer_rabbitmq::accountsdb::Message;
 
 use crate::{client::Client, prelude::*};
 fn log_and_return(owner: Pubkey, data: Vec<u8>) -> Result<()> {
-
     info!("owner: {:?}, data: {:?}", owner, data);
     Ok(())
 }
