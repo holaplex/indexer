@@ -1,6 +1,6 @@
 //! Common pubkey derivations
 
-use std::{borrow::Borrow, os::unix::prelude::OsStrExt};
+use std::borrow::Borrow;
 
 use solana_sdk::pubkey::Pubkey;
 
@@ -13,23 +13,10 @@ mod ids {
     pubkeys!(vault, "vau1zxA2LbssAUEF7Gpw91zMM1LvXrvpzJtmZ58rPsn");
     pubkeys!(auction, "auctxRXPeJoc4817jDhf4HbjnhEcr1cCXenosMhK5R8");
     pubkeys!(metaplex, "p1exdMJcjVao65QdewkaZRUnU6VPSXhus9n2GzWfh98");
-    pubkeys!(
-        spl_name_service,
-        "namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX"
-    );
-    pubkeys!(
-        twitter_root_name_service,
-        "4YcexoW3r78zz16J2aqmukBLRwGq6rAvWzJpkYAXqebv"
-    );
-    pubkeys!(
-        twitter_verification_authority,
-        "FvPH7PrVrLGKPfqaf3xJodFTjZriqrAXXLTVWEorTFBi"
-    );
 }
 
 pub use ids::{
-    auction, metadata, metaplex, spl_name_service, twitter_root_name_service,
-    twitter_verification_authority, vault,
+    auction, metadata, metaplex, vault,
 };
 
 /// Find the address of a store given its owner's address
@@ -41,22 +28,6 @@ pub fn find_store_address(owner: impl Borrow<Pubkey>) -> (Pubkey, u8) {
             &owner.borrow().to_bytes(),
         ],
         &ids::metaplex(),
-    )
-}
-
-/// Find the address of a twitter account from user wallet address
-pub fn find_twitter_handle_address(pubkey: &str) -> (Pubkey, Vec<u8>) {
-    let hashed_name = solana_sdk::hash::hashv(&[(spl_name_service::state::HASH_PREFIX.to_owned()
-        + pubkey)
-        .as_bytes()])
-    .as_ref()
-    .to_vec();
-
-    spl_name_service::state::get_seeds_and_key(
-        &ids::spl_name_service(),
-        hashed_name,
-        Some(&ids::twitter_verification_authority()),
-        Some(&ids::twitter_root_name_service()),
     )
 }
 

@@ -3154,7 +3154,6 @@ dependencies = [
  "rand 0.8.4",
  "serde_json",
  "solana-sdk",
- "spl-name-service",
  "uuid",
 ]
 
@@ -3172,7 +3171,6 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "solana-client",
 ]
 
 [[package]]
@@ -5221,19 +5219,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd0dc6f70db6bacea7ff25870b016a65ba1d1b6013536f08e4fd79a8f9005325"
 dependencies = [
  "solana-program",
-]
-
-[[package]]
-name = "spl-name-service"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c2920a0762e3fdbd02a24469787d9217f658776502265a9b99903557be28adf"
-dependencies = [
- "borsh",
- "num-derive",
- "num-traits",
- "solana-program",
- "thiserror",
 ]
 
 [[package]]

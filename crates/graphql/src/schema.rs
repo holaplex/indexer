@@ -3,7 +3,6 @@ use std::{collections::HashMap, sync::Arc};
 use async_trait::async_trait;
 use dataloader::{non_cached::Loader, BatchFn};
 use indexer_core::{
-    clap::App,
     db::{
         models,
         tables::{
@@ -217,20 +216,43 @@ struct Wallet {
     address: String,
 }
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 struct Profile {
     handle: String,
-    image_url: String,
-    banner_url: String,
+    profile_image_url: String,
 }
 
 #[derive(Debug, Deserialize)]
 struct TwitterUser {
     username: String,
-    name: String,
-    id: String,
+    profile_image_url: String,
 }
 
+#[juniper::graphql_object(Context = AppContext)]
+impl Profile {
+    fn handle(&self) -> String {
+        self.handle.clone()
+    }
+
+    fn profile_image_url(&self) -> String {
+        self.profile_image_url.clone()
+    }
+}
+
+impl From<TwitterUser> for Profile {
+    fn from(
+        TwitterUser {
+            username,
+            profile_image_url,
+            ..
+        }: TwitterUser,
+    ) -> Self {
+        Self {
+            handle: username.to_string(),
+            profile_image_url: profile_image_url.to_string(),
+        }
+    }
+}
 #[derive(Debug, Deserialize)]
 struct TwitterResponse<T> {
     data: T,
@@ -253,48 +275,6 @@ impl Wallet {
             .unwrap();
 
         rows.into_iter().map(Into::into).collect()
-    }
-
-    pub async fn profile(&self, ctx: &AppContext) -> Option<Profile> {
-        let twitter_bearer_token = &ctx.twitter_bearer_token;
-        // let solana_client = &ctx.solana_client;
-
-        let http_client = HttpClient::new();
-
-        // let (twitter_pubkey, _) = pubkeys::find_twitter_handle_address(&self.address);
-
-        // let account_data = solana_client.get_account(&twitter_pubkey);
-
-        // match account_data {
-        //     Ok(_) => {
-        //         println!("got data")
-        //     },
-        //     Err(_) => {
-        //         println!("got error")
-        //     }
-        // }
-
-        // println!("{:?} twitter account record", twitter_pubkey);
-
-        let TwitterResponse {
-            data: TwitterUser { username, .. },
-        } = http_client
-            .get("https://api.twitter.com/2/users/by/username/notjohnlestudio")
-            .header("Accept", "application/json")
-            .query(&[("user.fields", "username")])
-            .bearer_auth(twitter_bearer_token)
-            .send()
-            .await
-            .ok()?
-            .json()
-            .await
-            .ok()?;
-
-        Some(Profile {
-            handle: username.to_string(),
-            image_url: "profile_image_url".to_string(),
-            banner_url: "https://todo".to_string(),
-        })
     }
 }
 
@@ -487,14 +467,12 @@ pub struct AppContext {
     listing_nfts_loader: Loader<String, Vec<Nft>, ListingNftsBatcher>,
     storefront_loader: Loader<String, Option<Storefront>, StorefrontBatcher>,
     db_pool: Arc<Pool>,
-    solana_client: Arc<solana_client::rpc_client::RpcClient>,
     twitter_bearer_token: Arc<String>,
 }
 
 impl AppContext {
     pub fn new(
         db_pool: Arc<Pool>,
-        solana_client: Arc<solana_client::rpc_client::RpcClient>,
         twitter_bearer_token: Arc<String>,
     ) -> AppContext {
         Self {
@@ -508,7 +486,6 @@ impl AppContext {
                 db_pool: db_pool.clone(),
             }),
             db_pool,
-            solana_client,
             twitter_bearer_token,
         }
     }
@@ -518,6 +495,25 @@ impl juniper::Context for AppContext {}
 
 #[juniper::graphql_object(Context = AppContext)]
 impl QueryRoot {
+    async fn profile(&self, ctx: &AppContext, #[graphql(description = "Twitter handle")] handle: String) -> Option<Profile> {
+        let twitter_bearer_token = &ctx.twitter_bearer_token;
+        let http_client = HttpClient::new();
+
+        let response: TwitterResponse<TwitterUser> = http_client
+            .get(format!("https://api.twitter.com/2/users/by/username/{}", handle))
+            .header("Accept", "application/json")
+            .query(&[("user.fields", "username,profile_image_url")])
+            .bearer_auth(twitter_bearer_token)
+            .send()
+            .await
+            .ok()?
+            .json()
+            .await
+            .ok()?;
+
+        Some(Profile::from(response.data))
+    }
+
     fn creator(
         &self,
         _context: &AppContext,
@@ -575,7 +571,7 @@ impl QueryRoot {
 
     fn wallet(
         &self,
-        context: &AppContext,
+        _context: &AppContext,
         #[graphql(description = "Address of NFT")] address: String,
     ) -> Option<Wallet> {
         Some(Wallet { address })

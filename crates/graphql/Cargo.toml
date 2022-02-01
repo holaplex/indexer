@@ -17,7 +17,6 @@ categories = ["cryptocurrency::cryptocurrencies", "web-programming"]
 actix-cors = "0.4.0"
 actix-web = "4.0.0-beta.21"
 async-trait = "0.1"
-solana-client = "1.8.14"
 dataloader = "0.14.0"
 reqwest = "0.11.6"
 juniper = "0.15"

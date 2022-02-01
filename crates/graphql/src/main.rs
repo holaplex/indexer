@@ -10,7 +10,6 @@
 
 use std::{future::Future, net::SocketAddr, pin::Pin, sync::Arc};
 
-use actix_cors::Cors;
 use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
 use indexer_core::{clap, clap::Parser, db, db::Pool, prelude::*, ServerOpts};
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
@@ -40,20 +39,18 @@ fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
 
 fn graphql(
     db_pool: Arc<Pool>,
-    solana_client: Arc<solana_client::rpc_client::RpcClient>,
     twitter_bearer_token: Arc<String>,
 ) -> impl Fn(
     web::Data<Arc<Schema>>,
     web::Json<GraphQLRequest>,
 ) -> Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>>
 + Clone {
-    move |st, data| {
+    move |st: web::Data<Arc<Schema>>, data: web::Json<GraphQLRequest>| {
         let pool = Arc::clone(&db_pool);
         let twitter_bearer_token = Arc::clone(&twitter_bearer_token);
-        let solana_client = Arc::clone(&solana_client);
 
         Box::pin(async move {
-            let ctx = AppContext::new(pool, solana_client, twitter_bearer_token);
+            let ctx = AppContext::new(pool, twitter_bearer_token);
             let res = data.execute(&st, &ctx).await;
 
             let json = serde_json::to_string(&res)?;
@@ -73,15 +70,11 @@ fn main() {
         } = Opts::parse();
 
         let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
-
         let twitter_bearer_token = Arc::new(twitter_bearer_token);
-
+        
         let db_pool =
             Arc::new(db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?);
 
-        let solana_client = Arc::new(solana_client::rpc_client::RpcClient::new(
-            "https://holaplex.rpcpool.com/".to_string(),
-        ));
         let version_extension = format!(
             "/v{}",
             percent_encoding::utf8_percent_encode(
@@ -106,7 +99,6 @@ fn main() {
                         .service(
                             web::resource(&version_extension).route(web::post().to(graphql(
                                 db_pool.clone(),
-                                solana_client.clone(),
                                 twitter_bearer_token.clone(),
                             ))),
                         )
