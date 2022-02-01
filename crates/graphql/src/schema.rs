@@ -14,8 +14,8 @@ use indexer_core::{
     prelude::*,
 };
 use juniper::{
-    meta::Field, EmptyMutation, EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject,
-    ParseScalarResult, ParseScalarValue, RootNode, Value,
+    meta::Field, EmptyMutation, EmptySubscription, FieldResult, GraphQLInputObject,
+    GraphQLObject, ParseScalarResult, ParseScalarValue, RootNode, Value,
 };
 use reqwest::Client as HttpClient;
 use serde::Deserialize;
@@ -267,12 +267,25 @@ struct Wallet {
 #[derive(Debug, Clone)]
 struct Profile {
     handle: String,
-    profile_image_url: String,
+    profile_image_url_lowres: String,
+    profile_image_url_highres: String,
+    banner_image_url: String,
 }
 
 #[derive(Debug, Deserialize)]
-struct TwitterUser {
-    username: String,
+struct TwitterShowResponse {
+    screen_name: String,
+    profile_image_url_https: String,
+    profile_banner_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct TwitterProfilePictureResponse {
+    data: TwitterProfilePicture,
+}
+
+#[derive(Debug, Deserialize)]
+struct TwitterProfilePicture {
     profile_image_url: String,
 }
 
@@ -282,28 +295,33 @@ impl Profile {
         self.handle.clone()
     }
 
-    fn profile_image_url(&self) -> String {
-        self.profile_image_url.clone()
+    fn profile_image_url_lowres(&self) -> String {
+        self.profile_image_url_lowres.clone()
+    }
+
+    fn profile_image_url_highres(&self) -> String {
+        self.profile_image_url_highres.clone()
+    }
+
+    fn banner_image_url(&self) -> String {
+        self.banner_image_url.clone()
     }
 }
 
-impl From<TwitterUser> for Profile {
+impl From<(TwitterProfilePictureResponse, TwitterShowResponse)> for Profile {
     fn from(
-        TwitterUser {
-            username,
-            profile_image_url,
-            ..
-        }: TwitterUser,
+        (profile_picture_response, show_response): (
+            TwitterProfilePictureResponse,
+            TwitterShowResponse,
+        ),
     ) -> Self {
         Self {
-            handle: username,
-            profile_image_url,
+            banner_image_url: show_response.profile_banner_url,
+            handle: show_response.screen_name,
+            profile_image_url_highres: profile_picture_response.data.profile_image_url,
+            profile_image_url_lowres: show_response.profile_image_url_https,
         }
     }
-}
-#[derive(Debug, Deserialize)]
-struct TwitterResponse<T> {
-    data: T,
 }
 
 #[juniper::graphql_object(Context = AppContext)]
@@ -590,22 +608,37 @@ impl QueryRoot {
         let twitter_bearer_token = &ctx.twitter_bearer_token;
         let http_client = HttpClient::new();
 
-        let response: TwitterResponse<TwitterUser> = http_client
-            .get(format!(
-                "https://api.twitter.com/2/users/by/username/{}",
-                handle
-            ))
+        let twitter_show_response = http_client
+            .get("https://api.twitter.com/1.1/users/show.json")
             .header("Accept", "application/json")
-            .query(&[("user.fields", "username,profile_image_url")])
+            .query(&[("screen_name", handle.clone())])
             .bearer_auth(twitter_bearer_token)
             .send()
             .await
             .ok()?
-            .json()
+            .json::<TwitterShowResponse>()
             .await
             .ok()?;
 
-        Some(Profile::from(response.data))
+        let twitter_profile_picture_response = http_client
+            .get(format!(
+                "https://api.twitter.com/2/users/by/username/{}",
+                handle.clone()
+            ))
+            .header("Accept", "application/json")
+            .query(&[("user.fields", "profile_image_url")])
+            .bearer_auth(twitter_bearer_token)
+            .send()
+            .await
+            .ok()?
+            .json::<TwitterProfilePictureResponse>()
+            .await
+            .ok()?;
+
+        Some(Profile::from((
+            twitter_profile_picture_response,
+            twitter_show_response,
+        )))
     }
 
     fn creator(
