@@ -62,4 +62,5 @@ RUN apt-get install -y libpq5 && \
   rm -rf /var/lib/apt/lists/*
 
 ADD heroku_startup.sh /metaplex-indexer/heroku_startup.sh
+ADD heroku_indexer_startup.sh /metaplex-indexer/heroku_indexer_startup.sh
 CMD ["./heroku_startup.sh"]
