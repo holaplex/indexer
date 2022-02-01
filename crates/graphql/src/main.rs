@@ -71,7 +71,7 @@ fn main() {
 
         let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
         let twitter_bearer_token = Arc::new(twitter_bearer_token);
-        
+
         let db_pool =
             Arc::new(db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?);
 
@@ -96,12 +96,9 @@ fn main() {
                     App::new()
                         .app_data(actix_web::web::Data::new(schema.clone()))
                         .wrap(middleware::Logger::default())
-                        .service(
-                            web::resource(&version_extension).route(web::post().to(graphql(
-                                db_pool.clone(),
-                                twitter_bearer_token.clone(),
-                            ))),
-                        )
+                        .service(web::resource(&version_extension).route(
+                            web::post().to(graphql(db_pool.clone(), twitter_bearer_token.clone())),
+                        ))
                         .service(
                             web::resource("/graphiql")
                                 .route(web::get().to(graphiql(graphiql_uri.clone()))),

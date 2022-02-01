@@ -13,7 +13,10 @@ use indexer_core::{
     },
     prelude::*,
 };
-use juniper::{EmptyMutation, EmptySubscription, GraphQLInputObject, GraphQLObject, RootNode};
+use juniper::{
+    EmptyMutation, EmptySubscription, GraphQLError, GraphQLInputObject, GraphQLObject,
+    ParseScalarResult, ParseScalarValue, RootNode, RuleError, Value,
+};
 use reqwest::Client as HttpClient;
 use serde::Deserialize;
 
@@ -139,6 +142,13 @@ impl Listing {
 
         result
     }
+
+    pub async fn bids(&self, ctx: &AppContext) -> Vec<Bid> {
+        let fut = ctx.listing_bids_loader.load(self.address.clone());
+        let result = fut.await;
+
+        result
+    }
 }
 
 impl<'a> From<models::Listing<'a>> for Listing {
@@ -163,6 +173,7 @@ struct Bid {
     listing_address: String,
     bidder_address: String,
     last_bid_time: String,
+    last_bid_amount: String,
     cancelled: bool,
 }
 
@@ -180,8 +191,12 @@ impl Bid {
         self.last_bid_time.clone()
     }
 
+    pub fn last_bid_amount(&self) -> String {
+        self.last_bid_amount.clone()
+    }
+
     pub fn cancelled(&self) -> bool {
-        self.cancelled.clone()
+        self.cancelled
     }
 
     pub async fn listing(&self, ctx: &AppContext) -> Option<Listing> {
@@ -198,6 +213,7 @@ impl<'a> From<models::Bid<'a>> for Bid {
             listing_address,
             bidder_address,
             last_bid_time,
+            last_bid_amount,
             cancelled,
             ..
         }: models::Bid,
@@ -206,6 +222,7 @@ impl<'a> From<models::Bid<'a>> for Bid {
             listing_address: listing_address.into_owned(),
             bidder_address: bidder_address.into_owned(),
             last_bid_time: last_bid_time.to_string(),
+            last_bid_amount: last_bid_amount.to_string(),
             cancelled,
         }
     }
@@ -248,8 +265,8 @@ impl From<TwitterUser> for Profile {
         }: TwitterUser,
     ) -> Self {
         Self {
-            handle: username.to_string(),
-            profile_image_url: profile_image_url.to_string(),
+            handle: username,
+            profile_image_url,
         }
     }
 }
@@ -461,25 +478,58 @@ impl BatchFn<String, Vec<Nft>> for ListingNftsBatcher {
     }
 }
 
+pub struct ListingBidsBatcher {
+    db_pool: Arc<Pool>,
+}
+
+#[async_trait]
+impl BatchFn<String, Vec<Bid>> for ListingBidsBatcher {
+    async fn load(&mut self, keys: &[String]) -> HashMap<String, Vec<Bid>> {
+        let conn = self.db_pool.get().unwrap();
+        let mut hash_map = HashMap::new();
+
+        for key in keys {
+            hash_map.insert(key.clone(), Vec::new());
+        }
+
+        let rows: Vec<models::Bid> = bids::table
+            .filter(bids::listing_address.eq(any(keys)))
+            .order_by(bids::last_bid_time.desc())
+            .load(&conn)
+            .unwrap();
+
+        rows.into_iter()
+            .fold(hash_map, |mut acc, bid: models::Bid| {
+                let bid = Bid::from(bid);
+                acc.entry(bid.listing_address.clone()).and_modify(|bids| {
+                    bids.push(bid);
+                });
+
+                acc
+            })
+    }
+}
+
 #[derive(Clone)]
 pub struct AppContext {
     listing_loader: Loader<String, Option<Listing>, ListingBatcher>,
     listing_nfts_loader: Loader<String, Vec<Nft>, ListingNftsBatcher>,
+    listing_bids_loader: Loader<String, Vec<Bid>, ListingBidsBatcher>,
     storefront_loader: Loader<String, Option<Storefront>, StorefrontBatcher>,
     db_pool: Arc<Pool>,
     twitter_bearer_token: Arc<String>,
 }
 
 impl AppContext {
-    pub fn new(
-        db_pool: Arc<Pool>,
-        twitter_bearer_token: Arc<String>,
-    ) -> AppContext {
+    pub fn new(db_pool: Arc<Pool>, twitter_bearer_token: Arc<String>) -> AppContext {
         Self {
             listing_loader: Loader::new(ListingBatcher {
                 db_pool: db_pool.clone(),
             }),
             listing_nfts_loader: Loader::new(ListingNftsBatcher {
+                db_pool: db_pool.clone(),
+            }),
+            listing_bids_loader: Loader::new(ListingBidsBatcher {
                 db_pool: db_pool.clone(),
             }),
             storefront_loader: Loader::new(StorefrontBatcher {
@@ -495,12 +545,19 @@ impl juniper::Context for AppContext {}
 
 #[juniper::graphql_object(Context = AppContext)]
 impl QueryRoot {
-    async fn profile(&self, ctx: &AppContext, #[graphql(description = "Twitter handle")] handle: String) -> Option<Profile> {
+    async fn profile(
+        &self,
+        ctx: &AppContext,
+        #[graphql(description = "Twitter handle")] handle: String,
+    ) -> Option<Profile> {
         let twitter_bearer_token = &ctx.twitter_bearer_token;
         let http_client = HttpClient::new();
 
         let response: TwitterResponse<TwitterUser> = http_client
-            .get(format!("https://api.twitter.com/2/users/by/username/{}", handle))
+            .get(format!(
+                "https://api.twitter.com/2/users/by/username/{}",
+                handle
+            ))
             .header("Accept", "application/json")
             .query(&[("user.fields", "username,profile_image_url")])
             .bearer_auth(twitter_bearer_token)
