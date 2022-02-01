@@ -14,8 +14,8 @@ use indexer_core::{
     prelude::*,
 };
 use juniper::{
-    EmptyMutation, EmptySubscription, GraphQLError, GraphQLInputObject, GraphQLObject,
-    ParseScalarResult, ParseScalarValue, RootNode, RuleError, Value,
+    meta::Field, EmptyMutation, EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject,
+    ParseScalarResult, ParseScalarValue, RootNode, Value,
 };
 use reqwest::Client as HttpClient;
 use serde::Deserialize;
@@ -23,6 +23,39 @@ use serde::Deserialize;
 #[derive(Debug, Clone)]
 struct Creator {
     address: String,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Lamports(u64);
+
+#[juniper::graphql_scalar(description = "Lamports")]
+impl<S> GraphQLScalar for Lamports
+where
+    S: ScalarValue,
+{
+    // Define how to convert your custom scalar into a primitive type.
+    fn resolve(&self) -> Value {
+        Value::scalar(self.0.to_string())
+    }
+
+    // Define how to parse a primitive type into your custom scalar.
+    // NOTE: The error type should implement `IntoFieldError<S>`.
+    fn from_input_value(v: &InputValue) -> Option<Lamports> {
+        v.as_string_value().and_then(|s| s.parse().ok()).map(Self)
+    }
+
+    // Define how to parse a string value.
+    fn from_str<'a>(value: ScalarToken<'a>) -> ParseScalarResult<'a, S> {
+        <String as ParseScalarValue<S>>::from_str(value)
+    }
+}
+
+impl TryFrom<i64> for Lamports {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        value.try_into().map(Self)
+    }
 }
 
 #[juniper::graphql_object(Context = AppContext)]
@@ -126,7 +159,7 @@ impl Listing {
     }
 
     pub fn ended(&self) -> bool {
-        self.ended.clone()
+        self.ended
     }
 
     pub async fn storefront(&self, ctx: &AppContext) -> Option<Storefront> {
@@ -173,7 +206,7 @@ struct Bid {
     listing_address: String,
     bidder_address: String,
     last_bid_time: String,
-    last_bid_amount: String,
+    last_bid_amount: Lamports,
     cancelled: bool,
 }
 
@@ -191,8 +224,8 @@ impl Bid {
         self.last_bid_time.clone()
     }
 
-    pub fn last_bid_amount(&self) -> String {
-        self.last_bid_amount.clone()
+    pub fn last_bid_amount(&self) -> Lamports {
+        self.last_bid_amount
     }
 
     pub fn cancelled(&self) -> bool {
@@ -207,8 +240,10 @@ impl Bid {
     }
 }
 
-impl<'a> From<models::Bid<'a>> for Bid {
-    fn from(
+impl<'a> TryFrom<models::Bid<'a>> for Bid {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
         models::Bid {
             listing_address,
             bidder_address,
@@ -217,14 +252,14 @@ impl<'a> From<models::Bid<'a>> for Bid {
             cancelled,
             ..
         }: models::Bid,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
             listing_address: listing_address.into_owned(),
             bidder_address: bidder_address.into_owned(),
             last_bid_time: last_bid_time.to_string(),
-            last_bid_amount: last_bid_amount.to_string(),
+            last_bid_amount: last_bid_amount.try_into()?,
             cancelled,
-        }
+        })
     }
 }
 
@@ -281,7 +316,7 @@ impl Wallet {
         self.address.clone()
     }
 
-    pub fn bids(&self, ctx: &AppContext) -> Vec<Bid> {
+    pub fn bids(&self, ctx: &AppContext) -> FieldResult<Vec<Bid>> {
         let db_conn = ctx.db_pool.get().unwrap();
 
         let rows: Vec<models::Bid> = bids::table
@@ -291,7 +326,10 @@ impl Wallet {
             .load(&db_conn)
             .unwrap();
 
-        rows.into_iter().map(Into::into).collect()
+        rows.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 }
 
@@ -500,10 +538,13 @@ impl BatchFn<String, Vec<Bid>> for ListingBidsBatcher {
 
         rows.into_iter()
             .fold(hash_map, |mut acc, bid: models::Bid| {
-                let bid = Bid::from(bid);
-                acc.entry(bid.listing_address.clone()).and_modify(|bids| {
-                    bids.push(bid);
-                });
+                Bid::try_from(bid)
+                    .map(|bid| {
+                        acc.entry(bid.listing_address.clone()).and_modify(|bids| {
+                            bids.push(bid);
+                        });
+                    })
+                    .ok();
 
                 acc
             })
