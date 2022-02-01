@@ -51,9 +51,7 @@ pub fn load<'a>(
     let metas = metadatas::table
         .filter(metadatas::address.eq(metadata_address))
         .left_join(editions::table.on(editions::address.eq(metadatas::edition_pda)))
-        .left_join(
-            master_editions::table.on(master_editions::address.eq(editions::parent_address)),
-        )
+        .left_join(master_editions::table.on(master_editions::address.eq(editions::parent_address)))
         .limit(1)
         .select((
             editions::address.nullable(),
