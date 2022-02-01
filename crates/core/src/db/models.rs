@@ -39,7 +39,6 @@ pub struct Edition<'a> {
     pub parent_address: Cow<'a, str>,
     /// The ordinal of this edition
     pub edition: i64,
-   
 }
 
 /// A row in the `listing_metadatas` table.  This is a join on `listings` and
