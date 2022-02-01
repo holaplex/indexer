@@ -8,14 +8,14 @@ use std::borrow::Cow;
 use chrono::NaiveDateTime;
 
 use super::schema::{
-    attributes, bids, editions, files, listing_metadatas, listings, master_editions,
-    metadata_collections, metadata_creators, metadata_jsons, metadatas, storefronts,
-    token_accounts,
+    attributes, auction_caches, auction_datas, auction_datas_ext, bids, editions, files,
+    listing_metadatas, master_editions, metadata_collections, metadata_creators, metadata_jsons,
+    metadatas, storefronts, token_accounts,
 };
 
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
-#[belongs_to(parent = "Listing<'_>", foreign_key = "listing_address")]
+#[belongs_to(parent = "AuctionData<'_>", foreign_key = "listing_address")]
 pub struct Bid<'a> {
     /// The auction being bid on
     pub listing_address: Cow<'a, str>,
@@ -47,7 +47,7 @@ pub struct Edition<'a> {
 /// A row in the `listing_metadatas` table.  This is a join on `listings` and
 /// `metadatas`
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
-#[belongs_to(parent = "Listing<'_>", foreign_key = "listing_address")]
+#[belongs_to(parent = "AuctionCache<'_>", foreign_key = "listing_address")]
 #[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
 pub struct ListingMetadata<'a> {
     /// The address of this record's listing
@@ -58,18 +58,32 @@ pub struct ListingMetadata<'a> {
     pub metadata_index: i32,
 }
 
-/// A row in the `listings` table
+/// A row in the `auction_caches` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
-#[belongs_to(parent = "Storefront<'_>", foreign_key = "store_owner")]
-pub struct Listing<'a> {
+pub struct AuctionCache<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// The storefront this auction cache belongs to
+    pub store_address: Cow<'a, str>,
+    /// The timestamp this auction cache was created at
+    pub timestamp: NaiveDateTime,
+    /// The address of the cached auction
+    pub auction_data: Cow<'a, str>,
+    /// The PDA of the cached auction's extended data
+    pub auction_ext: Cow<'a, str>,
+    /// The address of the cached auction's vault
+    pub vault: Cow<'a, str>,
+    /// The manager of the cached auction
+    pub auction_manager: Cow<'a, str>,
+}
+
+/// A row in the `auction_datas` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+pub struct AuctionData<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
     /// The timestamp this auction ends at, if applicable
     pub ends_at: Option<NaiveDateTime>,
-    /// The timestamp this auction was created at
-    pub created_at: NaiveDateTime,
-    /// Whether this auction has ended
-    pub ended: bool,
     /// The authority of this auction
     pub authority: Cow<'a, str>,
     /// The item being auctioned
@@ -84,6 +98,15 @@ pub struct Listing<'a> {
     pub price_floor: Option<i64>,
     /// The total number of live bids on this auction, if applicable
     pub total_uncancelled_bids: Option<i32>,
+    /// The timestamp of the last bid, if applicable and the auction has bids
+    pub last_bid_time: Option<NaiveDateTime>,
+}
+
+/// A row in the `auction_datas_ext` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[table_name = "auction_datas_ext"]
+pub struct AuctionDataExt<'a> {
+    pub address: Cow<'a, str>,
     /// The minimum bid increase in percentage points during the ending gap of
     /// the auction, if applicable
     pub gap_tick_size: Option<i32>,
@@ -91,8 +114,6 @@ pub struct Listing<'a> {
     pub instant_sale_price: Option<i64>,
     /// The name of the listing
     pub name: Cow<'a, str>,
-    /// The timestamp of the last bid, if applicable and the auction has bids
-    pub last_bid_time: Option<NaiveDateTime>,
 }
 
 /// A row in the `master_editions` table
