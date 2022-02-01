@@ -33,18 +33,14 @@ impl<S> GraphQLScalar for Lamports
 where
     S: ScalarValue,
 {
-    // Define how to convert your custom scalar into a primitive type.
     fn resolve(&self) -> Value {
         Value::scalar(self.0.to_string())
     }
 
-    // Define how to parse a primitive type into your custom scalar.
-    // NOTE: The error type should implement `IntoFieldError<S>`.
     fn from_input_value(v: &InputValue) -> Option<Lamports> {
         v.as_string_value().and_then(|s| s.parse().ok()).map(Self)
     }
 
-    // Define how to parse a string value.
     fn from_str<'a>(value: ScalarToken<'a>) -> ParseScalarResult<'a, S> {
         <String as ParseScalarValue<S>>::from_str(value)
     }
