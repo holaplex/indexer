@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, env, future::Future, panic::AssertUnwindSafe, sync::Arc};
+use std::{borrow::Borrow, env, panic::AssertUnwindSafe, sync::Arc};
 
 use cid::Cid;
 use indexer_core::{
