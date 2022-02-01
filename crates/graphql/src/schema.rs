@@ -14,8 +14,8 @@ use indexer_core::{
     prelude::*,
 };
 use juniper::{
-    meta::Field, EmptyMutation, EmptySubscription, FieldResult, GraphQLInputObject,
-    GraphQLObject, ParseScalarResult, ParseScalarValue, RootNode, Value,
+    EmptyMutation, EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject,
+    ParseScalarResult, ParseScalarValue, RootNode, Value,
 };
 use reqwest::Client as HttpClient;
 use serde::Deserialize;
