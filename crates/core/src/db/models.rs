@@ -264,8 +264,6 @@ pub struct File<'a> {
 pub struct MetadataAttributeWrite<'a> {
     /// Metadata address
     pub metadata_address: Cow<'a, str>,
-    /// Attribute name
-    pub name: Option<Cow<'a, str>>,
     /// Attribute value
     pub value: Option<Cow<'a, str>>,
     /// Attribute trait type
@@ -277,8 +275,6 @@ pub struct MetadataAttributeWrite<'a> {
 pub struct MetadataAttribute<'a> {
     /// Metadata address
     pub metadata_address: Cow<'a, str>,
-    /// Attribute name
-    pub name: Option<Cow<'a, str>>,
     /// Attribute value
     pub value: Option<Cow<'a, str>>,
     /// Attribute trait type

@@ -130,7 +130,6 @@ impl Display for ValueDataType {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Attribute {
-    name: Option<String>,
     trait_type: Option<String>,
     value: Option<ValueDataType>,
 }
@@ -264,15 +263,9 @@ fn process_attributes(
     addr: &str,
     attributes: Option<Vec<Attribute>>,
 ) -> Result<()> {
-    for Attribute {
-        name,
-        trait_type,
-        value,
-    } in attributes.unwrap_or_else(Vec::new)
-    {
+    for Attribute { trait_type, value } in attributes.unwrap_or_else(Vec::new) {
         let row = MetadataAttributeWrite {
             metadata_address: Borrowed(addr),
-            name: name.map(Owned),
             trait_type: trait_type.map(Owned),
             value: value.as_ref().map(|v| Owned(v.to_string())),
         };

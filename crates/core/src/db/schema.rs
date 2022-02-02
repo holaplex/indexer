@@ -4,7 +4,6 @@ table! {
 
     attributes (id) {
         metadata_address -> Varchar,
-        name -> Nullable<Text>,
         value -> Nullable<Text>,
         trait_type -> Nullable<Text>,
         id -> Uuid,

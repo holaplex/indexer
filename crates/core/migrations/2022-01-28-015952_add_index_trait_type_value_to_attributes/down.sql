@@ -1,0 +1,1 @@
+drop index idx_attribute_trait_type_value;
