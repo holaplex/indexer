@@ -8,10 +8,7 @@ use indexer_core::{
         tables::{
             attributes, bids, listing_metadatas, listings, metadata_creators, metadata_jsons,
             metadatas, storefronts,
- 
-
         },
-
         Pool,
     },
     hash,
@@ -145,12 +142,11 @@ struct NftCreator {
     address: String,
     metadata_address: String,
     share: i32,
-    verified: bool
+    verified: bool,
 }
 
 #[juniper::graphql_object(Context = AppContext)]
 impl NftCreator {
-
     pub fn address(&self) -> String {
         self.address.clone()
     }
@@ -181,7 +177,7 @@ impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
             address: creator_address.into_owned(),
             metadata_address: metadata_address.into_owned(),
             share,
-            verified
+            verified,
         }
     }
 }
@@ -425,7 +421,7 @@ impl Nft {
     pub async fn creators(&self, ctx: &AppContext) -> Vec<NftCreator> {
         let fut = ctx.nft_creator_loader.load(self.address.clone());
         let result = fut.await;
-    
+
         result
     }
 }
@@ -516,7 +512,6 @@ impl BatchFn<String, Option<Listing>> for ListingBatcher {
     }
 }
 
-
 pub struct StorefrontBatcher {
     db_pool: Arc<Pool>,
 }
@@ -556,7 +551,6 @@ impl BatchFn<String, Option<Storefront>> for StorefrontBatcher {
         }
 
         hash_map
-
     }
 }
 
@@ -582,9 +576,10 @@ impl BatchFn<String, Vec<NftCreator>> for NftCreatorBatcher {
         rows.into_iter()
             .fold(hash_map, |mut acc, creator: models::MetadataCreator| {
                 let creator = NftCreator::from(creator);
-                acc.entry(creator.metadata_address.clone()).and_modify(|creators| {
-                    creators.push(creator);
-                });
+                acc.entry(creator.metadata_address.clone())
+                    .and_modify(|creators| {
+                        creators.push(creator);
+                    });
                 acc
             })
     }
@@ -675,14 +670,11 @@ impl BatchFn<String, Vec<Bid>> for ListingBidsBatcher {
 
 #[derive(Clone)]
 pub struct AppContext {
-
-
     listing_loader: Loader<String, Option<Listing>, ListingBatcher>,
     listing_nfts_loader: Loader<String, Vec<Nft>, ListingNftsBatcher>,
     listing_bids_loader: Loader<String, Vec<Bid>, ListingBidsBatcher>,
     storefront_loader: Loader<String, Option<Storefront>, StorefrontBatcher>,
 
-    
     nft_creator_loader: Loader<String, Vec<NftCreator>, NftCreatorBatcher>,
 
     db_pool: Arc<Pool>,
