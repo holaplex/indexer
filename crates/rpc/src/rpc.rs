@@ -181,6 +181,7 @@ impl Rpc for Server {
                 metadatas::primary_sale_happened,
                 metadatas::is_mutable,
                 metadatas::edition_nonce,
+                metadatas::edition_pda,
             ))
             .order_by(listing_metadatas::metadata_index)
             .load(&db)
@@ -200,6 +201,7 @@ impl Rpc for Server {
                      primary_sale_happened,
                      is_mutable: _,
                      edition_nonce: _,
+                     edition_pda: _,
                  }| ListingItem {
                     address: address.into_owned(),
                     name: name.into_owned(),

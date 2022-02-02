@@ -213,14 +213,12 @@ impl<'a> From<MetadataEdition<'a>> for ItemEdition {
                         address,
                         parent_address,
                         edition,
-                        metadata_address: _,
                     },
                 parent:
                     models::MasterEdition {
                         address: _,
                         supply,
                         max_supply,
-                        metadata_address: _,
                     },
             } => Self::Edition {
                 address: address.into_owned(),
@@ -233,7 +231,6 @@ impl<'a> From<MetadataEdition<'a>> for ItemEdition {
                 address,
                 supply,
                 max_supply,
-                metadata_address: _,
             }) => Self::MasterEdition {
                 address: address.into_owned(),
                 supply,

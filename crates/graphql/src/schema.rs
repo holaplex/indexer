@@ -149,6 +149,7 @@ impl<'a> From<models::Metadata<'a>> for Nft {
             primary_sale_happened,
             is_mutable,
             edition_nonce: _,
+            edition_pda: _,
         }: models::Metadata,
     ) -> Self {
         Self {
