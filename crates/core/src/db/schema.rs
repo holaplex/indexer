@@ -187,7 +187,7 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
-    storefronts (owner_address) {
+    storefronts (address) {
         owner_address -> Varchar,
         subdomain -> Text,
         title -> Text,
@@ -197,6 +197,7 @@ table! {
         ts_index -> Tsvector,
         updated_at -> Nullable<Timestamp>,
         banner_url -> Nullable<Text>,
+        address -> Varchar,
     }
 }
 
