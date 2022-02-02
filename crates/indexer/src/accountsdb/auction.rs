@@ -225,18 +225,7 @@ fn get_end_info(
         .last_bid
         .map(|l| NaiveDateTime::from_timestamp(l, 0));
 
-    // Based on AuctionData::ended
-    let ends_at = match (ends_at, gap_time, last_bid_time) {
-        (Some(end), Some(gap), Some(last)) => Some(
-            end.max(
-                last.checked_add_signed(gap)
-                    .ok_or_else(|| anyhow!("Failed to adjust auction end by gap time"))?,
-            ),
-        ),
-        (end, ..) => end,
-    };
-
-    let ended = ends_at.map_or(false, |e| now > e);
+    let (ends_at, ended) = indexer_core::util::get_end_info(ends_at, gap_time, last_bid_time, now)?;
 
     Ok((ends_at, ended, last_bid_time))
 }

@@ -21,6 +21,7 @@ pub mod db;
 pub mod error;
 pub mod hash;
 pub mod pubkeys;
+pub mod util;
 
 /// Commonly used utilities
 pub mod prelude {
