@@ -3,6 +3,7 @@ use std::{env, sync::Arc};
 use indexer_core::{
     db::{insert_into, models::Storefront, tables::storefronts, PooledConnection},
     hash::{DashSet, HashMap},
+    pubkeys::find_store_address,
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
@@ -138,6 +139,8 @@ fn process_tags(
             .unwrap_or_else(String::new);
         let banner_url = tags.remove("holaplex:theme:banner:url");
 
+        let (address, _bump) = find_store_address(owner);
+
         let row = Storefront {
             owner_address: Owned(bs58::encode(owner).into_string()),
             subdomain: Owned(subdomain),
@@ -147,6 +150,7 @@ fn process_tags(
             logo_url: Owned(logo_url),
             banner_url: banner_url.map(Owned),
             updated_at,
+            address: Owned(bs58::encode(address).into_string()),
         };
 
         insert_into(storefronts::table)

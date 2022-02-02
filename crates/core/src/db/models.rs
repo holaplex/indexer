@@ -101,6 +101,7 @@ pub struct AuctionData<'a> {
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[table_name = "auction_datas_ext"]
 pub struct AuctionDataExt<'a> {
+    /// The address of this account
     pub address: Cow<'a, str>,
     /// The minimum bid increase in percentage points during the ending gap of
     /// the auction, if applicable
@@ -201,6 +202,10 @@ pub struct Storefront<'a> {
     pub updated_at: Option<NaiveDateTime>,
     /// The file URL for this store's banner
     pub banner_url: Option<Cow<'a, str>>,
+    /// The address of this account
+    ///
+    /// **NOTE:** This is **NOT** the store owner's wallet!
+    pub address: Cow<'a, str>,
 }
 
 /// Join of `metadatas` and `metadata_jsons` for an NFT
