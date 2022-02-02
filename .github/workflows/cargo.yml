@@ -41,12 +41,12 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all --all-features
+          args: --all --lib --bins --tests --all-features
 
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --all-features
+          args: --all --lib --bins --tests --all-features
 
   debug-build:
     name: cargo build/test (debug profile)
@@ -67,7 +67,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all --all-features
+          args: --all --lib --bins --tests --all-features
 
   release-check:
     name: cargo check/doc/clippy (release profile)
@@ -88,12 +88,12 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all --all-features --release
+          args: --all --lib --bins --tests --all-features --release
 
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --all-features --release
+          args: --all --lib --bins --tests --all-features --release
 
   release-build:
     name: cargo build/test (release profile)
@@ -114,5 +114,5 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all --all-features --release
+          args: --all --lib --bins --tests --all-features --release
 
