@@ -88,8 +88,6 @@ pub struct AuctionData<'a> {
     pub authority: Cow<'a, str>,
     /// The item being auctioned
     pub token_mint: Cow<'a, str>,
-    /// The owner of the store this auction was found from
-    pub store_owner: Cow<'a, str>,
     /// The amount of the highest bid, if applicable
     pub highest_bid: Option<i64>,
     /// The gap time of the auction, if applicable

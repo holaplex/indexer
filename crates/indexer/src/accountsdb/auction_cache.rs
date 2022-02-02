@@ -1,15 +1,22 @@
-use indexer_core::db::{insert_into, models::ListingMetadata, tables::listing_metadatas};
-use metaplex::state::AuctionCache;
+use indexer_core::{
+    db::{
+        insert_into,
+        models::{AuctionCache, ListingMetadata},
+        tables::{auction_caches, listing_metadatas},
+    },
+    pubkeys::find_auction_data_extended,
+};
+use metaplex::state::AuctionCache as AuctionCacheAccount;
 
 use super::AuctionCacheKeys;
 use crate::{prelude::*, util, Client};
 
-pub(super) fn process(client: &Client, keys: AuctionCacheKeys) -> Result<()> {
+pub(super) async fn process(client: &Client, keys: AuctionCacheKeys) -> Result<()> {
     let mut acct = client
         .get_account(&keys.cache)
         .context("Failed to get auction cache")?;
 
-    let cache = AuctionCache::from_account_info(&util::account_as_info(
+    let cache = AuctionCacheAccount::from_account_info(&util::account_as_info(
         &keys.cache,
         false,
         false,
@@ -17,11 +24,13 @@ pub(super) fn process(client: &Client, keys: AuctionCacheKeys) -> Result<()> {
     ))
     .context("Failed to parse AuctionCache")?;
 
-    let AuctionCache {
+    let AuctionCacheAccount {
         metadata,
         auction,
         vault,
         timestamp,
+        store,
+        auction_manager,
         ..
     } = cache;
 
@@ -59,35 +68,57 @@ pub(super) fn process(client: &Client, keys: AuctionCacheKeys) -> Result<()> {
 
     // bid_dependents.lock().push(&handle, auction.get_in_edge());
 
-    Ok(())
-}
+    let (auction_ext, _bump) = find_auction_data_extended(auction);
+    let address: Cow<str> = Owned(bs58::encode(keys.cache).into_string());
 
-pub(super) fn process_listing_metadata(
-    client: &Client,
-    super::ListingMetadata {
-        listing,
-        metadata,
-        index,
-    }: super::ListingMetadata,
-) -> Result<()> {
-    todo!();
-    // let db = client.db()?;
+    let values = AuctionCache {
+        address: address.clone(),
+        store_address: Owned(bs58::encode(store).into_string()),
+        timestamp: NaiveDateTime::from_timestamp(timestamp, 0),
+        auction_data: Owned(bs58::encode(auction).into_string()),
+        auction_ext: Owned(bs58::encode(auction_ext).into_string()),
+        vault: Owned(bs58::encode(vault).into_string()),
+        auction_manager: Owned(bs58::encode(auction_manager).into_string()),
+    };
 
-    // insert_into(listing_metadatas::table)
-    //     .values(ListingMetadata {
-    //         listing_address: Owned(bs58::encode(listing).into_string()),
-    //         metadata_address: Owned(bs58::encode(metadata).into_string()),
-    //         metadata_index: index
-    //             .try_into()
-    //             .context("Metadata index too big to store")?,
-    //     })
-    //     .on_conflict((
-    //         listing_metadatas::listing_address,
-    //         listing_metadatas::metadata_address,
-    //     ))
-    //     .do_nothing()
-    //     .execute(&db)
-    //     .context("Failed to insert listing-metadata join")?;
+    let metadata_values = metadata
+        .into_iter()
+        .enumerate()
+        .map(|(i, meta)| {
+            Ok(ListingMetadata {
+                listing_address: address.clone(),
+                metadata_address: Owned(bs58::encode(meta).into_string()),
+                metadata_index: i
+                    .try_into()
+                    .context("Metadata index was too big to store")?,
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    client
+        .db(move |db| {
+            insert_into(auction_caches::table)
+                .values(&values)
+                .on_conflict(auction_caches::address)
+                .do_update()
+                .set(&values)
+                .execute(db)?;
+
+            metadata_values.into_iter().try_for_each(|v| {
+                insert_into(listing_metadatas::table)
+                    .values(&v)
+                    .on_conflict((
+                        listing_metadatas::listing_address,
+                        listing_metadatas::metadata_address,
+                    ))
+                    .do_update()
+                    .set(&v)
+                    .execute(db)
+                    .map(|_| ())
+            })
+        })
+        .await
+        .context("Failed to store auction cache data")?;
 
     Ok(())
 }
