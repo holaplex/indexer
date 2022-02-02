@@ -6,8 +6,8 @@ use indexer_core::{
     db::{
         models,
         tables::{
-            attributes, bids, listing_metadatas, listings, metadata_creators, metadata_jsons,
-            metadatas, storefronts,
+            attributes, auction_caches, auction_datas, auction_datas_ext, bids, listing_metadatas,
+            metadata_creators, metadata_jsons, metadatas, storefronts,
         },
         Pool,
     },
@@ -181,6 +181,14 @@ impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
     }
 }
 
+type ListingRow = (
+    String,                // address
+    String,                // store_address
+    Option<NaiveDateTime>, // ends_at
+    Option<i32>,           // gap_time
+    Option<NaiveDateTime>, // last_bid_time
+);
+
 #[derive(Debug, Clone)]
 struct NftAttribute {
     metadata_address: String,
@@ -223,8 +231,27 @@ impl<'a> From<models::MetadataAttribute<'a>> for NftAttribute {
 #[derive(Debug, Clone)]
 struct Listing {
     address: String,
-    store_owner: String,
+    store_address: String,
     ended: bool,
+}
+
+impl Listing {
+    fn new(
+        (address, store_address, ends_at, gap_time, last_bid_time): ListingRow,
+        now: NaiveDateTime,
+    ) -> FieldResult<Self> {
+        Ok(Self {
+            address,
+            store_address,
+            ended: indexer_core::util::get_end_info(
+                ends_at,
+                gap_time.map(|i| chrono::Duration::seconds(i.into())),
+                last_bid_time,
+                now,
+            )?
+            .1,
+        })
+    }
 }
 
 #[juniper::graphql_object(Context = AppContext)]
@@ -233,8 +260,8 @@ impl Listing {
         self.address.clone()
     }
 
-    pub fn store_owner(&self) -> String {
-        self.store_owner.clone()
+    pub fn store_address(&self) -> String {
+        self.store_address.clone()
     }
 
     pub fn ended(&self) -> bool {
@@ -242,7 +269,9 @@ impl Listing {
     }
 
     pub async fn storefront(&self, ctx: &AppContext) -> Option<Storefront> {
-        let fut = ctx.storefront_loader.load(self.store_owner.clone());
+        let fut = ctx
+            .storefront_loader
+            .load(StorefrontAddress(self.store_address.clone()));
         let result = fut.await;
 
         result
@@ -260,23 +289,6 @@ impl Listing {
         let result = fut.await;
 
         result
-    }
-}
-
-impl<'a> From<models::Listing<'a>> for Listing {
-    fn from(
-        models::Listing {
-            address,
-            store_owner,
-            ended,
-            ..
-        }: models::Listing,
-    ) -> Self {
-        Self {
-            address: address.into_owned(),
-            store_owner: store_owner.into_owned(),
-            ended,
-        }
     }
 }
 
@@ -504,9 +516,13 @@ impl From<models::Nft> for Nft {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct StorefrontAddress(String);
+
 #[derive(Debug, Clone, GraphQLObject)]
 #[graphql(description = "A Metaplex storefront")]
 pub struct Storefront {
+    pub address: String,
     pub owner_address: String,
     pub subdomain: String,
     pub title: String,
@@ -519,6 +535,7 @@ pub struct Storefront {
 impl<'a> From<models::Storefront<'a>> for Storefront {
     fn from(
         models::Storefront {
+            address,
             owner_address,
             subdomain,
             title,
@@ -530,6 +547,7 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
         }: models::Storefront,
     ) -> Self {
         Self {
+            address: address.into_owned(),
             owner_address: owner_address.into_owned(),
             subdomain: subdomain.into_owned(),
             title: title.into_owned(),
@@ -550,6 +568,8 @@ pub struct ListingBatcher {
 #[async_trait]
 impl BatchFn<String, Option<Listing>> for ListingBatcher {
     async fn load(&mut self, keys: &[String]) -> HashMap<String, Option<Listing>> {
+        let now = Local::now().naive_utc();
+
         let conn = self.db_pool.get().unwrap();
         let mut hash_map = HashMap::new();
 
@@ -557,15 +577,31 @@ impl BatchFn<String, Option<Listing>> for ListingBatcher {
             hash_map.insert(key.clone(), None);
         }
 
-        let rows: Vec<models::Listing> = listings::table
-            .filter(listings::address.eq(any(keys)))
+        let rows: Vec<ListingRow> = auction_caches::table
+            .filter(auction_caches::auction_data.eq(any(keys)))
+            .inner_join(
+                auction_datas::table.on(auction_caches::auction_data.eq(auction_datas::address)),
+            )
+            .inner_join(
+                auction_datas_ext::table
+                    .on(auction_caches::auction_ext.eq(auction_datas_ext::address)),
+            )
+            .select((
+                auction_datas::address,
+                auction_caches::store_address,
+                auction_datas::ends_at,
+                auction_datas_ext::gap_tick_size,
+                auction_datas::last_bid_time,
+            ))
             .load(&conn)
             .unwrap();
 
         for listing in rows {
-            let listing = Listing::from(listing);
+            let listing = Listing::new(listing, now)
+                .map_err(|e| error!("Failed to load listing: {:?}", e))
+                .ok();
 
-            hash_map.insert(listing.address.clone(), Some(listing));
+            listing.map(|l| hash_map.insert(l.address.clone(), Some(l)));
         }
 
         hash_map
@@ -577,8 +613,11 @@ pub struct StorefrontBatcher {
 }
 
 #[async_trait]
-impl BatchFn<String, Option<Storefront>> for StorefrontBatcher {
-    async fn load(&mut self, keys: &[String]) -> HashMap<String, Option<Storefront>> {
+impl BatchFn<StorefrontAddress, Option<Storefront>> for StorefrontBatcher {
+    async fn load(
+        &mut self,
+        keys: &[StorefrontAddress],
+    ) -> HashMap<StorefrontAddress, Option<Storefront>> {
         let conn = self.db_pool.get().unwrap();
         let mut hash_map = HashMap::new();
 
@@ -595,18 +634,24 @@ impl BatchFn<String, Option<Storefront>> for StorefrontBatcher {
             storefronts::logo_url,
             storefronts::updated_at,
             storefronts::banner_url,
+            storefronts::address,
         );
+
+        let key_strs: Vec<_> = keys.iter().map(|k| &k.0).collect();
 
         let rows: Vec<models::Storefront> = storefronts::table
             .select(columns)
-            .filter(storefronts::owner_address.eq(any(keys)))
+            .filter(storefronts::address.eq(any(key_strs)))
             .load(&conn)
             .unwrap();
 
         for storefront in rows {
             let storefront = Storefront::from(storefront);
 
-            hash_map.insert(storefront.owner_address.clone(), Some(storefront));
+            hash_map.insert(
+                StorefrontAddress(storefront.address.clone()),
+                Some(storefront),
+            );
         }
 
         hash_map
@@ -766,7 +811,7 @@ pub struct AppContext {
     listing_loader: Loader<String, Option<Listing>, ListingBatcher>,
     listing_nfts_loader: Loader<String, Vec<Nft>, ListingNftsBatcher>,
     listing_bids_loader: Loader<String, Vec<Bid>, ListingBidsBatcher>,
-    storefront_loader: Loader<String, Option<Storefront>, StorefrontBatcher>,
+    storefront_loader: Loader<StorefrontAddress, Option<Storefront>, StorefrontBatcher>,
     nft_creator_loader: Loader<String, Vec<NftCreator>, NftCreatorBatcher>,
     nft_attribute_loader: Loader<String, Vec<NftAttribute>, NftAttributeBatcher>,
     db_pool: Arc<Pool>,
@@ -949,6 +994,7 @@ impl QueryRoot {
             storefronts::logo_url,
             storefronts::updated_at,
             storefronts::banner_url,
+            storefronts::address,
         );
 
         let conn = context.db_pool.get().unwrap();
