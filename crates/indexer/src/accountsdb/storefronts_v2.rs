@@ -51,10 +51,12 @@ struct SettingUri {
     extra: HashMap<String, serde_json::Value>,
 }
 
+/// process the settings_uri URL
 async fn process_settings_uri(db: &Connection, uri: String, pda: String) -> Result<()> {
     println!("process_settings_uri called!");
     let url = Url::parse(&uri).context("Failed to parse settings_uri URL!")?;
     let http_client = reqwest::Client::new();
+    /// get the data and parse it into the SettingUri struct
     let json = http_client
         .get(url.clone())
         .send()
@@ -73,7 +75,7 @@ async fn process_settings_uri(db: &Connection, uri: String, pda: String) -> Resu
         owner_address: Borrowed(&json.owner_address),
         auction_house_address: Borrowed(&json.auction_house_address),
     };
-
+    /// insert into the database
     insert_into(settings_uri_jsons::table)
         .values(&row)
         .on_conflict(settings_uri_jsons::store_config_pda)
@@ -85,6 +87,7 @@ async fn process_settings_uri(db: &Connection, uri: String, pda: String) -> Resu
     Ok(())
 }
 
+/// Deserialize the `StoreConfig` account and insert the record into `storefrontsv2_configs` table
 async fn process_store_config(client: &Client, key: Pubkey, data: Vec<u8>) -> Result<()> {
     println!("process_store_config called!");
     let config: StoreConfig =
@@ -112,6 +115,7 @@ async fn process_store_config(client: &Client, key: Pubkey, data: Vec<u8>) -> Re
     Ok(())
 }
 
+/// Deserialize `WhitelistedCreator` account and insert the record into `whitelisted_creators` table
 pub fn process_whitelisted_creator(client: &Client, key: Pubkey, data: Vec<u8>) -> Result<()> {
     println!("process_whitelisted_creator called!");
     let creator: WhitelistedCreator = try_from_slice_checked(
@@ -140,6 +144,7 @@ pub fn process_whitelisted_creator(client: &Client, key: Pubkey, data: Vec<u8>) 
     Ok(())
 }
 
+/// Deserialize `Store` account and insert the record into `storefrontsv2` table
 pub fn process_store(client: &Client, key: Pubkey, data: Vec<u8>) -> Result<()> {
     let db = client.db()?;
     println!("process_store called!");
@@ -167,6 +172,8 @@ pub fn process_store(client: &Client, key: Pubkey, data: Vec<u8>) -> Result<()> 
 }
 
 pub async fn process(client: &Client, key: Pubkey, data: Vec<u8>) -> Result<()> {
+    /// get the first byte which is a key in accounts owned by metaplex program
+    /// call the function according to the key
     let first_byte = data[0] as u8;
     info!("{:?}", first_byte);
     match first_byte {

@@ -10,8 +10,7 @@ use chrono::NaiveDateTime;
 use super::schema::{
     attributes, bids, editions, files, listing_metadatas, listings, master_editions,
     metadata_collections, metadata_creators, metadata_jsons, metadatas, settings_uri_jsons,
-    storefronts, storefrontsv2, storefrontsv2_configs, storefrontsv2_whitelisted_creator_pdas,
-    token_accounts, whitelisted_creators,
+    storefronts, storefrontsv2, storefrontsv2_configs, token_accounts, whitelisted_creators,
 };
 
 /// A row in the `bids` table
@@ -295,40 +294,66 @@ pub struct MetadataCollection<'a> {
     pub family: Option<Cow<'a, str>>,
 }
 
+/// A row in the `storefrontsv2_configs` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[table_name = "storefrontsv2_configs"]
 pub struct StoreConfig<'a> {
+    /// StoreConfig account address
     pub address: Cow<'a, str>,
+    /// StoreConfig settings_uri field containing the url
     pub settings_uri: Option<Cow<'a, str>>,
 }
 
+/// A row in the `whitelisted_creators` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct WhitelistedCreator<'a> {
+    /// WhitelistedCreator account address
     pub address: Cow<'a, str>,
+    /// WhitelistedCreator creator address
     pub creator_address: Cow<'a, str>,
+    /// whether or not this creator is currently active in the store
     pub activated: bool,
 }
 
+/// A row in the `storefrontsv2` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[table_name = "storefrontsv2"]
 pub struct Storefrontv2<'a> {
+    /// Storefrontv2 account address
     pub store_address: Cow<'a, str>,
+    /// Storefront public field
+    /// Store is public if true and private if false
+    ///  determines whether or not AuctionManagers can sell items that have all non-whitelisted creators on them or not
     pub public: bool,
+    /// Auction Program address
     pub auction_program: Cow<'a, str>,
+    /// Token Vault Program address
     pub token_vault_program: Cow<'a, str>,
+    /// Token Metadata Program address
     pub token_metadata_program: Cow<'a, str>,
+    /// Token Program Address
     pub token_program: Cow<'a, str>,
+    /// StoreConfig PDA
     pub store_config_pda: Cow<'a, str>,
 }
 
+/// A row in the `settings_uri_jsons` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct SettingsUriJson<'a> {
+    /// StoreConfig PDA
     pub store_config_pda: Cow<'a, str>,
+    /// Storfront name
     pub name: Cow<'a, str>,
+    /// Storfront description
     pub description: Cow<'a, str>,
+    /// Storefront logo URL
     pub logo_url: Cow<'a, str>,
+    /// Storefront banner URL
     pub banner_url: Cow<'a, str>,
+    /// Storefront Submain
     pub subdomain: Cow<'a, str>,
+    /// Storfront owner address
     pub owner_address: Cow<'a, str>,
+    /// Auction house account address
     pub auction_house_address: Cow<'a, str>,
 }

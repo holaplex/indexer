@@ -88,6 +88,7 @@ pub fn find_edition(mint: impl Borrow<Pubkey>) -> (Pubkey, u8) {
     )
 }
 
+/// find the address of an ``StoreConfig`` account given the store address
 pub fn find_store_config(store: impl Borrow<Pubkey>) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[

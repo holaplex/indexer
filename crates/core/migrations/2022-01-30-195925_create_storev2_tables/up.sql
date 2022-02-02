@@ -22,12 +22,12 @@ create table whitelisted_creators (
 );
 
 
-create table storefrontsv2_whitelisted_creator_pdas(
-  store_address                   varchar(48),
-  creator_address                 varchar(48),
-  PRIMARY KEY (store_address,creator_address)
+-- create table storefrontsv2_whitelisted_creator_pdas(
+--   store_address                   varchar(48),
+--   creator_address                 varchar(48),
+--   PRIMARY KEY (store_address,creator_address)
 
-);
+-- );
 
 create table settings_uri_jsons(
     store_config_pda varchar(48) PRIMARY KEY,
