@@ -516,7 +516,6 @@ pub struct StorefrontBatcher {
 }
 
 #[async_trait]
-
 impl BatchFn<String, Option<Storefront>> for StorefrontBatcher {
     async fn load(&mut self, keys: &[String]) -> HashMap<String, Option<Storefront>> {
         let conn = self.db_pool.get().unwrap();
