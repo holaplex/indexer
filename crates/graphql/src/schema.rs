@@ -672,9 +672,7 @@ pub struct AppContext {
     listing_nfts_loader: Loader<String, Vec<Nft>, ListingNftsBatcher>,
     listing_bids_loader: Loader<String, Vec<Bid>, ListingBidsBatcher>,
     storefront_loader: Loader<String, Option<Storefront>, StorefrontBatcher>,
-
     nft_creator_loader: Loader<String, Vec<NftCreator>, NftCreatorBatcher>,
-
     db_pool: Arc<Pool>,
     twitter_bearer_token: Arc<String>,
 }
