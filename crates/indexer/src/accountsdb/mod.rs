@@ -6,8 +6,8 @@ mod get_storefronts;
 mod metadata;
 mod metadata_uri;
 mod store_owner;
+mod storefronts_v2;
 mod token_account;
-
 use std::{path::PathBuf, str::FromStr};
 
 use indexer_core::{clap, clap::Parser, pubkeys};
@@ -23,6 +23,9 @@ pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
     match msg {
         Message::AccountUpdate { owner, key, data } if owner == pubkeys::metadata() => {
             metadata::process(client, key, data)
+        },
+        Message::AccountUpdate { owner, key, data } if owner == pubkeys::metaplex() => {
+            storefronts_v2::process(client, key, data).await
         },
         // Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction() => {
         //     log_and_return(owner, data)

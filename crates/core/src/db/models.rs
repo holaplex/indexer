@@ -9,8 +9,9 @@ use chrono::NaiveDateTime;
 
 use super::schema::{
     attributes, bids, editions, files, listing_metadatas, listings, master_editions,
-    metadata_collections, metadata_creators, metadata_jsons, metadatas, storefronts,
-    token_accounts,
+    metadata_collections, metadata_creators, metadata_jsons, metadatas, settings_uri_jsons,
+    storefronts, storefrontsv2, storefrontsv2_configs, storefrontsv2_whitelisted_creator_pdas,
+    token_accounts, whitelisted_creators,
 };
 
 /// A row in the `bids` table
@@ -292,4 +293,42 @@ pub struct MetadataCollection<'a> {
     pub name: Option<Cow<'a, str>>,
     /// Collection family
     pub family: Option<Cow<'a, str>>,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[table_name = "storefrontsv2_configs"]
+pub struct StoreConfig<'a> {
+    pub address: Cow<'a, str>,
+    pub settings_uri: Option<Cow<'a, str>>,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct WhitelistedCreator<'a> {
+    pub address: Cow<'a, str>,
+    pub creator_address: Cow<'a, str>,
+    pub activated: bool,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[table_name = "storefrontsv2"]
+pub struct Storefrontv2<'a> {
+    pub store_address: Cow<'a, str>,
+    pub public: bool,
+    pub auction_program: Cow<'a, str>,
+    pub token_vault_program: Cow<'a, str>,
+    pub token_metadata_program: Cow<'a, str>,
+    pub token_program: Cow<'a, str>,
+    pub store_config_pda: Cow<'a, str>,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct SettingsUriJson<'a> {
+    pub store_config_pda: Cow<'a, str>,
+    pub name: Cow<'a, str>,
+    pub description: Cow<'a, str>,
+    pub logo_url: Cow<'a, str>,
+    pub banner_url: Cow<'a, str>,
+    pub subdomain: Cow<'a, str>,
+    pub owner_address: Cow<'a, str>,
+    pub auction_house_address: Cow<'a, str>,
 }

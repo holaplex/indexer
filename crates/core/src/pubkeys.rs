@@ -87,3 +87,15 @@ pub fn find_edition(mint: impl Borrow<Pubkey>) -> (Pubkey, u8) {
         &ids::metadata(),
     )
 }
+
+pub fn find_store_config(store: impl Borrow<Pubkey>) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            "metaplex".as_bytes(),
+            &ids::metaplex().to_bytes(),
+            "config".as_bytes(),
+            &store.borrow().to_bytes(),
+        ],
+        &ids::metaplex(),
+    )
+}
