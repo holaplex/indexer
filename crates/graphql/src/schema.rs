@@ -396,10 +396,6 @@ impl Wallet {
     }
 }
 
-struct NftCreator {
-    creators: Vec<String>,
-}
-
 #[derive(Debug, Clone)]
 struct Nft {
     address: String,
@@ -430,13 +426,6 @@ impl Nft {
         let fut = ctx.nft_creator_loader.load(self.address.clone());
         let result = fut.await;
     
-        result
-    }
-
-    pub async fn creators(&self, ctx: &AppContext) -> Option<NftCreator> {
-        let fut = ctx.nft_creator_loader.load(self.address.clone());
-        let result = fut.await;
-
         result
     }
 }
@@ -684,31 +673,6 @@ impl BatchFn<String, Vec<Bid>> for ListingBidsBatcher {
     }
 }
 
-#[async_trait]
-impl BatchFn<String, Option<Nft>> for NftCreator {
-    async fn load(&mut self, addresses: &[String]) -> HashMap<String, Option<Nft>> {
-        let conn = self.db_pool.get().unwrap();
-        let mut hash_map = HashMap::new();
-
-        let nfts_creators: Vec<models::Metadata> = metadata_creators::table
-            .filter(metadata_creators::metadata_address.eq(any(addresses)))
-            .load(&conn)
-            .unwrap();
-
-        for models::MetadataCreator {
-            metadata_address,
-            creator_address,
-        } in nfts_creators
-        {
-            hash_map
-                .entry(&metadata_address)
-                .or_insert_with(Vec::new)
-                .push(creator_address);
-        }
-        hash_map
-    }
-}
-
 #[derive(Clone)]
 pub struct AppContext {
 
@@ -741,9 +705,6 @@ impl AppContext {
                 db_pool: db_pool.clone(),
             }),
             nft_creator_loader: Loader::new(NftCreatorBatcher {
-                db_pool: db_pool.clone(),
-            }),
-            nft_creator_loader: Loader::new(NftDetailBatcher {
                 db_pool: db_pool.clone(),
             }),
             db_pool,
