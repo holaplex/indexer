@@ -5,10 +5,10 @@ use dataloader::{non_cached::Loader, BatchFn};
 use indexer_core::{
     db::{
         models,
-        tables::{attributes, metadata_creators, metadata_jsons, metadatas, storefronts},
+        tables::{attributes::{self, metadata_address}, metadata_creators::{self, creator_address}, metadata_jsons, metadatas, storefronts},
         Pool,
     },
-    prelude::*,
+    prelude::*, hash,
 };
 use juniper::{EmptyMutation, EmptySubscription, GraphQLInputObject, GraphQLObject, RootNode};
 
@@ -100,6 +100,10 @@ struct NftDetail {
     image: String,
 }
 
+struct NftCreator { 
+    creators: Vec<String>
+}
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 struct Nft {
@@ -134,6 +138,14 @@ impl Nft {
 
         result
     }
+
+    pub async fn creators(&self, ctx: &AppContext) -> Option<NftCreator> {
+        let fut = ctx.nft_creator_loader.load(self.address.clone());
+        let result = fut.await;
+
+        result
+    }
+
 }
 
 impl<'a> From<models::Metadata<'a>> for Nft {
@@ -243,9 +255,33 @@ impl BatchFn<String, Option<NftDetail>> for NftDetailBatcher {
     }
 }
 
+#[async_trait]
+impl BatchFn<String, Option<Nft>> for NftCreator {
+    async fn load(&mut self, addresses: &[String]) -> HashMap<String, Option<Nft>> {
+        let conn = self.db_pool.get().unwrap();
+        let mut hash_map = HashMap::new();
+
+        let nfts_creators: Vec<models::Metadata> = metadata_creators::table
+            .filter(metadata_creators::metadata_address.eq(any(addresses)))
+            .load(&conn)
+            .unwrap();
+
+
+        for models::MetadataCreator {
+            metadata_address,
+            creator_address
+        } in nfts_creators
+        {
+            hash_map.entry(&metadata_address).or_insert_with(Vec::new).push(creator_address);
+        }
+            hash_map
+    }
+}
+
 #[derive(Clone)]
 pub struct AppContext {
     nft_detail_loader: Loader<String, Option<NftDetail>, NftDetailBatcher>,
+    nft_creator_loader: Loader<String, Option<NftDetail>, NftDetailBatcher>,
     db_pool: Arc<Pool>,
 }
 
@@ -253,6 +289,9 @@ impl AppContext {
     pub fn new(db_pool: Arc<Pool>) -> AppContext {
         Self {
             nft_detail_loader: Loader::new(NftDetailBatcher {
+                db_pool: db_pool.clone(),
+            }),
+            nft_creator_loader: Loader::new(NftDetailBatcher {
                 db_pool: db_pool.clone(),
             }),
             db_pool,
