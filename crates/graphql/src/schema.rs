@@ -11,6 +11,7 @@ use indexer_core::{
  
 
         },
+
         Pool,
     },
     hash,
@@ -139,9 +140,50 @@ struct NftDetail {
     description: String,
     image: String,
 }
-
+#[derive(Debug, Clone)]
 struct NftCreator {
-    creators: Vec<String>,
+    address: String,
+    metadata_address: String,
+    share: i32,
+    verified: bool
+}
+
+#[juniper::graphql_object(Context = AppContext)]
+impl NftCreator {
+
+    pub fn address(&self) -> String {
+        self.address.clone()
+    }
+
+    pub fn metadata_address(&self) -> String {
+        self.metadata_address.clone()
+    }
+
+    pub fn share(&self) -> i32 {
+        self.share
+    }
+
+    pub fn verified(&self) -> bool {
+        self.verified
+    }
+}
+
+impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
+    fn from(
+        models::MetadataCreator {
+            creator_address,
+            metadata_address,
+            share,
+            verified,
+        }: models::MetadataCreator,
+    ) -> Self {
+        Self {
+            address: creator_address.into_owned(),
+            metadata_address: metadata_address.into_owned(),
+            share,
+            verified
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -181,13 +223,6 @@ impl Listing {
 
     pub async fn bids(&self, ctx: &AppContext) -> Vec<Bid> {
         let fut = ctx.listing_bids_loader.load(self.address.clone());
-        let result = fut.await;
-
-        result
-    }
-
-    pub async fn creators(&self, ctx: &AppContext) -> Option<NftCreator> {
-        let fut = ctx.nft_creator_loader.load(self.address.clone());
         let result = fut.await;
 
         result
@@ -361,12 +396,38 @@ impl Wallet {
     }
 }
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 struct Nft {
     address: String,
     name: String,
     description: String,
     image: String,
+}
+
+#[juniper::graphql_object(Context = AppContext)]
+impl Nft {
+    pub fn address(&self) -> String {
+        self.address.clone()
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn description(&self) -> String {
+        self.description.clone()
+    }
+
+    pub fn image(&self) -> String {
+        self.image.clone()
+    }
+
+    pub async fn creators(&self, ctx: &AppContext) -> Vec<NftCreator> {
+        let fut = ctx.nft_creator_loader.load(self.address.clone());
+        let result = fut.await;
+    
+        result
+    }
 }
 
 impl From<models::Nft> for Nft {
@@ -455,11 +516,13 @@ impl BatchFn<String, Option<Listing>> for ListingBatcher {
     }
 }
 
+
 pub struct StorefrontBatcher {
     db_pool: Arc<Pool>,
 }
 
 #[async_trait]
+
 impl BatchFn<String, Option<Storefront>> for StorefrontBatcher {
     async fn load(&mut self, keys: &[String]) -> HashMap<String, Option<Storefront>> {
         let conn = self.db_pool.get().unwrap();
@@ -493,6 +556,37 @@ impl BatchFn<String, Option<Storefront>> for StorefrontBatcher {
         }
 
         hash_map
+
+    }
+}
+
+struct NftCreatorBatcher {
+    db_pool: Arc<Pool>,
+}
+
+#[async_trait]
+impl BatchFn<String, Vec<NftCreator>> for NftCreatorBatcher {
+    async fn load(&mut self, addresses: &[String]) -> HashMap<String, Vec<NftCreator>> {
+        let conn = self.db_pool.get().unwrap();
+        let mut hash_map = HashMap::new();
+
+        for creator in addresses {
+            hash_map.insert(creator.clone(), Vec::new());
+        }
+
+        let rows: Vec<models::MetadataCreator> = metadata_creators::table
+            .filter(metadata_creators::metadata_address.eq(any(addresses)))
+            .load(&conn)
+            .unwrap();
+
+        rows.into_iter()
+            .fold(hash_map, |mut acc, creator: models::MetadataCreator| {
+                let creator = NftCreator::from(creator);
+                acc.entry(creator.metadata_address.clone()).and_modify(|creators| {
+                    creators.push(creator);
+                });
+                acc
+            })
     }
 }
 
@@ -582,10 +676,15 @@ impl BatchFn<String, Vec<Bid>> for ListingBidsBatcher {
 #[derive(Clone)]
 pub struct AppContext {
 
+
     listing_loader: Loader<String, Option<Listing>, ListingBatcher>,
     listing_nfts_loader: Loader<String, Vec<Nft>, ListingNftsBatcher>,
     listing_bids_loader: Loader<String, Vec<Bid>, ListingBidsBatcher>,
     storefront_loader: Loader<String, Option<Storefront>, StorefrontBatcher>,
+
+    
+    nft_creator_loader: Loader<String, Vec<NftCreator>, NftCreatorBatcher>,
+
     db_pool: Arc<Pool>,
     twitter_bearer_token: Arc<String>,
 }
@@ -605,7 +704,7 @@ impl AppContext {
             storefront_loader: Loader::new(StorefrontBatcher {
                 db_pool: db_pool.clone(),
             }),
-            nft_creator_loader: Loader::new(NftDetailBatcher {
+            nft_creator_loader: Loader::new(NftCreatorBatcher {
                 db_pool: db_pool.clone(),
             }),
             db_pool,
