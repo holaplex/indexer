@@ -21,7 +21,7 @@ mod prelude {
     pub use solana_sdk::{bs58, pubkey::Pubkey};
 }
 
-mod rpc;
+pub mod rpc;
 mod rpc_models;
 
 #[derive(Parser)]
@@ -43,6 +43,7 @@ fn main() {
 
         let mut addr: SocketAddr = "0.0.0.0:3000".parse().unwrap();
         addr.set_port(port);
+        info!("Listening on {}", addr);
 
         let server = ServerBuilder::new(io)
             .start_http(&addr)

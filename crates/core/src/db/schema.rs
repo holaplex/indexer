@@ -2,6 +2,18 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    attributes (id) {
+        metadata_address -> Varchar,
+        value -> Nullable<Text>,
+        trait_type -> Nullable<Text>,
+        id -> Uuid,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     bids (listing_address, bidder_address) {
         listing_address -> Varchar,
         bidder_address -> Varchar,
@@ -20,6 +32,18 @@ table! {
         parent_address -> Varchar,
         edition -> Int8,
         metadata_address -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    files (id) {
+        metadata_address -> Varchar,
+        uri -> Text,
+        file_type -> Text,
+        id -> Uuid,
     }
 }
 
@@ -73,11 +97,40 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    metadata_collections (id) {
+        metadata_address -> Varchar,
+        name -> Nullable<Text>,
+        family -> Nullable<Text>,
+        id -> Uuid,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     metadata_creators (metadata_address, creator_address) {
         metadata_address -> Varchar,
         creator_address -> Varchar,
         share -> Int4,
         verified -> Bool,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    metadata_jsons (metadata_address) {
+        metadata_address -> Varchar,
+        fingerprint -> Bytea,
+        updated_at -> Timestamp,
+        description -> Nullable<Text>,
+        image -> Nullable<Text>,
+        animation_url -> Nullable<Text>,
+        external_url -> Nullable<Text>,
+        category -> Nullable<Text>,
+        raw_content -> Jsonb,
     }
 }
 
@@ -122,6 +175,7 @@ table! {
         logo_url -> Text,
         ts_index -> Tsvector,
         updated_at -> Nullable<Timestamp>,
+        banner_url -> Nullable<Text>,
     }
 }
 
@@ -138,22 +192,17 @@ table! {
     }
 }
 
-joinable!(bids -> listings (listing_address));
-joinable!(editions -> master_editions (parent_address));
-joinable!(editions -> metadatas (metadata_address));
-joinable!(listing_metadatas -> listings (listing_address));
-joinable!(listing_metadatas -> metadatas (metadata_address));
-joinable!(listings -> storefronts (store_owner));
-joinable!(master_editions -> metadatas (metadata_address));
-joinable!(metadata_creators -> metadatas (metadata_address));
-
 allow_tables_to_appear_in_same_query!(
+    attributes,
     bids,
     editions,
+    files,
     listing_metadatas,
     listings,
     master_editions,
+    metadata_collections,
     metadata_creators,
+    metadata_jsons,
     metadatas,
     store_denylist,
     storefronts,
