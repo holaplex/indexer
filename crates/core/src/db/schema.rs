@@ -223,16 +223,6 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
-    storefrontsv2_whitelisted_creator_pdas (store_address, creator_address) {
-        store_address -> Varchar,
-        creator_address -> Varchar,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-
     token_accounts (address) {
         address -> Varchar,
         mint_address -> Varchar,
@@ -270,7 +260,6 @@ allow_tables_to_appear_in_same_query!(
     storefronts,
     storefrontsv2,
     storefrontsv2_configs,
-    storefrontsv2_whitelisted_creator_pdas,
     token_accounts,
     whitelisted_creators,
 );
