@@ -418,10 +418,7 @@ impl Nft {
     }
 
     pub async fn creators(&self, ctx: &AppContext) -> Vec<NftCreator> {
-        let fut = ctx.nft_creator_loader.load(self.address.clone());
-        let result = fut.await;
-
-        result
+        ctx.nft_creator_loader.load(self.address.clone()).await
     }
 }
 
