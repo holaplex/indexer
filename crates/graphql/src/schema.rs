@@ -5,10 +5,15 @@ use dataloader::{non_cached::Loader, BatchFn};
 use indexer_core::{
     db::{
         models,
-        tables::{attributes::{self, metadata_address}, metadata_creators::{self, creator_address}, metadata_jsons, metadatas, storefronts},
+        tables::{
+            attributes::{self, metadata_address},
+            metadata_creators::{self, creator_address},
+            metadata_jsons, metadatas, storefronts,
+        },
         Pool,
     },
-    prelude::*, hash,
+    hash,
+    prelude::*,
 };
 use juniper::{EmptyMutation, EmptySubscription, GraphQLInputObject, GraphQLObject, RootNode};
 
@@ -100,8 +105,8 @@ struct NftDetail {
     image: String,
 }
 
-struct NftCreator { 
-    creators: Vec<String>
+struct NftCreator {
+    creators: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -145,7 +150,6 @@ impl Nft {
 
         result
     }
-
 }
 
 impl<'a> From<models::Metadata<'a>> for Nft {
@@ -266,15 +270,17 @@ impl BatchFn<String, Option<Nft>> for NftCreator {
             .load(&conn)
             .unwrap();
 
-
         for models::MetadataCreator {
             metadata_address,
-            creator_address
+            creator_address,
         } in nfts_creators
         {
-            hash_map.entry(&metadata_address).or_insert_with(Vec::new).push(creator_address);
-        }
             hash_map
+                .entry(&metadata_address)
+                .or_insert_with(Vec::new)
+                .push(creator_address);
+        }
+        hash_map
     }
 }
 
