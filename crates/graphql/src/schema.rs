@@ -8,10 +8,13 @@ use indexer_core::{
         tables::{
             attributes, bids, listing_metadatas, listings, metadata_creators, metadata_jsons,
             metadatas, storefronts,
+ 
+
         },
         Pool,
     },
-    prelude::*, hash,
+    hash,
+    prelude::*,
 };
 use juniper::{
     EmptyMutation, EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject,
@@ -137,8 +140,8 @@ struct NftDetail {
     image: String,
 }
 
-struct NftCreator { 
-    creators: Vec<String>
+struct NftCreator {
+    creators: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -189,7 +192,6 @@ impl Listing {
 
         result
     }
-
 }
 
 impl<'a> From<models::Listing<'a>> for Listing {
@@ -574,7 +576,6 @@ impl BatchFn<String, Vec<Bid>> for ListingBidsBatcher {
 
                 acc
             })
-
     }
 }
 
