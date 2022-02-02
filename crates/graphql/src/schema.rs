@@ -11,7 +11,6 @@ use indexer_core::{
         },
         Pool,
     },
-    hash,
     prelude::*,
 };
 use juniper::{
