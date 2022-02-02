@@ -11,7 +11,7 @@ use indexer_core::{
         },
         Pool,
     },
-    prelude::*,
+    prelude::*, hash,
 };
 use juniper::{
     EmptyMutation, EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject,
@@ -137,6 +137,10 @@ struct NftDetail {
     image: String,
 }
 
+struct NftCreator { 
+    creators: Vec<String>
+}
+
 #[derive(Debug, Clone)]
 struct Listing {
     address: String,
@@ -178,6 +182,14 @@ impl Listing {
 
         result
     }
+
+    pub async fn creators(&self, ctx: &AppContext) -> Option<NftCreator> {
+        let fut = ctx.nft_creator_loader.load(self.address.clone());
+        let result = fut.await;
+
+        result
+    }
+
 }
 
 impl<'a> From<models::Listing<'a>> for Listing {
@@ -562,11 +574,13 @@ impl BatchFn<String, Vec<Bid>> for ListingBidsBatcher {
 
                 acc
             })
+
     }
 }
 
 #[derive(Clone)]
 pub struct AppContext {
+
     listing_loader: Loader<String, Option<Listing>, ListingBatcher>,
     listing_nfts_loader: Loader<String, Vec<Nft>, ListingNftsBatcher>,
     listing_bids_loader: Loader<String, Vec<Bid>, ListingBidsBatcher>,
@@ -588,6 +602,9 @@ impl AppContext {
                 db_pool: db_pool.clone(),
             }),
             storefront_loader: Loader::new(StorefrontBatcher {
+                db_pool: db_pool.clone(),
+            }),
+            nft_creator_loader: Loader::new(NftDetailBatcher {
                 db_pool: db_pool.clone(),
             }),
             db_pool,
