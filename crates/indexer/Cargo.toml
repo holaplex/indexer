@@ -18,7 +18,7 @@ default = []
 accountsdb = []
 
 [[bin]]
-name = "metaplex-indexer"
+name = "metaplex-indexer-accountsdb"
 required-features = ["accountsdb"]
 
 [dependencies]
