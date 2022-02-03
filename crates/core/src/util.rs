@@ -1,8 +1,37 @@
+//! Various indexer support utilities
+
 use chrono::{Duration, NaiveDateTime};
 
 use crate::error::prelude::*;
+///
+/// Format a [`chrono::Duration`] in HH:MM:SS.FFF format
+#[must_use]
+pub fn duration_hhmmssfff(duration: chrono::Duration) -> String {
+    use std::fmt::Write;
+
+    let mut out = String::new();
+
+    let h = duration.num_hours();
+    if h > 0 {
+        write!(out, "{:02}:", h).unwrap();
+    }
+
+    write!(
+        out,
+        "{:02}:{:02}.{:03}",
+        duration.num_minutes().rem_euclid(60),
+        duration.num_seconds().rem_euclid(60),
+        duration.num_milliseconds().rem_euclid(1000)
+    )
+    .unwrap();
+
+    out
+}
 
 /// Returns a tuple of `(ends_at, ended)`
+///
+/// # Errors
+/// This function fails of the end time cannot be safely computed.
 pub fn get_end_info(
     ends_at: Option<NaiveDateTime>,
     gap_time: Option<Duration>,
