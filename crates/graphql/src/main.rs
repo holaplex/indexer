@@ -87,7 +87,9 @@ fn main() {
         addr.set_port(port);
         info!("Listening on {}", addr);
 
-        let graphiql_uri = format!("http://localhost:{}{}", port, &version_extension);
+        // Should look something like "/..."
+        let graphiql_uri = version_extension.clone();
+        assert!(graphiql_uri.starts_with('/'));
 
         let schema = Arc::new(schema::create());
 
