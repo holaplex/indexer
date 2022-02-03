@@ -1,2 +1,2 @@
 #!/bin/sh
-./bin/metaplex-indexer-graphql
+./bin/metaplex-indexer-graphql -p $PORT
