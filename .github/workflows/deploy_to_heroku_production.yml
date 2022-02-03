@@ -41,6 +41,6 @@ jobs:
           email: ${{ secrets.HEROKU_EMAIL }}
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
           heroku_app_name: indexer-graphql
-          dockerfile_name: Dockerfile.grapqhql
+          dockerfile_name: Dockerfile.graphql
 
           
