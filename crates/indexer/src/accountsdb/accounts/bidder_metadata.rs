@@ -46,7 +46,7 @@ fn get_internal(client: &Client) -> Result<HashMap<Pubkey, BidList>> {
 
     info!(
         "Bidder metadata call completed in {}",
-        util::duration_hhmmssfff(end_time - start_time)
+        indexer_core::util::duration_hhmmssfff(end_time - start_time)
     );
 
     res.context("Failed to retrieve bids for auction")?
@@ -83,12 +83,4 @@ pub async fn get(client: &Client, bid_map: &BidMap) -> Result<()> {
         .await;
 
     Ok(())
-}
-
-pub fn get_solo(client: &Client) -> Result<()> {
-    get_internal(client).map(|m| {
-        // TODO
-        // m.into_iter()
-        //     .for_each(|(a, b)| handle.push(Job::SoloBidsForAuction(a, b)));
-    })
 }

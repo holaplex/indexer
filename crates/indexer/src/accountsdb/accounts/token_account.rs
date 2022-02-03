@@ -1,19 +1,16 @@
-use chrono::offset::Local;
-use indexer_core::{
-    db::{
-        insert_into,
-        models::TokenAccount as TokenAccountModel,
-        select,
-        tables::{metadatas, token_accounts},
-    },
-    prelude::*,
-};
-use spl_token::state::Account as TokenAccount;
+// use chrono::offset::Local;
+// use indexer_core::db::{
+//     insert_into,
+//     models::TokenAccount as TokenAccountModel,
+//     select,
+//     tables::{metadatas, token_accounts},
+// };
+// use spl_token::state::Account as TokenAccount;
 
 use crate::{prelude::*, Client};
 
-pub async fn process(client: &Client, pubkey: Pubkey, token_account_data: Vec<u8>) -> Result<()> {
-    info!("token account {:?}", token_account_data);
+pub async fn process(_client: &Client, _pubkey: Pubkey, token_account_data: Vec<u8>) -> Result<()> {
+    debug!("Token account {:?}", token_account_data);
 
     // let mint = token_account.mint.to_string();
 

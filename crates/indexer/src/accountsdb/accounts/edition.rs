@@ -1,20 +1,16 @@
-use indexer_core::{
-    db::{
-        insert_into,
-        models::{Edition, MasterEdition},
-        tables::{editions, master_editions},
-    },
-    pubkeys::find_edition,
+use indexer_core::db::{
+    insert_into,
+    models::{Edition, MasterEdition},
+    tables::{editions, master_editions},
 };
 use metaplex_token_metadata::state::{
     Edition as EditionAccount, MasterEdition as MasterEditionTrait,
     MasterEditionV2 as MasterEditionV2Account,
 };
 
-use super::EditionKeys;
-use crate::{prelude::*, util, util::MasterEdition as MasterEditionAccount, Client};
+use crate::{prelude::*, Client};
 
-pub(super) async fn process_edition(
+pub(crate) async fn process(
     client: &Client,
     edition_key: Pubkey,
     edition: &EditionAccount,
@@ -43,7 +39,7 @@ pub(super) async fn process_edition(
     Ok(())
 }
 
-pub(super) async fn process_master(
+pub(crate) async fn process_master(
     client: &Client,
     master_key: Pubkey,
     master_edition: &MasterEditionV2Account,
