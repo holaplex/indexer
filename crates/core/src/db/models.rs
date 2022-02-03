@@ -232,6 +232,10 @@ pub struct ListingsTripleJoinRow {
     pub subdomain: String,
     /// Storefront title
     pub store_title: String,
+    /// Storefront logo
+    pub logo_url: String,
+    /// Storefront favicon
+    pub favicon_url: String,
 
     // Table `metadatas`
     /// Metadata address

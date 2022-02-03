@@ -44,6 +44,8 @@ pub struct Listing<L = (), I = ()> {
     pub instant_sale_price: Option<i64>,
     pub subdomain: String,
     pub store_title: String,
+    pub logo_url: String,
+    pub favicon_url: String,
     pub items: Vec<ListingItem<I>>,
     #[serde(flatten)]
     pub extra: L,
@@ -63,6 +65,8 @@ impl From<ListingsTripleJoinRow> for Listing {
             instant_sale_price,
             subdomain,
             store_title,
+            logo_url,
+            favicon_url,
             meta_address,
             name,
             uri,
@@ -81,6 +85,8 @@ impl From<ListingsTripleJoinRow> for Listing {
             instant_sale_price,
             subdomain,
             store_title,
+            logo_url,
+            favicon_url,
             items: vec![ListingItem {
                 address: meta_address,
                 name,
@@ -306,6 +312,8 @@ impl ListingDetails {
             instant_sale_price,
             subdomain,
             store_title,
+            logo_url,
+            favicon_url,
             items,
             extra: (),
         } = listing;
@@ -346,6 +354,8 @@ impl ListingDetails {
             instant_sale_price,
             subdomain,
             store_title,
+            logo_url,
+            favicon_url,
             items,
             extra: ListingExtra { bidders },
         })
