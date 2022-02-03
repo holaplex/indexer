@@ -8,21 +8,24 @@ use indexer_core::{
 };
 use metaplex::state::AuctionCache as AuctionCacheAccount;
 
-use super::AuctionCacheKeys;
-use crate::{prelude::*, util, Client};
+use crate::{prelude::*, Client};
 
-pub(super) async fn process(client: &Client, keys: AuctionCacheKeys) -> Result<()> {
-    let mut acct = client
-        .get_account(&keys.cache)
-        .context("Failed to get auction cache")?;
+pub(crate) async fn process(
+    client: &Client,
+    cache_key: Pubkey,
+    cache: AuctionCacheAccount,
+) -> Result<()> {
+    // let mut acct = client
+    //     .get_account(&keys.cache)
+    //     .context("Failed to get auction cache")?;
 
-    let cache = AuctionCacheAccount::from_account_info(&util::account_as_info(
-        &keys.cache,
-        false,
-        false,
-        &mut acct,
-    ))
-    .context("Failed to parse AuctionCache")?;
+    // let cache = AuctionCacheAccount::from_account_info(&util::account_as_info(
+    //     &keys.cache,
+    //     false,
+    //     false,
+    //     &mut acct,
+    // ))
+    // .context("Failed to parse AuctionCache")?;
 
     let AuctionCacheAccount {
         metadata,
@@ -69,7 +72,7 @@ pub(super) async fn process(client: &Client, keys: AuctionCacheKeys) -> Result<(
     // bid_dependents.lock().push(&handle, auction.get_in_edge());
 
     let (auction_ext, _bump) = find_auction_data_extended(auction);
-    let address: Cow<str> = Owned(bs58::encode(keys.cache).into_string());
+    let address: Cow<str> = Owned(bs58::encode(cache_key).into_string());
 
     let values = AuctionCache {
         address: address.clone(),

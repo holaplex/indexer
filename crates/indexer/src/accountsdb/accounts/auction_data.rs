@@ -9,12 +9,11 @@ use indexer_core::{
 };
 use metaplex_auction::processor::{
     AuctionData as AuctionDataAccount, AuctionDataExtended, BidState, PriceFloor,
-    BASE_AUCTION_DATA_SIZE,
 };
 
-use crate::{prelude::*, util, Client};
+use crate::{prelude::*, Client};
 
-async fn process_auction_data(
+pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
     auction: AuctionDataAccount,
@@ -84,7 +83,7 @@ async fn process_auction_data(
     Ok(())
 }
 
-async fn process_auction_data_extended(
+pub(crate) async fn process_extended(
     client: &Client,
     key: Pubkey,
     ext: AuctionDataExtended,
@@ -122,39 +121,6 @@ async fn process_auction_data_extended(
         .context("Failed to insert AuctionDataExtended")?;
 
     Ok(())
-}
-
-pub(super) async fn process(
-    client: &Client,
-    key: Pubkey,
-    mut data: Vec<u8>,
-    owner: Pubkey,
-) -> Result<()> {
-    info!("starting new auction processing");
-    let mut zero_lamports = 0_u64;
-
-    let account_info = util::account_data_as_info(&key, &mut data, &owner, &mut zero_lamports);
-
-    let auction = if account_info.data_len() >= BASE_AUCTION_DATA_SIZE {
-        AuctionDataAccount::from_account_info(&account_info).map_err(Into::into)
-    } else {
-        // TODO: this is a bug in the Metaplex code
-        Err(anyhow!("data length shorter than BASE_AUCTION_DATA_SIZE"))
-    };
-    let ext = AuctionDataExtended::from_account_info(&account_info);
-
-    match (auction, ext) {
-        (Ok(_), Ok(_)) => Err(anyhow!(
-            "Found ambiguous AuctionData(Extended) account at {}",
-            key
-        )),
-        (Ok(a), Err(_)) => process_auction_data(client, key, a).await,
-        (Err(_), Ok(e)) => process_auction_data_extended(client, key, e).await,
-        (Err(_), Err(_)) => {
-            debug!("Account at {} was not AuctionData(Extended)", key);
-            Ok(())
-        },
-    }
 }
 
 // TODO: handle bids
