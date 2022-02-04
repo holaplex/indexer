@@ -2711,7 +2711,7 @@ dependencies = [
 [[package]]
 name = "mpl-auction"
 version = "0.0.1"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library?branch=master#0032c9503b1350ab6c9be83f6b3e3a86deec9671"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library.git?rev=63f26d6b1c393859c1d93c18dc9379827347229b#63f26d6b1c393859c1d93c18dc9379827347229b"
 dependencies = [
  "arrayref",
  "borsh",
@@ -2725,13 +2725,13 @@ dependencies = [
 [[package]]
 name = "mpl-metaplex"
 version = "0.0.1"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library?branch=master#0032c9503b1350ab6c9be83f6b3e3a86deec9671"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library.git?rev=63f26d6b1c393859c1d93c18dc9379827347229b#63f26d6b1c393859c1d93c18dc9379827347229b"
 dependencies = [
  "arrayref",
  "borsh",
  "mpl-auction",
  "mpl-token-metadata",
- "mpl-token-vault 0.1.0 (git+https://github.com/metaplex-foundation/metaplex-program-library?branch=master)",
+ "mpl-token-vault 0.1.0 (git+https://github.com/metaplex-foundation/metaplex-program-library.git?rev=63f26d6b1c393859c1d93c18dc9379827347229b)",
  "num-derive",
  "num-traits",
  "solana-program",
@@ -2773,7 +2773,7 @@ dependencies = [
 [[package]]
 name = "mpl-token-vault"
 version = "0.1.0"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library?branch=master#0032c9503b1350ab6c9be83f6b3e3a86deec9671"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library.git?rev=63f26d6b1c393859c1d93c18dc9379827347229b#63f26d6b1c393859c1d93c18dc9379827347229b"
 dependencies = [
  "borsh",
  "num-derive",

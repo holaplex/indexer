@@ -38,13 +38,18 @@ pub struct Metadata {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct Address {
+    pub owner: String,
+    pub auction_house: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 struct SettingUri {
     meta: Metadata,
     logo_url: String,
     banner_url: String,
     subdomain: String,
-    owner_address: String,
-    auction_house_address: String,
+    address: Address,
     creators: Option<Vec<Creator>>,
     #[serde(flatten)]
     extra: HashMap<String, serde_json::Value>,
@@ -71,8 +76,8 @@ async fn process_settings_uri(client: &Client, uri: String, pda: String) -> Resu
         logo_url: Owned(json.logo_url),
         banner_url: Owned(json.banner_url),
         subdomain: Owned(json.subdomain),
-        owner_address: Owned(json.owner_address),
-        auction_house_address: Owned(json.auction_house_address),
+        owner_address: Owned(json.address.owner),
+        auction_house_address: Owned(json.address.auction_house),
     };
     // insert into the database
     client

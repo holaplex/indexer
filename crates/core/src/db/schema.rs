@@ -179,13 +179,13 @@ table! {
 
     settings_uri_jsons (store_config_pda) {
         store_config_pda -> Varchar,
-        name -> Nullable<Text>,
-        description -> Nullable<Text>,
-        logo_url -> Nullable<Text>,
-        banner_url -> Nullable<Text>,
-        subdomain -> Nullable<Text>,
-        owner_address -> Nullable<Varchar>,
-        auction_house_address -> Nullable<Varchar>,
+        name -> Text,
+        description -> Text,
+        logo_url -> Text,
+        banner_url -> Text,
+        subdomain -> Text,
+        owner_address -> Varchar,
+        auction_house_address -> Varchar,
     }
 }
 
@@ -223,12 +223,12 @@ table! {
 
     storefrontsv2 (store_address) {
         store_address -> Varchar,
-        public -> Nullable<Bool>,
-        auction_program -> Nullable<Varchar>,
-        token_vault_program -> Nullable<Varchar>,
-        token_metadata_program -> Nullable<Varchar>,
-        token_program -> Nullable<Varchar>,
-        store_config_pda -> Nullable<Varchar>,
+        public -> Bool,
+        auction_program -> Varchar,
+        token_vault_program -> Varchar,
+        token_metadata_program -> Varchar,
+        token_program -> Varchar,
+        store_config_pda -> Varchar,
     }
 }
 
@@ -238,7 +238,7 @@ table! {
 
     storefrontsv2_configs (address) {
         address -> Varchar,
-        settings_uri -> Nullable<Varchar>,
+        settings_uri -> Varchar,
     }
 }
 
