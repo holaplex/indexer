@@ -651,15 +651,6 @@ impl BatchFn<String, Vec<NftAttribute>> for NftAttributeBatcher {
         });
 
         hash_map
-        // rows.into_iter()
-        //     .fold(hash_map, |mut acc, creator: models::MetadataCreator| {
-        //         let creator = NftCreator::from(creator);
-        //         acc.entry(creator.metadata_address.clone())
-        //             .and_modify(|creators| {
-        //                 creators.push(creator);
-        //             });
-        //         acc
-        //     })
     }
 }
 
