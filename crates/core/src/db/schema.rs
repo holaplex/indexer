@@ -61,7 +61,7 @@ table! {
 
     auction_houses (address) {
         address -> Varchar,
-        treasury_mint -> Nullable<Varchar>,
+        treasury_mint -> Varchar,
         auction_house_treasury -> Varchar,
         treasury_withdrawal_destination -> Varchar,
         fee_withdrawal_destination -> Varchar,

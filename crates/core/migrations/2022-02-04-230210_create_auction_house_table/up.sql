@@ -1,6 +1,6 @@
 create table auction_houses (
   address                                 varchar(48)   PRIMARY KEY,
-  treasury_mint                           varchar(48),
+  treasury_mint                           varchar(48)   not null,
   auction_house_treasury                  varchar(48)   not null,
   treasury_withdrawal_destination         varchar(48)   not null,  
   fee_withdrawal_destination              varchar(48)   not null,
