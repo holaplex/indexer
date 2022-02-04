@@ -9,10 +9,10 @@ pub mod tables {
     //! Diesel schema DSLs
 
     pub use super::schema::{
-        attributes, auction_caches, auction_datas, auction_datas_ext, bids, editions, files,
-        listing_metadatas, master_editions, metadata_collections, metadata_creators,
-        metadata_jsons, metadatas, store_config_jsons, store_configs, store_denylist, storefronts,
-        stores, token_accounts, whitelisted_creators,
+        attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bids,
+        editions, files, listing_metadatas, master_editions, metadata_collections,
+        metadata_creators, metadata_jsons, metadatas, store_config_jsons, store_configs,
+        store_denylist, storefronts, stores, token_accounts, whitelisted_creators,
     };
 }
 

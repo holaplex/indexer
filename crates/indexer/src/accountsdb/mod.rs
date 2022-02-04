@@ -27,6 +27,9 @@ pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
         Message::AccountUpdate { owner, key, data } if owner == pubkeys::metaplex() => {
             programs::metaplex::process(client, key, data).await
         },
+        Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction_house() => {
+            programs::auction_house::process(client, key, data).await
+        },
         Message::AccountUpdate { owner, key, data } if owner == pubkeys::token() => {
             programs::token::process(client, key, data).await
         },

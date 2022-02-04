@@ -8,10 +8,10 @@ use std::borrow::Cow;
 use chrono::NaiveDateTime;
 
 use super::schema::{
-    attributes, auction_caches, auction_datas, auction_datas_ext, bids, editions, files,
-    listing_metadatas, master_editions, metadata_collections, metadata_creators, metadata_jsons,
-    metadatas, store_config_jsons, store_configs, store_denylist, storefronts, stores,
-    token_accounts, whitelisted_creators,
+    attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bids, editions,
+    files, listing_metadatas, master_editions, metadata_collections, metadata_creators,
+    metadata_jsons, metadatas, store_config_jsons, store_configs, store_denylist, storefronts,
+    stores, token_accounts, whitelisted_creators,
 };
 
 /// A row in the `bids` table
@@ -404,4 +404,42 @@ pub struct StoreConfigJson<'a> {
     pub owner_address: Cow<'a, str>,
     /// Auction house account address
     pub auction_house_address: Cow<'a, str>,
+}
+
+/// A row in the `auction_houses` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct AuctionHouse<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// Auction House treasury mint address
+    pub treasury_mint: Cow<'a, str>,
+    /// Auction House treasury address
+    pub auction_house_treasury: Cow<'a, str>,
+    /// Treasury withdrawal address
+    pub treasury_withdrawal_destination: Cow<'a, str>,
+    /// Fee withdrawl address
+    pub fee_withdrawal_destination: Cow<'a, str>,
+    /// Auction House authority address
+    pub authority: Cow<'a, str>,
+    /// Auction House creator address
+    pub creator: Cow<'a, str>,
+
+    // Bumps for PDAs
+    /// Bump value
+    pub bump: i16,
+    /// Treasury bump value
+    pub treasury_bump: i16,
+    /// Fee payer bump value
+    pub fee_payer_bump: i16,
+
+    /// The royalty percentage of the creator, in basis points (0.01%, values
+    /// range from 0-10,000)
+    pub seller_fee_basis_points: i16,
+    /// Boolean value indicating whether the auction house must sign all sales orders.
+    pub requires_sign_off: bool,
+    /// Whether the Auction House can change the sale price
+    ///
+    /// Allows the Auction house to do complicated order matching to find the best price for the seller.
+    /// Helpful if buyer lists an NFT with price of 0
+    pub can_change_sale_price: bool,
 }
