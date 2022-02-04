@@ -14,9 +14,10 @@ mod ids {
     pubkeys!(auction, "auctxRXPeJoc4817jDhf4HbjnhEcr1cCXenosMhK5R8");
     pubkeys!(metaplex, "p1exdMJcjVao65QdewkaZRUnU6VPSXhus9n2GzWfh98");
     pubkeys!(token, "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+    pubkeys!(auction_house, "hausS13jsjafwWwGqZTUQRmWyvyxn9EQpqMwV1PBBmk");
 }
 
-pub use ids::{auction, metadata, metaplex, token, vault};
+pub use ids::{auction, auction_house, metadata, metaplex, token, vault};
 
 /// Find the address of a store given its owner's address
 pub fn find_store_address(owner: impl Borrow<Pubkey>) -> (Pubkey, u8) {

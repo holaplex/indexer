@@ -1,5 +1,6 @@
 mod auction;
 mod auction_cache;
+mod auction_house;
 mod bidder_metadata;
 mod edition;
 mod get_storefronts;
@@ -18,13 +19,16 @@ use crate::{client::Client, prelude::*};
 
 pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
     match msg {
-        Message::AccountUpdate { owner, key, data } if owner == pubkeys::metadata() => {
-            metadata::process(client, key, data).await
-        },
-        Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction() => {
-            auction::process(client, key, data, owner).await
-        },
-        Message::AccountUpdate { owner, key, data } if owner == pubkeys::metaplex() => {
+        // Message::AccountUpdate { owner, key, data } if owner == pubkeys::metadata() => {
+        //     metadata::process(client, key, data).await
+        // },
+        // Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction() => {
+        //     auction::process(client, key, data, owner).await
+        // },
+        // Message::AccountUpdate { owner, key, data } if owner == pubkeys::metaplex() => {
+        //     storefronts_v2::process(client, key, data).await
+        // },
+        Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction_house() => {
             storefronts_v2::process(client, key, data).await
         },
         // Message::AccountUpdate { owner, key, data } if owner == pubkeys::token() => {
