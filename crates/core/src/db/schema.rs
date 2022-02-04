@@ -177,6 +177,22 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    settings_uri_jsons (store_config_pda) {
+        store_config_pda -> Varchar,
+        name -> Nullable<Text>,
+        description -> Nullable<Text>,
+        logo_url -> Nullable<Text>,
+        banner_url -> Nullable<Text>,
+        subdomain -> Nullable<Text>,
+        owner_address -> Nullable<Varchar>,
+        auction_house_address -> Nullable<Varchar>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     store_denylist (owner_address) {
         owner_address -> Varchar,
         hard_ban -> Bool,
@@ -205,12 +221,48 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    storefrontsv2 (store_address) {
+        store_address -> Varchar,
+        public -> Nullable<Bool>,
+        auction_program -> Nullable<Varchar>,
+        token_vault_program -> Nullable<Varchar>,
+        token_metadata_program -> Nullable<Varchar>,
+        token_program -> Nullable<Varchar>,
+        store_config_pda -> Nullable<Varchar>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    storefrontsv2_configs (address) {
+        address -> Varchar,
+        settings_uri -> Nullable<Varchar>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     token_accounts (address) {
         address -> Varchar,
         mint_address -> Varchar,
         owner_address -> Varchar,
         amount -> Nullable<Int8>,
         updated_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    whitelisted_creators (address, creator_address) {
+        address -> Varchar,
+        creator_address -> Varchar,
+        activated -> Nullable<Bool>,
     }
 }
 
@@ -228,7 +280,11 @@ allow_tables_to_appear_in_same_query!(
     metadata_creators,
     metadata_jsons,
     metadatas,
+    settings_uri_jsons,
     store_denylist,
     storefronts,
+    storefrontsv2,
+    storefrontsv2_configs,
     token_accounts,
+    whitelisted_creators,
 );
