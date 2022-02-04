@@ -42,4 +42,5 @@ create table settings_uri_jsons(
 
 create index on storefrontsv2_configs (address);
 create index on storefrontsv2 (store_address);
+create index on whitelisted_creators (address,creator_address);
 create index on whitelisted_creators (creator_address);
