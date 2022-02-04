@@ -5,7 +5,7 @@ name: Deploy to heroku.
 # Run workflow on every push to master branch.
 on:
   push:
-    branches: [dev]
+    branches: [master]
 
 # Your workflows jobs.
 jobs:
@@ -26,20 +26,21 @@ jobs:
             ${{ runner.os }}-cargo
 
 
-      - name: Deploy rpc app to heroku. # Your custom step name
+      - name: Deploy RPC app to heroku. # Your custom step name
         uses: gonuit/heroku-docker-deploy@v1.3.3 # GitHub action name (leave it as it is).
         with:
           email: ${{ secrets.HEROKU_EMAIL }}
+          
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: ${{ secrets.HEROKU_APP_NAME_STAGING }}
+          heroku_app_name: ${{ secrets.HEROKU_APP_NAME}}
           dockerfile_name: Dockerfile
-
+      
       - name: Deploy graphql app to heroku. # Your custom step name
         uses: gonuit/heroku-docker-deploy@v1.3.3 # GitHub action name (leave it as it is).
         with:
           email: ${{ secrets.HEROKU_EMAIL }}
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: indexer-graphql-staging
+          heroku_app_name: indexer-graphql
           dockerfile_name: Dockerfile.graphql
 
           
