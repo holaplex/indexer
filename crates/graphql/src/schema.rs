@@ -201,7 +201,6 @@ impl NftAttribute {
     pub fn trait_type(&self) -> String {
         self.trait_type.clone()
     }
-
 }
 
 impl<'a> From<models::MetadataAttribute<'a>> for NftAttribute {
@@ -460,11 +459,9 @@ impl Nft {
     pub async fn creators(&self, ctx: &AppContext) -> Vec<NftCreator> {
         ctx.nft_creator_loader.load(self.address.clone()).await
     }
-    
+
     pub async fn attributes(&self, ctx: &AppContext) -> Vec<NftAttribute> {
-        ctx.nft_attribute_loader
-            .load(self.address.clone())
-            .await
+        ctx.nft_attribute_loader.load(self.address.clone()).await
     }
 }
 
@@ -646,13 +643,14 @@ impl BatchFn<String, Vec<NftAttribute>> for NftAttributeBatcher {
             .unwrap();
 
         rows.into_iter()
-        .fold(hash_map, |mut acc, attribute: models::MetadataAttribute| {
-            let attribute = NftAttribute::from(attribute);
-            acc.entry(attribute.metadata_address.clone()).and_modify(|attributes|{
-                attributes.push(attribute);
-            });
-            acc
-        })
+            .fold(hash_map, |mut acc, attribute: models::MetadataAttribute| {
+                let attribute = NftAttribute::from(attribute);
+                acc.entry(attribute.metadata_address.clone())
+                    .and_modify(|attributes| {
+                        attributes.push(attribute);
+                    });
+                acc
+            })
     }
 }
 
