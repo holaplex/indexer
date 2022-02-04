@@ -11,8 +11,7 @@ pub mod tables {
     pub use super::schema::{
         attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bids,
         editions, files, listing_metadatas, master_editions, metadata_collections,
-        metadata_creators, metadata_jsons, metadatas, settings_uri_jsons, store_denylist,
-        storefronts, storefrontsv2, storefrontsv2_configs, token_accounts, whitelisted_creators,
+        metadata_creators, metadata_jsons, metadatas, store_denylist, storefronts, token_accounts,
     };
 }
 

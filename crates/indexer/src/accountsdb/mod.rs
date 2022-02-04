@@ -7,7 +7,6 @@ mod get_storefronts;
 mod metadata;
 mod metadata_uri;
 mod store_owner;
-mod storefronts_v2;
 mod token_account;
 
 use std::{path::PathBuf, str::FromStr};
@@ -24,9 +23,6 @@ pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
         },
         Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction() => {
             auction::process(client, key, data, owner).await
-        },
-        Message::AccountUpdate { owner, key, data } if owner == pubkeys::metaplex() => {
-            storefronts_v2::process(client, key, data).await
         },
         Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction_house() => {
             auction_house::process(client, key, data).await

@@ -198,22 +198,6 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
-    settings_uri_jsons (store_config_pda) {
-        store_config_pda -> Varchar,
-        name -> Text,
-        description -> Text,
-        logo_url -> Text,
-        banner_url -> Text,
-        subdomain -> Text,
-        owner_address -> Varchar,
-        auction_house_address -> Varchar,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-
     store_denylist (owner_address) {
         owner_address -> Varchar,
         hard_ban -> Bool,
@@ -242,48 +226,12 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
-    storefrontsv2 (store_address) {
-        store_address -> Varchar,
-        public -> Bool,
-        auction_program -> Varchar,
-        token_vault_program -> Varchar,
-        token_metadata_program -> Varchar,
-        token_program -> Varchar,
-        store_config_pda -> Varchar,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-
-    storefrontsv2_configs (address) {
-        address -> Varchar,
-        settings_uri -> Varchar,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-
     token_accounts (address) {
         address -> Varchar,
         mint_address -> Varchar,
         owner_address -> Varchar,
         amount -> Nullable<Int8>,
         updated_at -> Timestamp,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-
-    whitelisted_creators (address, creator_address) {
-        address -> Varchar,
-        creator_address -> Varchar,
-        activated -> Nullable<Bool>,
     }
 }
 
@@ -302,11 +250,7 @@ allow_tables_to_appear_in_same_query!(
     metadata_creators,
     metadata_jsons,
     metadatas,
-    settings_uri_jsons,
     store_denylist,
     storefronts,
-    storefrontsv2,
-    storefrontsv2_configs,
     token_accounts,
-    whitelisted_creators,
 );
