@@ -181,6 +181,53 @@ impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
     }
 }
 
+
+
+#[derive(Debug, Clone)]
+struct NftAttribute{
+    metadata_address: String,
+    value: String,
+    trait_type: String,
+}
+
+
+impl NftAttribute {
+    pub fn metadata_address(&self) -> String {
+        self.metadata_address.clone()
+    }
+
+    pub fn value(&self) -> String {
+        self.value.clone()
+    }
+
+    pub fn verified(&self) -> String {
+        self.trait_type.clone()
+    }
+
+    pub async fn attribute(&self, ctx: &AppContext) -> Vec<NftAttribute> {
+        ctx.nft_attribute_loader.load(self.metadata_address.clone()).await
+    }
+
+}
+
+
+impl<'a> From<models::MetadataAttribute<'a>> for NftAttribute {
+    fn from(
+        models::MetadataAttribute {
+            metadata_address,
+            value,
+            trait_type,
+            ..
+        }: models::MetadataAttribute,
+    ) -> Self {
+        Self {
+            metadata_address: metadata_address.into_owned(),
+            value: value.unwrap().into_owned(),
+            trait_type: trait_type.unwrap().into_owned()
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 struct Listing {
     address: String,
@@ -580,6 +627,46 @@ impl BatchFn<String, Vec<NftCreator>> for NftCreatorBatcher {
     }
 }
 
+
+struct NftAttributeBatcher { 
+    db_pool: Arc<Pool>,
+}
+
+#[async_trait]
+impl BatchFn<String, Vec<NftAttribute>> for NftAttributeBatcher {
+    async fn load(&mut self, addresses: &[String]) -> HashMap<String, Vec<NftAttribute>> {
+        let conn = self.db_pool.get().unwrap();
+        let mut hash_map = HashMap::new();
+
+        for address in addresses {
+            hash_map.insert(address.clone(), Vec::new());
+        }
+
+        let rows: Vec<models::MetadataAttribute> = attributes::table
+            .filter(attributes::metadata_address.eq(any(addresses)))
+            .load(&conn)
+            .unwrap();
+
+
+        rows.into_iter().map(Into::into).map(|attr: NftAttribute| {
+            hash_map.entry(attr.metadata_address.to_string()).or_insert_with(Vec::new).push(attr);
+        });
+
+        hash_map
+        // rows.into_iter()
+        //     .fold(hash_map, |mut acc, creator: models::MetadataCreator| {
+        //         let creator = NftCreator::from(creator);
+        //         acc.entry(creator.metadata_address.clone())
+        //             .and_modify(|creators| {
+        //                 creators.push(creator);
+        //             });
+        //         acc
+        //     })
+    }
+}
+
+
+
 pub struct ListingNftsBatcher {
     db_pool: Arc<Pool>,
 }
@@ -670,6 +757,7 @@ pub struct AppContext {
     listing_bids_loader: Loader<String, Vec<Bid>, ListingBidsBatcher>,
     storefront_loader: Loader<String, Option<Storefront>, StorefrontBatcher>,
     nft_creator_loader: Loader<String, Vec<NftCreator>, NftCreatorBatcher>,
+    nft_attribute_loader: Loader<String, Vec<NftAttribute>, NftAttributeBatcher>,
     db_pool: Arc<Pool>,
     twitter_bearer_token: Arc<String>,
 }
@@ -690,6 +778,9 @@ impl AppContext {
                 db_pool: db_pool.clone(),
             }),
             nft_creator_loader: Loader::new(NftCreatorBatcher {
+                db_pool: db_pool.clone(),
+            }),
+            nft_attribute_loader: Loader::new(NftAttributeBatcher {
                 db_pool: db_pool.clone(),
             }),
             db_pool,
