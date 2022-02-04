@@ -13,7 +13,7 @@ use crate::{prelude::*, Client};
 pub(crate) async fn process(
     client: &Client,
     edition_key: Pubkey,
-    edition: &EditionAccount,
+    edition: EditionAccount,
 ) -> Result<()> {
     let row = Edition {
         address: Owned(bs58::encode(edition_key).into_string()),
@@ -42,7 +42,7 @@ pub(crate) async fn process(
 pub(crate) async fn process_master(
     client: &Client,
     master_key: Pubkey,
-    master_edition: &MasterEditionV2Account,
+    master_edition: MasterEditionV2Account,
 ) -> Result<()> {
     let row = MasterEdition {
         address: Owned(bs58::encode(master_key).into_string()),

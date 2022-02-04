@@ -10,7 +10,7 @@ use metaplex_token_metadata::state::Metadata as MetadataAccount;
 
 use crate::{prelude::*, Client};
 
-pub(crate) async fn process(client: &Client, key: Pubkey, meta: &MetadataAccount) -> Result<()> {
+pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount) -> Result<()> {
     let addr = bs58::encode(key).into_string();
     let (edition_pda_key, _bump) = find_edition(meta.mint);
     let row = Metadata {

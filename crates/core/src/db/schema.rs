@@ -177,6 +177,32 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    store_config_jsons (config_address) {
+        config_address -> Varchar,
+        name -> Text,
+        description -> Text,
+        logo_url -> Text,
+        banner_url -> Text,
+        subdomain -> Text,
+        owner_address -> Varchar,
+        auction_house_address -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    store_configs (address) {
+        address -> Varchar,
+        settings_uri -> Text,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     store_denylist (owner_address) {
         owner_address -> Varchar,
         hard_ban -> Bool,
@@ -205,12 +231,34 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    stores (address) {
+        address -> Varchar,
+        public -> Bool,
+        config_address -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     token_accounts (address) {
         address -> Varchar,
         mint_address -> Varchar,
         owner_address -> Varchar,
         amount -> Nullable<Int8>,
         updated_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    whitelisted_creators (address) {
+        address -> Varchar,
+        creator_address -> Varchar,
+        activated -> Bool,
     }
 }
 
@@ -228,7 +276,11 @@ allow_tables_to_appear_in_same_query!(
     metadata_creators,
     metadata_jsons,
     metadatas,
+    store_config_jsons,
+    store_configs,
     store_denylist,
     storefronts,
+    stores,
     token_accounts,
+    whitelisted_creators,
 );

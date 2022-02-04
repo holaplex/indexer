@@ -10,7 +10,8 @@ use chrono::NaiveDateTime;
 use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, bids, editions, files,
     listing_metadatas, master_editions, metadata_collections, metadata_creators, metadata_jsons,
-    metadatas, storefronts, token_accounts,
+    metadatas, store_config_jsons, store_configs, store_denylist, storefronts, stores,
+    token_accounts, whitelisted_creators,
 };
 
 /// A row in the `bids` table
@@ -348,4 +349,59 @@ pub struct MetadataCollection<'a> {
     pub name: Option<Cow<'a, str>>,
     /// Collection family
     pub family: Option<Cow<'a, str>>,
+}
+
+/// A row in the `store_configs` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct StoreConfig<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// Store settings URI
+    pub settings_uri: Option<Cow<'a, str>>,
+}
+
+/// A row in the `whitelisted_creators` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct WhitelistedCreator<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// The wallet of the whitelisted creator
+    pub creator_address: Cow<'a, str>,
+    /// Whether or not the specified creator is actually whitelisted
+    pub activated: bool,
+}
+
+/// A row in the `stores` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct Store<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// Whether this is a public storefront
+    ///
+    /// When this flag is set, items with creators not in the set of active
+    /// whitelisted creators can list on this storefront.
+    pub public: bool,
+    /// The derived address of this store's StoreConfig account
+    pub config_address: Cow<'a, str>,
+}
+
+/// A row in the `settings_uri_jsons` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct StoreConfigJson<'a> {
+    /// The address of the StoreConfig account this record refers to
+    pub config_address: Cow<'a, str>,
+    /// Storefront name
+    pub name: Cow<'a, str>,
+    /// Storefront description
+    pub description: Cow<'a, str>,
+    /// Storefront logo URL
+    pub logo_url: Cow<'a, str>,
+    /// Storefront banner URL
+    pub banner_url: Cow<'a, str>,
+    /// Storefront submain
+    pub subdomain: Cow<'a, str>,
+    /// Storefront owner address
+    pub owner_address: Cow<'a, str>,
+    /// Auction house account address
+    pub auction_house_address: Cow<'a, str>,
 }

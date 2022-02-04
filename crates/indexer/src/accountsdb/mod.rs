@@ -2,8 +2,9 @@
 
 mod accounts;
 // mod get_storefronts;
-// mod metadata_uri;
+// mod metadata_json;
 mod programs;
+// mod store_config_json;
 // mod store_owner;
 
 use indexer_core::pubkeys;
@@ -22,6 +23,9 @@ pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
         },
         Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction() => {
             programs::auction::process(client, key, data).await
+        },
+        Message::AccountUpdate { owner, key, data } if owner == pubkeys::metaplex() => {
+            programs::metaplex::process(client, key, data).await
         },
         Message::AccountUpdate { owner, key, data } if owner == pubkeys::token() => {
             programs::token::process(client, key, data).await
