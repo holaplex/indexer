@@ -49,7 +49,7 @@ struct SettingUri {
     logo_url: String,
     banner_url: String,
     subdomain: String,
-    addresses: Address,
+    address: Address,
     creators: Option<Vec<Creator>>,
     #[serde(flatten)]
     extra: HashMap<String, serde_json::Value>,
@@ -76,8 +76,8 @@ async fn process_settings_uri(client: &Client, uri: String, pda: String) -> Resu
         logo_url: Owned(json.logo_url),
         banner_url: Owned(json.banner_url),
         subdomain: Owned(json.subdomain),
-        owner_address: Owned(json.addresses.owner),
-        auction_house_address: Owned(json.addresses.auction_house),
+        owner_address: Owned(json.address.owner),
+        auction_house_address: Owned(json.address.auction_house),
     };
     // insert into the database
     client
