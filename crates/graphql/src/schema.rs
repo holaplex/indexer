@@ -188,6 +188,7 @@ struct NftAttribute {
     trait_type: String,
 }
 
+#[juniper::graphql_object(Context = AppContext)]
 impl NftAttribute {
     pub fn metadata_address(&self) -> String {
         self.metadata_address.clone()
@@ -197,15 +198,10 @@ impl NftAttribute {
         self.value.clone()
     }
 
-    pub fn verified(&self) -> String {
+    pub fn trait_type(&self) -> String {
         self.trait_type.clone()
     }
 
-    pub async fn attribute(&self, ctx: &AppContext) -> Vec<NftAttribute> {
-        ctx.nft_attribute_loader
-            .load(self.metadata_address.clone())
-            .await
-    }
 }
 
 impl<'a> From<models::MetadataAttribute<'a>> for NftAttribute {
@@ -464,6 +460,12 @@ impl Nft {
     pub async fn creators(&self, ctx: &AppContext) -> Vec<NftCreator> {
         ctx.nft_creator_loader.load(self.address.clone()).await
     }
+    
+    pub async fn attributes(&self, ctx: &AppContext) -> Vec<NftAttribute> {
+        ctx.nft_attribute_loader
+            .load(self.address.clone())
+            .await
+    }
 }
 
 impl From<models::Nft> for Nft {
@@ -643,14 +645,14 @@ impl BatchFn<String, Vec<NftAttribute>> for NftAttributeBatcher {
             .load(&conn)
             .unwrap();
 
-        rows.into_iter().map(Into::into).map(|attr: NftAttribute| {
-            hash_map
-                .entry(attr.metadata_address.to_string())
-                .or_insert_with(Vec::new)
-                .push(attr);
-        });
-
-        hash_map
+        rows.into_iter()
+        .fold(hash_map, |mut acc, attribute: models::MetadataAttribute| {
+            let attribute = NftAttribute::from(attribute);
+            acc.entry(attribute.metadata_address.clone()).and_modify(|attributes|{
+                attributes.push(attribute);
+            });
+            acc
+        })
     }
 }
 
