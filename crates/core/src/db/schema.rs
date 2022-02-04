@@ -59,6 +59,27 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    auction_houses (address) {
+        address -> Varchar,
+        treasury_mint -> Varchar,
+        auction_house_treasury -> Varchar,
+        treasury_withdrawal_destination -> Varchar,
+        fee_withdrawal_destination -> Varchar,
+        authority -> Varchar,
+        creator -> Varchar,
+        bump -> Int2,
+        treasury_bump -> Int2,
+        fee_payer_bump -> Int2,
+        seller_fee_basis_points -> Int2,
+        requires_sign_off -> Bool,
+        can_change_sale_price -> Bool,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     bids (listing_address, bidder_address) {
         listing_address -> Varchar,
         bidder_address -> Varchar,
@@ -267,6 +288,7 @@ allow_tables_to_appear_in_same_query!(
     auction_caches,
     auction_datas,
     auction_datas_ext,
+    auction_houses,
     bids,
     editions,
     files,
