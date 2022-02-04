@@ -181,15 +181,12 @@ impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
     }
 }
 
-
-
 #[derive(Debug, Clone)]
-struct NftAttribute{
+struct NftAttribute {
     metadata_address: String,
     value: String,
     trait_type: String,
 }
-
 
 impl NftAttribute {
     pub fn metadata_address(&self) -> String {
@@ -205,11 +202,11 @@ impl NftAttribute {
     }
 
     pub async fn attribute(&self, ctx: &AppContext) -> Vec<NftAttribute> {
-        ctx.nft_attribute_loader.load(self.metadata_address.clone()).await
+        ctx.nft_attribute_loader
+            .load(self.metadata_address.clone())
+            .await
     }
-
 }
-
 
 impl<'a> From<models::MetadataAttribute<'a>> for NftAttribute {
     fn from(
@@ -223,7 +220,7 @@ impl<'a> From<models::MetadataAttribute<'a>> for NftAttribute {
         Self {
             metadata_address: metadata_address.into_owned(),
             value: value.unwrap().into_owned(),
-            trait_type: trait_type.unwrap().into_owned()
+            trait_type: trait_type.unwrap().into_owned(),
         }
     }
 }
@@ -627,8 +624,7 @@ impl BatchFn<String, Vec<NftCreator>> for NftCreatorBatcher {
     }
 }
 
-
-struct NftAttributeBatcher { 
+struct NftAttributeBatcher {
     db_pool: Arc<Pool>,
 }
 
@@ -647,9 +643,11 @@ impl BatchFn<String, Vec<NftAttribute>> for NftAttributeBatcher {
             .load(&conn)
             .unwrap();
 
-
         rows.into_iter().map(Into::into).map(|attr: NftAttribute| {
-            hash_map.entry(attr.metadata_address.to_string()).or_insert_with(Vec::new).push(attr);
+            hash_map
+                .entry(attr.metadata_address.to_string())
+                .or_insert_with(Vec::new)
+                .push(attr);
         });
 
         hash_map
@@ -664,8 +662,6 @@ impl BatchFn<String, Vec<NftAttribute>> for NftAttributeBatcher {
         //     })
     }
 }
-
-
 
 pub struct ListingNftsBatcher {
     db_pool: Arc<Pool>,
