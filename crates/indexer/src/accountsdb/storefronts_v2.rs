@@ -100,7 +100,7 @@ async fn process_store_config(client: &Client, key: Pubkey, data: Vec<u8>) -> Re
     dbg!("{:?}", &config.settings_uri);
     let addr = bs58::encode(key).into_string();
     if config.settings_uri.is_some() {
-        process_settings_uri(&client, config.settings_uri.clone().unwrap(), addr.clone()).await;
+        process_settings_uri(client, config.settings_uri.clone().unwrap(), addr.clone()).await;
     }
     let row: DbStoreConfig = DbStoreConfig {
         address: Owned(addr),
