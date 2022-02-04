@@ -19,9 +19,9 @@ use crate::{client::Client, prelude::*};
 
 pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
     match msg {
-        // Message::AccountUpdate { owner, key, data } if owner == pubkeys::metadata() => {
-        //     metadata::process(client, key, data).await
-        // },
+        Message::AccountUpdate { owner, key, data } if owner == pubkeys::metadata() => {
+            auction_house::process(client, key, data).await
+        },
         // Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction() => {
         //     auction::process(client, key, data, owner).await
         // },
@@ -29,7 +29,7 @@ pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
         //     storefronts_v2::process(client, key, data).await
         // },
         Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction_house() => {
-            storefronts_v2::process(client, key, data).await
+            auction_house::process(client, key, data).await
         },
         // Message::AccountUpdate { owner, key, data } if owner == pubkeys::token() => {
         //     token_account::process(client, key, data).await
