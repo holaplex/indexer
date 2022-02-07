@@ -194,12 +194,24 @@ pub struct Nft {
     // Table metadata
     /// The address of this account
     pub address: String,
+
     /// The name of this item
     pub name: String,
+
+    /// The royalty percentage of the creator, in basis points (0.01%, values
+    /// range from 0-10,000)
+    pub seller_fee_basis_points: i32,
+
+    /// The token address for this item
+    pub mint_address: String,
+
+    /// True if this item is in the secondary market.  Immutable once set.
+    pub primary_sale_happened: bool,
 
     // Table metadata_json
     /// Metadata description
     pub description: Option<String>,
+
     /// Metadata Image url
     pub image: Option<String>,
 }

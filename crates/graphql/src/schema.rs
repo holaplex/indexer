@@ -434,6 +434,9 @@ impl Wallet {
 struct Nft {
     address: String,
     name: String,
+    seller_fee_basis_points: i32,
+    mint_address: String,
+    primary_sale_happened: bool,
     description: String,
     image: String,
 }
@@ -446,6 +449,18 @@ impl Nft {
 
     pub fn name(&self) -> String {
         self.name.clone()
+    }
+
+    pub fn seller_fee_basis_points(&self) -> i32 {
+        self.seller_fee_basis_points
+    }
+
+    pub fn mint_address(&self) -> String {
+        self.mint_address.clone()
+    }
+
+    pub fn primary_sale_happened(&self) -> bool {
+        self.primary_sale_happened
     }
 
     pub fn description(&self) -> String {
@@ -470,6 +485,9 @@ impl From<models::Nft> for Nft {
         models::Nft {
             address,
             name,
+            seller_fee_basis_points,
+            mint_address,
+            primary_sale_happened,
             description,
             image,
         }: models::Nft,
@@ -477,6 +495,9 @@ impl From<models::Nft> for Nft {
         Self {
             address,
             name,
+            seller_fee_basis_points,
+            mint_address,
+            primary_sale_happened,
             description: description.unwrap_or_else(String::new),
             image: image.unwrap_or_else(String::new),
         }
@@ -682,6 +703,9 @@ impl BatchFn<String, Vec<Nft>> for ListingNftsBatcher {
                 (
                     metadatas::address,
                     metadatas::name,
+                    metadatas::seller_fee_basis_points,
+                    metadatas::mint_address,
+                    metadatas::primary_sale_happened,
                     metadata_jsons::description,
                     metadata_jsons::image,
                 ),
@@ -866,6 +890,9 @@ impl QueryRoot {
             .select((
                 metadatas::address,
                 metadatas::name,
+                metadatas::seller_fee_basis_points,
+                metadatas::mint_address,
+                metadatas::primary_sale_happened,
                 metadata_jsons::description,
                 metadata_jsons::image,
             ))
@@ -898,6 +925,9 @@ impl QueryRoot {
             .select((
                 metadatas::address,
                 metadatas::name,
+                metadatas::seller_fee_basis_points,
+                metadatas::mint_address,
+                metadatas::primary_sale_happened,
                 metadata_jsons::description,
                 metadata_jsons::image,
             ))
