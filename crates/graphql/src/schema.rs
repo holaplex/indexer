@@ -136,6 +136,89 @@ struct NftDetail {
     description: String,
     image: String,
 }
+#[derive(Debug, Clone)]
+struct NftCreator {
+    address: String,
+    metadata_address: String,
+    share: i32,
+    verified: bool,
+}
+
+#[juniper::graphql_object(Context = AppContext)]
+impl NftCreator {
+    pub fn address(&self) -> String {
+        self.address.clone()
+    }
+
+    pub fn metadata_address(&self) -> String {
+        self.metadata_address.clone()
+    }
+
+    pub fn share(&self) -> i32 {
+        self.share
+    }
+
+    pub fn verified(&self) -> bool {
+        self.verified
+    }
+}
+
+impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
+    fn from(
+        models::MetadataCreator {
+            creator_address,
+            metadata_address,
+            share,
+            verified,
+        }: models::MetadataCreator,
+    ) -> Self {
+        Self {
+            address: creator_address.into_owned(),
+            metadata_address: metadata_address.into_owned(),
+            share,
+            verified,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct NftAttribute {
+    metadata_address: String,
+    value: String,
+    trait_type: String,
+}
+
+#[juniper::graphql_object(Context = AppContext)]
+impl NftAttribute {
+    pub fn metadata_address(&self) -> String {
+        self.metadata_address.clone()
+    }
+
+    pub fn value(&self) -> String {
+        self.value.clone()
+    }
+
+    pub fn trait_type(&self) -> String {
+        self.trait_type.clone()
+    }
+}
+
+impl<'a> From<models::MetadataAttribute<'a>> for NftAttribute {
+    fn from(
+        models::MetadataAttribute {
+            metadata_address,
+            value,
+            trait_type,
+            ..
+        }: models::MetadataAttribute,
+    ) -> Self {
+        Self {
+            metadata_address: metadata_address.into_owned(),
+            value: value.unwrap().into_owned(),
+            trait_type: trait_type.unwrap().into_owned(),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 struct Listing {
@@ -347,12 +430,54 @@ impl Wallet {
     }
 }
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 struct Nft {
     address: String,
     name: String,
+    seller_fee_basis_points: i32,
+    mint_address: String,
+    primary_sale_happened: bool,
     description: String,
     image: String,
+}
+
+#[juniper::graphql_object(Context = AppContext)]
+impl Nft {
+    pub fn address(&self) -> String {
+        self.address.clone()
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn seller_fee_basis_points(&self) -> i32 {
+        self.seller_fee_basis_points
+    }
+
+    pub fn mint_address(&self) -> String {
+        self.mint_address.clone()
+    }
+
+    pub fn primary_sale_happened(&self) -> bool {
+        self.primary_sale_happened
+    }
+
+    pub fn description(&self) -> String {
+        self.description.clone()
+    }
+
+    pub fn image(&self) -> String {
+        self.image.clone()
+    }
+
+    pub async fn creators(&self, ctx: &AppContext) -> Vec<NftCreator> {
+        ctx.nft_creator_loader.load(self.address.clone()).await
+    }
+
+    pub async fn attributes(&self, ctx: &AppContext) -> Vec<NftAttribute> {
+        ctx.nft_attribute_loader.load(self.address.clone()).await
+    }
 }
 
 impl From<models::Nft> for Nft {
@@ -360,6 +485,9 @@ impl From<models::Nft> for Nft {
         models::Nft {
             address,
             name,
+            seller_fee_basis_points,
+            mint_address,
+            primary_sale_happened,
             description,
             image,
         }: models::Nft,
@@ -367,6 +495,9 @@ impl From<models::Nft> for Nft {
         Self {
             address,
             name,
+            seller_fee_basis_points,
+            mint_address,
+            primary_sale_happened,
             description: description.unwrap_or_else(String::new),
             image: image.unwrap_or_else(String::new),
         }
@@ -482,6 +613,68 @@ impl BatchFn<String, Option<Storefront>> for StorefrontBatcher {
     }
 }
 
+struct NftCreatorBatcher {
+    db_pool: Arc<Pool>,
+}
+
+#[async_trait]
+impl BatchFn<String, Vec<NftCreator>> for NftCreatorBatcher {
+    async fn load(&mut self, addresses: &[String]) -> HashMap<String, Vec<NftCreator>> {
+        let conn = self.db_pool.get().unwrap();
+        let mut hash_map = HashMap::new();
+
+        for creator in addresses {
+            hash_map.insert(creator.clone(), Vec::new());
+        }
+
+        let rows: Vec<models::MetadataCreator> = metadata_creators::table
+            .filter(metadata_creators::metadata_address.eq(any(addresses)))
+            .load(&conn)
+            .unwrap();
+
+        rows.into_iter()
+            .fold(hash_map, |mut acc, creator: models::MetadataCreator| {
+                let creator = NftCreator::from(creator);
+                acc.entry(creator.metadata_address.clone())
+                    .and_modify(|creators| {
+                        creators.push(creator);
+                    });
+                acc
+            })
+    }
+}
+
+struct NftAttributeBatcher {
+    db_pool: Arc<Pool>,
+}
+
+#[async_trait]
+impl BatchFn<String, Vec<NftAttribute>> for NftAttributeBatcher {
+    async fn load(&mut self, addresses: &[String]) -> HashMap<String, Vec<NftAttribute>> {
+        let conn = self.db_pool.get().unwrap();
+        let mut hash_map = HashMap::new();
+
+        for address in addresses {
+            hash_map.insert(address.clone(), Vec::new());
+        }
+
+        let rows: Vec<models::MetadataAttribute> = attributes::table
+            .filter(attributes::metadata_address.eq(any(addresses)))
+            .load(&conn)
+            .unwrap();
+
+        rows.into_iter()
+            .fold(hash_map, |mut acc, attribute: models::MetadataAttribute| {
+                let attribute = NftAttribute::from(attribute);
+                acc.entry(attribute.metadata_address.clone())
+                    .and_modify(|attributes| {
+                        attributes.push(attribute);
+                    });
+                acc
+            })
+    }
+}
+
 pub struct ListingNftsBatcher {
     db_pool: Arc<Pool>,
 }
@@ -510,6 +703,9 @@ impl BatchFn<String, Vec<Nft>> for ListingNftsBatcher {
                 (
                     metadatas::address,
                     metadatas::name,
+                    metadatas::seller_fee_basis_points,
+                    metadatas::mint_address,
+                    metadatas::primary_sale_happened,
                     metadata_jsons::description,
                     metadata_jsons::image,
                 ),
@@ -571,6 +767,8 @@ pub struct AppContext {
     listing_nfts_loader: Loader<String, Vec<Nft>, ListingNftsBatcher>,
     listing_bids_loader: Loader<String, Vec<Bid>, ListingBidsBatcher>,
     storefront_loader: Loader<String, Option<Storefront>, StorefrontBatcher>,
+    nft_creator_loader: Loader<String, Vec<NftCreator>, NftCreatorBatcher>,
+    nft_attribute_loader: Loader<String, Vec<NftAttribute>, NftAttributeBatcher>,
     db_pool: Arc<Pool>,
     twitter_bearer_token: Arc<String>,
 }
@@ -588,6 +786,12 @@ impl AppContext {
                 db_pool: db_pool.clone(),
             }),
             storefront_loader: Loader::new(StorefrontBatcher {
+                db_pool: db_pool.clone(),
+            }),
+            nft_creator_loader: Loader::new(NftCreatorBatcher {
+                db_pool: db_pool.clone(),
+            }),
+            nft_attribute_loader: Loader::new(NftAttributeBatcher {
                 db_pool: db_pool.clone(),
             }),
             db_pool,
@@ -686,6 +890,9 @@ impl QueryRoot {
             .select((
                 metadatas::address,
                 metadatas::name,
+                metadatas::seller_fee_basis_points,
+                metadatas::mint_address,
+                metadatas::primary_sale_happened,
                 metadata_jsons::description,
                 metadata_jsons::image,
             ))
@@ -718,6 +925,9 @@ impl QueryRoot {
             .select((
                 metadatas::address,
                 metadatas::name,
+                metadatas::seller_fee_basis_points,
+                metadatas::mint_address,
+                metadatas::primary_sale_happened,
                 metadata_jsons::description,
                 metadata_jsons::image,
             ))
