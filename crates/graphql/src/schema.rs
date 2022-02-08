@@ -220,6 +220,69 @@ impl<'a> From<models::MetadataAttribute<'a>> for NftAttribute {
     }
 }
 
+
+
+#[derive(Debug, Clone)]
+struct Auction {
+    address: String,
+    store_owner: String,
+    ended: bool,
+}
+
+
+#[juniper::graphql_object(Context = AppContext)]
+impl Auction {
+    pub fn address(&self) -> String {
+        self.address.clone()
+    }
+
+    pub fn store_owner(&self) -> String {
+        self.store_owner.clone()
+    }
+
+    pub fn ended(&self) -> bool {
+        self.ended
+    }
+
+    pub async fn storefront(&self, ctx: &AppContext) -> Option<Storefront> {
+        let fut = ctx.storefront_loader.load(self.store_owner.clone());
+        let result = fut.await;
+
+        result
+    }
+
+    pub async fn nfts(&self, ctx: &AppContext) -> Vec<Nft> {
+        let fut = ctx.listing_nfts_loader.load(self.address.clone());
+        let result = fut.await;
+
+        result
+    }
+
+    pub async fn bids(&self, ctx: &AppContext) -> Vec<Bid> {
+        let fut = ctx.listing_bids_loader.load(self.address.clone());
+        let result = fut.await;
+
+        result
+    }
+}
+
+impl<'a> From<models::Listing<'a>> for Auction {
+    fn from(
+        models::Auction {
+            address,
+            store_owner,
+            ended,
+            ..
+        }: models::Auction,
+    ) -> Self {
+        Self {
+            address: address.into_owned(),
+            store_owner: store_owner.into_owned(),
+            ended,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 struct Listing {
     address: String,
@@ -522,6 +585,20 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
 
 pub struct QueryRoot {}
 
+pub struct AuctionBatcher { 
+    db_pool: Arc<Pool>,
+}
+
+#[async_trait]
+impl BatchFn<String, Option<Auction>> for AuctionBatcher {
+    async fn load(&mut self, keys: &[String]) -> HashMap<String, Option<Auction>> {
+        let conn = self.db_pool.get().unwrap();
+        let mut hash_map = HashMap::new();
+
+        hash_map
+    }
+}
+
 pub struct ListingBatcher {
     db_pool: Arc<Pool>,
 }
@@ -739,6 +816,7 @@ impl BatchFn<String, Vec<Bid>> for ListingBidsBatcher {
 
 #[derive(Clone)]
 pub struct AppContext {
+    auction_loader: Loader<String, Option<Auction>, AuctionBatcher>,
     listing_loader: Loader<String, Option<Listing>, ListingBatcher>,
     listing_nfts_loader: Loader<String, Vec<Nft>, ListingNftsBatcher>,
     listing_bids_loader: Loader<String, Vec<Bid>, ListingBidsBatcher>,
@@ -752,6 +830,9 @@ pub struct AppContext {
 impl AppContext {
     pub fn new(db_pool: Arc<Pool>, twitter_bearer_token: Arc<String>) -> AppContext {
         Self {
+            auction_loader: Loader::new(AuctionBatcher {
+                db_pool: db_pool.clone(),
+            }),
             listing_loader: Loader::new(ListingBatcher {
                 db_pool: db_pool.clone(),
             }),
