@@ -95,7 +95,6 @@ pub struct Listing<'a> {
     pub last_bid_time: Option<NaiveDateTime>,
 }
 
-
 /// A row in the `Auctions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[belongs_to(parent = "Storefront<'_>", foreign_key = "store_owner")]
