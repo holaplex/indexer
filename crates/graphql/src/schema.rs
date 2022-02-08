@@ -592,6 +592,20 @@ impl BatchFn<String, Option<Auction>> for AuctionBatcher {
         let conn = self.db_pool.get().unwrap();
         let mut hash_map = HashMap::new();
 
+        for key in keys {
+            hash_map.insert(key.clone(), None);
+        }
+
+        let rows: Vec<models::Auction> = auctions::table
+            .filter(auctions::address.eq(any(keys)))
+            .load(&conn)
+            .unwrap();
+
+        for auction in rows {
+            let auction = Auction::from(auction);
+            hash_map.insert(auction.address.clone(), Some(auction));
+        }
+
         hash_map
     }
 }
