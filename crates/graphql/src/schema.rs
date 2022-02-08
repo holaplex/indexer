@@ -220,15 +220,12 @@ impl<'a> From<models::MetadataAttribute<'a>> for NftAttribute {
     }
 }
 
-
-
 #[derive(Debug, Clone)]
 struct Auction {
     address: String,
     store_owner: String,
     ended: bool,
 }
-
 
 #[juniper::graphql_object(Context = AppContext)]
 impl Auction {
@@ -585,7 +582,7 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
 
 pub struct QueryRoot {}
 
-pub struct AuctionBatcher { 
+pub struct AuctionBatcher {
     db_pool: Arc<Pool>,
 }
 
