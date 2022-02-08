@@ -263,7 +263,7 @@ impl Auction {
     }
 }
 
-impl<'a> From<models::Listing<'a>> for Auction {
+impl<'a> From<models::Auction<'a>> for Auction {
     fn from(
         models::Auction {
             address,
