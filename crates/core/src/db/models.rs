@@ -95,6 +95,44 @@ pub struct Listing<'a> {
     pub last_bid_time: Option<NaiveDateTime>,
 }
 
+
+/// A row in the `Auctions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[belongs_to(parent = "Storefront<'_>", foreign_key = "store_owner")]
+pub struct Auction<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// The timestamp this auction ends at, if applicable
+    pub ends_at: Option<NaiveDateTime>,
+    /// The timestamp this auction was created at
+    pub created_at: NaiveDateTime,
+    /// Whether this auction has ended
+    pub ended: bool,
+    /// The authority of this auction
+    pub authority: Cow<'a, str>,
+    /// The item being auctioned
+    pub token_mint: Cow<'a, str>,
+    /// The owner of the store this auction was found from
+    pub store_owner: Cow<'a, str>,
+    /// The amount of the highest bid, if applicable
+    pub highest_bid: Option<i64>,
+    /// The gap time of the auction, if applicable
+    pub end_auction_gap: Option<NaiveDateTime>,
+    /// The starting bid of the auction, if applicable
+    pub price_floor: Option<i64>,
+    /// The total number of live bids on this auction, if applicable
+    pub total_uncancelled_bids: Option<i32>,
+    /// The minimum bid increase in percentage points during the ending gap of
+    /// the auction, if applicable
+    pub gap_tick_size: Option<i32>,
+    /// The price of the listing, if an instant sale
+    // pub instant_sale_price: Option<i64>,
+    /// The name of the listing
+    pub name: Cow<'a, str>,
+    /// The timestamp of the last bid, if applicable and the auction has bids
+    pub last_bid_time: Option<NaiveDateTime>,
+}
+
 /// A row in the `master_editions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
