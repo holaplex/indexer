@@ -84,7 +84,7 @@ impl Creator {
                      trait_type, value, ..
                  }| {
                     *groups
-                        .entry(trait_type)
+                        .entry(trait_type.unwrap().to_lowercase().clone())
                         .or_insert_with(HashMap::new)
                         .entry(value)
                         .or_insert(0) += 1;
@@ -93,20 +93,16 @@ impl Creator {
                 },
             )
             .into_iter()
-            .map(|(name, vars)| {
-                let name = name.map_or_else(String::new, Cow::into_owned);
+            .map(|(name, vars)| AttributeGroup {
+                name,
+                variants: vars
+                    .into_iter()
+                    .map(|(name, count)| {
+                        let name = name.map_or_else(String::new, Cow::into_owned);
 
-                AttributeGroup {
-                    name,
-                    variants: vars
-                        .into_iter()
-                        .map(|(name, count)| {
-                            let name = name.map_or_else(String::new, Cow::into_owned);
-
-                            AttributeVariant { name, count }
-                        })
-                        .collect(),
-                }
+                        AttributeVariant { name, count }
+                    })
+                    .collect(),
             })
             .collect::<Vec<_>>()
     }
