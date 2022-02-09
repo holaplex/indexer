@@ -17,8 +17,6 @@ COPY rust-toolchain.toml ./
 # Force rustup to install toolchain
 RUN rustc --version
 
-ARG PORT
-ENV PORT=$PORT
 
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
@@ -29,12 +27,26 @@ ENV SOLANA_ENDPOINT=$SOLANA_ENDPOINT
 ARG ARWEAVE_URL
 ENV ARWEAVE_URL=$ARWEAVE_URL
 
+ARG NETWORK
+ENV NETWORK=$NETWORK
+
+ARG AMQP_URL
+ENV AMQP_URL=$AMQP_URL
+
+ARG SUFFIX
+ENV SUFFIX=$SUFFIX
+
+
+
 COPY crates crates
 COPY Cargo.toml Cargo.lock ./
 
-RUN cargo build --profile heroku \
-  -pmetaplex-indexer \
-  -pmetaplex-indexer-graphql
+RUN cargo build --profile heroku  --features=accountsdb --bin metaplex-indexer-accountsdb
+
+RUN strip target/heroku/metaplex-indexer-accountsdb && \
+  mkdir bin && \
+  mv target/heroku/metaplex-indexer-accountsdb \
+    bin
 
 RUN rm -rf target /usr/local/cargo/registry && \
   rustup toolchain uninstall \
@@ -51,6 +63,6 @@ RUN apt-get install -y libpq5 && \
   && \
   rm -rf /var/lib/apt/lists/*
 
-ADD heroku_graphql_startup.sh /metaplex-indexer/heroku_graphql_startup.sh
+ADD heroku_accountsdb_consumer_startup.sh /metaplex-indexer/heroku_accountsdb_consumer_startup.sh
 
-CMD ["./heroku_startup.sh"]
+CMD ["./heroku_accountsdb_consumer_startup.sh"]
