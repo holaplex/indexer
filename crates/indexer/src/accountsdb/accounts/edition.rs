@@ -8,7 +8,8 @@ use metaplex_token_metadata::state::{
     MasterEditionV2 as MasterEditionV2Account,
 };
 
-use crate::{prelude::*, Client};
+use super::Client;
+use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

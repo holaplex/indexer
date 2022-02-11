@@ -13,7 +13,8 @@ use indexer_core::{
 use metaplex::state::{Store, WhitelistedCreator};
 use mpl_metaplex::state::StoreConfig;
 
-use crate::{prelude::*, Client};
+use super::Client;
+use crate::prelude::*;
 
 pub(crate) async fn process_config(
     client: &Client,

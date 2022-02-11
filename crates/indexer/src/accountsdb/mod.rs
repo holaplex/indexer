@@ -1,16 +1,16 @@
-//! Support features for the accountsdb indexer
+//! Support features for the `accountsdb` indexer
 
 mod accounts;
+mod client;
 // mod get_storefronts;
-// mod metadata_json;
 mod programs;
-// mod store_config_json;
 // mod store_owner;
 
+pub use client::Client;
 use indexer_core::pubkeys;
 use indexer_rabbitmq::accountsdb::Message;
 
-use crate::{client::Client, prelude::*};
+use crate::prelude::*;
 
 /// Process a message from an accountsdb RabbitMQ queue
 ///

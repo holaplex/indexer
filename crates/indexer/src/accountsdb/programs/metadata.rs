@@ -6,8 +6,11 @@ use metaplex_token_metadata::{
     utils::try_from_slice_checked,
 };
 
-use super::accounts::{edition, metadata};
-use crate::{prelude::*, Client};
+use super::{
+    accounts::{edition, metadata},
+    Client,
+};
+use crate::prelude::*;
 
 const METADATA: u8 = Key::MetadataV1 as u8;
 const EDITION_V1: u8 = Key::EditionV1 as u8;

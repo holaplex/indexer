@@ -1,8 +1,8 @@
 use anchor_lang::AccountDeserialize;
 use mpl_auction_house::AuctionHouse;
 
-use super::accounts::auction_house;
-use crate::{prelude::*, Client};
+use super::{accounts::auction_house, Client};
+use crate::prelude::*;
 
 async fn process_auction_house(client: &Client, key: Pubkey, data: Vec<u8>) -> Result<()> {
     if data.len() == 1 {

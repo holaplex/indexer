@@ -1,6 +1,5 @@
 use indexer_core::{clap, prelude::*};
-use indexer_rabbitmq::accountsdb;
-use metaplex_indexer::accountsdb::Client;
+use indexer_rabbitmq::http_indexer;
 
 #[derive(Debug, clap::Parser)]
 struct Args {
@@ -8,34 +7,33 @@ struct Args {
     #[clap(long, env)]
     amqp_url: String,
 
-    /// The network to listen to events for
-    #[clap(long, env)]
-    network: accountsdb::Network,
-
     /// An optional suffix for the AMQP queue ID
     ///
     /// For debug builds a value must be provided here to avoid interfering with
     /// the indexer.
     queue_suffix: Option<String>,
+
+    /// A valid base URL to use when fetching IPFS links
+    #[clap(long, env)]
+    ipfs_cdn: Option<String>,
+
+    /// A valid base URL to use when fetching Arweave links
+    #[clap(long, env)]
+    arweave_cdn: Option<String>,
 }
 
 fn main() {
     metaplex_indexer::run(
         |Args {
              amqp_url,
-             network,
              queue_suffix,
+             ipfs_cdn,
+             arweave_cdn,
          },
          db| async move {
-            if cfg!(debug_assertions) && queue_suffix.is_none() {
-                bail!("Debug builds must specify a RabbitMQ queue suffix!");
-            }
-
-            let client = Client::new_rc(db).context("Failed to construct Client")?;
-
             let mut consumer = metaplex_indexer::create_consumer(
                 amqp_url,
-                accountsdb::QueueType::new(network, queue_suffix.as_deref()),
+                http_indexer::QueueType::new(queue_suffix.as_deref()),
             )
             .await?;
 
@@ -46,7 +44,7 @@ fn main() {
             {
                 trace!("{:?}", msg);
 
-                match metaplex_indexer::accountsdb::process_message(msg, &*client).await {
+                match metaplex_indexer::http::process_message(msg).await {
                     Ok(()) => (),
                     Err(e) => error!("Failed to process message: {:?}", e),
                 }

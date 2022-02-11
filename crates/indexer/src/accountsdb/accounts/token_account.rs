@@ -7,7 +7,8 @@
 // };
 // use spl_token::state::Account as TokenAccount;
 
-use crate::{prelude::*, Client};
+use super::Client;
+use crate::prelude::*;
 
 pub async fn process(_client: &Client, _pubkey: Pubkey, token_account_data: Vec<u8>) -> Result<()> {
     debug!("Token account {:?}", token_account_data);

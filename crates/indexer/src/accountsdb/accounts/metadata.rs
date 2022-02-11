@@ -8,7 +8,8 @@ use indexer_core::{
 };
 use metaplex_token_metadata::state::Metadata as MetadataAccount;
 
-use crate::{prelude::*, Client};
+use super::Client;
+use crate::prelude::*;
 
 pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount) -> Result<()> {
     let addr = bs58::encode(key).into_string();

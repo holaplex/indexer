@@ -8,7 +8,8 @@ use indexer_core::{
 };
 use metaplex::state::AuctionCache as AuctionCacheAccount;
 
-use crate::{prelude::*, Client};
+use super::Client;
+use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

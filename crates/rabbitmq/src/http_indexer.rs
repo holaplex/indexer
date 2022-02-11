@@ -1,5 +1,5 @@
-//! Queue configuration for Solana `accountsdb` plugins intended to communicate
-//! with `metaplex-indexer`.
+//! Queue configuration for the HTTP-driven indexer to receive requests from
+//! the `accountsdb` consumer.
 
 use std::borrow::Cow;
 
@@ -8,63 +8,47 @@ use lapin::{
         BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions, QueueBindOptions,
         QueueDeclareOptions,
     },
-    types::{AMQPValue, FieldTable},
+    types::FieldTable,
     BasicProperties, Channel, ExchangeKind,
 };
 use serde::{Deserialize, Serialize};
-pub use solana_sdk::pubkey::Pubkey;
+use solana_sdk::pubkey::Pubkey;
 
 use crate::Result;
 
-/// A message transmitted by an `accountsdb` plugin
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// A message sent from an `accountsdb` indexer to an HTTP indexer
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Message {
-    /// Indicates an account should be updated
-    AccountUpdate {
-        /// The account's public key
-        key: Pubkey,
-        /// The Solana program controlling this account
-        owner: Pubkey,
-        /// The binary data stored on this account
-        data: Vec<u8>,
+    /// Fetch the off-chain JSON for a metadata account
+    MetadataJson {
+        /// The address of the associated account
+        meta_address: Pubkey,
+        /// The URI to retrieve the file from
+        uri: String,
     },
-    /// Indicates an instruction was included in a **successful** transaction
-    InstructionNotify {
-        /// The program this instruction was executed with
-        program: Pubkey,
-        /// The binary instruction opcode
-        data: Vec<u8>,
-        /// The account inputs to this instruction
-        accounts: Vec<Pubkey>,
+    /// Fetch the off-chain JSON config for a storefront
+    StoreConfig {
+        /// The address of the associated store
+        store_address: Pubkey,
+        /// The URI to retrieve the file from
+        uri: String,
     },
 }
 
-/// AMQP configuration for `accountsdb` plugins
+/// AMQP configuration for HTTP indexers
 #[derive(Debug, Clone)]
 pub struct QueueType {
     exchange: String,
     queue: String,
 }
 
-/// Network hint for declaring exchange and queue names
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, strum::EnumString, strum::Display)]
-#[strum(serialize_all = "camelCase")]
-pub enum Network {
-    /// Use the network ID `"mainnet"`
-    Mainnet,
-    /// Use the network ID `"devnet"`
-    Devnet,
-    /// Use the network ID `"testnet"`
-    Testnet,
-}
-
 impl QueueType {
-    /// Construct a new queue configuration given the network this validator is
-    /// connected to and an optional queue suffix
+    /// Construct a new queue configuration given an optional queue suffix
     #[must_use]
-    pub fn new(network: Network, id: Option<&str>) -> Self {
-        let exchange = format!("{}.accounts", network);
-        let mut queue = format!("{}.accounts.indexer", network);
+    pub fn new(id: Option<&str>) -> Self {
+        // TODO
+        let exchange = format!("indexer.http");
+        let mut queue = format!("indexer.http");
 
         if let Some(id) = id {
             queue = format!("{}.{}", queue, id);
@@ -105,8 +89,9 @@ impl crate::QueueType<Message> for QueueType {
         )
         .await?;
 
-        let mut queue_options = FieldTable::default();
-        queue_options.insert("x-message-ttl".into(), AMQPValue::LongUInt(60000)); // ten minutes
+        let queue_options = FieldTable::default();
+        // TODO: work out a reasonable TTL
+        // queue_options.insert("x-message-ttl".into(), AMQPValue::LongUInt(60000)); // ten minutes
 
         chan.queue_declare(
             self.queue().as_ref(),
@@ -143,9 +128,9 @@ impl crate::QueueType<Message> for QueueType {
     }
 }
 
-/// The type of an `accountsdb` producer
+/// The type of an HTTP indexer producer
 #[cfg(feature = "producer")]
 pub type Producer = crate::producer::Producer<Message, QueueType>;
-/// The type of an `accountsdb` consumer
+/// The type of an HTTP indexer consumer
 #[cfg(feature = "consumer")]
 pub type Consumer = crate::consumer::Consumer<Message, QueueType>;

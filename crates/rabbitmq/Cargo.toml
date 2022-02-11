@@ -18,6 +18,7 @@ default = ["consumer"]
 producer = []
 consumer = []
 accountsdb = ["solana-sdk", "strum"]
+http-indexer = []
 
 [dependencies]
 async-trait = "0.1.52"

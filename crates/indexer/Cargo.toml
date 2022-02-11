@@ -16,10 +16,15 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 [features]
 default = []
 accountsdb = []
+http = []
 
 [[bin]]
 name = "metaplex-indexer-accountsdb"
 required-features = ["accountsdb"]
+
+[[bin]]
+name = "metaplex-indexer-http"
+required-features = ["http"]
 
 [dependencies]
 base64 = "0.13.0"
@@ -47,7 +52,7 @@ rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
 
 [dependencies.mpl-metaplex]
 git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
-rev = "63f26d6b1c393859c1d93c18dc9379827347229b" 
+rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
 
 [dependencies.indexer-core]
 package = "metaplex-indexer-core"
@@ -59,8 +64,14 @@ package = "metaplex-indexer-rabbitmq"
 version = "=0.1.0"
 path = "../rabbitmq"
 
-[target.metaplex-indexer.dependencies.indexer-rabbitmq]
+[target.metaplex-indexer-accountsdb.dependencies.indexer-rabbitmq]
 package = "metaplex-indexer-rabbitmq"
 version = "=0.1.0"
 path = "../rabbitmq"
 features = ["accountsdb"]
+
+[target.metaplex-indexer-http.dependencies.indexer-rabbitmq]
+package = "metaplex-indexer-rabbitmq"
+version = "=0.1.0"
+path = "../rabbitmq"
+features = ["http-indexer"]

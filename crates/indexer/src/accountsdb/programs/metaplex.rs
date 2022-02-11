@@ -12,8 +12,8 @@ use mpl_metaplex::{
     utils::try_from_slice_checked as mpl_try_from_slice_checked,
 };
 
-use super::accounts::mpl_store;
-use crate::{prelude::*, Client};
+use super::{accounts::mpl_store, Client};
+use crate::prelude::*;
 
 // TODO: once we switch to mpl_metaplex, remove all the MPL_ prefixes and
 //       cross-package assertions

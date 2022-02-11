@@ -3,8 +3,8 @@ use metaplex_auction::processor::{
     AuctionData as AuctionDataAccount, AuctionDataExtended, BASE_AUCTION_DATA_SIZE,
 };
 
-use super::accounts::auction_data;
-use crate::{prelude::*, util, Client};
+use super::{accounts::auction_data, Client};
+use crate::{prelude::*, util};
 
 pub(crate) async fn process(client: &Client, key: Pubkey, mut data: Vec<u8>) -> Result<()> {
     let mut zero_lamports = 0_u64;
