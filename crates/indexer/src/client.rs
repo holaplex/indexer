@@ -53,15 +53,24 @@ impl Client {
         }))
     }
 
-    /// Acquire a connection to the database
+    /// Spawn a blocking thread to perform operations on the database.
     ///
     /// # Errors
-    /// This function fails if `r2d2` cannot acquire a database connection.
-    pub fn db(&self) -> Result<PooledConnection> {
-        self.db
+    /// This function fails if `r2d2` cannot acquire a database connection or
+    /// the provided callback returns an error.
+    pub async fn db<T: 'static + Send, E: 'static + Into<indexer_core::error::Error>>(
+        &self,
+        f: impl FnOnce(&PooledConnection) -> Result<T, E> + Send + 'static,
+    ) -> Result<T> {
+        let db = self
+            .db
             .0
             .get()
-            .context("Failed to acquire database connection")
+            .context("Failed to acquire database connection");
+
+        tokio::task::spawn_blocking(|| f(&db?).map_err(Into::into))
+            .await
+            .context("Blocking task failed")?
     }
 
     /// Fetch a single Solana account.

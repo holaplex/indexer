@@ -12,11 +12,9 @@ use lapin::{
     BasicProperties, Channel, ExchangeKind,
 };
 use serde::{Deserialize, Serialize};
+pub use solana_sdk::pubkey::Pubkey;
 
 use crate::Result;
-
-/// A 256-bit Solana public key
-pub type Pubkey = [u8; 32];
 
 /// A message transmitted by an `accountsdb` plugin
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -64,9 +62,13 @@ impl QueueType {
     /// Construct a new queue configuration given the network this validator is
     /// connected to.
     #[must_use]
-    pub fn new(network: Network) -> Self {
+    pub fn new(network: Network, id: Option<&str>) -> Self {
         let exchange = format!("{}.accounts", network);
-        let queue = format!("{}.accounts.indexer", network);
+        let mut queue = format!("{}.accounts.indexer", network);
+
+        if let Some(id) = id {
+            queue = format!("{}.{}", queue, id);
+        }
 
         Self { exchange, queue }
     }

@@ -13,17 +13,25 @@ license = "AGPL-3.0-or-later"
 keywords = ["solana", "metaplex", "holaplex", "web3"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
+[features]
+default = []
+accountsdb = []
+
+[[bin]]
+name = "metaplex-indexer-accountsdb"
+required-features = ["accountsdb"]
+
 [dependencies]
 base64 = "0.13.0"
 cid = "0.7.0"
-parking_lot = "0.11.2"
 reqwest = "0.11.6"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.70"
 tokio = { version = "1.13.0", features = ["rt"] }
-topograph = "0.3.1-alpha.1"
+tokio-amqp = "1.0.1"
 
 # Solana & Metaplex
+anchor-lang = "0.19.0"
 metaplex = "0.0.1"
 metaplex-auction = "0.0.1"
 metaplex-token-metadata = "0.0.1"
@@ -33,8 +41,26 @@ solana-program = "1.8.3"
 solana-sdk = "1.8.3"
 spl-token = "3.2.0"
 
+[dependencies.mpl-auction-house]
+git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
+rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
+
+[dependencies.mpl-metaplex]
+git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
+rev = "63f26d6b1c393859c1d93c18dc9379827347229b" 
+
 [dependencies.indexer-core]
 package = "metaplex-indexer-core"
 version = "=0.1.0"
 path = "../core"
 
+[dependencies.indexer-rabbitmq]
+package = "metaplex-indexer-rabbitmq"
+version = "=0.1.0"
+path = "../rabbitmq"
+
+[target.metaplex-indexer.dependencies.indexer-rabbitmq]
+package = "metaplex-indexer-rabbitmq"
+version = "=0.1.0"
+path = "../rabbitmq"
+features = ["accountsdb"]

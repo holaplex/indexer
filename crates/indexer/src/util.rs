@@ -1,4 +1,5 @@
 //! Miscellaneous utility functions.
+#![allow(dead_code)]
 
 use indexer_core::prelude::*;
 use metaplex_token_metadata::{
@@ -7,30 +8,6 @@ use metaplex_token_metadata::{
 };
 use solana_program::account_info::AccountInfo;
 use solana_sdk::{account::Account, pubkey::Pubkey};
-
-/// Format a [`chrono::Duration`] in HH:MM:SS.FFF format
-#[must_use]
-pub fn duration_hhmmssfff(duration: chrono::Duration) -> String {
-    use std::fmt::Write;
-
-    let mut out = String::new();
-
-    let h = duration.num_hours();
-    if h > 0 {
-        write!(out, "{:02}:", h).unwrap();
-    }
-
-    write!(
-        out,
-        "{:02}:{:02}.{:03}",
-        duration.num_minutes().rem_euclid(60),
-        duration.num_seconds().rem_euclid(60),
-        duration.num_milliseconds().rem_euclid(1000)
-    )
-    .unwrap();
-
-    out
-}
 
 /// Borrow a `solana-sdk` account as a `solana-program` account info struct.
 pub fn account_as_info<'a>(
@@ -49,6 +26,15 @@ pub fn account_as_info<'a>(
         acct.executable,
         acct.rent_epoch,
     )
+}
+
+pub fn account_data_as_info<'a>(
+    key: &'a Pubkey,
+    data: &'a mut [u8],
+    owner: &'a Pubkey,
+    lamports: &'a mut u64,
+) -> AccountInfo<'a> {
+    AccountInfo::new(key, false, false, lamports, data, owner, false, 0)
 }
 
 /// Convenience wrapper for Metaplex's [`MasterEdition`] trait and structs
