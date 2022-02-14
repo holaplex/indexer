@@ -4,7 +4,7 @@
 ## Architecture
 As a message producer, the Holaplex Indexing Service leverages the [accountsb-plugin-interface](https://github.com/solana-labs/solana/tree/master/accountsdb-plugin-interface) to send accounts data directly to a RabbitMQ instance. As a message consumer, the indexer consumes these account messages, deserializes them and inserts them into a PostgreSQL database. Each account needs its own processor, schema and model.
 
-This dataset is derived entirely from the messages produced by a validator. This supports a unidirection dataflow. All data goes directly to the solana blockchain before it is cached.
+This dataset is derived entirely from the messages produced by a validator. This supports a unidirectional dataflow. All data goes directly to the solana blockchain before it is saved in any off chain storage.
 
 ![](https://ipfs.cache.holaplex.com/bafkreiceois7frablbcdhiw4573m53rmhboadd5a2tkiw2mkle2el5udke)
 
