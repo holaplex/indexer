@@ -1,13 +1,30 @@
-# `metaplex-indexer`
+# `Holaplex-Indexing-Service`
 
-An off-chain indexer for Metaplex programs.
 
-Available Indexes:
+## Architecture
+As a message producer, the Holaplex Indexing Service leverages the [accountsb-plugin-interface](https://github.com/solana-labs/solana/tree/master/accountsdb-plugin-interface) to send accounts data directly to a RabbitMQ instance. As a message consumer, the indexer consumes these account messages, deserializes them and inserts them into a PostgreSQL database. Each account needs its own processor, schema and model.
 
-- [X] Metaplex Auctions and bids
-- [X] Metaplex NFT for Auctions
-- [ ] Metaplex Auction houses
-- [ ] Metaplex NFTs by creator
+This dataset is derived entirely from the messages produced by a validator. This supports a unidirection dataflow. All data goes directly to the solana blockchain before it is cached.
+
+![](https://ipfs.cache.holaplex.com/bafkreiceois7frablbcdhiw4573m53rmhboadd5a2tkiw2mkle2el5udke)
+
+### Components
+- AccountsDB plugin, responsible for sending data to our queue system
+- RabbitMQ Consumer, responsible for parsing messages and routing them to the proper processor
+- PostgreSQL database, saves the deserialized data
+- GrapqhQL Crate - serves the PostgreSQL data
+
+
+
+Indexed Programs:
+
+- [X] Metaplex Auctions
+- [X] Metaplex Auction bids
+- [X] Metaplex NFTs
+- [X] Metaplex NFT json metadata
+- [X] Metaplex Auction houses
+
+
 
 ## Getting started
 
@@ -60,16 +77,7 @@ command-line flag or by setting the `PORT` environment variable.  To see more
 options for each server, run one of the following:
 
 ```sh
-$ cargo run --bin metaplex-indexer-rpc -- --help
 $ cargo run --bin metaplex-indexer-graphql -- --help
-```
-
-### `rpc`
-
-To run the RPC server, run the following (also from the repository root):
-
-```sh
-$ cargo run --bin metaplex-indexer-rpc
 ```
 
 ### `graph`
