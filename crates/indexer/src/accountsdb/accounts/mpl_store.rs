@@ -62,10 +62,7 @@ pub(crate) async fn process_whitelisted_creator(
         .db(move |db| {
             insert_into(whitelisted_creators::table)
                 .values(&row)
-                .on_conflict((
-                    whitelisted_creators::address,
-                    whitelisted_creators::creator_address,
-                ))
+                .on_conflict(whitelisted_creators::address)
                 .do_update()
                 .set(&row)
                 .execute(db)
