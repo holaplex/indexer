@@ -74,6 +74,5 @@ async fn process_settings_uri(client: &Client, uri: String, config_address: Stri
         .await
         .context("Failed to insert metadata")?;
 
-    debug!("inserted into settings_uri_jsons table!");
     Ok(())
 }

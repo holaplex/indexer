@@ -70,8 +70,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, data: Vec<u8>) -> Resu
         EDITION_V1 => process_edition(client, key, data).await,
         MASTER_EDITION_V1 => process_master_edition_v1(client, key, data).await,
         MASTER_EDITION_V2 => process_master_edition_v2(client, key, data).await,
-        b => {
-            debug!("Unhandled metadata key byte {:02x}", b);
+        _ => {
 
             Ok(())
         },

@@ -92,6 +92,5 @@ pub(crate) async fn process(client: &Client, key: Pubkey, store: Store) -> Resul
         })
         .await
         .context("Failed to insert storefrontv2!")?;
-    debug!("inserted into storefrontsv2 table!");
     Ok(())
 }

@@ -73,7 +73,6 @@ pub(crate) async fn process(client: &Client, key: Pubkey, data: Vec<u8>) -> Resu
         WHITELISTED_CREATOR => process_whitelisted_creator(client, key, data).await,
         MPL_STORE_CONFIG => process_store_config(client, key, data).await,
         b => {
-            debug!("Unhandled metadata key byte {:02x}", b);
 
             Ok(())
         },
