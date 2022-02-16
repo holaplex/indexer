@@ -100,7 +100,8 @@ pub(crate) async fn process(
         .collect::<Result<Vec<_>>>()?;
 
     client
-        .db(move |db| {
+        .db()
+        .run(move |db| {
             insert_into(auction_caches::table)
                 .values(&values)
                 .on_conflict(auction_caches::address)

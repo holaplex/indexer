@@ -37,7 +37,8 @@ pub(crate) async fn process_config(
     };
 
     client
-        .db(move |db| {
+        .db()
+        .run(move |db| {
             insert_into(store_configs::table)
                 .values(&row)
                 .on_conflict(store_configs::address)
@@ -62,7 +63,8 @@ pub(crate) async fn process_whitelisted_creator(
     };
 
     client
-        .db(move |db| {
+        .db()
+        .run(move |db| {
             insert_into(whitelisted_creators::table)
                 .values(&row)
                 .on_conflict(whitelisted_creators::address)
@@ -85,7 +87,8 @@ pub(crate) async fn process(client: &Client, key: Pubkey, store: Store) -> Resul
     };
 
     client
-        .db(move |db| {
+        .db()
+        .run(move |db| {
             insert_into(stores::table)
                 .values(&row)
                 .on_conflict(stores::address)

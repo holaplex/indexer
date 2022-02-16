@@ -218,7 +218,8 @@ async fn run(client: &Client) -> Result<()> {
             let known_pubkeys = Arc::clone(&known_pubkeys);
 
             client
-                .db(|db| {
+                .db()
+                .run(|db| {
                     process_tags(
                         edge.node
                             .tags

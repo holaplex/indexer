@@ -15,8 +15,16 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [features]
 default = []
-accountsdb = []
-http = []
+accountsdb = [
+  "solana-client",
+  "solana-program",
+]
+http = [
+  "base64",
+  "cid",
+  "reqwest",
+  "serde_json",
+]
 
 [[bin]]
 name = "metaplex-indexer-accountsdb"
@@ -28,11 +36,7 @@ required-features = ["http"]
 
 [dependencies]
 async-trait = "0.1.52"
-base64 = "0.13.0"
-cid = "0.7.0"
-reqwest = "0.11.6"
 serde = { version = "1.0.130", features = ["derive"] }
-serde_json = "1.0.70"
 tokio = { version = "1.13.0", features = ["rt"] }
 tokio-amqp = "1.0.1"
 
@@ -42,11 +46,18 @@ metaplex = "0.0.1"
 metaplex-auction = "0.0.1"
 metaplex-token-metadata = "0.0.1"
 metaplex-token-vault = "0.0.1"
-solana-client = "1.8.3"
-solana-program = "1.8.3"
+solana-client = { version = "1.8.3", optional = true }
+solana-program = { version = "1.8.3", optional = true }
 solana-sdk = "1.8.3"
 spl-token = "3.2.0"
 
+# HTTP indexer
+base64 = { version = "0.13.0", optional = true }
+cid = { version = "0.7.0", optional = true }
+reqwest = { version = "0.11.6", optional = true }
+serde_json = { version = "1.0.70", optional = true }
+
+# Git dependencies
 [dependencies.mpl-auction-house]
 git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
 rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
@@ -55,6 +66,7 @@ rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
 git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
 rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
 
+# Workspace dependencies
 [dependencies.indexer-core]
 package = "metaplex-indexer-core"
 version = "=0.1.0"

@@ -26,7 +26,8 @@ pub(crate) async fn process(
     };
 
     client
-        .db(move |db| {
+        .db()
+        .run(move |db| {
             insert_into(editions::table)
                 .values(&row)
                 .on_conflict(editions::address)
@@ -61,7 +62,8 @@ pub(crate) async fn process_master(
     };
 
     client
-        .db(move |db| {
+        .db()
+        .run(move |db| {
             insert_into(master_editions::table)
                 .values(&row)
                 .on_conflict(master_editions::address)

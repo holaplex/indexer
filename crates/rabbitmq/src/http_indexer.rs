@@ -61,8 +61,8 @@ impl Entity for MetadataJson {
 /// Fetch the off-chain JSON config for a storefront
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StoreConfig {
-    /// The address of the associated store
-    pub store_address: Pubkey,
+    /// The address of the associated store config
+    pub config_address: Pubkey,
     /// The URI to retrieve the file from
     pub uri: String,
 }
