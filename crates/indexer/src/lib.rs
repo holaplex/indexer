@@ -14,7 +14,7 @@ pub mod accountsdb;
 pub mod http;
 pub(crate) mod util;
 
-pub use runtime::{create_consumer, run};
+pub use runtime::{amqp_connect, run};
 
 /// Common traits and re-exports
 pub mod prelude {
@@ -78,24 +78,16 @@ mod runtime {
         })
     }
 
-    /// Create a new AMQP consumer from the given URL and queue type
+    /// Create a new AMQP connection from the given URL
     ///
     /// # Errors
-    /// This function fails if a connection cannot be established or the
-    /// consumer configuration fails.
-    pub async fn create_consumer<T: for<'a> serde::Deserialize<'a>, Q: QueueType<T>>(
-        addr: impl AsRef<str>,
-        queue_type: Q,
-    ) -> Result<Consumer<T, Q>> {
-        let conn = lapin::Connection::connect(
+    /// This function fails if a connection cannot be established
+    pub async fn amqp_connect(addr: impl AsRef<str>) -> Result<lapin::Connection> {
+        lapin::Connection::connect(
             addr.as_ref(),
             lapin::ConnectionProperties::default().with_tokio(),
         )
         .await
-        .context("Failed to connect to the AMQP server")?;
-
-        Consumer::new(&conn, queue_type)
-            .await
-            .context("Failed to create a queue consumer")
+        .context("Failed to connect to the AMQP server")
     }
 }

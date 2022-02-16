@@ -34,6 +34,9 @@ fn main() {
     metaplex_indexer::run(|args: Args, db| async move {
         use http_indexer::{EntityId, MetadataJson, StoreConfig};
 
+        // Note: each match arm will increase the compiled size of this
+        //       binary, it may be advantageous to split this into separate
+        //       binaries at some point.
         match args.entity {
             EntityId::MetadataJson => run::<MetadataJson>(args, db).await,
             EntityId::StoreConfig => run::<StoreConfig>(args, db).await,
@@ -51,11 +54,13 @@ async fn run<E: http_indexer::Entity>(args: Args, db: indexer_core::db::Pool) ->
         arweave_cdn,
     } = args;
 
-    let mut consumer = metaplex_indexer::create_consumer(
-        amqp_url,
+    let conn = metaplex_indexer::amqp_connect(amqp_url).await?;
+    let mut consumer = http_indexer::Consumer::new(
+        &conn,
         http_indexer::QueueType::<E>::new(&sender, queue_suffix.as_deref()),
     )
-    .await?;
+    .await
+    .context("Failed to create queue consumer")?;
 
     while let Some(msg) = consumer
         .read()

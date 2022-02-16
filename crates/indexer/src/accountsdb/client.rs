@@ -4,6 +4,7 @@ use indexer_core::{
     db::{Pool, PooledConnection},
     prelude::*,
 };
+use indexer_rabbitmq::http_indexer;
 use solana_client::{
     client_error::{ClientErrorKind, Result as ClientResult},
     rpc_client::RpcClient,
@@ -23,12 +24,21 @@ pub mod prelude {
 #[derive(Debug, Clone, Copy)]
 pub struct ArTxid(pub [u8; 32]);
 
+struct HttpProducers {
+    metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
+    store_config: http_indexer::Producer<http_indexer::StoreConfig>,
+}
+
+impl std::panic::UnwindSafe for HttpProducers {}
+impl std::panic::RefUnwindSafe for HttpProducers {}
+
 // RpcClient doesn't implement Debug for some reason
 #[allow(missing_debug_implementations)]
 /// Wrapper for handling Solana JSONRPC client logic.
 pub struct Client {
     db: AssertUnwindSafe<Pool>,
     rpc: AssertUnwindSafe<RpcClient>,
+    http: HttpProducers,
 }
 
 impl Client {
@@ -37,13 +47,26 @@ impl Client {
     /// # Errors
     /// This function fails if no `SOLANA_ENDPOINT` environment variable can be
     /// located.
-    pub fn new_rc(db: Pool) -> Result<Arc<Self>> {
+    pub async fn new_rc(
+        db: Pool,
+        conn: &indexer_rabbitmq::lapin::Connection,
+        meta_queue: http_indexer::QueueType<http_indexer::MetadataJson>,
+        store_cfg_queue: http_indexer::QueueType<http_indexer::StoreConfig>,
+    ) -> Result<Arc<Self>> {
         let endpoint = env::var("SOLANA_ENDPOINT").context("Couldn't get Solana endpoint")?;
         info!("Connecting to endpoint: {:?}", endpoint);
 
         Ok(Arc::new(Self {
             db: AssertUnwindSafe(db),
             rpc: AssertUnwindSafe(RpcClient::new(endpoint)),
+            http: HttpProducers {
+                metadata_json: http_indexer::Producer::new(conn, meta_queue)
+                    .await
+                    .context("Couldn't create AMQP metadata JSON producer")?,
+                store_config: http_indexer::Producer::new(conn, store_cfg_queue)
+                    .await
+                    .context("Couldn't create AMQP store config producer")?,
+            },
         }))
     }
 
@@ -118,6 +141,28 @@ impl Client {
         self.rpc
             .0
             .get_program_accounts_with_config(program.borrow(), config)
+    }
+
+    pub async fn dispatch_metadata_json(
+        &self,
+        meta_address: Pubkey,
+        uri: String,
+    ) -> Result<(), indexer_rabbitmq::Error> {
+        self.http
+            .metadata_json
+            .write(http_indexer::MetadataJson { meta_address, uri })
+            .await
+    }
+
+    pub async fn dispatch_store_config(
+        &self,
+        store_address: Pubkey,
+        uri: String,
+    ) -> Result<(), indexer_rabbitmq::Error> {
+        self.http
+            .store_config
+            .write(http_indexer::StoreConfig { store_address, uri })
+            .await
     }
 
     // /// Construct an IPFS link from an IPFS CID

@@ -46,9 +46,9 @@ pub trait Entity: std::fmt::Debug + Serialize + for<'a> Deserialize<'a> {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MetadataJson {
     /// The address of the associated account
-    meta_address: Pubkey,
+    pub meta_address: Pubkey,
     /// The URI to retrieve the file from
-    uri: String,
+    pub uri: String,
 }
 
 impl Entity for MetadataJson {
@@ -61,9 +61,9 @@ impl Entity for MetadataJson {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StoreConfig {
     /// The address of the associated store
-    store_address: Pubkey,
+    pub store_address: Pubkey,
     /// The URI to retrieve the file from
-    uri: String,
+    pub uri: String,
 }
 
 impl Entity for StoreConfig {

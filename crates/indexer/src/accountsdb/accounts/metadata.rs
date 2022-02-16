@@ -40,11 +40,10 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
         .await
         .context("Failed to insert metadata")?;
 
-    // TODO
-    // handle.push(Job::MetadataUri(
-    //     meta_key,
-    //     meta.data.uri.trim_end_matches('\0').to_owned(),
-    // ));
+    client
+        .dispatch_metadata_json(key, meta.data.uri.trim_end_matches('\0').to_owned())
+        .await
+        .context("Failed to dispatch metadata JSON job")?;
 
     for creator in meta.data.creators.iter().flatten() {
         let row = MetadataCreator {
