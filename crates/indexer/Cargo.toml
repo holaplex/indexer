@@ -20,6 +20,7 @@ accountsdb = [
   "solana-program",
 ]
 http = [
+  "base64",
   "cid",
   "reqwest",
   "serde_json",
