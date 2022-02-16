@@ -72,9 +72,6 @@ pub(crate) async fn process(client: &Client, key: Pubkey, data: Vec<u8>) -> Resu
         STORE => process_store(client, key, data).await,
         WHITELISTED_CREATOR => process_whitelisted_creator(client, key, data).await,
         MPL_STORE_CONFIG => process_store_config(client, key, data).await,
-        b => {
-
-            Ok(())
-        },
+        b => Ok(()),
     }
 }

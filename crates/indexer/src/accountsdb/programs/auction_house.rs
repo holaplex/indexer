@@ -6,9 +6,9 @@ use crate::{prelude::*, Client};
 
 async fn process_auction_house(client: &Client, key: Pubkey, data: Vec<u8>) -> Result<()> {
     if data.len() == 1 {
-        return Ok(())
+        return Ok(());
     }
-    
+
     let house: AuctionHouse = AuctionHouse::try_deserialize(&mut data.as_slice())
         .context("Failed to deserialize auction house data")?;
 
