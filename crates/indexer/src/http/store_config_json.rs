@@ -4,7 +4,8 @@ use indexer_core::db::{insert_into, models::StoreConfigJson, tables::store_confi
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, Client};
+use super::Client;
+use crate::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Creator {
@@ -63,7 +64,8 @@ async fn process_settings_uri(client: &Client, uri: String, config_address: Stri
     };
     // insert into the database
     client
-        .db(move |db| {
+        .db()
+        .run(move |db| {
             insert_into(store_config_jsons::table)
                 .values(&row)
                 .on_conflict(store_config_jsons::config_address)

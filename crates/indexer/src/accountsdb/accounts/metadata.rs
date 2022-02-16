@@ -29,7 +29,8 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
     };
 
     client
-        .db(move |db| {
+        .db()
+        .run(move |db| {
             insert_into(metadatas::table)
                 .values(&row)
                 .on_conflict(metadatas::address)
@@ -54,7 +55,8 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
         };
 
         client
-            .db(move |db| {
+            .db()
+            .run(move |db| {
                 insert_into(metadata_creators::table)
                     .values(&row)
                     .on_conflict((

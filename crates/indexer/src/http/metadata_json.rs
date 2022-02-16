@@ -17,7 +17,8 @@ use indexer_core::{
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 
-use crate::{client::ArTxid, prelude::*, util, Client};
+use super::{client::ArTxid, Client};
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
 struct AssetIdentifier {
@@ -179,7 +180,7 @@ async fn fetch_json(
         "Metadata JSON URI {:?} for {} fetched in {}",
         url,
         meta_key,
-        util::duration_hhmmssfff(end_time - start_time)
+        indexer_core::util::duration_hhmmssfff(end_time - start_time)
     );
 
     Ok(json)
@@ -312,7 +313,8 @@ pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> 
     let addr = bs58::encode(meta_key).into_string();
 
     let is_present = client
-        .db({
+        .db()
+        .run({
             let addr = addr.clone();
             move |db| {
                 select(exists(
@@ -371,7 +373,8 @@ pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> 
     };
 
     client
-        .db(move |db| {
+        .db()
+        .run(move |db| {
             insert_into(metadata_jsons::table)
                 .values(&row)
                 .on_conflict(metadata_jsons::metadata_address)

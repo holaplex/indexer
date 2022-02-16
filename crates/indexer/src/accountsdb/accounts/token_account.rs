@@ -16,7 +16,7 @@ pub async fn process(_client: &Client, _pubkey: Pubkey, token_account_data: Vec<
     // let mint = token_account.mint.to_string();
 
     // let is_present: bool = client
-    //     .db({
+    //     .db().run({
     //         let mint = mint.clone();
     //         |db| {
     //             select(exists(
@@ -49,7 +49,7 @@ pub async fn process(_client: &Client, _pubkey: Pubkey, token_account_data: Vec<
     // };
 
     // client
-    //     .db(move |db| {
+    //     .db().run(move |db| {
     //         insert_into(token_accounts::table)
     //             .values(&values)
     //             .on_conflict(token_accounts::address)

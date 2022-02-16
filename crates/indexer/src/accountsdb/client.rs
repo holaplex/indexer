@@ -1,9 +1,6 @@
 use std::{borrow::Borrow, env, panic::AssertUnwindSafe, sync::Arc};
 
-use indexer_core::{
-    db::{Pool, PooledConnection},
-    prelude::*,
-};
+use indexer_core::prelude::*;
 use indexer_rabbitmq::http_indexer;
 use solana_client::{
     client_error::{ClientErrorKind, Result as ClientResult},
@@ -13,16 +10,14 @@ use solana_client::{
 };
 use solana_sdk::{account::Account, pubkey::Pubkey};
 
+use crate::db::Pool;
+
 pub mod prelude {
     pub use solana_client::{
         rpc_config::RpcProgramAccountsConfig,
         rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType},
     };
 }
-
-/// An Arweave transaction ID
-#[derive(Debug, Clone, Copy)]
-pub struct ArTxid(pub [u8; 32]);
 
 struct HttpProducers {
     metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
@@ -32,9 +27,9 @@ struct HttpProducers {
 impl std::panic::UnwindSafe for HttpProducers {}
 impl std::panic::RefUnwindSafe for HttpProducers {}
 
-// RpcClient doesn't implement Debug for some reason
+// RpcClient and Diesel don't implement Debug for some reason
 #[allow(missing_debug_implementations)]
-/// Wrapper for handling Solana JSONRPC client logic.
+/// Wrapper for handling networking logic
 pub struct Client {
     db: AssertUnwindSafe<Pool>,
     rpc: AssertUnwindSafe<RpcClient>,
@@ -46,7 +41,8 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if no `SOLANA_ENDPOINT` environment variable can be
-    /// located.
+    /// located or if AMQP producers cannot be created for the given queue
+    /// types.
     pub async fn new_rc(
         db: Pool,
         conn: &indexer_rabbitmq::lapin::Connection,
@@ -70,24 +66,9 @@ impl Client {
         }))
     }
 
-    /// Spawn a blocking thread to perform operations on the database.
-    ///
-    /// # Errors
-    /// This function fails if `r2d2` cannot acquire a database connection or
-    /// the provided callback returns an error.
-    pub async fn db<T: 'static + Send, E: 'static + Into<indexer_core::error::Error>>(
-        &self,
-        f: impl FnOnce(&PooledConnection) -> Result<T, E> + Send + 'static,
-    ) -> Result<T> {
-        let db = self
-            .db
-            .0
-            .get()
-            .context("Failed to acquire database connection");
-
-        tokio::task::spawn_blocking(|| f(&db?).map_err(Into::into))
-            .await
-            .context("Blocking task failed")?
+    /// Get a reference to the database
+    pub fn db(&self) -> &Pool {
+        &self.db
     }
 
     /// Fetch a single Solana account.
@@ -164,22 +145,4 @@ impl Client {
             .write(http_indexer::StoreConfig { store_address, uri })
             .await
     }
-
-    // /// Construct an IPFS link from an IPFS CID
-    // ///
-    // /// # Errors
-    // /// This function fails if the CID provided is not URL safe.
-    // pub fn ipfs_link(&self, cid: &Cid) -> Result<Url> {
-    //     self.ipfs_cdn.join(&cid.to_string()).map_err(Into::into)
-    // }
-
-    // /// Construct an Arweave link from a valid Arweave transaction ID
-    // ///
-    // /// # Errors
-    // /// This function fails if the transaction ID provided is not URL safe
-    // pub fn arweave_link(&self, txid: &ArTxid) -> Result<Url> {
-    //     self.arweave_cdn
-    //         .join(&base64::encode_config(&txid.0, base64::URL_SAFE_NO_PAD))
-    //         .map_err(Into::into)
-    // }
 }

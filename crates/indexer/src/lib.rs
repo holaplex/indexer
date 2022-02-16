@@ -10,6 +10,7 @@
 
 #[cfg(any(test, feature = "accountsdb"))]
 pub mod accountsdb;
+pub(crate) mod db;
 #[cfg(any(test, feature = "http"))]
 pub mod http;
 pub(crate) mod util;

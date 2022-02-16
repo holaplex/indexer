@@ -63,7 +63,8 @@ pub(crate) async fn process(
     };
 
     client
-        .db(move |db| {
+        .db()
+        .run(move |db| {
             insert_into(auction_houses::table)
                 .values(&row)
                 .on_conflict(auction_houses::address)
