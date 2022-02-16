@@ -22,6 +22,8 @@ pub(crate) async fn process(
     let (ah_fee_acc_addr, _) = find_auction_house_fee_account_address(&key);
     let (ah_treasury_addr, _) = find_auction_house_treasury_address(&key);
 
+    debug!("parsing auction house {:?}: {:?}", ah_address, account_data.creator);
+
     if ah_address != key
         || ah_fee_acc_addr != account_data.auction_house_fee_account
         || ah_treasury_addr != account_data.auction_house_treasury

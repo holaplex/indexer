@@ -27,7 +27,6 @@ pub(crate) async fn process(client: &Client, key: Pubkey, mut data: Vec<u8>) -> 
         (Ok(a), Err(_)) => auction_data::process(client, key, a).await,
         (Err(_), Ok(e)) => auction_data::process_extended(client, key, e).await,
         (Err(_), Err(_)) => {
-            debug!("Account at {} was not AuctionData(Extended)", key);
             Ok(())
         },
     }
