@@ -48,7 +48,7 @@ pub struct QueueType {
 
 /// Network hint for declaring exchange and queue names
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, strum::EnumString, strum::Display)]
-#[strum(serialize_all = "camelCase")]
+#[strum(serialize_all = "kebab-case")]
 pub enum Network {
     /// Use the network ID `"mainnet"`
     Mainnet,

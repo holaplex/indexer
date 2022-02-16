@@ -1,7 +1,7 @@
 //! Queue configuration for the HTTP-driven indexer to receive requests from
 //! the `accountsdb` consumer.
 
-use std::borrow::Cow;
+use std::{borrow::Cow, marker::PhantomData};
 
 use lapin::{
     options::{
@@ -16,50 +16,83 @@ use solana_sdk::pubkey::Pubkey;
 
 use crate::Result;
 
-/// A message sent from an `accountsdb` indexer to an HTTP indexer
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Message {
-    /// Fetch the off-chain JSON for a metadata account
-    MetadataJson {
-        /// The address of the associated account
-        meta_address: Pubkey,
-        /// The URI to retrieve the file from
-        uri: String,
-    },
-    /// Fetch the off-chain JSON config for a storefront
-    StoreConfig {
-        /// The address of the associated store
-        store_address: Pubkey,
-        /// The URI to retrieve the file from
-        uri: String,
-    },
-}
-
 /// AMQP configuration for HTTP indexers
 #[derive(Debug, Clone)]
-pub struct QueueType {
+pub struct QueueType<E> {
     exchange: String,
     queue: String,
+    _p: PhantomData<fn(E) -> ()>,
 }
 
-impl QueueType {
+/// Identifier for an entity type
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, strum::EnumString, strum::Display)]
+pub enum EntityId {
+    /// Identifier for [MetadataJson] entities
+    MetadataJson,
+    /// Identifier for [StoreConfig] entities
+    StoreConfig,
+}
+
+/// Type hints for declaring and using entity-specific exchanges and queues
+pub trait Entity: std::fmt::Debug + Serialize + for<'a> Deserialize<'a> {
+    /// The type of the [ID](Self::ID) constant
+    type Id: std::fmt::Display;
+
+    /// A name to use when declaring queues and exchanges
+    const ID: Self::Id;
+}
+
+/// Fetch the off-chain JSON for a metadata account
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MetadataJson {
+    /// The address of the associated account
+    meta_address: Pubkey,
+    /// The URI to retrieve the file from
+    uri: String,
+}
+
+impl Entity for MetadataJson {
+    type Id = EntityId;
+
+    const ID: EntityId = EntityId::MetadataJson;
+}
+
+/// Fetch the off-chain JSON config for a storefront
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StoreConfig {
+    /// The address of the associated store
+    store_address: Pubkey,
+    /// The URI to retrieve the file from
+    uri: String,
+}
+
+impl Entity for StoreConfig {
+    type Id = EntityId;
+
+    const ID: EntityId = EntityId::StoreConfig;
+}
+
+impl<E: Entity> QueueType<E> {
     /// Construct a new queue configuration given an optional queue suffix
     #[must_use]
-    pub fn new(id: Option<&str>) -> Self {
-        // TODO
-        let exchange = format!("indexer.http");
-        let mut queue = format!("indexer.http");
+    pub fn new(sender: &str, id: Option<&str>) -> Self {
+        let exchange = format!("{}.{}.http", sender, E::ID);
+        let mut queue = format!("{}.{}.http.indexer", sender, E::ID);
 
         if let Some(id) = id {
             queue = format!("{}.{}", queue, id);
         }
 
-        Self { exchange, queue }
+        Self {
+            exchange,
+            queue,
+            _p: PhantomData::default(),
+        }
     }
 }
 
 #[async_trait::async_trait]
-impl crate::QueueType<Message> for QueueType {
+impl<E: Entity> crate::QueueType<E> for QueueType<E> {
     fn exchange(&self) -> Cow<str> {
         Cow::Borrowed(&self.exchange)
     }
@@ -119,18 +152,18 @@ impl crate::QueueType<Message> for QueueType {
         .map_err(Into::into)
     }
 
-    fn publish_opts(&self, _: &Message) -> BasicPublishOptions {
+    fn publish_opts(&self, _: &E) -> BasicPublishOptions {
         BasicPublishOptions::default()
     }
 
-    fn properties(&self, _: &Message) -> BasicProperties {
+    fn properties(&self, _: &E) -> BasicProperties {
         BasicProperties::default()
     }
 }
 
 /// The type of an HTTP indexer producer
 #[cfg(feature = "producer")]
-pub type Producer = crate::producer::Producer<Message, QueueType>;
+pub type Producer<E> = crate::producer::Producer<E, QueueType<E>>;
 /// The type of an HTTP indexer consumer
 #[cfg(feature = "consumer")]
-pub type Consumer = crate::consumer::Consumer<Message, QueueType>;
+pub type Consumer<E> = crate::consumer::Consumer<E, QueueType<E>>;

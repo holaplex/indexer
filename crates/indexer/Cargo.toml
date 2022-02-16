@@ -68,7 +68,7 @@ path = "../rabbitmq"
 package = "metaplex-indexer-rabbitmq"
 version = "=0.1.0"
 path = "../rabbitmq"
-features = ["accountsdb"]
+features = ["accountsdb", "http-indexer", "producer"]
 
 [target.metaplex-indexer-http.dependencies.indexer-rabbitmq]
 package = "metaplex-indexer-rabbitmq"

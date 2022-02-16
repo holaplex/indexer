@@ -7,6 +7,14 @@ struct Args {
     #[clap(long, env)]
     amqp_url: String,
 
+    /// The ID of the indexer sending events to listen for
+    #[clap(long, env)]
+    sender: String,
+
+    /// The entity type to listen to events for
+    #[clap(long, env)]
+    entity: http_indexer::EntityId,
+
     /// An optional suffix for the AMQP queue ID
     ///
     /// For debug builds a value must be provided here to avoid interfering with
@@ -23,36 +31,46 @@ struct Args {
 }
 
 fn main() {
-    metaplex_indexer::run(
-        |Args {
-             amqp_url,
-             queue_suffix,
-             ipfs_cdn,
-             arweave_cdn,
-         },
-         db| async move {
-            let mut consumer = metaplex_indexer::create_consumer(
-                amqp_url,
-                http_indexer::QueueType::new(queue_suffix.as_deref()),
-            )
-            .await?;
+    metaplex_indexer::run(|args: Args, db| async move {
+        use http_indexer::{EntityId, MetadataJson, StoreConfig};
 
-            while let Some(msg) = consumer
-                .read()
-                .await
-                .context("Failed to read message from RabbitMQ")?
-            {
-                trace!("{:?}", msg);
+        match args.entity {
+            EntityId::MetadataJson => run::<MetadataJson>(args, db).await,
+            EntityId::StoreConfig => run::<StoreConfig>(args, db).await,
+        }
+    });
+}
 
-                match metaplex_indexer::http::process_message(msg).await {
-                    Ok(()) => (),
-                    Err(e) => error!("Failed to process message: {:?}", e),
-                }
-            }
+async fn run<E: http_indexer::Entity>(args: Args, db: indexer_core::db::Pool) -> Result<()> {
+    let Args {
+        amqp_url,
+        sender,
+        entity: _,
+        queue_suffix,
+        ipfs_cdn,
+        arweave_cdn,
+    } = args;
 
-            warn!("AMQP server hung up!");
+    let mut consumer = metaplex_indexer::create_consumer(
+        amqp_url,
+        http_indexer::QueueType::<E>::new(&sender, queue_suffix.as_deref()),
+    )
+    .await?;
 
-            Ok(())
-        },
-    );
+    while let Some(msg) = consumer
+        .read()
+        .await
+        .context("Failed to read message from RabbitMQ")?
+    {
+        trace!("{:?}", msg);
+
+        match metaplex_indexer::http::process_message(msg).await {
+            Ok(()) => (),
+            Err(e) => error!("Failed to process message: {:?}", e),
+        }
+    }
+
+    warn!("AMQP server hung up!");
+
+    Ok(())
 }
