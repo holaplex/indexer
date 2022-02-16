@@ -26,6 +26,7 @@ pub struct QueueType<E> {
 
 /// Identifier for an entity type
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, strum::EnumString, strum::Display)]
+#[strum(serialize_all = "kebab-case")]
 pub enum EntityId {
     /// Identifier for [MetadataJson] entities
     MetadataJson,

@@ -27,6 +27,7 @@ name = "metaplex-indexer-http"
 required-features = ["http"]
 
 [dependencies]
+async-trait = "0.1.52"
 base64 = "0.13.0"
 cid = "0.7.0"
 reqwest = "0.11.6"

@@ -3,12 +3,25 @@
 // mod metadata_json;
 // mod store_config_json;
 
-use indexer_rabbitmq::http_indexer::Entity;
+use indexer_rabbitmq::http_indexer::{Entity, MetadataJson, StoreConfig};
 
 use crate::prelude::*;
 
-pub async fn process_message<E: Entity>(msg: E) -> Result<()> {
-    let _ = msg;
+#[async_trait::async_trait]
+pub trait Process: Entity {
+    async fn process(self) -> Result<()>;
+}
 
-    Ok(())
+#[async_trait::async_trait]
+impl Process for MetadataJson {
+    async fn process(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+#[async_trait::async_trait]
+impl Process for StoreConfig {
+    async fn process(self) -> Result<()> {
+        Ok(())
+    }
 }

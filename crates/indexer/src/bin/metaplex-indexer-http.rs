@@ -44,7 +44,10 @@ fn main() {
     });
 }
 
-async fn run<E: http_indexer::Entity>(args: Args, db: indexer_core::db::Pool) -> Result<()> {
+async fn run<E: metaplex_indexer::http::Process>(
+    args: Args,
+    db: indexer_core::db::Pool,
+) -> Result<()> {
     let Args {
         amqp_url,
         sender,
@@ -69,7 +72,7 @@ async fn run<E: http_indexer::Entity>(args: Args, db: indexer_core::db::Pool) ->
     {
         trace!("{:?}", msg);
 
-        match metaplex_indexer::http::process_message(msg).await {
+        match msg.process().await {
             Ok(()) => (),
             Err(e) => error!("Failed to process message: {:?}", e),
         }
