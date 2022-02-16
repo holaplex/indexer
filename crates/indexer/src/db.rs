@@ -4,13 +4,14 @@ use indexer_core::{db, db::PooledConnection};
 
 use crate::prelude::*;
 
+/// Handle to a database pool used by an indexer consumer
 pub struct Pool(db::Pool);
 
 impl std::panic::UnwindSafe for Pool {}
 impl std::panic::RefUnwindSafe for Pool {}
 
 impl Pool {
-    pub fn new(pool: db::Pool) -> Self {
+    pub(crate) fn new(pool: db::Pool) -> Self {
         Self(pool)
     }
 
@@ -19,7 +20,7 @@ impl Pool {
     /// # Errors
     /// This function fails if `r2d2` cannot acquire a database connection or
     /// the provided callback returns an error.
-    pub async fn run<T: 'static + Send, E: 'static + Into<indexer_core::error::Error>>(
+    pub(crate) async fn run<T: 'static + Send, E: 'static + Into<indexer_core::error::Error>>(
         &self,
         f: impl FnOnce(&PooledConnection) -> Result<T, E> + Send + 'static,
     ) -> Result<T> {

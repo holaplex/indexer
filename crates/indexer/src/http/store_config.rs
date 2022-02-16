@@ -36,13 +36,12 @@ struct SettingUri {
     extra: HashMap<String, serde_json::Value>,
 }
 
-async fn process_settings_uri(client: &Client, uri: String, config_address: String) -> Result<()> {
-    debug!("process_settings_uri called!");
+pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Result<()> {
+    let url = Url::parse(&uri_str).context("Couldn't parse store config URL")?;
 
-    let url = Url::parse(&uri).context("Failed to parse settings_uri URL!")?;
     let http_client = reqwest::Client::new();
 
-    // get the data and parse it into the SettingUri struct
+    // TODO: parse failure shouldn't be an error, this stuff will be unstructured
     let json = http_client
         .get(url.clone())
         .send()
@@ -52,8 +51,9 @@ async fn process_settings_uri(client: &Client, uri: String, config_address: Stri
         .await
         .context("Failed to parse metadata JSON")?;
 
+    let addr = bs58::encode(config_key).into_string();
     let row = StoreConfigJson {
-        config_address: Owned(config_address),
+        config_address: Owned(addr),
         name: Owned(json.meta.name),
         description: Owned(json.meta.description),
         logo_url: Owned(json.logo_url),
@@ -62,7 +62,7 @@ async fn process_settings_uri(client: &Client, uri: String, config_address: Stri
         owner_address: Owned(json.address.owner),
         auction_house_address: Owned(json.address.auction_house),
     };
-    // insert into the database
+
     client
         .db()
         .run(move |db| {

@@ -10,7 +10,7 @@
 
 #[cfg(any(test, feature = "accountsdb"))]
 pub mod accountsdb;
-pub(crate) mod db;
+pub mod db;
 #[cfg(any(test, feature = "http"))]
 pub mod http;
 pub(crate) mod util;
@@ -31,10 +31,10 @@ mod runtime {
         clap::{Args, Parser},
         db,
     };
-    use indexer_rabbitmq::{consumer::Consumer, lapin, QueueType};
+    use indexer_rabbitmq::lapin;
     use tokio_amqp::LapinTokioExt;
 
-    use super::prelude::*;
+    use super::{db::Pool, prelude::*};
 
     #[derive(Debug, Parser)]
     struct Opts<T: Debug + Args> {
@@ -47,9 +47,7 @@ mod runtime {
     }
 
     /// Entrypoint for `metaplex-indexer` binaries
-    pub fn run<T: Debug + Args, F: Future<Output = Result<()>>>(
-        f: impl FnOnce(T, db::Pool) -> F,
-    ) -> ! {
+    pub fn run<T: Debug + Args, F: Future<Output = Result<()>>>(f: impl FnOnce(T, Pool) -> F) -> ! {
         indexer_core::run(|| {
             let opts = Opts::parse();
 
@@ -60,8 +58,9 @@ mod runtime {
                 extra,
             } = opts;
 
-            let db =
-                db::connect(db::ConnectMode::Write).context("Failed to connect to Postgres")?;
+            let db = Pool::new(
+                db::connect(db::ConnectMode::Write).context("Failed to connect to Postgres")?,
+            );
 
             let rt = {
                 let mut b = tokio::runtime::Builder::new_multi_thread();

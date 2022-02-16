@@ -1,5 +1,6 @@
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::http_indexer;
+use metaplex_indexer::http::Client;
 
 #[derive(Debug, clap::Parser)]
 struct Args {
@@ -46,7 +47,7 @@ fn main() {
 
 async fn run<E: metaplex_indexer::http::Process>(
     args: Args,
-    db: indexer_core::db::Pool,
+    db: metaplex_indexer::db::Pool,
 ) -> Result<()> {
     let Args {
         amqp_url,
@@ -58,6 +59,19 @@ async fn run<E: metaplex_indexer::http::Process>(
     } = args;
 
     let conn = metaplex_indexer::amqp_connect(amqp_url).await?;
+    let client = Client::new_rc(
+        db,
+        ipfs_cdn
+            .ok_or_else(|| anyhow!("Missing IPFS CDN"))?
+            .parse()
+            .context("Failed to parse IPFS CDN URL")?,
+        arweave_cdn
+            .ok_or_else(|| anyhow!("Missing Arweave CDN"))?
+            .parse()
+            .context("Failed to parse Arweave CDN URL")?,
+    )
+    .context("Failed to construct Client")?;
+
     let mut consumer = http_indexer::Consumer::new(
         &conn,
         http_indexer::QueueType::<E>::new(&sender, queue_suffix.as_deref()),
@@ -72,7 +86,7 @@ async fn run<E: metaplex_indexer::http::Process>(
     {
         trace!("{:?}", msg);
 
-        match msg.process().await {
+        match msg.process(&client).await {
             Ok(()) => (),
             Err(e) => error!("Failed to process message: {:?}", e),
         }

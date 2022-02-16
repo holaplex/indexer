@@ -124,6 +124,11 @@ impl Client {
             .get_program_accounts_with_config(program.borrow(), config)
     }
 
+    /// Dispatch an AMQP message to the HTTP indexer to request off-chain
+    /// metadata JSON
+    ///
+    /// # Errors
+    /// This function fails if the AMQP payload cannot be sent.
     pub async fn dispatch_metadata_json(
         &self,
         meta_address: Pubkey,
@@ -135,14 +140,22 @@ impl Client {
             .await
     }
 
+    /// Dispatch an AMQP message to the HTTP indexer to request off-chain store
+    /// config data
+    ///
+    /// # Errors
+    /// This function fails if the AMQP payload cannot be sent.
     pub async fn dispatch_store_config(
         &self,
-        store_address: Pubkey,
+        config_address: Pubkey,
         uri: String,
     ) -> Result<(), indexer_rabbitmq::Error> {
         self.http
             .store_config
-            .write(http_indexer::StoreConfig { store_address, uri })
+            .write(http_indexer::StoreConfig {
+                config_address,
+                uri,
+            })
             .await
     }
 }
