@@ -13,7 +13,8 @@ use indexer_core::{
 use metaplex::state::{Store, WhitelistedCreator};
 use mpl_metaplex::state::StoreConfig;
 
-use crate::{prelude::*, Client};
+use super::Client;
+use crate::prelude::*;
 
 pub(crate) async fn process_config(
     client: &Client,
@@ -23,9 +24,11 @@ pub(crate) async fn process_config(
     trace!("{:?}", &config.settings_uri);
 
     let addr = bs58::encode(key).into_string();
-    if config.settings_uri.is_some() {
-        // TODO: dispatch JSON job
-        // process_settings_uri(client, config.settings_uri.clone().unwrap(), addr.clone()).await;
+    if let Some(uri) = config.settings_uri.clone() {
+        client
+            .dispatch_store_config(key, uri)
+            .await
+            .context("Failed to dispatch store config job")?;
     }
 
     let row = DbStoreConfig {

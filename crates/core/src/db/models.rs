@@ -2,7 +2,6 @@
 
 // Queryable and Insertable are imported globally from diesel
 
-// TODO: do we need chrono instead of std::time?
 use std::borrow::Cow;
 
 use chrono::NaiveDateTime;

@@ -1,16 +1,17 @@
-//! Support features for the accountsdb indexer
+//! Support features for the `accountsdb` indexer
 
 mod accounts;
+mod client;
 // mod get_storefronts;
-// mod metadata_json;
 mod programs;
-// mod store_config_json;
 // mod store_owner;
 
+pub use client::Client;
 use indexer_core::pubkeys;
+pub(self) use indexer_rabbitmq::accountsdb::AccountUpdate;
 use indexer_rabbitmq::accountsdb::Message;
 
-use crate::{client::Client, prelude::*};
+use crate::prelude::*;
 
 /// Process a message from an accountsdb RabbitMQ queue
 ///
@@ -18,21 +19,21 @@ use crate::{client::Client, prelude::*};
 /// This function fails if an error occurs processing the message body.
 pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
     match msg {
-        Message::AccountUpdate { owner, key, data } if owner == pubkeys::metadata() => {
-            programs::metadata::process(client, key, data).await
+        Message::AccountUpdate(update) if update.owner == pubkeys::metadata() => {
+            programs::metadata::process(client, update).await
         },
-        Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction() => {
-            programs::auction::process(client, key, data).await
+        Message::AccountUpdate(update) if update.owner == pubkeys::auction() => {
+            programs::auction::process(client, update).await
         },
-        Message::AccountUpdate { owner, key, data } if owner == pubkeys::metaplex() => {
-            programs::metaplex::process(client, key, data).await
+        Message::AccountUpdate(update) if update.owner == pubkeys::metaplex() => {
+            programs::metaplex::process(client, update).await
         },
-        Message::AccountUpdate { owner, key, data } if owner == pubkeys::auction_house() => {
-            programs::auction_house::process(client, key, data).await
+        Message::AccountUpdate(update) if update.owner == pubkeys::auction_house() => {
+            programs::auction_house::process(client, update).await
         },
-        Message::AccountUpdate { owner, key, data } if owner == pubkeys::token() => {
-            programs::token::process(client, key, data).await
+        Message::AccountUpdate(update) if update.owner == pubkeys::token() => {
+            programs::token::process(client, update).await
         },
-        Message::AccountUpdate { .. } | Message::InstructionNotify { .. } => Ok(()),
+        Message::AccountUpdate(_) | Message::InstructionNotify { .. } => Ok(()),
     }
 }

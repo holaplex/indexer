@@ -1,5 +1,5 @@
 use indexer_rabbitmq::{
-    accountsdb::{Message, Producer, QueueType},
+    accountsdb::{AccountUpdate, Message, Producer, QueueType},
     lapin::{Connection, ConnectionProperties},
     prelude::*,
 };
@@ -9,7 +9,7 @@ use solana_program::{instruction::CompiledInstruction, message::SanitizedMessage
 use crate::{
     config::Config,
     interface::{
-        AccountsDbPlugin, AccountsDbPluginError, ReplicaAccountInfoVersions,
+        AccountsDbPlugin, AccountsDbPluginError, ReplicaAccountInfo, ReplicaAccountInfoVersions,
         ReplicaTransactionInfoVersions, Result,
     },
     prelude::*,
@@ -65,9 +65,8 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
     fn update_account(
         &mut self,
         account: ReplicaAccountInfoVersions,
-        // TODO: is this the account slot or the current slot?
-        _slot: u64,
-        _is_startup: bool,
+        slot: u64,
+        is_startup: bool,
     ) -> Result<()> {
         fn uninit() -> AccountsDbPluginError {
             AccountsDbPluginError::AccountsUpdateError {
@@ -82,18 +81,30 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                         return Ok(());
                     }
 
+                    let ReplicaAccountInfo {
+                        pubkey,
+                        lamports,
+                        owner,
+                        executable,
+                        rent_epoch,
+                        data,
+                        write_version,
+                    } = *acct;
+
                     self.producer
                         .as_ref()
                         .ok_or_else(uninit)?
-                        .write(Message::AccountUpdate {
-                            key: Pubkey::new_from_array(
-                                acct.pubkey.try_into().map_err(custom_err)?,
-                            ),
-                            owner: Pubkey::new_from_array(
-                                acct.owner.try_into().map_err(custom_err)?,
-                            ),
-                            data: acct.data.to_owned(),
-                        })
+                        .write(Message::AccountUpdate(AccountUpdate {
+                            key: Pubkey::new_from_array(pubkey.try_into().map_err(custom_err)?),
+                            lamports,
+                            owner: Pubkey::new_from_array(owner.try_into().map_err(custom_err)?),
+                            executable,
+                            rent_epoch,
+                            data: data.to_owned(),
+                            write_version,
+                            slot,
+                            is_startup,
+                        }))
                         .await
                         .map_err(custom_err)?;
                 },

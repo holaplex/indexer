@@ -8,7 +8,8 @@ use indexer_core::{
 };
 use metaplex_token_metadata::state::Metadata as MetadataAccount;
 
-use crate::{prelude::*, Client};
+use super::Client;
+use crate::prelude::*;
 
 pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount) -> Result<()> {
     let addr = bs58::encode(key).into_string();
@@ -39,11 +40,10 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
         .await
         .context("Failed to insert metadata")?;
 
-    // TODO
-    // handle.push(Job::MetadataUri(
-    //     meta_key,
-    //     meta.data.uri.trim_end_matches('\0').to_owned(),
-    // ));
+    client
+        .dispatch_metadata_json(key, meta.data.uri.trim_end_matches('\0').to_owned())
+        .await
+        .context("Failed to dispatch metadata JSON job")?;
 
     for creator in meta.data.creators.iter().flatten() {
         let row = MetadataCreator {

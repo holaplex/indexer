@@ -1,11 +1,10 @@
 use std::{borrow::Borrow, env, panic::AssertUnwindSafe, sync::Arc};
 
-use cid::Cid;
 use indexer_core::{
     db::{Pool, PooledConnection},
     prelude::*,
 };
-use reqwest::Url;
+use indexer_rabbitmq::http_indexer;
 use solana_client::{
     client_error::{ClientErrorKind, Result as ClientResult},
     rpc_client::RpcClient,
@@ -25,14 +24,21 @@ pub mod prelude {
 #[derive(Debug, Clone, Copy)]
 pub struct ArTxid(pub [u8; 32]);
 
+struct HttpProducers {
+    metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
+    store_config: http_indexer::Producer<http_indexer::StoreConfig>,
+}
+
+impl std::panic::UnwindSafe for HttpProducers {}
+impl std::panic::RefUnwindSafe for HttpProducers {}
+
 // RpcClient doesn't implement Debug for some reason
 #[allow(missing_debug_implementations)]
 /// Wrapper for handling Solana JSONRPC client logic.
 pub struct Client {
     db: AssertUnwindSafe<Pool>,
     rpc: AssertUnwindSafe<RpcClient>,
-    ipfs_cdn: Url,
-    arweave_cdn: Url,
+    http: HttpProducers,
 }
 
 impl Client {
@@ -41,15 +47,26 @@ impl Client {
     /// # Errors
     /// This function fails if no `SOLANA_ENDPOINT` environment variable can be
     /// located.
-    pub fn new_rc(db: Pool, ipfs_cdn: Url, arweave_cdn: Url) -> Result<Arc<Self>> {
+    pub async fn new_rc(
+        db: Pool,
+        conn: &indexer_rabbitmq::lapin::Connection,
+        meta_queue: http_indexer::QueueType<http_indexer::MetadataJson>,
+        store_cfg_queue: http_indexer::QueueType<http_indexer::StoreConfig>,
+    ) -> Result<Arc<Self>> {
         let endpoint = env::var("SOLANA_ENDPOINT").context("Couldn't get Solana endpoint")?;
         info!("Connecting to endpoint: {:?}", endpoint);
 
         Ok(Arc::new(Self {
             db: AssertUnwindSafe(db),
             rpc: AssertUnwindSafe(RpcClient::new(endpoint)),
-            ipfs_cdn,
-            arweave_cdn,
+            http: HttpProducers {
+                metadata_json: http_indexer::Producer::new(conn, meta_queue)
+                    .await
+                    .context("Couldn't create AMQP metadata JSON producer")?,
+                store_config: http_indexer::Producer::new(conn, store_cfg_queue)
+                    .await
+                    .context("Couldn't create AMQP store config producer")?,
+            },
         }))
     }
 
@@ -126,21 +143,43 @@ impl Client {
             .get_program_accounts_with_config(program.borrow(), config)
     }
 
-    /// Construct an IPFS link from an IPFS CID
-    ///
-    /// # Errors
-    /// This function fails if the CID provided is not URL safe.
-    pub fn ipfs_link(&self, cid: &Cid) -> Result<Url> {
-        self.ipfs_cdn.join(&cid.to_string()).map_err(Into::into)
+    pub async fn dispatch_metadata_json(
+        &self,
+        meta_address: Pubkey,
+        uri: String,
+    ) -> Result<(), indexer_rabbitmq::Error> {
+        self.http
+            .metadata_json
+            .write(http_indexer::MetadataJson { meta_address, uri })
+            .await
     }
 
-    /// Construct an Arweave link from a valid Arweave transaction ID
-    ///
-    /// # Errors
-    /// This function fails if the transaction ID provided is not URL safe
-    pub fn arweave_link(&self, txid: &ArTxid) -> Result<Url> {
-        self.arweave_cdn
-            .join(&base64::encode_config(&txid.0, base64::URL_SAFE_NO_PAD))
-            .map_err(Into::into)
+    pub async fn dispatch_store_config(
+        &self,
+        store_address: Pubkey,
+        uri: String,
+    ) -> Result<(), indexer_rabbitmq::Error> {
+        self.http
+            .store_config
+            .write(http_indexer::StoreConfig { store_address, uri })
+            .await
     }
+
+    // /// Construct an IPFS link from an IPFS CID
+    // ///
+    // /// # Errors
+    // /// This function fails if the CID provided is not URL safe.
+    // pub fn ipfs_link(&self, cid: &Cid) -> Result<Url> {
+    //     self.ipfs_cdn.join(&cid.to_string()).map_err(Into::into)
+    // }
+
+    // /// Construct an Arweave link from a valid Arweave transaction ID
+    // ///
+    // /// # Errors
+    // /// This function fails if the transaction ID provided is not URL safe
+    // pub fn arweave_link(&self, txid: &ArTxid) -> Result<Url> {
+    //     self.arweave_cdn
+    //         .join(&base64::encode_config(&txid.0, base64::URL_SAFE_NO_PAD))
+    //         .map_err(Into::into)
+    // }
 }

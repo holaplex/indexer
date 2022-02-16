@@ -11,7 +11,8 @@ use metaplex_auction::processor::{
     AuctionData as AuctionDataAccount, AuctionDataExtended, BidState, PriceFloor,
 };
 
-use crate::{prelude::*, Client};
+use super::Client;
+use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

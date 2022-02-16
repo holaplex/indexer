@@ -16,18 +16,34 @@ pub use solana_sdk::pubkey::Pubkey;
 
 use crate::Result;
 
+/// Message data for an account update
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AccountUpdate {
+    /// The account's public key
+    pub key: Pubkey,
+    /// The lamport balance of the account
+    pub lamports: u64,
+    /// The Solana program controlling this account
+    pub owner: Pubkey,
+    /// True if the account's data is an executable smart contract
+    pub executable: bool,
+    /// The next epoch for which this account will owe rent
+    pub rent_epoch: u64,
+    /// The binary data stored on this account
+    pub data: Vec<u8>,
+    /// Monotonic-increasing counter for sequencing on-chain writes
+    pub write_version: u64,
+    /// The slot in which this account was updated
+    pub slot: u64,
+    /// True if this update was triggered by a validator startup
+    pub is_startup: bool,
+}
+
 /// A message transmitted by an `accountsdb` plugin
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Message {
     /// Indicates an account should be updated
-    AccountUpdate {
-        /// The account's public key
-        key: Pubkey,
-        /// The Solana program controlling this account
-        owner: Pubkey,
-        /// The binary data stored on this account
-        data: Vec<u8>,
-    },
+    AccountUpdate(AccountUpdate),
     /// Indicates an instruction was included in a **successful** transaction
     InstructionNotify {
         /// The program this instruction was executed with
@@ -48,7 +64,7 @@ pub struct QueueType {
 
 /// Network hint for declaring exchange and queue names
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, strum::EnumString, strum::Display)]
-#[strum(serialize_all = "camelCase")]
+#[strum(serialize_all = "kebab-case")]
 pub enum Network {
     /// Use the network ID `"mainnet"`
     Mainnet,
@@ -60,7 +76,7 @@ pub enum Network {
 
 impl QueueType {
     /// Construct a new queue configuration given the network this validator is
-    /// connected to.
+    /// connected to and an optional queue suffix
     #[must_use]
     pub fn new(network: Network, id: Option<&str>) -> Self {
         let exchange = format!("{}.accounts", network);
@@ -79,6 +95,7 @@ impl crate::QueueType<Message> for QueueType {
     fn exchange(&self) -> Cow<str> {
         Cow::Borrowed(&self.exchange)
     }
+
     fn queue(&self) -> Cow<str> {
         Cow::Borrowed(&self.queue)
     }
