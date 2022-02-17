@@ -267,7 +267,7 @@ table! {
         address -> Varchar,
         mint_address -> Varchar,
         owner_address -> Varchar,
-        amount -> Int8,
+        amount -> Nullable<Int8>,
         updated_at -> Timestamp,
     }
 }
