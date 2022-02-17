@@ -12,6 +12,8 @@ use crate::{
 pub struct Config {
     amqp: Amqp,
 
+    jobs: Jobs,
+
     #[serde(default)]
     account_owners: HashSet<String>,
 
@@ -29,6 +31,12 @@ pub struct Amqp {
     pub network: indexer_rabbitmq::accountsdb::Network,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Jobs {
+    pub limit: usize,
+}
+
 impl Config {
     pub fn read(path: &str) -> Result<Self> {
         let f = std::fs::File::open(path).context("Failed to open config file")?;
@@ -37,9 +45,10 @@ impl Config {
         Ok(cfg)
     }
 
-    pub fn into_parts(self) -> Result<(Amqp, AccountSelector, InstructionSelector)> {
+    pub fn into_parts(self) -> Result<(Amqp, Jobs, AccountSelector, InstructionSelector)> {
         let Self {
             amqp,
+            jobs,
             account_owners,
             instruction_programs,
         } = self;
@@ -49,6 +58,6 @@ impl Config {
         let ins = InstructionSelector::from_config(instruction_programs)
             .context("Failed to create instruction selector")?;
 
-        Ok((amqp, acct, ins))
+        Ok((amqp, jobs, acct, ins))
     }
 }

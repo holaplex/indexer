@@ -14,6 +14,7 @@ use crate::{
     },
     prelude::*,
     selectors::{AccountSelector, InstructionSelector},
+    sender::Sender,
 };
 
 fn custom_err(
@@ -25,7 +26,7 @@ fn custom_err(
 /// An instance of the plugin
 #[derive(Debug, Default)]
 pub struct AccountsDbPluginRabbitMq {
-    producer: Option<Producer>,
+    producer: Option<Sender<Producer>>,
     acct_sel: Option<AccountSelector>,
     ins_sel: Option<InstructionSelector>,
 }
@@ -38,7 +39,7 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
     fn on_load(&mut self, cfg: &str) -> Result<()> {
         solana_logger::setup_with_default("info");
 
-        let (amqp, acct, ins) = Config::read(cfg)
+        let (amqp, jobs, acct, ins) = Config::read(cfg)
             .and_then(Config::into_parts)
             .map_err(custom_err)?;
 
@@ -51,12 +52,13 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                     .await
                     .map_err(custom_err)?;
 
-            self.producer = Some(
+            self.producer = Some(Sender::new(
                 QueueType::new(amqp.network, None)
                     .producer(&conn)
                     .await
                     .map_err(custom_err)?,
-            );
+                jobs.limit,
+            ));
 
             Ok(())
         })
@@ -91,22 +93,29 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                         write_version,
                     } = *acct;
 
+                    let key = Pubkey::new_from_array(pubkey.try_into().map_err(custom_err)?);
+                    let owner = Pubkey::new_from_array(owner.try_into().map_err(custom_err)?);
+                    let data = data.to_owned();
+
                     self.producer
                         .as_ref()
                         .ok_or_else(uninit)?
-                        .write(Message::AccountUpdate(AccountUpdate {
-                            key: Pubkey::new_from_array(pubkey.try_into().map_err(custom_err)?),
-                            lamports,
-                            owner: Pubkey::new_from_array(owner.try_into().map_err(custom_err)?),
-                            executable,
-                            rent_epoch,
-                            data: data.to_owned(),
-                            write_version,
-                            slot,
-                            is_startup,
-                        }))
-                        .await
-                        .map_err(custom_err)?;
+                        .run(move |prod| async move {
+                            prod.write(Message::AccountUpdate(AccountUpdate {
+                                key,
+                                lamports,
+                                owner,
+                                executable,
+                                rent_epoch,
+                                data,
+                                write_version,
+                                slot,
+                                is_startup,
+                            }))
+                            .await
+                            .map_err(Into::into)
+                        })
+                        .await;
                 },
             }
 
@@ -128,7 +137,7 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
             ins: &CompiledInstruction,
             sel: &InstructionSelector,
             msg: &SanitizedMessage,
-            prod: &Producer,
+            prod: &Sender<Producer>,
         ) -> StdResult<(), anyhow::Error> {
             // TODO: no clue if this is right.
             let program = *msg
@@ -151,13 +160,18 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                 return Ok(());
             }
 
-            prod.write(Message::InstructionNotify {
-                program,
-                data: ins.data.clone(),
-                accounts,
+            let data = ins.data.clone();
+
+            prod.run(|prod| async move {
+                prod.write(Message::InstructionNotify {
+                    program,
+                    data,
+                    accounts,
+                })
+                .await
+                .map_err(Into::into)
             })
-            .await
-            .map_err(custom_err)?;
+            .await;
 
             Ok(())
         }

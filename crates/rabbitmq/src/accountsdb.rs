@@ -5,8 +5,8 @@ use std::borrow::Cow;
 
 use lapin::{
     options::{
-        BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions, QueueBindOptions,
-        QueueDeclareOptions,
+        BasicConsumeOptions, BasicPublishOptions, BasicQosOptions, ExchangeDeclareOptions,
+        QueueBindOptions, QueueDeclareOptions,
     },
     types::{AMQPValue, FieldTable},
     BasicProperties, Channel, ExchangeKind,
@@ -121,15 +121,20 @@ impl crate::QueueType<Message> for QueueType {
         )
         .await?;
 
-        let mut queue_options = FieldTable::default();
-        queue_options.insert("x-message-ttl".into(), AMQPValue::LongUInt(60000)); // ten minutes
+        let mut queue_fields = FieldTable::default();
+        queue_fields.insert(
+            "x-max-length-bytes".into(),
+            AMQPValue::LongUInt(8 * 1024 * 1024 * 1024), // 8 GiB
+        );
 
-        chan.queue_declare(
-            self.queue().as_ref(),
-            QueueDeclareOptions::default(),
-            queue_options,
-        )
-        .await?;
+        let mut queue_options = QueueDeclareOptions::default();
+
+        if cfg!(debug_assertions) {
+            queue_options.auto_delete = true;
+        }
+
+        chan.queue_declare(self.queue().as_ref(), queue_options, queue_fields)
+            .await?;
 
         chan.queue_bind(
             self.queue().as_ref(),
@@ -139,6 +144,8 @@ impl crate::QueueType<Message> for QueueType {
             FieldTable::default(),
         )
         .await?;
+
+        chan.basic_qos(4096, BasicQosOptions::default()).await?;
 
         chan.basic_consume(
             self.queue().as_ref(),
