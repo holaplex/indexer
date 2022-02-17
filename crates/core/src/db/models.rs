@@ -9,8 +9,8 @@ use chrono::NaiveDateTime;
 use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bids, editions,
     files, listing_metadatas, master_editions, metadata_collections, metadata_creators,
-    metadata_jsons, metadatas, store_config_jsons, store_configs, store_denylist, storefronts,
-    stores, token_accounts, token_transfers, whitelisted_creators,
+    metadata_jsons, metadatas, receipts, store_config_jsons, store_configs, store_denylist,
+    storefronts, stores, token_accounts, token_transfers, whitelisted_creators,
 };
 
 /// A row in the `bids` table
@@ -457,4 +457,20 @@ pub struct TokenTransfer<'a> {
     /// This is an approximate time so the block time of the transaction
     /// signature can be different.
     pub transferred_at: NaiveDateTime,
+}
+
+/// A row in the `receipts` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct Receipt<'a> {
+    pub address: Cow<'a, str>,
+    pub trade_state: Cow<'a, str>,
+    pub bookkeeper: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub wallet: Cow<'a, str>,
+    pub token_account: Cow<'a, str>,
+    pub metadata_mint: Cow<'a, str>,
+    pub price: i64,
+    pub token_size: i64,
+    pub bump: i16,
+    pub trade_state_bump: i16,
 }
