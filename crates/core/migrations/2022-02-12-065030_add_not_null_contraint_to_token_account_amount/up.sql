@@ -1,2 +1,1 @@
-alter table token_accounts
-alter column amount drop not null;
+alter table token_accounts alter column amount set not null;
