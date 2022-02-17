@@ -5,6 +5,6 @@ pub mod auction_house;
 pub mod edition;
 pub mod metadata;
 pub mod mpl_store;
-pub mod token_account;
+pub mod token;
 
 pub(self) use super::Client;

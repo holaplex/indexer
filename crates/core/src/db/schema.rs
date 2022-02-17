@@ -267,8 +267,20 @@ table! {
         address -> Varchar,
         mint_address -> Varchar,
         owner_address -> Varchar,
-        amount -> Nullable<Int8>,
+        amount -> Int8,
         updated_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    token_transfers (owner_from, owner_to, mint_address, transferred_at) {
+        owner_from -> Varchar,
+        owner_to -> Varchar,
+        mint_address -> Varchar,
+        transferred_at -> Timestamp,
     }
 }
 
@@ -304,5 +316,6 @@ allow_tables_to_appear_in_same_query!(
     storefronts,
     stores,
     token_accounts,
+    token_transfers,
     whitelisted_creators,
 );

@@ -1,0 +1,1 @@
+drop table token_transfers;
