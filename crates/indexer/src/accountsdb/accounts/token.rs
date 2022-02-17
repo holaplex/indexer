@@ -19,9 +19,9 @@ pub async fn process_token_transfer(
     key: Pubkey,
     token_account: TokenAccount,
 ) -> Result<()> {
-    let accts =  client
-    .db()
-    .run(move |db| {
+    let accts = client
+        .db()
+        .run(move |db| {
             token_accounts::table
                 .filter(token_accounts::address.eq(&key.to_string()))
                 .load::<TokenAccountModel>(db)
@@ -39,8 +39,8 @@ pub async fn process_token_transfer(
             transfered_at: Local::now().naive_utc(),
         };
         client
-        .db()
-        .run(move |db| {
+            .db()
+            .run(move |db| {
                 insert_into(token_transfers::table)
                     .values(&row)
                     .on_conflict_do_nothing()
@@ -48,7 +48,7 @@ pub async fn process_token_transfer(
             })
             .await
             .context("failed to insert into token_transfers table")?;
-            client
+        client
             .db()
             .run(move |db| {
                 update(token_accounts::table)
@@ -64,9 +64,9 @@ pub async fn process_token_transfer(
 }
 pub async fn process(client: &Client, key: Pubkey, token_account: TokenAccount) -> Result<()> {
     let mint = token_account.mint.to_string();
-    let is_present: bool =  client
-    .db()
-    .run({
+    let is_present: bool = client
+        .db()
+        .run({
             let mint = mint.clone();
             |db| {
                 select(exists(
@@ -98,7 +98,7 @@ pub async fn process(client: &Client, key: Pubkey, token_account: TokenAccount) 
         owner_address: Owned(owner),
         updated_at: now,
     };
-    
+
     client
         .db()
         .run(move |db| {
