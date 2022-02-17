@@ -34,9 +34,9 @@ pub async fn process_token_transfer(
     if token_account.owner.to_string() != acct.owner_address {
         let row = TokenTransfer {
             owner_from: Owned(acct.owner_address.to_string()),
-            to_owner: Owned(token_account.owner.to_string()),
+            owner_to: Owned(token_account.owner.to_string()),
             mint_address: Owned(token_account.mint.to_string()),
-            transfered_at: Local::now().naive_utc(),
+            transferred_at: Local::now().naive_utc(),
         };
         client
             .db()

@@ -276,11 +276,11 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
-    token_transfers (owner_from, to_owner, mint_address, transfered_at) {
+    token_transfers (owner_from, owner_to, mint_address, transferred_at) {
         owner_from -> Varchar,
-        to_owner -> Varchar,
+        owner_to -> Varchar,
         mint_address -> Varchar,
-        transfered_at -> Timestamp,
+        transferred_at -> Timestamp,
     }
 }
 
