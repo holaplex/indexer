@@ -14,6 +14,72 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    auction_caches (address) {
+        address -> Varchar,
+        store_address -> Varchar,
+        timestamp -> Timestamp,
+        auction_data -> Varchar,
+        auction_ext -> Varchar,
+        vault -> Varchar,
+        auction_manager -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    auction_datas (address) {
+        address -> Varchar,
+        ends_at -> Nullable<Timestamp>,
+        authority -> Nullable<Varchar>,
+        token_mint -> Nullable<Varchar>,
+        store_owner -> Nullable<Varchar>,
+        highest_bid -> Nullable<Int8>,
+        end_auction_gap -> Nullable<Timestamp>,
+        price_floor -> Nullable<Int8>,
+        total_uncancelled_bids -> Nullable<Int4>,
+        last_bid_time -> Nullable<Timestamp>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    auction_datas_ext (address) {
+        address -> Varchar,
+        gap_tick_size -> Nullable<Int4>,
+        instant_sale_price -> Nullable<Int8>,
+        name -> Text,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    auction_houses (address) {
+        address -> Varchar,
+        treasury_mint -> Varchar,
+        auction_house_treasury -> Varchar,
+        treasury_withdrawal_destination -> Varchar,
+        fee_withdrawal_destination -> Varchar,
+        authority -> Varchar,
+        creator -> Varchar,
+        bump -> Int2,
+        treasury_bump -> Int2,
+        fee_payer_bump -> Int2,
+        seller_fee_basis_points -> Int2,
+        requires_sign_off -> Bool,
+        can_change_sale_price -> Bool,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     bids (listing_address, bidder_address) {
         listing_address -> Varchar,
         bidder_address -> Varchar,
@@ -31,7 +97,6 @@ table! {
         address -> Varchar,
         parent_address -> Varchar,
         edition -> Int8,
-        metadata_address -> Varchar,
     }
 }
 
@@ -62,34 +127,10 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
-    listings (address) {
-        address -> Varchar,
-        ends_at -> Nullable<Timestamp>,
-        created_at -> Timestamp,
-        ended -> Bool,
-        authority -> Varchar,
-        token_mint -> Varchar,
-        store_owner -> Varchar,
-        highest_bid -> Nullable<Int8>,
-        end_auction_gap -> Nullable<Timestamp>,
-        price_floor -> Nullable<Int8>,
-        total_uncancelled_bids -> Nullable<Int4>,
-        gap_tick_size -> Nullable<Int4>,
-        instant_sale_price -> Nullable<Int8>,
-        name -> Text,
-        last_bid_time -> Nullable<Timestamp>,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-
     master_editions (address) {
         address -> Varchar,
         supply -> Int8,
         max_supply -> Nullable<Int8>,
-        metadata_address -> Varchar,
     }
 }
 
@@ -149,6 +190,33 @@ table! {
         primary_sale_happened -> Bool,
         is_mutable -> Bool,
         edition_nonce -> Nullable<Int4>,
+        edition_pda -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    store_config_jsons (config_address) {
+        config_address -> Varchar,
+        name -> Text,
+        description -> Text,
+        logo_url -> Text,
+        banner_url -> Text,
+        subdomain -> Text,
+        owner_address -> Varchar,
+        auction_house_address -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    store_configs (address) {
+        address -> Varchar,
+        settings_uri -> Text,
     }
 }
 
@@ -166,7 +234,7 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
-    storefronts (owner_address) {
+    storefronts (address) {
         owner_address -> Varchar,
         subdomain -> Text,
         title -> Text,
@@ -176,6 +244,18 @@ table! {
         ts_index -> Tsvector,
         updated_at -> Nullable<Timestamp>,
         banner_url -> Nullable<Text>,
+        address -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    stores (address) {
+        address -> Varchar,
+        public -> Bool,
+        config_address -> Varchar,
     }
 }
 
@@ -187,24 +267,55 @@ table! {
         address -> Varchar,
         mint_address -> Varchar,
         owner_address -> Varchar,
-        amount -> Nullable<Int8>,
+        amount -> Int8,
         updated_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    token_transfers (owner_from, owner_to, mint_address, transferred_at) {
+        owner_from -> Varchar,
+        owner_to -> Varchar,
+        mint_address -> Varchar,
+        transferred_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    whitelisted_creators (address) {
+        address -> Varchar,
+        creator_address -> Varchar,
+        activated -> Bool,
     }
 }
 
 allow_tables_to_appear_in_same_query!(
     attributes,
+    auction_caches,
+    auction_datas,
+    auction_datas_ext,
+    auction_houses,
     bids,
     editions,
     files,
     listing_metadatas,
-    listings,
     master_editions,
     metadata_collections,
     metadata_creators,
     metadata_jsons,
     metadatas,
+    store_config_jsons,
+    store_configs,
     store_denylist,
     storefronts,
+    stores,
     token_accounts,
+    token_transfers,
+    whitelisted_creators,
 );

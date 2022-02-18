@@ -1,38 +1,17 @@
 //! Miscellaneous utility functions.
+#![allow(dead_code)]
 
-use indexer_core::prelude::*;
-use metaplex_token_metadata::{
-    solana_program::entrypoint::ProgramResult,
-    state::{Key, MasterEditionV1, MasterEditionV2},
+use metaplex_token_metadata::state::{MasterEditionV1, MasterEditionV2};
+#[cfg(feature = "solana-program")]
+use {
+    indexer_core::prelude::*,
+    metaplex_token_metadata::state::Key,
+    solana_program::{account_info::AccountInfo, entrypoint::ProgramResult},
+    solana_sdk::{account::Account, pubkey::Pubkey},
 };
-use solana_program::account_info::AccountInfo;
-use solana_sdk::{account::Account, pubkey::Pubkey};
-
-/// Format a [`chrono::Duration`] in HH:MM:SS.FFF format
-#[must_use]
-pub fn duration_hhmmssfff(duration: chrono::Duration) -> String {
-    use std::fmt::Write;
-
-    let mut out = String::new();
-
-    let h = duration.num_hours();
-    if h > 0 {
-        write!(out, "{:02}:", h).unwrap();
-    }
-
-    write!(
-        out,
-        "{:02}:{:02}.{:03}",
-        duration.num_minutes().rem_euclid(60),
-        duration.num_seconds().rem_euclid(60),
-        duration.num_milliseconds().rem_euclid(1000)
-    )
-    .unwrap();
-
-    out
-}
 
 /// Borrow a `solana-sdk` account as a `solana-program` account info struct.
+#[cfg(feature = "solana-program")]
 pub fn account_as_info<'a>(
     key: &'a Pubkey,
     is_signer: bool,
@@ -51,6 +30,17 @@ pub fn account_as_info<'a>(
     )
 }
 
+/// Borrow an account's raw as a `solana-program` account info struct.
+#[cfg(feature = "solana-program")]
+pub fn account_data_as_info<'a>(
+    key: &'a Pubkey,
+    data: &'a mut [u8],
+    owner: &'a Pubkey,
+    lamports: &'a mut u64,
+) -> AccountInfo<'a> {
+    AccountInfo::new(key, false, false, lamports, data, owner, false, 0)
+}
+
 /// Convenience wrapper for Metaplex's [`MasterEdition`] trait and structs
 #[derive(Debug)]
 pub enum MasterEdition {
@@ -65,6 +55,7 @@ impl MasterEdition {
     ///
     /// # Errors
     /// This function fails if the account cannot be parsed as a v1 account or a v2 account.
+    #[cfg(feature = "solana-program")]
     pub fn from_account_info(
         info: &AccountInfo,
     ) -> Result<Self, solana_sdk::program_error::ProgramError> {
@@ -77,6 +68,7 @@ impl MasterEdition {
     }
 }
 
+#[cfg(feature = "solana-program")]
 impl metaplex_token_metadata::state::MasterEdition for MasterEdition {
     fn key(&self) -> Key {
         match self {

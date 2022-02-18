@@ -1,5 +1,5 @@
 use indexer_rabbitmq::{
-    accountsdb::{Message, Producer, QueueType},
+    accountsdb::{AccountUpdate, Message, Producer, QueueType},
     lapin::{Connection, ConnectionProperties},
     prelude::*,
 };
@@ -9,11 +9,12 @@ use solana_program::{instruction::CompiledInstruction, message::SanitizedMessage
 use crate::{
     config::Config,
     interface::{
-        AccountsDbPlugin, AccountsDbPluginError, ReplicaAccountInfoVersions,
+        AccountsDbPlugin, AccountsDbPluginError, ReplicaAccountInfo, ReplicaAccountInfoVersions,
         ReplicaTransactionInfoVersions, Result,
     },
     prelude::*,
     selectors::{AccountSelector, InstructionSelector},
+    sender::Sender,
 };
 
 fn custom_err(
@@ -25,7 +26,7 @@ fn custom_err(
 /// An instance of the plugin
 #[derive(Debug, Default)]
 pub struct AccountsDbPluginRabbitMq {
-    producer: Option<Producer>,
+    producer: Option<Sender<Producer>>,
     acct_sel: Option<AccountSelector>,
     ins_sel: Option<InstructionSelector>,
 }
@@ -38,7 +39,7 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
     fn on_load(&mut self, cfg: &str) -> Result<()> {
         solana_logger::setup_with_default("info");
 
-        let (amqp, acct, ins) = Config::read(cfg)
+        let (amqp, jobs, acct, ins) = Config::read(cfg)
             .and_then(Config::into_parts)
             .map_err(custom_err)?;
 
@@ -51,12 +52,13 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                     .await
                     .map_err(custom_err)?;
 
-            self.producer = Some(
-                QueueType::new(amqp.network)
+            self.producer = Some(Sender::new(
+                QueueType::new(amqp.network, None)
                     .producer(&conn)
                     .await
                     .map_err(custom_err)?,
-            );
+                jobs.limit,
+            ));
 
             Ok(())
         })
@@ -65,9 +67,8 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
     fn update_account(
         &mut self,
         account: ReplicaAccountInfoVersions,
-        // TODO: is this the account slot or the current slot?
-        _slot: u64,
-        _is_startup: bool,
+        slot: u64,
+        is_startup: bool,
     ) -> Result<()> {
         fn uninit() -> AccountsDbPluginError {
             AccountsDbPluginError::AccountsUpdateError {
@@ -82,16 +83,39 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                         return Ok(());
                     }
 
+                    let ReplicaAccountInfo {
+                        pubkey,
+                        lamports,
+                        owner,
+                        executable,
+                        rent_epoch,
+                        data,
+                        write_version,
+                    } = *acct;
+
+                    let key = Pubkey::new_from_array(pubkey.try_into().map_err(custom_err)?);
+                    let owner = Pubkey::new_from_array(owner.try_into().map_err(custom_err)?);
+                    let data = data.to_owned();
+
                     self.producer
                         .as_ref()
                         .ok_or_else(uninit)?
-                        .write(Message::AccountUpdate {
-                            key: acct.pubkey.try_into().map_err(custom_err)?,
-                            owner: acct.owner.try_into().map_err(custom_err)?,
-                            data: acct.data.to_owned(),
+                        .run(move |prod| async move {
+                            prod.write(Message::AccountUpdate(AccountUpdate {
+                                key,
+                                lamports,
+                                owner,
+                                executable,
+                                rent_epoch,
+                                data,
+                                write_version,
+                                slot,
+                                is_startup,
+                            }))
+                            .await
+                            .map_err(Into::into)
                         })
-                        .await
-                        .map_err(custom_err)?;
+                        .await;
                 },
             }
 
@@ -113,13 +137,12 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
             ins: &CompiledInstruction,
             sel: &InstructionSelector,
             msg: &SanitizedMessage,
-            prod: &Producer,
+            prod: &Sender<Producer>,
         ) -> StdResult<(), anyhow::Error> {
             // TODO: no clue if this is right.
-            let program = msg
+            let program = *msg
                 .get_account_key(ins.program_id_index as usize)
-                .ok_or_else(|| anyhow!("Couldn't get program ID for instruction"))?
-                .to_bytes();
+                .ok_or_else(|| anyhow!("Couldn't get program ID for instruction"))?;
 
             // TODO: ...or this.
             let accounts = ins
@@ -128,7 +151,7 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                 .map(|i| {
                     msg.get_account_key(*i as usize).map_or_else(
                         || Err(anyhow!("Couldn't get input account for instruction")),
-                        |k| Ok(k.to_bytes()),
+                        |k| Ok(*k),
                     )
                 })
                 .collect::<StdResult<Vec<_>, _>>()?;
@@ -137,13 +160,18 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                 return Ok(());
             }
 
-            prod.write(Message::InstructionNotify {
-                program,
-                data: ins.data.clone(),
-                accounts,
+            let data = ins.data.clone();
+
+            prod.run(|prod| async move {
+                prod.write(Message::InstructionNotify {
+                    program,
+                    data,
+                    accounts,
+                })
+                .await
+                .map_err(Into::into)
             })
-            .await
-            .map_err(custom_err)?;
+            .await;
 
             Ok(())
         }

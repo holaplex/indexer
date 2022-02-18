@@ -13,28 +13,78 @@ license = "AGPL-3.0-or-later"
 keywords = ["solana", "metaplex", "holaplex", "web3"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
+[features]
+default = []
+accountsdb = [
+  "solana-client",
+  "solana-program",
+]
+http = [
+  "base64",
+  "cid",
+  "reqwest",
+  "serde_json",
+]
+
+[[bin]]
+name = "metaplex-indexer-accountsdb"
+required-features = ["accountsdb"]
+
+[[bin]]
+name = "metaplex-indexer-http"
+required-features = ["http"]
+
 [dependencies]
-base64 = "0.13.0"
-cid = "0.7.0"
-parking_lot = "0.11.2"
-reqwest = "0.11.6"
+async-trait = "0.1.52"
 serde = { version = "1.0.130", features = ["derive"] }
-serde_json = "1.0.70"
 tokio = { version = "1.13.0", features = ["rt"] }
-topograph = "0.3.1-alpha.1"
+tokio-amqp = "1.0.1"
 
 # Solana & Metaplex
+anchor-lang = "0.19.0"
 metaplex = "0.0.1"
 metaplex-auction = "0.0.1"
 metaplex-token-metadata = "0.0.1"
 metaplex-token-vault = "0.0.1"
-solana-client = "1.8.3"
-solana-program = "1.8.3"
+solana-client = { version = "1.8.3", optional = true }
+solana-program = { version = "1.8.3", optional = true }
 solana-sdk = "1.8.3"
 spl-token = "3.2.0"
 
+# HTTP indexer
+base64 = { version = "0.13.0", optional = true }
+cid = { version = "0.7.0", optional = true }
+reqwest = { version = "0.11.6", optional = true }
+serde_json = { version = "1.0.70", optional = true }
+
+# Git dependencies
+[dependencies.mpl-auction-house]
+git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
+rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
+
+[dependencies.mpl-metaplex]
+git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
+rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
+
+# Workspace dependencies
 [dependencies.indexer-core]
 package = "metaplex-indexer-core"
 version = "=0.1.0"
 path = "../core"
 
+[dependencies.indexer-rabbitmq]
+package = "metaplex-indexer-rabbitmq"
+version = "=0.1.0"
+path = "../rabbitmq"
+
+[target.metaplex-indexer-accountsdb.dependencies.indexer-rabbitmq]
+package = "metaplex-indexer-rabbitmq"
+version = "=0.1.0"
+path = "../rabbitmq"
+features = ["accountsdb", "http-indexer", "producer"]
+
+[target.metaplex-indexer-http.dependencies.indexer-rabbitmq]
+package = "metaplex-indexer-rabbitmq"
+version = "=0.1.0"
+path = "../rabbitmq"
+features = ["http-indexer"]

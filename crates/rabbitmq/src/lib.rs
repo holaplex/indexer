@@ -41,6 +41,8 @@ pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 pub mod accountsdb;
 #[cfg(any(test, feature = "consumer"))]
 pub mod consumer;
+#[cfg(any(test, feature = "http-indexer"))]
+pub mod http_indexer;
 #[cfg(any(test, feature = "producer"))]
 pub mod producer;
 mod queue_type;

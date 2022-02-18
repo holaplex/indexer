@@ -2,20 +2,20 @@
 
 // Queryable and Insertable are imported globally from diesel
 
-// TODO: do we need chrono instead of std::time?
 use std::borrow::Cow;
 
 use chrono::NaiveDateTime;
 
 use super::schema::{
-    attributes, bids, editions, files, listing_metadatas, listings, master_editions,
-    metadata_collections, metadata_creators, metadata_jsons, metadatas, storefronts,
-    token_accounts,
+    attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bids, editions,
+    files, listing_metadatas, master_editions, metadata_collections, metadata_creators,
+    metadata_jsons, metadatas, store_config_jsons, store_configs, store_denylist, storefronts,
+    stores, token_accounts, token_transfers, whitelisted_creators,
 };
 
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
-#[belongs_to(parent = "Listing<'_>", foreign_key = "listing_address")]
+#[belongs_to(parent = "AuctionData<'_>", foreign_key = "listing_address")]
 pub struct Bid<'a> {
     /// The auction being bid on
     pub listing_address: Cow<'a, str>,
@@ -32,7 +32,6 @@ pub struct Bid<'a> {
 /// A row in the `editions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[belongs_to(parent = "MasterEdition<'_>", foreign_key = "parent_address")]
-#[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
 pub struct Edition<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -40,14 +39,12 @@ pub struct Edition<'a> {
     pub parent_address: Cow<'a, str>,
     /// The ordinal of this edition
     pub edition: i64,
-    /// The metadata this edition refers to
-    pub metadata_address: Cow<'a, str>,
 }
 
 /// A row in the `listing_metadatas` table.  This is a join on `listings` and
 /// `metadatas`
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
-#[belongs_to(parent = "Listing<'_>", foreign_key = "listing_address")]
+#[belongs_to(parent = "AuctionCache<'_>", foreign_key = "listing_address")]
 #[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
 pub struct ListingMetadata<'a> {
     /// The address of this record's listing
@@ -58,24 +55,36 @@ pub struct ListingMetadata<'a> {
     pub metadata_index: i32,
 }
 
-/// A row in the `listings` table
+/// A row in the `auction_caches` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
-#[belongs_to(parent = "Storefront<'_>", foreign_key = "store_owner")]
-pub struct Listing<'a> {
+pub struct AuctionCache<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// The storefront this auction cache belongs to
+    pub store_address: Cow<'a, str>,
+    /// The timestamp this auction cache was created at
+    pub timestamp: NaiveDateTime,
+    /// The address of the cached auction
+    pub auction_data: Cow<'a, str>,
+    /// The PDA of the cached auction's extended data
+    pub auction_ext: Cow<'a, str>,
+    /// The address of the cached auction's vault
+    pub vault: Cow<'a, str>,
+    /// The manager of the cached auction
+    pub auction_manager: Cow<'a, str>,
+}
+
+/// A row in the `auction_datas` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+pub struct AuctionData<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
     /// The timestamp this auction ends at, if applicable
     pub ends_at: Option<NaiveDateTime>,
-    /// The timestamp this auction was created at
-    pub created_at: NaiveDateTime,
-    /// Whether this auction has ended
-    pub ended: bool,
     /// The authority of this auction
     pub authority: Cow<'a, str>,
     /// The item being auctioned
     pub token_mint: Cow<'a, str>,
-    /// The owner of the store this auction was found from
-    pub store_owner: Cow<'a, str>,
     /// The amount of the highest bid, if applicable
     pub highest_bid: Option<i64>,
     /// The gap time of the auction, if applicable
@@ -84,6 +93,16 @@ pub struct Listing<'a> {
     pub price_floor: Option<i64>,
     /// The total number of live bids on this auction, if applicable
     pub total_uncancelled_bids: Option<i32>,
+    /// The timestamp of the last bid, if applicable and the auction has bids
+    pub last_bid_time: Option<NaiveDateTime>,
+}
+
+/// A row in the `auction_datas_ext` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[table_name = "auction_datas_ext"]
+pub struct AuctionDataExt<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
     /// The minimum bid increase in percentage points during the ending gap of
     /// the auction, if applicable
     pub gap_tick_size: Option<i32>,
@@ -91,13 +110,10 @@ pub struct Listing<'a> {
     pub instant_sale_price: Option<i64>,
     /// The name of the listing
     pub name: Cow<'a, str>,
-    /// The timestamp of the last bid, if applicable and the auction has bids
-    pub last_bid_time: Option<NaiveDateTime>,
 }
 
 /// A row in the `master_editions` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
-#[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 pub struct MasterEdition<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -106,8 +122,6 @@ pub struct MasterEdition<'a> {
     /// The maximum printing supply of the master edition, or `None` if it is
     /// unlimited
     pub max_supply: Option<i64>,
-    /// The metadata this edition refers to
-    pub metadata_address: Cow<'a, str>,
 }
 
 /// A row in the `metadata_creators` table.  This is a join on `metadatas` and
@@ -165,6 +179,8 @@ pub struct Metadata<'a> {
     pub is_mutable: bool,
     /// Metaplex isn't clear about what this is.  Assume reserved.
     pub edition_nonce: Option<i32>,
+    /// edition pda derived from account
+    pub edition_pda: Cow<'a, str>,
 }
 
 /// A row in the `storefronts` table
@@ -186,6 +202,10 @@ pub struct Storefront<'a> {
     pub updated_at: Option<NaiveDateTime>,
     /// The file URL for this store's banner
     pub banner_url: Option<Cow<'a, str>>,
+    /// The address of this account
+    ///
+    /// **NOTE:** This is **NOT** the store owner's wallet!
+    pub address: Cow<'a, str>,
 }
 
 /// Join of `metadatas` and `metadata_jsons` for an NFT
@@ -328,4 +348,113 @@ pub struct MetadataCollection<'a> {
     pub name: Option<Cow<'a, str>>,
     /// Collection family
     pub family: Option<Cow<'a, str>>,
+}
+
+/// A row in the `store_configs` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct StoreConfig<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// Store settings URI
+    pub settings_uri: Option<Cow<'a, str>>,
+}
+
+/// A row in the `whitelisted_creators` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct WhitelistedCreator<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// The wallet of the whitelisted creator
+    pub creator_address: Cow<'a, str>,
+    /// Whether or not the specified creator is actually whitelisted
+    pub activated: bool,
+}
+
+/// A row in the `stores` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct Store<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// Whether this is a public storefront
+    ///
+    /// When this flag is set, items with creators not in the set of active
+    /// whitelisted creators can list on this storefront.
+    pub public: bool,
+    /// The derived address of this store's StoreConfig account
+    pub config_address: Cow<'a, str>,
+}
+
+/// A row in the `settings_uri_jsons` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct StoreConfigJson<'a> {
+    /// The address of the StoreConfig account this record refers to
+    pub config_address: Cow<'a, str>,
+    /// Storefront name
+    pub name: Cow<'a, str>,
+    /// Storefront description
+    pub description: Cow<'a, str>,
+    /// Storefront logo URL
+    pub logo_url: Cow<'a, str>,
+    /// Storefront banner URL
+    pub banner_url: Cow<'a, str>,
+    /// Storefront submain
+    pub subdomain: Cow<'a, str>,
+    /// Storefront owner address
+    pub owner_address: Cow<'a, str>,
+    /// Auction house account address
+    pub auction_house_address: Cow<'a, str>,
+}
+
+/// A row in the `auction_houses` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct AuctionHouse<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// Auction House treasury mint address
+    pub treasury_mint: Cow<'a, str>,
+    /// Auction House treasury address
+    pub auction_house_treasury: Cow<'a, str>,
+    /// Treasury withdrawal address
+    pub treasury_withdrawal_destination: Cow<'a, str>,
+    /// Fee withdrawl address
+    pub fee_withdrawal_destination: Cow<'a, str>,
+    /// Auction House authority address
+    pub authority: Cow<'a, str>,
+    /// Auction House creator address
+    pub creator: Cow<'a, str>,
+
+    // Bumps for PDAs
+    /// Bump value
+    pub bump: i16,
+    /// Treasury bump value
+    pub treasury_bump: i16,
+    /// Fee payer bump value
+    pub fee_payer_bump: i16,
+
+    /// The royalty percentage of the creator, in basis points (0.01%, values
+    /// range from 0-10,000)
+    pub seller_fee_basis_points: i16,
+    /// Boolean value indicating whether the auction house must sign all sales orders.
+    pub requires_sign_off: bool,
+    /// Whether the Auction House can change the sale price
+    ///
+    /// Allows the Auction house to do complicated order matching to find the best price for the seller.
+    /// Helpful if buyer lists an NFT with price of 0
+    pub can_change_sale_price: bool,
+}
+
+/// A row in the `token_transfers` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct TokenTransfer<'a> {
+    /// Address of the wallet from which NFT was transferred
+    pub owner_from: Cow<'a, str>,
+    /// Address of the wallet to which NFT was transferred
+    pub owner_to: Cow<'a, str>,
+    /// Mint address of the token
+    pub mint_address: Cow<'a, str>,
+    /// Time at which transfer occurred
+    ///
+    /// This is an approximate time so the block time of the transaction
+    /// signature can be different.
+    pub transferred_at: NaiveDateTime,
 }

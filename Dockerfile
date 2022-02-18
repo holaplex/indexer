@@ -34,17 +34,7 @@ COPY Cargo.toml Cargo.lock ./
 
 RUN cargo build --profile heroku \
   -pmetaplex-indexer \
-  -pmetaplex-indexer-rpc \
   -pmetaplex-indexer-graphql
-
-RUN strip target/heroku/metaplex-indexer && \
-  strip target/heroku/metaplex-indexer-rpc && \
-  strip target/heroku/metaplex-indexer-graphql && \
-  mkdir bin && \
-  mv target/heroku/metaplex-indexer \
-    target/heroku/metaplex-indexer-rpc \
-    target/heroku/metaplex-indexer-graphql \
-    bin
 
 RUN rm -rf target /usr/local/cargo/registry && \
   rustup toolchain uninstall \
@@ -61,8 +51,6 @@ RUN apt-get install -y libpq5 && \
   && \
   rm -rf /var/lib/apt/lists/*
 
-ADD heroku_startup.sh /metaplex-indexer/heroku_startup.sh
-ADD heroku_indexer_startup.sh /metaplex-indexer/heroku_indexer_startup.sh
 ADD heroku_graphql_startup.sh /metaplex-indexer/heroku_graphql_startup.sh
 
 CMD ["./heroku_startup.sh"]
