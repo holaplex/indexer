@@ -19,6 +19,7 @@ use crate::Result;
 /// AMQP configuration for HTTP indexers
 #[derive(Debug, Clone)]
 pub struct QueueType<E> {
+    suffixed: bool,
     exchange: String,
     queue: String,
     _p: PhantomData<fn(E) -> ()>,
@@ -85,6 +86,7 @@ impl<E: Entity> QueueType<E> {
         }
 
         Self {
+            suffixed: id.is_some() || cfg!(debug_assertions),
             exchange,
             queue,
             _p: PhantomData::default(),
@@ -115,10 +117,16 @@ impl<E: Entity> crate::QueueType<E> for QueueType<E> {
     }
 
     async fn init_consumer(&self, chan: &Channel) -> Result<lapin::Consumer> {
+        let mut exchg_options = ExchangeDeclareOptions::default();
+
+        if self.suffixed {
+            exchg_options.auto_delete = true;
+        }
+
         chan.exchange_declare(
             self.exchange().as_ref(),
             ExchangeKind::Fanout,
-            ExchangeDeclareOptions::default(),
+            exchg_options,
             FieldTable::default(),
         )
         .await?;
@@ -131,7 +139,7 @@ impl<E: Entity> crate::QueueType<E> for QueueType<E> {
 
         let mut queue_options = QueueDeclareOptions::default();
 
-        if cfg!(debug_assertions) {
+        if self.suffixed {
             queue_options.auto_delete = true;
         }
 

@@ -58,6 +58,7 @@ pub enum Message {
 /// AMQP configuration for `accountsdb` plugins
 #[derive(Debug, Clone)]
 pub struct QueueType {
+    suffixed: bool,
     exchange: String,
     queue: String,
 }
@@ -86,7 +87,11 @@ impl QueueType {
             queue = format!("{}.{}", queue, id);
         }
 
-        Self { exchange, queue }
+        Self {
+            suffixed: id.is_some(),
+            exchange,
+            queue,
+        }
     }
 }
 
@@ -113,10 +118,16 @@ impl crate::QueueType<Message> for QueueType {
     }
 
     async fn init_consumer(&self, chan: &Channel) -> Result<lapin::Consumer> {
+        let mut exchg_options = ExchangeDeclareOptions::default();
+
+        if self.suffixed {
+            exchg_options.auto_delete = true;
+        }
+
         chan.exchange_declare(
             self.exchange().as_ref(),
             ExchangeKind::Fanout,
-            ExchangeDeclareOptions::default(),
+            exchg_options,
             FieldTable::default(),
         )
         .await?;
@@ -124,12 +135,16 @@ impl crate::QueueType<Message> for QueueType {
         let mut queue_fields = FieldTable::default();
         queue_fields.insert(
             "x-max-length-bytes".into(),
-            AMQPValue::LongUInt(8 * 1024 * 1024 * 1024), // 8 GiB
+            AMQPValue::LongLongInt(if self.suffixed {
+                10 * 1024 * 1024 // 100 MiB
+            } else {
+                8 * 1024 * 1024 * 1024 // 8 GiB
+            }),
         );
 
         let mut queue_options = QueueDeclareOptions::default();
 
-        if cfg!(debug_assertions) {
+        if self.suffixed {
             queue_options.auto_delete = true;
         }
 
