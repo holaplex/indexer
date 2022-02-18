@@ -95,24 +95,25 @@ jobs:
           command: doc
           args: --all --lib --bins --all-features --no-deps --profile=release-lite
 
-  release-build:
-    name: cargo build/test (release profile)
-    runs-on: ubuntu-latest
-    steps:
-      - name: install dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libudev-dev
+  # NOTE: in case of emergency, break glass
+  # release-build:
+  #   name: cargo build/test (release profile)
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: install dependencies
+  #       run: |
+  #         sudo apt-get update -y
+  #         sudo apt-get install -y libudev-dev
 
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2021-11-09
-          components: cargo, rustc
-          profile: minimal
+  #     - uses: actions/checkout@v2
+  #     - uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: nightly-2021-11-09
+  #         components: cargo, rustc
+  #         profile: minimal
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all --lib --bins --all-features --profile=release-lite
+  #     - uses: actions-rs/cargo@v1
+  #       with:
+  #         command: test
+  #         args: --all --lib --bins --all-features --profile=release-lite
 
