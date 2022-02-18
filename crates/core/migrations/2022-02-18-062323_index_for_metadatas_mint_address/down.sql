@@ -1,0 +1,1 @@
+drop index metadatas_mint_address_index;
