@@ -11,5 +11,8 @@ async fn process_token(client: &Client, update: AccountUpdate) -> Result<()> {
 }
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
+    if update.data.len() != TokenAccount::LEN {
+        return Ok(());
+    }
     process_token(client, update).await
 }
