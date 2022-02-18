@@ -46,7 +46,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --lib --bins --all-features
+          args: --all --lib --bins --all-features --no-deps
 
   debug-build:
     name: cargo build/test (debug profile)
@@ -93,7 +93,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --lib --bins --all-features --profile=release-lite
+          args: --all --lib --bins --all-features --no-deps --profile=release-lite
 
   release-build:
     name: cargo build/test (release profile)
