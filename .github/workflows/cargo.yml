@@ -41,12 +41,12 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all --lib --bins --tests --all-features
+          args: --all --lib --bins --all-features
 
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --lib --bins --all-features
+          args: --all --lib --bins --all-features --no-deps
 
   debug-build:
     name: cargo build/test (debug profile)
@@ -88,31 +88,32 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all --lib --bins --tests --all-features --release
+          args: --all --lib --bins --all-features --profile=release-lite
 
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --lib --bins --all-features --release
+          args: --all --lib --bins --all-features --no-deps --profile=release-lite
 
-  release-build:
-    name: cargo build/test (release profile)
-    runs-on: ubuntu-latest
-    steps:
-      - name: install dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libudev-dev
+  # NOTE: in case of emergency, break glass
+  # release-build:
+  #   name: cargo build/test (release profile)
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: install dependencies
+  #       run: |
+  #         sudo apt-get update -y
+  #         sudo apt-get install -y libudev-dev
 
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2021-11-09
-          components: cargo, rustc
-          profile: minimal
+  #     - uses: actions/checkout@v2
+  #     - uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: nightly-2021-11-09
+  #         components: cargo, rustc
+  #         profile: minimal
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all --lib --bins --all-features --release
+  #     - uses: actions-rs/cargo@v1
+  #       with:
+  #         command: test
+  #         args: --all --lib --bins --all-features --profile=release-lite
 
