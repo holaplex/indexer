@@ -58,6 +58,7 @@ pub enum Message {
 /// AMQP configuration for `accountsdb` plugins
 #[derive(Debug, Clone)]
 pub struct QueueType {
+    suffixed: bool,
     exchange: String,
     queue: String,
 }
@@ -86,7 +87,23 @@ impl QueueType {
             queue = format!("{}.{}", queue, id);
         }
 
-        Self { exchange, queue }
+        Self {
+            suffixed: id.is_some(),
+            exchange,
+            queue,
+        }
+    }
+
+    async fn exchange_declare(&self, chan: &Channel) -> Result<()> {
+        chan.exchange_declare(
+            crate::QueueType::exchange(self).as_ref(),
+            ExchangeKind::Fanout,
+            ExchangeDeclareOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+
+        Ok(())
     }
 }
 
@@ -101,35 +118,27 @@ impl crate::QueueType<Message> for QueueType {
     }
 
     async fn init_producer(&self, chan: &Channel) -> Result<()> {
-        chan.exchange_declare(
-            self.exchange().as_ref(),
-            ExchangeKind::Fanout,
-            ExchangeDeclareOptions::default(),
-            FieldTable::default(),
-        )
-        .await?;
+        self.exchange_declare(chan).await?;
 
         Ok(())
     }
 
     async fn init_consumer(&self, chan: &Channel) -> Result<lapin::Consumer> {
-        chan.exchange_declare(
-            self.exchange().as_ref(),
-            ExchangeKind::Fanout,
-            ExchangeDeclareOptions::default(),
-            FieldTable::default(),
-        )
-        .await?;
+        self.exchange_declare(chan).await?;
 
         let mut queue_fields = FieldTable::default();
         queue_fields.insert(
             "x-max-length-bytes".into(),
-            AMQPValue::LongUInt(8 * 1024 * 1024 * 1024), // 8 GiB
+            AMQPValue::LongLongInt(if self.suffixed {
+                100 * 1024 * 1024 // 100 MiB
+            } else {
+                8 * 1024 * 1024 * 1024 // 8 GiB
+            }),
         );
 
         let mut queue_options = QueueDeclareOptions::default();
 
-        if cfg!(debug_assertions) {
+        if self.suffixed {
             queue_options.auto_delete = true;
         }
 
