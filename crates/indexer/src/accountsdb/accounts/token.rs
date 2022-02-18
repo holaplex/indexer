@@ -8,6 +8,7 @@ use indexer_core::{
         update,
     },
     prelude::*,
+    pubkeys::{kin, sol},
 };
 use spl_token::state::Account as TokenAccount;
 
@@ -63,6 +64,13 @@ pub async fn process_token_transfer(
     Ok(())
 }
 pub async fn process(client: &Client, key: Pubkey, token_account: TokenAccount) -> Result<()> {
+    if token_account.mint == sol() {
+        return Ok(());
+    }
+    if token_account.mint == kin() {
+        return Ok(());
+    }
+
     let mint = token_account.mint.to_string();
     let is_present: bool = client
         .db()
