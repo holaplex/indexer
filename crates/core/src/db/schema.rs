@@ -198,25 +198,6 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
-    receipts (address) {
-        address -> Varchar,
-        trade_state -> Varchar,
-        bookkeeper -> Varchar,
-        auction_house -> Varchar,
-        wallet -> Varchar,
-        token_account -> Varchar,
-        metadata_mint -> Varchar,
-        price -> Int8,
-        token_size -> Int8,
-        bump -> Int2,
-        trade_state_bump -> Int2,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-
     store_config_jsons (config_address) {
         config_address -> Varchar,
         name -> Text,
@@ -329,7 +310,6 @@ allow_tables_to_appear_in_same_query!(
     metadata_creators,
     metadata_jsons,
     metadatas,
-    receipts,
     store_config_jsons,
     store_configs,
     store_denylist,
