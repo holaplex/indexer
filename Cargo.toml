@@ -5,6 +5,12 @@ members = ["crates/*"]
 opt-level = 3
 lto = "fat"
 
+[profile.debug-opt]
+inherits = "release"
+debug = 2
+debug-assertions = true
+incremental = true
+
 [profile.heroku]
 inherits = "release"
 # Uncomment below if build performance declines

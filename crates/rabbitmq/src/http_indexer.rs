@@ -5,10 +5,10 @@ use std::{borrow::Cow, marker::PhantomData};
 
 use lapin::{
     options::{
-        BasicConsumeOptions, BasicPublishOptions, ExchangeDeclareOptions, QueueBindOptions,
-        QueueDeclareOptions,
+        BasicConsumeOptions, BasicPublishOptions, BasicQosOptions, ExchangeDeclareOptions,
+        QueueBindOptions, QueueDeclareOptions,
     },
-    types::FieldTable,
+    types::{AMQPValue, FieldTable},
     BasicProperties, Channel, ExchangeKind,
 };
 use serde::{Deserialize, Serialize};
@@ -123,16 +123,20 @@ impl<E: Entity> crate::QueueType<E> for QueueType<E> {
         )
         .await?;
 
-        let queue_options = FieldTable::default();
-        // TODO: work out a reasonable TTL
-        // queue_options.insert("x-message-ttl".into(), AMQPValue::LongUInt(60000)); // ten minutes
+        let mut queue_fields = FieldTable::default();
+        queue_fields.insert(
+            "x-max-length-bytes".into(),
+            AMQPValue::LongUInt(100 * 1024 * 1024), // 100 MiB
+        );
 
-        chan.queue_declare(
-            self.queue().as_ref(),
-            QueueDeclareOptions::default(),
-            queue_options,
-        )
-        .await?;
+        let mut queue_options = QueueDeclareOptions::default();
+
+        if cfg!(debug_assertions) {
+            queue_options.auto_delete = true;
+        }
+
+        chan.queue_declare(self.queue().as_ref(), queue_options, queue_fields)
+            .await?;
 
         chan.queue_bind(
             self.queue().as_ref(),
@@ -142,6 +146,8 @@ impl<E: Entity> crate::QueueType<E> for QueueType<E> {
             FieldTable::default(),
         )
         .await?;
+
+        chan.basic_qos(512, BasicQosOptions::default()).await?;
 
         chan.basic_consume(
             self.queue().as_ref(),

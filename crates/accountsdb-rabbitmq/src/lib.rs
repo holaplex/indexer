@@ -24,6 +24,7 @@ pub(crate) mod prelude {
 pub(crate) mod config;
 mod plugin;
 pub(crate) mod selectors;
+pub(crate) mod sender;
 
 pub use plugin::AccountsDbPluginRabbitMq;
 
