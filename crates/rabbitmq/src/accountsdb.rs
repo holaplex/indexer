@@ -93,6 +93,18 @@ impl QueueType {
             queue,
         }
     }
+
+    async fn exchange_declare(&self, chan: &Channel) -> Result<()> {
+        chan.exchange_declare(
+            crate::QueueType::exchange(self).as_ref(),
+            ExchangeKind::Fanout,
+            ExchangeDeclareOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+
+        Ok(())
+    }
 }
 
 #[async_trait::async_trait]
@@ -106,31 +118,13 @@ impl crate::QueueType<Message> for QueueType {
     }
 
     async fn init_producer(&self, chan: &Channel) -> Result<()> {
-        chan.exchange_declare(
-            self.exchange().as_ref(),
-            ExchangeKind::Fanout,
-            ExchangeDeclareOptions::default(),
-            FieldTable::default(),
-        )
-        .await?;
+        self.exchange_declare(chan).await?;
 
         Ok(())
     }
 
     async fn init_consumer(&self, chan: &Channel) -> Result<lapin::Consumer> {
-        let mut exchg_options = ExchangeDeclareOptions::default();
-
-        if self.suffixed {
-            exchg_options.auto_delete = true;
-        }
-
-        chan.exchange_declare(
-            self.exchange().as_ref(),
-            ExchangeKind::Fanout,
-            exchg_options,
-            FieldTable::default(),
-        )
-        .await?;
+        self.exchange_declare(chan).await?;
 
         let mut queue_fields = FieldTable::default();
         queue_fields.insert(
