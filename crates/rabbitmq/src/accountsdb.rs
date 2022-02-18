@@ -130,7 +130,7 @@ impl crate::QueueType<Message> for QueueType {
         queue_fields.insert(
             "x-max-length-bytes".into(),
             AMQPValue::LongLongInt(if self.suffixed {
-                10 * 1024 * 1024 // 100 MiB
+                100 * 1024 * 1024 // 100 MiB
             } else {
                 8 * 1024 * 1024 * 1024 // 8 GiB
             }),
