@@ -19,7 +19,7 @@ mod ids {
     pubkeys!(kin, "kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6");
 }
 
-pub use ids::{auction, auction_house, metadata, metaplex, token, vault, sol, kin};
+pub use ids::{auction, auction_house, kin, metadata, metaplex, sol, token, vault};
 
 /// Find the address of a store given its owner's address
 pub fn find_store_address(owner: impl Borrow<Pubkey>) -> (Pubkey, u8) {
