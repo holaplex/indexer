@@ -7,9 +7,11 @@ use indexer_core::{
         tables::{metadatas, token_accounts, token_transfers},
         update,
     },
+    pubkeys::{sol, kin},
     prelude::*,
 };
 use spl_token::state::Account as TokenAccount;
+
 
 use super::Client;
 use crate::prelude::*;
@@ -63,6 +65,14 @@ pub async fn process_token_transfer(
     Ok(())
 }
 pub async fn process(client: &Client, key: Pubkey, token_account: TokenAccount) -> Result<()> {
+
+    if token_account.mint == sol() {
+        return Ok(()); 
+    }
+    if token_account.mint == kin() {
+        return Ok(()); 
+    }
+    
     let mint = token_account.mint.to_string();
     let is_present: bool = client
         .db()
