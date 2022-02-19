@@ -4,7 +4,16 @@ use indexer_rabbitmq::{
     prelude::*,
 };
 use lapinou::LapinSmolExt;
-use solana_program::{instruction::CompiledInstruction, message::SanitizedMessage};
+use solana_program::{
+    instruction::CompiledInstruction, message::SanitizedMessage, program_pack::Pack,
+};
+use spl_token::state::Account as TokenAccount;
+
+mod ids {
+    #![allow(missing_docs)]
+    use solana_sdk::pubkeys;
+    pubkeys!(token, "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+}
 
 use crate::{
     config::Config,
@@ -96,6 +105,16 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                     let key = Pubkey::new_from_array(pubkey.try_into().map_err(custom_err)?);
                     let owner = Pubkey::new_from_array(owner.try_into().map_err(custom_err)?);
                     let data = data.to_owned();
+
+                    if owner == ids::token() && data.len() == TokenAccount::get_packed_len() {
+                        let token_account = TokenAccount::unpack_from_slice(&data);
+
+                        if let Ok(token_account) = token_account {
+                            if token_account.amount > 1 {
+                                return Ok(());
+                            }
+                        }
+                    }
 
                     self.producer
                         .as_ref()
