@@ -9,6 +9,7 @@ use crate::{db::Pool, prelude::*};
 #[derive(Debug, Clone, Copy)]
 pub struct ArTxid(pub [u8; 32]);
 
+/// Wrapper for handling networking logic
 #[derive(Debug)]
 pub struct Client {
     db: Pool,
@@ -34,6 +35,7 @@ impl Client {
     }
 
     /// Get a reference to the database
+    #[must_use]
     pub fn db(&self) -> &Pool {
         &self.db
     }
