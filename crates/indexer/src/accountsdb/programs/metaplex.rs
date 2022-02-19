@@ -1,5 +1,8 @@
 use metaplex::{
-    state::{Key, Store, WhitelistedCreator, MAX_STORE_SIZE, MAX_WHITELISTED_CREATOR_SIZE},
+    state::{
+        AuctionCache, Key, Store, WhitelistedCreator, MAX_AUCTION_CACHE_SIZE, MAX_STORE_SIZE,
+        MAX_WHITELISTED_CREATOR_SIZE,
+    },
     utils::try_from_slice_checked,
 };
 use mpl_metaplex::{
@@ -12,7 +15,10 @@ use mpl_metaplex::{
     utils::try_from_slice_checked as mpl_try_from_slice_checked,
 };
 
-use super::{accounts::mpl_store, AccountUpdate, Client};
+use super::{
+    accounts::{auction_cache, mpl_store},
+    AccountUpdate, Client,
+};
 use crate::prelude::*;
 
 // TODO: once we switch to mpl_metaplex, remove all the MPL_ prefixes and
@@ -24,6 +30,7 @@ const MPL_WHITELISTED_CREATOR: u8 = MplKey::WhitelistedCreatorV1 as u8;
 
 const STORE: u8 = Key::StoreV1 as u8;
 const WHITELISTED_CREATOR: u8 = Key::WhitelistedCreatorV1 as u8;
+const AUCTION_CACHE: u8 = Key::AuctionCacheV1 as u8;
 
 async fn process_store(client: &Client, update: AccountUpdate) -> Result<()> {
     assert_eq!(MPL_MAX_STORE_SIZE, MAX_STORE_SIZE);
@@ -56,9 +63,17 @@ async fn process_store_config(client: &Client, update: AccountUpdate) -> Result<
         MplKey::StoreConfigV1,
         MPL_MAX_STORE_CONFIG_V1_SIZE,
     )
-    .context("Failed to parse store data")?;
+    .context("Failed to parse store config data")?;
 
     mpl_store::process_config(client, update.key, config).await
+}
+
+async fn process_auction_cache(client: &Client, update: AccountUpdate) -> Result<()> {
+    let cache: AuctionCache =
+        try_from_slice_checked(&update.data, Key::AuctionCacheV1, MAX_AUCTION_CACHE_SIZE)
+            .context("Failed to parse auction cache data")?;
+
+    auction_cache::process(client, update.key, cache).await
 }
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
@@ -71,6 +86,7 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
         STORE => process_store(client, update).await,
         WHITELISTED_CREATOR => process_whitelisted_creator(client, update).await,
         MPL_STORE_CONFIG => process_store_config(client, update).await,
+        AUCTION_CACHE => process_auction_cache(client, update).await,
         b => {
             debug!("Unhandled metadata key byte {:02x}", b);
 

@@ -1,3 +1,5 @@
+//! Support module for running Diesel operations in an async context.
+
 use std::fmt;
 
 use indexer_core::{db, db::PooledConnection};
