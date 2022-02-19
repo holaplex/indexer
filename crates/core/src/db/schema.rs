@@ -61,10 +61,11 @@ table! {
 
     auction_houses (address) {
         address -> Varchar,
-        treasury_mint -> Varchar,
+        auction_house_fee_account -> Varchar,
         auction_house_treasury -> Varchar,
         treasury_withdrawal_destination -> Varchar,
         fee_withdrawal_destination -> Varchar,
+        treasury_mint -> Varchar,
         authority -> Varchar,
         creator -> Varchar,
         bump -> Int2,

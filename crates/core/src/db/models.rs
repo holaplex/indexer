@@ -410,14 +410,16 @@ pub struct StoreConfigJson<'a> {
 pub struct AuctionHouse<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
-    /// Auction House treasury mint address
-    pub treasury_mint: Cow<'a, str>,
+    /// Auction House fee account address
+    pub auction_house_fee_account: Cow<'a, str>,
     /// Auction House treasury address
     pub auction_house_treasury: Cow<'a, str>,
     /// Treasury withdrawal address
     pub treasury_withdrawal_destination: Cow<'a, str>,
     /// Fee withdrawl address
     pub fee_withdrawal_destination: Cow<'a, str>,
+    /// Auction House treasury mint address
+    pub treasury_mint: Cow<'a, str>,
     /// Auction House authority address
     pub authority: Cow<'a, str>,
     /// Auction House creator address
