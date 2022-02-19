@@ -3,12 +3,11 @@ members = ["crates/*"]
 
 [profile.release]
 opt-level = 3
-lto = "fat"
+lto = "thin"
 
 [profile.release-lite]
 inherits = "release"
 opt-level = 2
-lto = "thin"
 
 [profile.debug-opt]
 inherits = "release"
