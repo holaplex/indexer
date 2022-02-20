@@ -1,1 +1,0 @@
-drop table auction_houses_old;

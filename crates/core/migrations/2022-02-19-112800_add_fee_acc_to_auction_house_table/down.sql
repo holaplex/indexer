@@ -1,3 +1,2 @@
-drop table auction_houses;
-
-alter table auction_houses_old rename to auction_houses;
+alter table auction_houses 
+drop column auction_house_fee_account;
