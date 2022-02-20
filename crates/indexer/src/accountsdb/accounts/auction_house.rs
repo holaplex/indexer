@@ -39,9 +39,7 @@ pub(crate) async fn process(
 
     let row = DbAuctionHouse {
         address: Owned(bs58::encode(key).into_string()),
-        auction_house_fee_account: Owned(
-            bs58::encode(account_data.auction_house_fee_account).into_string(),
-        ),
+        treasury_mint: Owned(bs58::encode(account_data.treasury_mint).into_string()),
         auction_house_treasury: Owned(
             bs58::encode(account_data.auction_house_treasury).into_string(),
         ),
@@ -51,7 +49,7 @@ pub(crate) async fn process(
         fee_withdrawal_destination: Owned(
             bs58::encode(account_data.fee_withdrawal_destination).into_string(),
         ),
-        treasury_mint: Owned(bs58::encode(account_data.treasury_mint).into_string()),
+
         authority: Owned(bs58::encode(account_data.authority).into_string()),
         creator: Owned(bs58::encode(account_data.creator).into_string()),
         bump: account_data.bump.into(),
@@ -63,6 +61,9 @@ pub(crate) async fn process(
             .context("Seller fee basis points is too big to store")?,
         requires_sign_off: account_data.requires_sign_off,
         can_change_sale_price: account_data.can_change_sale_price,
+        auction_house_fee_account: Owned(
+            bs58::encode(account_data.auction_house_fee_account).into_string(),
+        ),
     };
 
     client
