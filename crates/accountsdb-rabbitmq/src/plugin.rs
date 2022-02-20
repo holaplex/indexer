@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use indexer_rabbitmq::{
     accountsdb::{AccountUpdate, Message, Producer, QueueType},
     lapin::{Connection, ConnectionProperties},
@@ -16,6 +18,7 @@ mod ids {
 }
 
 use std::fs::File;
+
 use serde::Deserialize;
 
 use crate::{
@@ -41,7 +44,7 @@ pub struct AccountsDbPluginRabbitMq {
     producer: Option<Sender<Producer>>,
     acct_sel: Option<AccountSelector>,
     ins_sel: Option<InstructionSelector>,
-    token_addresses: Vec<String>,
+    token_addresses: HashMap<String, bool>,
 }
 
 #[derive(Deserialize)]
@@ -51,7 +54,7 @@ struct TokenItem {
 
 #[derive(Deserialize)]
 struct TokenList {
-    tokens: Vec<TokenItem>
+    tokens: Vec<TokenItem>,
 }
 
 impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
@@ -69,24 +72,19 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
         self.acct_sel = Some(acct);
         self.ins_sel = Some(ins);
 
-
-        
         warn!("about to read file!");
-    let file = File::open("~/metaplex-indexer/crates/accountsdb-rabbitmq/src/token_registry.json")
-        .expect("file should open read only");
-    let json: TokenList = serde_json::from_reader(file)
-        .expect("file should be proper JSON");
-    
+        let file =
+            File::open("~/metaplex-indexer/crates/accountsdb-rabbitmq/src/token_registry.json")
+                .expect("file should open read only");
+        let json: TokenList = serde_json::from_reader(file).expect("file should be proper JSON");
 
-    let mut token_addresses: Vec<String> = [].to_vec();
-    for token_data in json.tokens {
-        let address = token_data.address;
-        token_addresses.push(address);
-    }
+        let mut token_addresses: HashMap<String, bool> = HashMap::new();
+        for token_data in json.tokens {
+            let address = token_data.address;
+            token_addresses.insert(address, true);
+        }
 
-    token_addresses.sort_by( |a, b| a.cmp(b));
-
-    self.token_addresses = token_addresses;
+        self.token_addresses = token_addresses;
 
         smol::block_on(async {
             let conn =
@@ -105,7 +103,6 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
             Ok(())
         })
     }
-
 
     fn update_account(
         &mut self,
@@ -148,9 +145,8 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                                 return Ok(());
                             }
                             let mint = token_account.mint.to_string();
-                            let contains_registered_token_mint = self.token_addresses.binary_search(&mint);
-                            if let Ok(_contains_registered_token_mint) = contains_registered_token_mint {
-                                return Ok(())
+                            if self.token_addresses.contains_key(&mint) {
+                                return Ok(());
                             }
                         }
                     }
