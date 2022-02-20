@@ -442,6 +442,7 @@ pub struct AuctionHouse<'a> {
     /// Allows the Auction house to do complicated order matching to find the best price for the seller.
     /// Helpful if buyer lists an NFT with price of 0
     pub can_change_sale_price: bool,
+
     /// Auction House fee account address
     pub auction_house_fee_account: Cow<'a, str>,
 }

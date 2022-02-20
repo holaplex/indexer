@@ -49,7 +49,6 @@ pub(crate) async fn process(
         fee_withdrawal_destination: Owned(
             bs58::encode(account_data.fee_withdrawal_destination).into_string(),
         ),
-
         authority: Owned(bs58::encode(account_data.authority).into_string()),
         creator: Owned(bs58::encode(account_data.creator).into_string()),
         bump: account_data.bump.into(),
