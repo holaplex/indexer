@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Read};
 
 use indexer_rabbitmq::{
     accountsdb::{AccountUpdate, Message, Producer, QueueType},
@@ -16,8 +16,6 @@ mod ids {
     use solana_sdk::pubkeys;
     pubkeys!(token, "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 }
-
-use std::fs::File;
 
 use serde::Deserialize;
 
@@ -72,11 +70,12 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
         self.acct_sel = Some(acct);
         self.ins_sel = Some(ins);
 
-        warn!("about to read file!");
-        let file =
-            File::open("~/metaplex-indexer/crates/accountsdb-rabbitmq/src/token_registry.json")
-                .expect("file should open read only");
-        let json: TokenList = serde_json::from_reader(file).expect("file should be proper JSON");
+        let mut res = reqwest::blocking::get("https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/solana.tokenlist.json")
+            .expect("couldn't fetch token list");
+        let mut body = String::new();
+        res.read_to_string(&mut body)?;
+
+        let json: TokenList = serde_json::from_str(&body).expect("file should be proper JSON");
 
         let mut token_addresses: HashMap<String, bool> = HashMap::new();
         for token_data in json.tokens {
