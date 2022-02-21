@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::Read};
+use std::{collections::HashSet, io::Read};
 
 use indexer_rabbitmq::{
     accountsdb::{AccountUpdate, Message, Producer, QueueType},
@@ -42,7 +42,7 @@ pub struct AccountsDbPluginRabbitMq {
     producer: Option<Sender<Producer>>,
     acct_sel: Option<AccountSelector>,
     ins_sel: Option<InstructionSelector>,
-    token_addresses: HashMap<String, bool>,
+    token_addresses: HashSet<String>,
 }
 
 #[derive(Deserialize)]
@@ -77,10 +77,10 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
 
         let json: TokenList = serde_json::from_str(&body).expect("file should be proper JSON");
 
-        let mut token_addresses: HashMap<String, bool> = HashMap::new();
+        let mut token_addresses: HashSet<String> = HashSet::new();
         for token_data in json.tokens {
             let address = token_data.address;
-            token_addresses.insert(address, true);
+            token_addresses.insert(address);
         }
 
         self.token_addresses = token_addresses;
@@ -144,7 +144,8 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                                 return Ok(());
                             }
                             let mint = token_account.mint.to_string();
-                            if self.token_addresses.contains_key(&mint) {
+                            let is_token = self.token_addresses.contains(&mint);
+                            if is_token {
                                 return Ok(());
                             }
                         }
