@@ -110,7 +110,7 @@ impl QueueType {
             StartupType::Startup => ".startup",
             StartupType::All => ".startup-all",
         });
-        let mut queue = format!("{}.accounts.indexer", network);
+        let mut queue = format!("{}.indexer", exchange);
 
         if let Some(id) = id {
             queue = format!("{}.{}", queue, id);
