@@ -644,7 +644,7 @@ impl AuctionHouse {
     }
 
     pub fn seller_fee_basis_points(&self) -> i32 {
-        self.seller_fee_basis_points.into()
+        self.seller_fee_basis_points
     }
 
     pub fn auction_house_fee_account(&self) -> String {
