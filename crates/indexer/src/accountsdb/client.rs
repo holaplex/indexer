@@ -27,7 +27,7 @@ struct HttpProducers {
 impl std::panic::UnwindSafe for HttpProducers {}
 impl std::panic::RefUnwindSafe for HttpProducers {}
 
-// RpcClient and Diesel don't implement Debug for some reason
+// RpcClient doesn't implement Debug for some reason
 #[allow(missing_debug_implementations)]
 /// Wrapper for handling networking logic
 pub struct Client {

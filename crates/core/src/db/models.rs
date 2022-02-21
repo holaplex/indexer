@@ -9,8 +9,8 @@ use chrono::NaiveDateTime;
 use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bids, editions,
     files, listing_metadatas, master_editions, metadata_collections, metadata_creators,
-    metadata_jsons, metadatas, store_config_jsons, store_configs, store_denylist, storefronts,
-    stores, token_accounts, token_transfers, whitelisted_creators,
+    metadata_jsons, metadatas, store_config_jsons, store_configs, storefronts, stores,
+    token_accounts, whitelisted_creators,
 };
 
 /// A row in the `bids` table
@@ -418,6 +418,7 @@ pub struct AuctionHouse<'a> {
     pub treasury_withdrawal_destination: Cow<'a, str>,
     /// Fee withdrawl address
     pub fee_withdrawal_destination: Cow<'a, str>,
+
     /// Auction House authority address
     pub authority: Cow<'a, str>,
     /// Auction House creator address
@@ -441,20 +442,7 @@ pub struct AuctionHouse<'a> {
     /// Allows the Auction house to do complicated order matching to find the best price for the seller.
     /// Helpful if buyer lists an NFT with price of 0
     pub can_change_sale_price: bool,
-}
 
-/// A row in the `token_transfers` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
-pub struct TokenTransfer<'a> {
-    /// Address of the wallet from which NFT was transferred
-    pub owner_from: Cow<'a, str>,
-    /// Address of the wallet to which NFT was transferred
-    pub owner_to: Cow<'a, str>,
-    /// Mint address of the token
-    pub mint_address: Cow<'a, str>,
-    /// Time at which transfer occurred
-    ///
-    /// This is an approximate time so the block time of the transaction
-    /// signature can be different.
-    pub transferred_at: NaiveDateTime,
+    /// Auction House fee account address
+    pub auction_house_fee_account: Cow<'a, str>,
 }
