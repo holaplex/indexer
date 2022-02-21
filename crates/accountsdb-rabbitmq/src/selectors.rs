@@ -1,16 +1,21 @@
 use std::collections::HashSet;
 
+use indexer_rabbitmq::accountsdb::StartupType;
 use solana_program::instruction::CompiledInstruction;
 
+use super::config::Accounts;
 use crate::{interface::ReplicaAccountInfo, prelude::*};
 
 #[derive(Debug)]
 pub struct AccountSelector {
     owners: HashSet<Box<[u8]>>,
+    startup: Option<bool>,
 }
 
 impl AccountSelector {
-    pub fn from_config(owners: HashSet<String>) -> Result<Self> {
+    pub fn from_config(config: Accounts) -> Result<Self> {
+        let Accounts { owners, startup } = config;
+
         let owners = owners
             .into_iter()
             .map(|s| {
@@ -20,12 +25,17 @@ impl AccountSelector {
             .collect::<Result<_, _>>()
             .context("Failed to parse account owner keys")?;
 
-        Ok(Self { owners })
+        Ok(Self { owners, startup })
     }
 
     #[inline]
-    pub fn is_selected(&self, acct: &ReplicaAccountInfo) -> bool {
-        self.owners.contains(acct.owner)
+    pub fn startup(&self) -> StartupType {
+        StartupType::new(self.startup)
+    }
+
+    #[inline]
+    pub fn is_selected(&self, acct: &ReplicaAccountInfo, is_startup: bool) -> bool {
+        self.startup.map_or(true, |s| is_startup == s) && self.owners.contains(acct.owner)
     }
 }
 

@@ -79,7 +79,7 @@ impl<E: Entity> QueueType<E> {
     #[must_use]
     pub fn new(sender: &str, id: Option<&str>) -> Self {
         let exchange = format!("{}.{}.http", sender, E::ID);
-        let mut queue = format!("{}.{}.http.indexer", sender, E::ID);
+        let mut queue = format!("{}.indexer", exchange);
 
         if let Some(id) = id {
             queue = format!("{}.{}", queue, id);

@@ -1,4 +1,4 @@
-use std::{collections::HashSet, io::Read};
+use std::collections::HashSet;
 
 use indexer_rabbitmq::{
     accountsdb::{AccountUpdate, Message, Producer, QueueType},
@@ -42,7 +42,7 @@ pub struct AccountsDbPluginRabbitMq {
     producer: Option<Sender<Producer>>,
     acct_sel: Option<AccountSelector>,
     ins_sel: Option<InstructionSelector>,
-    token_addresses: HashSet<String>,
+    token_addresses: HashSet<Pubkey>,
 }
 
 #[derive(Deserialize)]
@@ -53,6 +53,25 @@ struct TokenItem {
 #[derive(Deserialize)]
 struct TokenList {
     tokens: Vec<TokenItem>,
+}
+
+impl AccountsDbPluginRabbitMq {
+    const TOKEN_REG_URL: &'static str = "https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/solana.tokenlist.json";
+
+    async fn load_token_reg() -> Result<HashSet<Pubkey>> {
+        let res: TokenList = reqwest::get(Self::TOKEN_REG_URL)
+            .await
+            .map_err(custom_err)?
+            .json()
+            .await
+            .map_err(custom_err)?;
+
+        res.tokens
+            .into_iter()
+            .map(|TokenItem { address }| address.parse())
+            .collect::<StdResult<_, _>>()
+            .map_err(custom_err)
+    }
 }
 
 impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
@@ -67,23 +86,10 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
             .and_then(Config::into_parts)
             .map_err(custom_err)?;
 
+        let startup_type = acct.startup();
+
         self.acct_sel = Some(acct);
         self.ins_sel = Some(ins);
-
-        let mut res = reqwest::blocking::get("https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/solana.tokenlist.json")
-            .expect("couldn't fetch token list");
-        let mut body = String::new();
-        res.read_to_string(&mut body)?;
-
-        let json: TokenList = serde_json::from_str(&body).expect("file should be proper JSON");
-
-        let mut token_addresses: HashSet<String> = HashSet::new();
-        for token_data in json.tokens {
-            let address = token_data.address;
-            token_addresses.insert(address);
-        }
-
-        self.token_addresses = token_addresses;
 
         smol::block_on(async {
             let conn =
@@ -92,12 +98,14 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                     .map_err(custom_err)?;
 
             self.producer = Some(Sender::new(
-                QueueType::new(amqp.network, None)
+                QueueType::new(amqp.network, startup_type, None)
                     .producer(&conn)
                     .await
                     .map_err(custom_err)?,
                 jobs.limit,
             ));
+
+            self.token_addresses = Self::load_token_reg().await?;
 
             Ok(())
         })
@@ -118,7 +126,12 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
         smol::block_on(async {
             match account {
                 ReplicaAccountInfoVersions::V0_0_1(acct) => {
-                    if !self.acct_sel.as_ref().ok_or_else(uninit)?.is_selected(acct) {
+                    if !self
+                        .acct_sel
+                        .as_ref()
+                        .ok_or_else(uninit)?
+                        .is_selected(acct, is_startup)
+                    {
                         return Ok(());
                     }
 
@@ -132,24 +145,23 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                         write_version,
                     } = *acct;
 
-                    let key = Pubkey::new_from_array(pubkey.try_into().map_err(custom_err)?);
-                    let owner = Pubkey::new_from_array(owner.try_into().map_err(custom_err)?);
-                    let data = data.to_owned();
-
-                    if owner == ids::token() && data.len() == TokenAccount::get_packed_len() {
-                        let token_account = TokenAccount::unpack_from_slice(&data);
+                    if owner == ids::token().as_ref()
+                        && data.len() == TokenAccount::get_packed_len()
+                    {
+                        let token_account = TokenAccount::unpack_from_slice(data);
 
                         if let Ok(token_account) = token_account {
-                            if token_account.amount > 1 {
-                                return Ok(());
-                            }
-                            let mint = token_account.mint.to_string();
-                            let is_token = self.token_addresses.contains(&mint);
-                            if is_token {
+                            if token_account.amount > 1
+                                || self.token_addresses.contains(&token_account.mint)
+                            {
                                 return Ok(());
                             }
                         }
                     }
+
+                    let key = Pubkey::new_from_array(pubkey.try_into().map_err(custom_err)?);
+                    let owner = Pubkey::new_from_array(owner.try_into().map_err(custom_err)?);
+                    let data = data.to_owned();
 
                     self.producer
                         .as_ref()
