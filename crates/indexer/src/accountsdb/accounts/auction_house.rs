@@ -60,6 +60,9 @@ pub(crate) async fn process(
             .context("Seller fee basis points is too big to store")?,
         requires_sign_off: account_data.requires_sign_off,
         can_change_sale_price: account_data.can_change_sale_price,
+        auction_house_fee_account: Owned(
+            bs58::encode(account_data.auction_house_fee_account).into_string(),
+        ),
     };
 
     client
