@@ -8,15 +8,15 @@ use indexer_core::{
         tables::{
             attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bids,
             listing_metadatas, metadata_creators, metadata_jsons, metadatas, store_config_jsons,
-            storefronts,
+            storefronts, token_accounts,
         },
         Pool,
     },
     prelude::*,
 };
 use juniper::{
-    EmptyMutation, EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject,
-    ParseScalarResult, ParseScalarValue, RootNode, Value,
+    graphql_value, EmptyMutation, EmptySubscription, FieldError, FieldResult, GraphQLInputObject,
+    GraphQLObject, ParseScalarResult, ParseScalarValue, RootNode, Value,
 };
 use reqwest::Client as HttpClient;
 use serde::Deserialize;
@@ -1056,13 +1056,20 @@ impl QueryRoot {
     fn nfts(
         &self,
         context: &AppContext,
-        #[graphql(description = "Filter on creator address")] creators: Vec<String>,
+        #[graphql(description = "Filter on owner address")] owners: Option<Vec<String>>,
+        #[graphql(description = "Filter on creator address")] creators: Option<Vec<String>>,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
-    ) -> Vec<Nft> {
-        let conn = context.db_pool.get().unwrap();
+    ) -> FieldResult<Vec<Nft>> {
+        if owners.is_none() && creators.is_none() {
+            return Err(FieldError::new(
+                "No filter provided! Please provide at least one of the filters",
+                graphql_value!({ "Filters": "owners: Vec<String>, creators: Vec<String>" }),
+            ));
+        }
+
+        let conn = context.db_pool.get().context("failed to connect to db")?;
 
         let query = metadatas::table.into_boxed();
-
         let query = attributes.unwrap_or_else(Vec::new).into_iter().fold(
             query,
             |acc, AttributeFilter { trait_type, values }| {
@@ -1078,11 +1085,22 @@ impl QueryRoot {
             },
         );
 
+        let mint_addresses_subquery = token_accounts::table
+            .select(token_accounts::mint_address)
+            .filter(
+                token_accounts::owner_address
+                    .eq(any(owners.unwrap_or_else(Vec::new)))
+                    .and(token_accounts::amount.eq(1)),
+            );
+        let metadata_addresses_subquery = metadata_creators::table
+            .select(metadata_creators::metadata_address)
+            .filter(metadata_creators::creator_address.eq(any(creators.unwrap_or_else(Vec::new))));
+
         let rows: Vec<models::Nft> = query
             .filter(
-                metadatas::address.eq(any(metadata_creators::table
-                    .select(metadata_creators::metadata_address)
-                    .filter(metadata_creators::creator_address.eq(any(creators))))),
+                metadatas::address
+                    .eq(any(metadata_addresses_subquery))
+                    .or(metadatas::mint_address.eq(any(mint_addresses_subquery))),
             )
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
@@ -1098,9 +1116,9 @@ impl QueryRoot {
             ))
             .order_by(metadatas::name.desc())
             .load(&conn)
-            .unwrap();
+            .context("failed to load nft")?;
 
-        rows.into_iter().map(Into::into).collect()
+        Ok(rows.into_iter().map(Into::into).collect())
     }
 
     fn wallet(
