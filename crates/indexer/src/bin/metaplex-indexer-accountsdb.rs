@@ -12,6 +12,10 @@ struct Args {
     #[clap(long, env)]
     network: accountsdb::Network,
 
+    /// The startup type of events to listen for
+    #[clap(long, env, default_value_t = accountsdb::StartupType::Normal)]
+    startup: accountsdb::StartupType,
+
     /// An optional suffix for the AMQP queue ID
     ///
     /// For debug builds a value must be provided here to avoid interfering with
@@ -24,6 +28,7 @@ fn main() {
         |Args {
              amqp_url,
              network,
+             startup,
              queue_suffix,
          },
          db| async move {
@@ -45,7 +50,7 @@ fn main() {
 
             let mut consumer = accountsdb::Consumer::new(
                 &conn,
-                accountsdb::QueueType::new(network, queue_suffix.as_deref()),
+                accountsdb::QueueType::new(network, startup, queue_suffix.as_deref()),
             )
             .await
             .context("Failed to create queue consumer")?;
