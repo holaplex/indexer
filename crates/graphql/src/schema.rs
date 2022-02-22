@@ -494,11 +494,9 @@ impl Nft {
         ctx.nft_attribute_loader.load(self.address.clone()).await
     }
 
-    pub async fn owner(&self, ctx: &AppContext) -> NftOwner {
-        ctx.nft_owner_loader.load(self.address.clone()).await
+    pub async fn owner(&self, ctx: &AppContext) -> Option<NftOwner> {
+        ctx.nft_owner_loader.load(self.mint_address.clone()).await
     }
-
-    
 }
 
 impl From<models::Nft> for Nft {
@@ -822,38 +820,41 @@ impl BatchFn<String, Vec<NftCreator>> for NftCreatorBatcher {
     }
 }
 
-
 struct NftOwnerBatcher {
     db_pool: Arc<Pool>,
 }
 
+// nft(address: ""){
+//     owner{
+//         address
+//     }
+// }
+
 #[async_trait]
-impl BatchFn<String, NftOwner> for NftOwnerBatcher {
-    async fn load(&mut self, addresses: &[String]) -> HashMap<String, NftOwner> {
+impl BatchFn<String, Option<NftOwner>> for NftOwnerBatcher {
+    async fn load(&mut self, mint_addresses: &[String]) -> HashMap<String, Option<NftOwner>> {
         let conn = self.db_pool.get().unwrap();
         let mut hash_map = HashMap::new();
 
-        for address in addresses { 
-            hash_map.insert(address.clone(), NftOwner{address: String::from("")} );
-        
-
-        let mints: Vec<String> = metadatas::table
-            .select(metadatas::mint_address)
-            .filter(metadatas::address.eq(any(addresses)))
-            .load(&conn)
-            .unwrap();
-            
-        let owners: Vec<models::TokenAccount> = token_accounts::table
-            .filter(token_accounts::mint_address.eq(any(&mints)))
-            .load(&conn)
-            .unwrap();
-            if owners.len() > 0{
-                hash_map.insert(address.clone(), NftOwner{address: owners[0].owner_address.to_string()});
-            }
+        for address in mint_addresses {
+            hash_map.insert(address.clone(), None);
         }
 
-        hash_map
+        let token_accounts: Vec<models::TokenAccount> = token_accounts::table
+            .filter(token_accounts::mint_address.eq(any(mint_addresses)))
+            .filter(token_accounts::amount.eq(1))
+            .load(&conn)
+            .unwrap();
 
+        token_accounts.into_iter().fold(hash_map, |mut acc, ta| {
+            acc.insert(
+                ta.mint_address.into_owned(),
+                Some(NftOwner {
+                    address: ta.owner_address.into_owned(),
+                }),
+            );
+            acc
+        })
     }
 }
 
@@ -1012,7 +1013,7 @@ pub struct AppContext {
     storefront_loader: Loader<StorefrontAddress, Option<Storefront>, StorefrontBatcher>,
     nft_creator_loader: Loader<String, Vec<NftCreator>, NftCreatorBatcher>,
     nft_attribute_loader: Loader<String, Vec<NftAttribute>, NftAttributeBatcher>,
-    nft_owner_loader: Loader<String, NftOwner, NftOwnerBatcher>,
+    nft_owner_loader: Loader<String, Option<NftOwner>, NftOwnerBatcher>,
     auction_house_loader: Loader<String, Vec<AuctionHouse>, AuctionHouseBatcher>,
     db_pool: Arc<Pool>,
     twitter_bearer_token: Arc<String>,
