@@ -24,7 +24,7 @@ impl BatchFn<String, Vec<NftAttribute>> for NftAttributeBatcher {
 
         rows.into_iter()
             .fold(hash_map, |mut acc, attribute: models::MetadataAttribute| {
-                let attribute = NftAttribute::from(attribute);
+                let attribute = NftAttribute::try_from(attribute).unwrap();
                 acc.entry(attribute.metadata_address.clone())
                     .and_modify(|attributes| {
                         attributes.push(attribute);

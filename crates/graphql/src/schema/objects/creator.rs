@@ -27,38 +27,42 @@ impl Creator {
         self.address.clone()
     }
 
-    pub fn attribute_groups(&self, context: &AppContext) -> Vec<AttributeGroup> {
-        let conn = context.db_pool.get().unwrap();
+    pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
+        let conn = context.db_pool.get()?;
 
         let metadatas: Vec<String> = metadata_creators::table
             .select(metadata_creators::metadata_address)
             .filter(metadata_creators::creator_address.eq(self.address.clone()))
             .load(&conn)
-            .unwrap();
+            .context("Failed to load metadata creators")?;
 
         let metadata_attributes: Vec<models::MetadataAttribute> = attributes::table
             .select(attributes::all_columns)
             .filter(attributes::metadata_address.eq(any(metadatas)))
             .load(&conn)
-            .unwrap();
+            .context("Failed to load metadata attributes")?;
 
-        metadata_attributes
+        Ok(metadata_attributes
             .into_iter()
-            .fold(
+            .try_fold(
                 HashMap::new(),
                 |mut groups,
                  models::MetadataAttribute {
                      trait_type, value, ..
                  }| {
                     *groups
-                        .entry(trait_type.unwrap().to_lowercase())
+                        .entry(
+                            trait_type
+                                .ok_or_else(|| anyhow!("Missing trait type from attribute"))?
+                                .to_lowercase(),
+                        )
                         .or_insert_with(HashMap::new)
                         .entry(value)
                         .or_insert(0) += 1;
 
-                    groups
+                    Result::<_>::Ok(groups)
                 },
-            )
+            )?
             .into_iter()
             .map(|(name, vars)| AttributeGroup {
                 name,
@@ -71,6 +75,6 @@ impl Creator {
                     })
                     .collect(),
             })
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>())
     }
 }

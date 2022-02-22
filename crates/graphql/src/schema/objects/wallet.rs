@@ -15,14 +15,14 @@ impl Wallet {
     }
 
     pub fn bids(&self, ctx: &AppContext) -> FieldResult<Vec<Bid>> {
-        let db_conn = ctx.db_pool.get().unwrap();
+        let db_conn = ctx.db_pool.get()?;
 
         let rows: Vec<models::Bid> = bids::table
             .select(bids::all_columns)
             .filter(bids::bidder_address.eq(self.address.clone()))
             .order_by(bids::last_bid_time.desc())
             .load(&db_conn)
-            .unwrap();
+            .context("Failed to load wallet bids")?;
 
         rows.into_iter()
             .map(TryInto::try_into)

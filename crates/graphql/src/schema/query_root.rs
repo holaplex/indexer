@@ -178,8 +178,8 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(description = "Address of NFT")] address: String,
-    ) -> Option<Nft> {
-        let conn = context.db_pool.get().unwrap();
+    ) -> FieldResult<Option<Nft>> {
+        let conn = context.db_pool.get()?;
         let mut rows: Vec<models::Nft> = metadatas::table
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
@@ -196,13 +196,17 @@ impl QueryRoot {
             ))
             .limit(1)
             .load(&conn)
-            .unwrap();
+            .context("Failed to load metadata")?;
 
-        rows.pop().map(Into::into)
+        Ok(rows.pop().map(Into::into))
     }
 
     #[graphql(description = "A storefront")]
-    fn storefront(&self, context: &AppContext, subdomain: String) -> Option<Storefront> {
+    fn storefront(
+        &self,
+        context: &AppContext,
+        subdomain: String,
+    ) -> FieldResult<Option<Storefront>> {
         let columns = (
             storefronts::owner_address,
             storefronts::subdomain,
@@ -215,27 +219,31 @@ impl QueryRoot {
             storefronts::address,
         );
 
-        let conn = context.db_pool.get().unwrap();
+        let conn = context.db_pool.get()?;
         let mut rows: Vec<models::Storefront> = storefronts::table
             .filter(storefronts::subdomain.eq(subdomain))
             .select(columns)
             .limit(1)
             .load(&conn)
-            .unwrap();
+            .context("Failed to load storefront")?;
 
-        rows.pop().map(Into::into)
+        Ok(rows.pop().map(Into::into))
     }
 
     #[graphql(description = "A marketplace")]
-    fn marketplace(&self, context: &AppContext, subdomain: String) -> Option<Marketplace> {
-        let conn = context.db_pool.get().unwrap();
+    fn marketplace(
+        &self,
+        context: &AppContext,
+        subdomain: String,
+    ) -> FieldResult<Option<Marketplace>> {
+        let conn = context.db_pool.get()?;
         let mut rows: Vec<models::StoreConfigJson> = store_config_jsons::table
             .filter(store_config_jsons::subdomain.eq(subdomain))
             .select(store_config_jsons::all_columns)
             .limit(1)
             .load(&conn)
-            .unwrap();
+            .context("Failed to load store config JSON")?;
 
-        rows.pop().map(Into::into)
+        Ok(rows.pop().map(Into::into))
     }
 }

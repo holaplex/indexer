@@ -22,20 +22,26 @@ impl NftAttribute {
     }
 }
 
-impl<'a> From<models::MetadataAttribute<'a>> for NftAttribute {
-    fn from(
+impl<'a> TryFrom<models::MetadataAttribute<'a>> for NftAttribute {
+    type Error = Error;
+
+    fn try_from(
         models::MetadataAttribute {
             metadata_address,
             value,
             trait_type,
             ..
         }: models::MetadataAttribute,
-    ) -> Self {
-        Self {
+    ) -> Result<Self> {
+        Ok(Self {
             metadata_address: metadata_address.into_owned(),
-            value: value.unwrap().into_owned(),
-            trait_type: trait_type.unwrap().into_owned(),
-        }
+            value: value
+                .ok_or_else(|| anyhow!("Missing attribute value"))?
+                .into_owned(),
+            trait_type: trait_type
+                .ok_or_else(|| anyhow!("Missing attribute trait type"))?
+                .into_owned(),
+        })
     }
 }
 
