@@ -58,4 +58,4 @@ create index if not exists purchases_address_index
 on purchases (address);
 
 create index if not exists purchases_auction_house_index
-on listings (auction_house);
+on purchases (auction_house);
