@@ -58,12 +58,11 @@ struct TokenList {
 impl AccountsDbPluginRabbitMq {
     const TOKEN_REG_URL: &'static str = "https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/solana.tokenlist.json";
 
-    async fn load_token_reg() -> Result<HashSet<Pubkey>> {
-        let res: TokenList = reqwest::get(Self::TOKEN_REG_URL)
-            .await
+    fn load_token_reg() -> Result<HashSet<Pubkey>> {
+        // We use `smol` as an executor, and reqwest's async backend doesn't like that
+        let res: TokenList = reqwest::blocking::get(Self::TOKEN_REG_URL)
             .map_err(custom_err)?
             .json()
-            .await
             .map_err(custom_err)?;
 
         res.tokens
@@ -91,6 +90,8 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
         self.acct_sel = Some(acct);
         self.ins_sel = Some(ins);
 
+        self.token_addresses = Self::load_token_reg()?;
+
         smol::block_on(async {
             let conn =
                 Connection::connect(&amqp.address, ConnectionProperties::default().with_smol())
@@ -104,8 +105,6 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                     .map_err(custom_err)?,
                 jobs.limit,
             ));
-
-            self.token_addresses = Self::load_token_reg().await?;
 
             Ok(())
         })
