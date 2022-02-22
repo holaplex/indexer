@@ -6,16 +6,17 @@ use indexer_core::{
     db::{
         models,
         tables::{
-            attributes, auction_caches, auction_datas, auction_datas_ext, bids, listing_metadatas,
-            metadata_creators, metadata_jsons, metadatas, storefronts,
+            attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bids,
+            listing_metadatas, metadata_creators, metadata_jsons, metadatas, store_config_jsons,
+            storefronts, token_accounts,
         },
         Pool,
     },
     prelude::*,
 };
 use juniper::{
-    EmptyMutation, EmptySubscription, FieldResult, GraphQLInputObject, GraphQLObject,
-    ParseScalarResult, ParseScalarValue, RootNode, Value,
+    graphql_value, EmptyMutation, EmptySubscription, FieldError, FieldResult, GraphQLInputObject,
+    GraphQLObject, ParseScalarResult, ParseScalarValue, RootNode, Value,
 };
 use reqwest::Client as HttpClient;
 use serde::Deserialize;
@@ -555,6 +556,130 @@ impl<'a> From<models::Storefront<'a>> for Storefront {
     }
 }
 
+#[derive(Debug, Clone)]
+struct Marketplace {
+    subdomain: String,
+    name: String,
+    description: String,
+    logo_url: String,
+    banner_url: String,
+    auction_house_address: String,
+}
+
+impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
+    fn from(
+        models::StoreConfigJson {
+            config_address: _,
+            name,
+            description,
+            logo_url,
+            banner_url,
+            subdomain,
+            owner_address: _,
+            auction_house_address,
+            ..
+        }: models::StoreConfigJson,
+    ) -> Self {
+        Self {
+            subdomain: subdomain.into_owned(),
+            name: name.into_owned(),
+            description: description.into_owned(),
+            logo_url: logo_url.into_owned(),
+            banner_url: banner_url.into_owned(),
+            auction_house_address: auction_house_address.into_owned(),
+        }
+    }
+}
+
+#[juniper::graphql_object(Context = AppContext)]
+impl Marketplace {
+    pub fn subdomain(&self) -> String {
+        self.subdomain.clone()
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn description(&self) -> String {
+        self.description.clone()
+    }
+
+    pub fn logo_url(&self) -> String {
+        self.logo_url.clone()
+    }
+
+    pub fn banner_url(&self) -> String {
+        self.banner_url.clone()
+    }
+
+    pub fn auction_house_address(&self) -> String {
+        self.auction_house_address.clone()
+    }
+
+    pub async fn auction_house(&self, context: &AppContext) -> Vec<AuctionHouse> {
+        context
+            .auction_house_loader
+            .load(self.auction_house_address.clone())
+            .await
+    }
+}
+
+#[derive(Debug, Clone)]
+struct AuctionHouse {
+    address: String,
+    authority: String,
+    seller_fee_basis_points: i32,
+    auction_house_fee_account: String,
+}
+
+#[juniper::graphql_object(Context = AppContext)]
+impl AuctionHouse {
+    pub fn address(&self) -> String {
+        self.address.clone()
+    }
+
+    pub fn authority(&self) -> String {
+        self.authority.clone()
+    }
+
+    pub fn seller_fee_basis_points(&self) -> i32 {
+        self.seller_fee_basis_points
+    }
+
+    pub fn auction_house_fee_account(&self) -> String {
+        self.auction_house_fee_account.clone()
+    }
+}
+impl<'a> From<models::AuctionHouse<'a>> for AuctionHouse {
+    fn from(
+        models::AuctionHouse {
+            address,
+            treasury_mint: _,
+            auction_house_treasury: _,
+            treasury_withdrawal_destination: _,
+            fee_withdrawal_destination: _,
+            authority,
+            creator: _,
+            bump: _,
+            treasury_bump: _,
+            fee_payer_bump: _,
+            seller_fee_basis_points,
+            requires_sign_off: _,
+            can_change_sale_price: _,
+            auction_house_fee_account,
+            ..
+        }: models::AuctionHouse,
+    ) -> Self {
+        Self {
+            address: address.into_owned(),
+            authority: authority.into_owned(),
+            seller_fee_basis_points: seller_fee_basis_points.into(),
+            auction_house_fee_account: auction_house_fee_account.into_owned(),
+        }
+    }
+}
+
 pub struct QueryRoot {}
 
 pub struct ListingBatcher {
@@ -802,6 +927,36 @@ impl BatchFn<String, Vec<Bid>> for ListingBidsBatcher {
     }
 }
 
+struct AuctionHouseBatcher {
+    db_pool: Arc<Pool>,
+}
+
+#[async_trait]
+impl BatchFn<String, Vec<AuctionHouse>> for AuctionHouseBatcher {
+    async fn load(&mut self, addresses: &[String]) -> HashMap<String, Vec<AuctionHouse>> {
+        let conn = self.db_pool.get().unwrap();
+        let mut hash_map = HashMap::new();
+
+        for auction_house in addresses {
+            hash_map.insert(auction_house.clone(), Vec::new());
+        }
+
+        let rows: Vec<models::AuctionHouse> = auction_houses::table
+            .filter(auction_houses::address.eq(any(addresses)))
+            .load(&conn)
+            .unwrap();
+
+        rows.into_iter()
+            .fold(hash_map, |mut acc, ah: models::AuctionHouse| {
+                let ah = AuctionHouse::from(ah);
+                acc.entry(ah.address.clone()).and_modify(|ahs| {
+                    ahs.push(ah);
+                });
+                acc
+            })
+    }
+}
+
 #[derive(Clone)]
 pub struct AppContext {
     listing_loader: Loader<String, Option<Listing>, ListingBatcher>,
@@ -810,6 +965,7 @@ pub struct AppContext {
     storefront_loader: Loader<StorefrontAddress, Option<Storefront>, StorefrontBatcher>,
     nft_creator_loader: Loader<String, Vec<NftCreator>, NftCreatorBatcher>,
     nft_attribute_loader: Loader<String, Vec<NftAttribute>, NftAttributeBatcher>,
+    auction_house_loader: Loader<String, Vec<AuctionHouse>, AuctionHouseBatcher>,
     db_pool: Arc<Pool>,
     twitter_bearer_token: Arc<String>,
 }
@@ -833,6 +989,9 @@ impl AppContext {
                 db_pool: db_pool.clone(),
             }),
             nft_attribute_loader: Loader::new(NftAttributeBatcher {
+                db_pool: db_pool.clone(),
+            }),
+            auction_house_loader: Loader::new(AuctionHouseBatcher {
                 db_pool: db_pool.clone(),
             }),
             db_pool,
@@ -897,13 +1056,20 @@ impl QueryRoot {
     fn nfts(
         &self,
         context: &AppContext,
-        #[graphql(description = "Filter on creator address")] creators: Vec<String>,
+        #[graphql(description = "Filter on owner address")] owners: Option<Vec<String>>,
+        #[graphql(description = "Filter on creator address")] creators: Option<Vec<String>>,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
-    ) -> Vec<Nft> {
-        let conn = context.db_pool.get().unwrap();
+    ) -> FieldResult<Vec<Nft>> {
+        if owners.is_none() && creators.is_none() {
+            return Err(FieldError::new(
+                "No filter provided! Please provide at least one of the filters",
+                graphql_value!({ "Filters": "owners: Vec<String>, creators: Vec<String>" }),
+            ));
+        }
+
+        let conn = context.db_pool.get().context("failed to connect to db")?;
 
         let query = metadatas::table.into_boxed();
-
         let query = attributes.unwrap_or_else(Vec::new).into_iter().fold(
             query,
             |acc, AttributeFilter { trait_type, values }| {
@@ -919,11 +1085,22 @@ impl QueryRoot {
             },
         );
 
+        let mint_addresses_subquery = token_accounts::table
+            .select(token_accounts::mint_address)
+            .filter(
+                token_accounts::owner_address
+                    .eq(any(owners.unwrap_or_else(Vec::new)))
+                    .and(token_accounts::amount.eq(1)),
+            );
+        let metadata_addresses_subquery = metadata_creators::table
+            .select(metadata_creators::metadata_address)
+            .filter(metadata_creators::creator_address.eq(any(creators.unwrap_or_else(Vec::new))));
+
         let rows: Vec<models::Nft> = query
             .filter(
-                metadatas::address.eq(any(metadata_creators::table
-                    .select(metadata_creators::metadata_address)
-                    .filter(metadata_creators::creator_address.eq(any(creators))))),
+                metadatas::address
+                    .eq(any(metadata_addresses_subquery))
+                    .or(metadatas::mint_address.eq(any(mint_addresses_subquery))),
             )
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
@@ -939,9 +1116,9 @@ impl QueryRoot {
             ))
             .order_by(metadatas::name.desc())
             .load(&conn)
-            .unwrap();
+            .context("failed to load nft")?;
 
-        rows.into_iter().map(Into::into).collect()
+        Ok(rows.into_iter().map(Into::into).collect())
     }
 
     fn wallet(
@@ -997,6 +1174,18 @@ impl QueryRoot {
         let mut rows: Vec<models::Storefront> = storefronts::table
             .filter(storefronts::subdomain.eq(subdomain))
             .select(columns)
+            .limit(1)
+            .load(&conn)
+            .unwrap();
+
+        rows.pop().map(Into::into)
+    }
+    #[graphql(description = "A marketplace")]
+    fn marketplace(&self, context: &AppContext, subdomain: String) -> Option<Marketplace> {
+        let conn = context.db_pool.get().unwrap();
+        let mut rows: Vec<models::StoreConfigJson> = store_config_jsons::table
+            .filter(store_config_jsons::subdomain.eq(subdomain))
+            .select(store_config_jsons::all_columns)
             .limit(1)
             .load(&conn)
             .unwrap();

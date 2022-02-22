@@ -59,6 +59,7 @@ pub enum Message {
 #[derive(Debug, Clone)]
 pub struct QueueType {
     suffixed: bool,
+    startup_type: StartupType,
     exchange: String,
     queue: String,
 }
@@ -75,13 +76,41 @@ pub enum Network {
     Testnet,
 }
 
+/// Startup message hint for declaring exchanges and queues
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, strum::EnumString, strum::Display)]
+#[strum(serialize_all = "kebab-case")]
+pub enum StartupType {
+    /// Ignore startup messages
+    Normal,
+    /// Ignore non-startup messages
+    Startup,
+    /// Include all messages
+    All,
+}
+
+impl StartupType {
+    /// Construct a [`StartupType`] from the accountsdb `startup` filter.
+    #[must_use]
+    pub fn new(value: Option<bool>) -> Self {
+        match value {
+            None => Self::All,
+            Some(false) => Self::Normal,
+            Some(true) => Self::Startup,
+        }
+    }
+}
+
 impl QueueType {
     /// Construct a new queue configuration given the network this validator is
     /// connected to and an optional queue suffix
     #[must_use]
-    pub fn new(network: Network, id: Option<&str>) -> Self {
-        let exchange = format!("{}.accounts", network);
-        let mut queue = format!("{}.accounts.indexer", network);
+    pub fn new(network: Network, startup_type: StartupType, id: Option<&str>) -> Self {
+        let exchange = format!("{}{}.accounts", network, match startup_type {
+            StartupType::Normal => "",
+            StartupType::Startup => ".startup",
+            StartupType::All => ".startup-all",
+        });
+        let mut queue = format!("{}.indexer", exchange);
 
         if let Some(id) = id {
             queue = format!("{}.{}", queue, id);
@@ -89,6 +118,7 @@ impl QueueType {
 
         Self {
             suffixed: id.is_some(),
+            startup_type,
             exchange,
             queue,
         }
@@ -129,11 +159,13 @@ impl crate::QueueType<Message> for QueueType {
         let mut queue_fields = FieldTable::default();
         queue_fields.insert(
             "x-max-length-bytes".into(),
-            AMQPValue::LongLongInt(if self.suffixed {
-                100 * 1024 * 1024 // 100 MiB
-            } else {
-                8 * 1024 * 1024 * 1024 // 8 GiB
-            }),
+            AMQPValue::LongLongInt(
+                if self.suffixed || matches!(self.startup_type, StartupType::Normal) {
+                    100 * 1024 * 1024 // 100 MiB
+                } else {
+                    8 * 1024 * 1024 * 1024 // 8 GiB
+                },
+            ),
         );
 
         let mut queue_options = QueueDeclareOptions::default();
