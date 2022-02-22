@@ -99,7 +99,7 @@ pub async fn process_public_bid(client: &Client, key: Pubkey, public_bid: Public
                 .execute(db)
         })
         .await
-        .context("Failed to insert public bids!")?;
+        .context("Failed to insert public bid!")?;
 
     Ok(())
 }
