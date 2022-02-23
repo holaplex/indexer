@@ -824,12 +824,6 @@ struct NftOwnerBatcher {
     db_pool: Arc<Pool>,
 }
 
-// nft(address: ""){
-//     owner{
-//         address
-//     }
-// }
-
 #[async_trait]
 impl BatchFn<String, Option<NftOwner>> for NftOwnerBatcher {
     async fn load(&mut self, mint_addresses: &[String]) -> HashMap<String, Option<NftOwner>> {
