@@ -133,6 +133,12 @@ struct NftDetail {
     description: String,
     image: String,
 }
+
+#[derive(Debug, Clone, GraphQLObject)]
+struct NftOwner {
+    address: String,
+}
+
 #[derive(Debug, Clone)]
 struct NftCreator {
     address: String,
@@ -487,6 +493,10 @@ impl Nft {
     pub async fn attributes(&self, ctx: &AppContext) -> Vec<NftAttribute> {
         ctx.nft_attribute_loader.load(self.address.clone()).await
     }
+
+    pub async fn owner(&self, ctx: &AppContext) -> Option<NftOwner> {
+        ctx.nft_owner_loader.load(self.mint_address.clone()).await
+    }
 }
 
 impl From<models::Nft> for Nft {
@@ -810,6 +820,38 @@ impl BatchFn<String, Vec<NftCreator>> for NftCreatorBatcher {
     }
 }
 
+struct NftOwnerBatcher {
+    db_pool: Arc<Pool>,
+}
+
+#[async_trait]
+impl BatchFn<String, Option<NftOwner>> for NftOwnerBatcher {
+    async fn load(&mut self, mint_addresses: &[String]) -> HashMap<String, Option<NftOwner>> {
+        let conn = self.db_pool.get().unwrap();
+        let mut hash_map = HashMap::new();
+
+        for address in mint_addresses {
+            hash_map.insert(address.clone(), None);
+        }
+
+        let token_accounts: Vec<models::TokenAccount> = token_accounts::table
+            .filter(token_accounts::mint_address.eq(any(mint_addresses)))
+            .filter(token_accounts::amount.eq(1))
+            .load(&conn)
+            .unwrap();
+
+        token_accounts.into_iter().fold(hash_map, |mut acc, ta| {
+            acc.insert(
+                ta.mint_address.into_owned(),
+                Some(NftOwner {
+                    address: ta.owner_address.into_owned(),
+                }),
+            );
+            acc
+        })
+    }
+}
+
 struct NftAttributeBatcher {
     db_pool: Arc<Pool>,
 }
@@ -965,6 +1007,7 @@ pub struct AppContext {
     storefront_loader: Loader<StorefrontAddress, Option<Storefront>, StorefrontBatcher>,
     nft_creator_loader: Loader<String, Vec<NftCreator>, NftCreatorBatcher>,
     nft_attribute_loader: Loader<String, Vec<NftAttribute>, NftAttributeBatcher>,
+    nft_owner_loader: Loader<String, Option<NftOwner>, NftOwnerBatcher>,
     auction_house_loader: Loader<String, Vec<AuctionHouse>, AuctionHouseBatcher>,
     db_pool: Arc<Pool>,
     twitter_bearer_token: Arc<String>,
@@ -989,6 +1032,9 @@ impl AppContext {
                 db_pool: db_pool.clone(),
             }),
             nft_attribute_loader: Loader::new(NftAttributeBatcher {
+                db_pool: db_pool.clone(),
+            }),
+            nft_owner_loader: Loader::new(NftOwnerBatcher {
                 db_pool: db_pool.clone(),
             }),
             auction_house_loader: Loader::new(AuctionHouseBatcher {
