@@ -1,9 +1,9 @@
-use juniper::{ParseScalarResult, ParseScalarValue, Value};
+use super::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Lamports(u64);
 
-#[juniper::graphql_scalar(description = "Lamports")]
+#[graphql_scalar(description = "Lamports")]
 impl<S> GraphQLScalar for Lamports
 where
     S: ScalarValue,

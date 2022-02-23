@@ -5,7 +5,7 @@ pub mod storefront;
 
 pub(self) mod batcher;
 
-mod prelude {
+pub(self) mod prelude {
     pub use async_trait::async_trait;
     pub use dataloader::BatchFn;
     pub use indexer_core::db::Connection;

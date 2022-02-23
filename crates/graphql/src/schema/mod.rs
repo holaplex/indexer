@@ -1,15 +1,15 @@
 #![allow(clippy::module_name_repetitions)]
 
-use juniper::{EmptyMutation, EmptySubscription, GraphQLObject, RootNode};
+use juniper::{EmptyMutation, EmptySubscription, RootNode};
 
 mod context;
 pub(self) mod dataloaders;
 pub(self) mod objects;
 mod query_root;
+pub(self) mod scalars;
 pub(self) mod strings;
-mod util;
 
-mod prelude {
+pub(self) mod prelude {
     pub use std::{collections::HashMap, sync::Arc};
 
     pub use indexer_core::{
@@ -20,17 +20,10 @@ mod prelude {
         graphql_object, graphql_value, FieldError, FieldResult, GraphQLInputObject, GraphQLObject,
     };
 
-    pub(super) use super::{context::AppContext, dataloaders, objects, strings};
+    pub(super) use super::{context::AppContext, dataloaders, objects, scalars, strings};
 }
 
 pub use context::AppContext;
-pub(self) use util::Lamports;
-
-#[derive(Debug, Clone, GraphQLObject)]
-struct NftDetail {
-    description: String,
-    image: String,
-}
 
 pub type Schema = RootNode<
     'static,

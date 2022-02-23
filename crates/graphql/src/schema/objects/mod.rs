@@ -7,6 +7,6 @@ pub mod profile;
 pub mod storefront;
 pub mod wallet;
 
-mod prelude {
+pub(self) mod prelude {
     pub(super) use super::super::prelude::*;
 }

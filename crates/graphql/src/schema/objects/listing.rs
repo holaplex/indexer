@@ -1,6 +1,7 @@
 use objects::{nft::Nft, storefront::Storefront};
+use scalars::Lamports;
 
-use super::{super::Lamports, prelude::*};
+use super::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct Bid {
