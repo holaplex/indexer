@@ -2,6 +2,7 @@ use objects::{
     listing::{Bid, Listing, ListingRow},
     nft::Nft,
 };
+use strings::ListingAddress;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, bids, listing_metadatas, metadata_jsons,
     metadatas,
@@ -9,21 +10,14 @@ use tables::{
 
 use super::prelude::*;
 
-pub struct ListingBatcher {
-    pub db_pool: Arc<Pool>,
-}
-
 #[async_trait]
-impl BatchFn<String, Option<Listing>> for ListingBatcher {
-    async fn load(&mut self, keys: &[String]) -> HashMap<String, Option<Listing>> {
+impl TryBatchFn<ListingAddress, Option<Listing>> for Batcher {
+    async fn load(
+        &mut self,
+        keys: &[ListingAddress],
+    ) -> TryBatchMap<ListingAddress, Option<Listing>> {
         let now = Local::now().naive_utc();
-
-        let conn = self.db_pool.get().unwrap();
-        let mut hash_map = HashMap::new();
-
-        for key in keys {
-            hash_map.insert(key.clone(), None);
-        }
+        let conn = self.db()?;
 
         let rows: Vec<ListingRow> = auction_caches::table
             .filter(auction_caches::auction_data.eq(any(keys)))
@@ -42,68 +36,37 @@ impl BatchFn<String, Option<Listing>> for ListingBatcher {
                 auction_datas::last_bid_time,
             ))
             .load(&conn)
-            .unwrap();
+            .context("Failed to load listings")?;
 
-        for listing in rows {
-            let listing = Listing::new(listing, now)
-                .map_err(|e| error!("Failed to load listing: {:?}", e))
-                .ok();
-
-            listing.map(|l| hash_map.insert(l.address.clone(), Some(l)));
-        }
-
-        hash_map
+        Ok(rows
+            .into_iter()
+            .map(|r| (Listing::address(&r), Listing::new(r, now)))
+            .batch(keys))
     }
 }
 
-pub struct ListingBidsBatcher {
-    pub db_pool: Arc<Pool>,
-}
-
 #[async_trait]
-impl BatchFn<String, Vec<Bid>> for ListingBidsBatcher {
-    async fn load(&mut self, keys: &[String]) -> HashMap<String, Vec<Bid>> {
-        let conn = self.db_pool.get().unwrap();
-        let mut hash_map = HashMap::new();
-
-        for key in keys {
-            hash_map.insert(key.clone(), Vec::new());
-        }
+impl TryBatchFn<ListingAddress, Vec<Bid>> for Batcher {
+    async fn load(&mut self, keys: &[ListingAddress]) -> TryBatchMap<ListingAddress, Vec<Bid>> {
+        let conn = self.db()?;
 
         let rows: Vec<models::Bid> = bids::table
             .filter(bids::listing_address.eq(any(keys)))
             .order_by(bids::last_bid_time.desc())
             .load(&conn)
-            .unwrap();
+            .context("Failed to load listing bids")?;
 
-        rows.into_iter()
-            .fold(hash_map, |mut acc, bid: models::Bid| {
-                Bid::try_from(bid)
-                    .map(|bid| {
-                        acc.entry(bid.listing_address.clone()).and_modify(|bids| {
-                            bids.push(bid);
-                        });
-                    })
-                    .ok();
-
-                acc
-            })
+        Ok(rows
+            .into_iter()
+            .map(|b| (b.listing_address.clone(), b.try_into()))
+            .batch(keys))
     }
 }
 
-pub struct ListingNftsBatcher {
-    pub db_pool: Arc<Pool>,
-}
-
 #[async_trait]
-impl BatchFn<String, Vec<Nft>> for ListingNftsBatcher {
-    async fn load(&mut self, keys: &[String]) -> HashMap<String, Vec<Nft>> {
-        let conn = self.db_pool.get().unwrap();
-        let mut hash_map = HashMap::new();
-
-        for key in keys {
-            hash_map.insert(key.clone(), Vec::new());
-        }
+impl TryBatchFn<ListingAddress, Vec<Nft>> for Batcher {
+    async fn load(&mut self, keys: &[ListingAddress]) -> TryBatchMap<ListingAddress, Vec<Nft>> {
+        let conn = self.db()?;
 
         let rows: Vec<(String, models::Nft)> = listing_metadatas::table
             .filter(listing_metadatas::listing_address.eq(any(keys)))
@@ -127,17 +90,8 @@ impl BatchFn<String, Vec<Nft>> for ListingNftsBatcher {
                 ),
             ))
             .load(&conn)
-            .unwrap();
+            .context("Failed to load listing NFTs")?;
 
-        rows.into_iter().fold(
-            hash_map,
-            |mut acc, (listing_address, nft): (String, models::Nft)| {
-                acc.entry(listing_address).and_modify(|nfts| {
-                    nfts.push(Nft::from(nft));
-                });
-
-                acc
-            },
-        )
+        Ok(rows.into_iter().map(|(k, v)| (k, v.try_into())).batch(keys))
     }
 }

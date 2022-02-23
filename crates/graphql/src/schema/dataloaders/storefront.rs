@@ -1,24 +1,16 @@
-use objects::storefront::{Storefront, StorefrontAddress};
+use objects::storefront::Storefront;
+use strings::StorefrontAddress;
 use tables::storefronts;
 
 use super::prelude::*;
 
-pub struct StorefrontBatcher {
-    pub db_pool: Arc<Pool>,
-}
-
 #[async_trait]
-impl BatchFn<StorefrontAddress, Option<Storefront>> for StorefrontBatcher {
+impl TryBatchFn<StorefrontAddress, Option<Storefront>> for Batcher {
     async fn load(
         &mut self,
         keys: &[StorefrontAddress],
-    ) -> HashMap<StorefrontAddress, Option<Storefront>> {
-        let conn = self.db_pool.get().unwrap();
-        let mut hash_map = HashMap::new();
-
-        for key in keys {
-            hash_map.insert(key.clone(), None);
-        }
+    ) -> TryBatchMap<StorefrontAddress, Option<Storefront>> {
+        let conn = self.db()?;
 
         let columns = (
             storefronts::owner_address,
@@ -32,23 +24,15 @@ impl BatchFn<StorefrontAddress, Option<Storefront>> for StorefrontBatcher {
             storefronts::address,
         );
 
-        let key_strs: Vec<_> = keys.iter().map(|k| &k.0).collect();
-
         let rows: Vec<models::Storefront> = storefronts::table
             .select(columns)
-            .filter(storefronts::address.eq(any(key_strs)))
+            .filter(storefronts::address.eq(any(keys)))
             .load(&conn)
-            .unwrap();
+            .context("Failed to load storefronts")?;
 
-        for storefront in rows {
-            let storefront = Storefront::from(storefront);
-
-            hash_map.insert(
-                StorefrontAddress(storefront.address.clone()),
-                Some(storefront),
-            );
-        }
-
-        hash_map
+        Ok(rows
+            .into_iter()
+            .map(|s| (s.address.clone(), s.try_into()))
+            .batch(keys))
     }
 }

@@ -37,7 +37,7 @@ impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
     }
 }
 
-#[juniper::graphql_object(Context = AppContext)]
+#[graphql_object(Context = AppContext)]
 impl Marketplace {
     pub fn subdomain(&self) -> String {
         self.subdomain.clone()
@@ -63,10 +63,11 @@ impl Marketplace {
         self.auction_house_address.clone()
     }
 
-    pub async fn auction_house(&self, context: &AppContext) -> Vec<AuctionHouse> {
+    pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
         context
             .auction_house_loader
-            .load(self.auction_house_address.clone())
+            .load(self.auction_house_address.clone().into())
             .await
+            .map_err(Into::into)
     }
 }

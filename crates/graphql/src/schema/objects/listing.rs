@@ -1,7 +1,4 @@
-use objects::{
-    nft::Nft,
-    storefront::{Storefront, StorefrontAddress},
-};
+use objects::{nft::Nft, storefront::Storefront};
 
 use super::{super::Lamports, prelude::*};
 
@@ -59,11 +56,11 @@ impl Bid {
         self.cancelled
     }
 
-    pub async fn listing(&self, ctx: &AppContext) -> Option<Listing> {
-        let fut = ctx.listing_loader.load(self.listing_address.clone());
-        let result = fut.await;
-
-        result
+    pub async fn listing(&self, ctx: &AppContext) -> FieldResult<Option<Listing>> {
+        ctx.listing_loader
+            .load(self.listing_address.clone().into())
+            .await
+            .map_err(Into::into)
     }
 }
 
@@ -83,10 +80,14 @@ pub type ListingRow = (
 );
 
 impl Listing {
+    pub fn address((address, ..): &ListingRow) -> String {
+        address.clone()
+    }
+
     pub fn new(
         (address, store_address, ends_at, gap_time, last_bid_time): ListingRow,
         now: NaiveDateTime,
-    ) -> FieldResult<Self> {
+    ) -> Result<Self> {
         Ok(Self {
             address,
             store_address,
@@ -115,26 +116,24 @@ impl Listing {
         self.ended
     }
 
-    pub async fn storefront(&self, ctx: &AppContext) -> Option<Storefront> {
-        let fut = ctx
-            .storefront_loader
-            .load(StorefrontAddress(self.store_address.clone()));
-        let result = fut.await;
-
-        result
+    pub async fn storefront(&self, ctx: &AppContext) -> FieldResult<Option<Storefront>> {
+        ctx.storefront_loader
+            .load(self.store_address.clone().into())
+            .await
+            .map_err(Into::into)
     }
 
-    pub async fn nfts(&self, ctx: &AppContext) -> Vec<Nft> {
-        let fut = ctx.listing_nfts_loader.load(self.address.clone());
-        let result = fut.await;
-
-        result
+    pub async fn nfts(&self, ctx: &AppContext) -> FieldResult<Vec<Nft>> {
+        ctx.listing_nfts_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
     }
 
-    pub async fn bids(&self, ctx: &AppContext) -> Vec<Bid> {
-        let fut = ctx.listing_bids_loader.load(self.address.clone());
-        let result = fut.await;
-
-        result
+    pub async fn bids(&self, ctx: &AppContext) -> FieldResult<Vec<Bid>> {
+        ctx.listing_bids_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
     }
 }

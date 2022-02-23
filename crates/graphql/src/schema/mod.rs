@@ -6,6 +6,7 @@ mod context;
 pub(self) mod dataloaders;
 pub(self) mod objects;
 mod query_root;
+pub(self) mod strings;
 mod util;
 
 mod prelude {
@@ -19,7 +20,7 @@ mod prelude {
         graphql_object, graphql_value, FieldError, FieldResult, GraphQLInputObject, GraphQLObject,
     };
 
-    pub(super) use super::{context::AppContext, dataloaders, objects};
+    pub(super) use super::{context::AppContext, dataloaders, objects, strings};
 }
 
 pub use context::AppContext;

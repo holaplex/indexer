@@ -22,7 +22,7 @@ struct AttributeFilter {
     values: Vec<String>,
 }
 
-#[juniper::graphql_object(Context = AppContext)]
+#[graphql_object(Context = AppContext)]
 impl QueryRoot {
     async fn profile(
         &self,

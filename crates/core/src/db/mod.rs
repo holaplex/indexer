@@ -18,7 +18,10 @@ pub mod tables {
 
 use std::env;
 
-pub use diesel::{insert_into, pg::upsert::excluded, select, update};
+pub use diesel::{
+    backend::Backend, insert_into, pg::upsert::excluded, query_dsl, result::Error, select,
+    serialize, sql_types, update,
+};
 use diesel::{pg, r2d2};
 pub use diesel_full_text_search::{
     websearch_to_tsquery, TsQuery, TsQueryExtensions, TsVector, TsVectorExtensions,

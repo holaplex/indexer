@@ -160,15 +160,24 @@ impl Nft {
         self.image.clone()
     }
 
-    pub async fn creators(&self, ctx: &AppContext) -> Vec<NftCreator> {
-        ctx.nft_creator_loader.load(self.address.clone()).await
+    pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
+        ctx.nft_creators_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
     }
 
-    pub async fn attributes(&self, ctx: &AppContext) -> Vec<NftAttribute> {
-        ctx.nft_attribute_loader.load(self.address.clone()).await
+    pub async fn attributes(&self, ctx: &AppContext) -> FieldResult<Vec<NftAttribute>> {
+        ctx.nft_attributes_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
     }
 
-    pub async fn owner(&self, ctx: &AppContext) -> Option<NftOwner> {
-        ctx.nft_owner_loader.load(self.mint_address.clone()).await
+    pub async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>> {
+        ctx.nft_owner_loader
+            .load(self.mint_address.clone().into())
+            .await
+            .map_err(Into::into)
     }
 }

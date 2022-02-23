@@ -1,8 +1,5 @@
 use super::prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct StorefrontAddress(pub String);
-
 #[derive(Debug, Clone, GraphQLObject)]
 #[graphql(description = "A Metaplex storefront")]
 pub struct Storefront {
