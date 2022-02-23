@@ -39,3 +39,14 @@ jobs:
           heroku_app_name: accounts-db-consumer-staging
           dockerfile_name: Dockerfile.consumer
           process_type: worker
+
+      - name: Deploy accountsdb http-consumer app to heroku. # Your custom step name
+        uses: gonuit/heroku-docker-deploy@v1.3.3 # GitHub action name (leave it as it is).
+        with:
+          email: ${{ secrets.HEROKU_EMAIL }}
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: accounts-db-http-consumer-staging
+          dockerfile_name: Dockerfile.http-consumer
+          process_type: worker
+
+   
