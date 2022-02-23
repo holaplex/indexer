@@ -1,4 +1,7 @@
-use std::fmt::{self, Debug, Display};
+use std::{
+    fmt::{self, Debug, Display},
+    time::Duration,
+};
 
 use cid::Cid;
 use indexer_core::{
@@ -167,6 +170,7 @@ async fn fetch_json(
 
     let json = http_client
         .get(url.clone())
+        .timeout(Duration::from_secs(10)) // not sure what this should be :-(
         .send()
         .await
         .context("Metadata JSON request failed")?
