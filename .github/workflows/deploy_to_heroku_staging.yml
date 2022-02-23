@@ -45,7 +45,7 @@ jobs:
         with:
           email: ${{ secrets.HEROKU_EMAIL }}
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: accounts-db-http-consumer-staging
+          heroku_app_name: accountsdbhttpconsumerstaging
           dockerfile_name: Dockerfile.http-consumer
           process_type: worker
 
