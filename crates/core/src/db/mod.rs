@@ -73,6 +73,8 @@ pub fn connect(mode: ConnectMode) -> Result<Pool> {
 
     let man = ConnectionManager::new(url);
     let pool = Pool::builder()
+        .min_idle(Some(1))
+        .idle_timeout(Some(std::time::Duration::from_secs(60)))
         .build(man)
         .context("Failed to create database connection pool")?;
 
