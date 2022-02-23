@@ -1068,7 +1068,7 @@ impl QueryRoot {
         }
         if owners.is_some() && creators.is_some() {
             return Err(FieldError::new(
-                "Please pass either owner or creator, not both",
+                "Please pass either owners or creators, not both",
                 graphql_value!({ "Filters": "owners: Vec<String>, creators: Vec<String>" }),
             ));
         }
