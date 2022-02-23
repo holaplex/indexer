@@ -1066,6 +1066,12 @@ impl QueryRoot {
                 graphql_value!({ "Filters": "owners: Vec<String>, creators: Vec<String>" }),
             ));
         }
+        if owners.is_some() && creators.is_some() {
+            return Err(FieldError::new(
+                "Please pass either owner or creator, not both",
+                graphql_value!({ "Filters": "owners: Vec<String>, creators: Vec<String>" }),
+            ));
+        }
 
         let conn = context.db_pool.get().context("failed to connect to db")?;
 
@@ -1085,38 +1091,57 @@ impl QueryRoot {
             },
         );
 
-        let mint_addresses_subquery = token_accounts::table
-            .select(token_accounts::mint_address)
-            .filter(
-                token_accounts::owner_address
-                    .eq(any(owners.unwrap_or_else(Vec::new)))
-                    .and(token_accounts::amount.eq(1)),
-            );
-        let metadata_addresses_subquery = metadata_creators::table
-            .select(metadata_creators::metadata_address)
-            .filter(metadata_creators::creator_address.eq(any(creators.unwrap_or_else(Vec::new))));
-
-        let rows: Vec<models::Nft> = query
-            .filter(
-                metadatas::address
-                    .eq(any(metadata_addresses_subquery))
-                    .or(metadatas::mint_address.eq(any(mint_addresses_subquery))),
-            )
-            .inner_join(
-                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
-            )
-            .select((
-                metadatas::address,
-                metadatas::name,
-                metadatas::seller_fee_basis_points,
-                metadatas::mint_address,
-                metadatas::primary_sale_happened,
-                metadata_jsons::description,
-                metadata_jsons::image,
-            ))
-            .order_by(metadatas::name.desc())
-            .load(&conn)
-            .context("failed to load nft")?;
+        let rows: Vec<models::Nft> = if let Some(creators) = creators {
+            query
+                .inner_join(
+                    metadata_creators::table
+                        .on(metadatas::address.eq(metadata_creators::metadata_address)),
+                )
+                .inner_join(
+                    metadata_jsons::table
+                        .on(metadatas::address.eq(metadata_jsons::metadata_address)),
+                )
+                .filter(metadata_creators::creator_address.eq(any(creators)))
+                .select((
+                    metadatas::address,
+                    metadatas::name,
+                    metadatas::seller_fee_basis_points,
+                    metadatas::mint_address,
+                    metadatas::primary_sale_happened,
+                    metadata_jsons::description,
+                    metadata_jsons::image,
+                ))
+                .order_by(metadatas::name.desc())
+                .load(&conn)
+                .context("failed to load nft(s)")?
+        } else if let Some(owners) = owners {
+            // owners
+            query
+                .inner_join(
+                    token_accounts::table
+                        .on(metadatas::mint_address.eq(token_accounts::mint_address)),
+                )
+                .inner_join(
+                    metadata_jsons::table
+                        .on(metadatas::address.eq(metadata_jsons::metadata_address)),
+                )
+                .filter(token_accounts::amount.eq(1))
+                .filter(token_accounts::owner_address.eq(any(owners)))
+                .select((
+                    metadatas::address,
+                    metadatas::name,
+                    metadatas::seller_fee_basis_points,
+                    metadatas::mint_address,
+                    metadatas::primary_sale_happened,
+                    metadata_jsons::description,
+                    metadata_jsons::image,
+                ))
+                .order_by(metadatas::name.desc())
+                .load(&conn)
+                .context("failed to load nft(s)")?
+        } else {
+            unreachable!("something has gone horribly wrong on NFTs query");
+        };
 
         Ok(rows.into_iter().map(Into::into).collect())
     }
