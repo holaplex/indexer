@@ -41,7 +41,6 @@ create table purchases(
     created_at      timestamp
 );
 
-
 create index if not exists public_bids_address_index
 on public_bids (address);
 
@@ -59,3 +58,12 @@ on purchases (address);
 
 create index if not exists purchases_auction_house_index
 on purchases (auction_house);
+
+create index if not exists public_bids_token_mint_index
+on public_bids (token_mint);
+
+create index if not exists listings_token_mint_index
+on listings (token_mint);
+
+create index if not exists purchases_token_mint_index
+on purchases (token_mint);
