@@ -133,6 +133,12 @@ struct NftDetail {
     description: String,
     image: String,
 }
+
+#[derive(Debug, Clone, GraphQLObject)]
+struct NftOwner {
+    address: String,
+}
+
 #[derive(Debug, Clone)]
 struct NftCreator {
     address: String,
@@ -487,6 +493,10 @@ impl Nft {
     pub async fn attributes(&self, ctx: &AppContext) -> Vec<NftAttribute> {
         ctx.nft_attribute_loader.load(self.address.clone()).await
     }
+
+    pub async fn owner(&self, ctx: &AppContext) -> Option<NftOwner> {
+        ctx.nft_owner_loader.load(self.mint_address.clone()).await
+    }
 }
 
 impl From<models::Nft> for Nft {
@@ -810,6 +820,38 @@ impl BatchFn<String, Vec<NftCreator>> for NftCreatorBatcher {
     }
 }
 
+struct NftOwnerBatcher {
+    db_pool: Arc<Pool>,
+}
+
+#[async_trait]
+impl BatchFn<String, Option<NftOwner>> for NftOwnerBatcher {
+    async fn load(&mut self, mint_addresses: &[String]) -> HashMap<String, Option<NftOwner>> {
+        let conn = self.db_pool.get().unwrap();
+        let mut hash_map = HashMap::new();
+
+        for address in mint_addresses {
+            hash_map.insert(address.clone(), None);
+        }
+
+        let token_accounts: Vec<models::TokenAccount> = token_accounts::table
+            .filter(token_accounts::mint_address.eq(any(mint_addresses)))
+            .filter(token_accounts::amount.eq(1))
+            .load(&conn)
+            .unwrap();
+
+        token_accounts.into_iter().fold(hash_map, |mut acc, ta| {
+            acc.insert(
+                ta.mint_address.into_owned(),
+                Some(NftOwner {
+                    address: ta.owner_address.into_owned(),
+                }),
+            );
+            acc
+        })
+    }
+}
+
 struct NftAttributeBatcher {
     db_pool: Arc<Pool>,
 }
@@ -965,6 +1007,7 @@ pub struct AppContext {
     storefront_loader: Loader<StorefrontAddress, Option<Storefront>, StorefrontBatcher>,
     nft_creator_loader: Loader<String, Vec<NftCreator>, NftCreatorBatcher>,
     nft_attribute_loader: Loader<String, Vec<NftAttribute>, NftAttributeBatcher>,
+    nft_owner_loader: Loader<String, Option<NftOwner>, NftOwnerBatcher>,
     auction_house_loader: Loader<String, Vec<AuctionHouse>, AuctionHouseBatcher>,
     db_pool: Arc<Pool>,
     twitter_bearer_token: Arc<String>,
@@ -989,6 +1032,9 @@ impl AppContext {
                 db_pool: db_pool.clone(),
             }),
             nft_attribute_loader: Loader::new(NftAttributeBatcher {
+                db_pool: db_pool.clone(),
+            }),
+            nft_owner_loader: Loader::new(NftOwnerBatcher {
                 db_pool: db_pool.clone(),
             }),
             auction_house_loader: Loader::new(AuctionHouseBatcher {
@@ -1066,6 +1112,12 @@ impl QueryRoot {
                 graphql_value!({ "Filters": "owners: Vec<String>, creators: Vec<String>" }),
             ));
         }
+        if owners.is_some() && creators.is_some() {
+            return Err(FieldError::new(
+                "Please pass either owners or creators, not both",
+                graphql_value!({ "Filters": "owners: Vec<String>, creators: Vec<String>" }),
+            ));
+        }
 
         let conn = context.db_pool.get().context("failed to connect to db")?;
 
@@ -1085,38 +1137,57 @@ impl QueryRoot {
             },
         );
 
-        let mint_addresses_subquery = token_accounts::table
-            .select(token_accounts::mint_address)
-            .filter(
-                token_accounts::owner_address
-                    .eq(any(owners.unwrap_or_else(Vec::new)))
-                    .and(token_accounts::amount.eq(1)),
-            );
-        let metadata_addresses_subquery = metadata_creators::table
-            .select(metadata_creators::metadata_address)
-            .filter(metadata_creators::creator_address.eq(any(creators.unwrap_or_else(Vec::new))));
-
-        let rows: Vec<models::Nft> = query
-            .filter(
-                metadatas::address
-                    .eq(any(metadata_addresses_subquery))
-                    .or(metadatas::mint_address.eq(any(mint_addresses_subquery))),
-            )
-            .inner_join(
-                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
-            )
-            .select((
-                metadatas::address,
-                metadatas::name,
-                metadatas::seller_fee_basis_points,
-                metadatas::mint_address,
-                metadatas::primary_sale_happened,
-                metadata_jsons::description,
-                metadata_jsons::image,
-            ))
-            .order_by(metadatas::name.desc())
-            .load(&conn)
-            .context("failed to load nft")?;
+        let rows: Vec<models::Nft> = if let Some(creators) = creators {
+            query
+                .inner_join(
+                    metadata_creators::table
+                        .on(metadatas::address.eq(metadata_creators::metadata_address)),
+                )
+                .inner_join(
+                    metadata_jsons::table
+                        .on(metadatas::address.eq(metadata_jsons::metadata_address)),
+                )
+                .filter(metadata_creators::creator_address.eq(any(creators)))
+                .select((
+                    metadatas::address,
+                    metadatas::name,
+                    metadatas::seller_fee_basis_points,
+                    metadatas::mint_address,
+                    metadatas::primary_sale_happened,
+                    metadata_jsons::description,
+                    metadata_jsons::image,
+                ))
+                .order_by(metadatas::name.desc())
+                .load(&conn)
+                .context("failed to load nft(s)")?
+        } else if let Some(owners) = owners {
+            // owners
+            query
+                .inner_join(
+                    token_accounts::table
+                        .on(metadatas::mint_address.eq(token_accounts::mint_address)),
+                )
+                .inner_join(
+                    metadata_jsons::table
+                        .on(metadatas::address.eq(metadata_jsons::metadata_address)),
+                )
+                .filter(token_accounts::amount.eq(1))
+                .filter(token_accounts::owner_address.eq(any(owners)))
+                .select((
+                    metadatas::address,
+                    metadatas::name,
+                    metadatas::seller_fee_basis_points,
+                    metadatas::mint_address,
+                    metadatas::primary_sale_happened,
+                    metadata_jsons::description,
+                    metadata_jsons::image,
+                ))
+                .order_by(metadatas::name.desc())
+                .load(&conn)
+                .context("failed to load nft(s)")?
+        } else {
+            unreachable!("something has gone horribly wrong on NFTs query");
+        };
 
         Ok(rows.into_iter().map(Into::into).collect())
     }
