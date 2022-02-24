@@ -66,6 +66,7 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
         MASTER_EDITION_V1 => process_master_edition_v1(client, update).await,
         MASTER_EDITION_V2 => process_master_edition_v2(client, update).await,
         b => {
+            trace!("Unhandled metadata key byte {:02x}", b);
 
             Ok(())
         },

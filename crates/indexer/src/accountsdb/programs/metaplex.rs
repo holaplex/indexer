@@ -88,6 +88,7 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
         MPL_STORE_CONFIG => process_store_config(client, update).await,
         AUCTION_CACHE => process_auction_cache(client, update).await,
         b => {
+            trace!("Unhandled metaplex key byte {:02x}", b);
 
             Ok(())
         },
