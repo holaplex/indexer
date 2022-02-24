@@ -173,6 +173,7 @@ table! {
         external_url -> Nullable<Text>,
         category -> Nullable<Text>,
         raw_content -> Jsonb,
+        model -> Nullable<Text>,
     }
 }
 
