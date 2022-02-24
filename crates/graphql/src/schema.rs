@@ -7,8 +7,8 @@ use indexer_core::{
         models,
         tables::{
             attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bids,
-            listing_metadatas, metadata_creators, metadata_jsons, metadatas, public_bids,
-            store_config_jsons, storefronts, token_accounts,
+            listing_metadatas, metadata_creators, metadata_jsons, metadatas, store_config_jsons,
+            storefronts, token_accounts,
         },
         Pool,
     },
@@ -27,10 +27,10 @@ struct Creator {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct UnsignedInt8(u64);
+pub struct Lamports(u64);
 
-#[juniper::graphql_scalar(description = "UnsignedInt8")]
-impl<S> GraphQLScalar for UnsignedInt8
+#[juniper::graphql_scalar(description = "Lamports")]
+impl<S> GraphQLScalar for Lamports
 where
     S: ScalarValue,
 {
@@ -38,7 +38,7 @@ where
         Value::scalar(self.0.to_string())
     }
 
-    fn from_input_value(v: &InputValue) -> Option<UnsignedInt8> {
+    fn from_input_value(v: &InputValue) -> Option<Lamports> {
         v.as_string_value().and_then(|s| s.parse().ok()).map(Self)
     }
 
@@ -47,7 +47,7 @@ where
     }
 }
 
-impl TryFrom<i64> for UnsignedInt8 {
+impl TryFrom<i64> for Lamports {
     type Error = std::num::TryFromIntError;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
@@ -133,6 +133,12 @@ struct NftDetail {
     description: String,
     image: String,
 }
+
+#[derive(Debug, Clone, GraphQLObject)]
+struct NftOwner {
+    address: String,
+}
+
 #[derive(Debug, Clone)]
 struct NftCreator {
     address: String,
@@ -294,7 +300,7 @@ struct Bid {
     listing_address: String,
     bidder_address: String,
     last_bid_time: String,
-    last_bid_amount: UnsignedInt8,
+    last_bid_amount: Lamports,
     cancelled: bool,
 }
 
@@ -312,7 +318,7 @@ impl Bid {
         self.last_bid_time.clone()
     }
 
-    pub fn last_bid_amount(&self) -> UnsignedInt8 {
+    pub fn last_bid_amount(&self) -> Lamports {
         self.last_bid_amount
     }
 
@@ -488,8 +494,8 @@ impl Nft {
         ctx.nft_attribute_loader.load(self.address.clone()).await
     }
 
-    pub async fn offers(&self, ctx: &AppContext) -> Vec<PublicBid> {
-        ctx.public_bid_loader.load(self.mint_address.clone()).await
+    pub async fn owner(&self, ctx: &AppContext) -> Option<NftOwner> {
+        ctx.nft_owner_loader.load(self.mint_address.clone()).await
     }
 }
 
@@ -684,75 +690,6 @@ impl<'a> From<models::AuctionHouse<'a>> for AuctionHouse {
     }
 }
 
-#[derive(Debug, Clone)]
-struct PublicBid {
-    pub address: String,
-    pub trade_state: String,
-    pub wallet: String,
-    pub token_mint: String,
-    pub price: UnsignedInt8,
-    pub trade_state_bump: i32,
-    pub activated_at: Option<UnsignedInt8>,
-}
-
-#[juniper::graphql_object(Context = AppContext)]
-impl PublicBid {
-    pub fn address(&self) -> String {
-        self.address.clone()
-    }
-
-    pub fn trade_state(&self) -> String {
-        self.trade_state.clone()
-    }
-    pub fn wallet(&self) -> String {
-        self.wallet.clone()
-    }
-    pub fn token_mint(&self) -> String {
-        self.token_mint.clone()
-    }
-    pub fn price(&self) -> UnsignedInt8 {
-        self.price
-    }
-    pub fn trade_state_bump(&self) -> i32 {
-        self.trade_state_bump
-    }
-
-    pub fn activated_at(&self) -> Option<UnsignedInt8> {
-        self.activated_at
-    }
-}
-
-impl<'a> TryFrom<models::PublicBid<'a>> for PublicBid {
-    type Error = std::num::TryFromIntError;
-    fn try_from(
-        models::PublicBid {
-            address,
-            trade_state,
-            bookkeeper: _,
-            auction_house: _,
-            wallet,
-            token_mint,
-            price,
-            token_size: _,
-            bump: _,
-            trade_state_bump,
-            activated_at,
-            closed_at: _,
-            ..
-        }: models::PublicBid,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            address: address.into_owned(),
-            trade_state: trade_state.into_owned(),
-            wallet: wallet.into_owned(),
-            token_mint: token_mint.into_owned(),
-            price: price.try_into()?,
-            trade_state_bump: trade_state_bump.into(),
-            activated_at: activated_at.map(|x| x.try_into().unwrap()),
-        })
-    }
-}
-
 pub struct QueryRoot {}
 
 pub struct ListingBatcher {
@@ -880,6 +817,38 @@ impl BatchFn<String, Vec<NftCreator>> for NftCreatorBatcher {
                     });
                 acc
             })
+    }
+}
+
+struct NftOwnerBatcher {
+    db_pool: Arc<Pool>,
+}
+
+#[async_trait]
+impl BatchFn<String, Option<NftOwner>> for NftOwnerBatcher {
+    async fn load(&mut self, mint_addresses: &[String]) -> HashMap<String, Option<NftOwner>> {
+        let conn = self.db_pool.get().unwrap();
+        let mut hash_map = HashMap::new();
+
+        for address in mint_addresses {
+            hash_map.insert(address.clone(), None);
+        }
+
+        let token_accounts: Vec<models::TokenAccount> = token_accounts::table
+            .filter(token_accounts::mint_address.eq(any(mint_addresses)))
+            .filter(token_accounts::amount.eq(1))
+            .load(&conn)
+            .unwrap();
+
+        token_accounts.into_iter().fold(hash_map, |mut acc, ta| {
+            acc.insert(
+                ta.mint_address.into_owned(),
+                Some(NftOwner {
+                    address: ta.owner_address.into_owned(),
+                }),
+            );
+            acc
+        })
     }
 }
 
@@ -1030,42 +999,6 @@ impl BatchFn<String, Vec<AuctionHouse>> for AuctionHouseBatcher {
     }
 }
 
-struct PublicBidBatcher {
-    db_pool: Arc<Pool>,
-}
-
-#[async_trait]
-impl BatchFn<String, Vec<PublicBid>> for PublicBidBatcher {
-    async fn load(&mut self, mint_addresses: &[String]) -> HashMap<String, Vec<PublicBid>> {
-        let conn = self.db_pool.get().unwrap();
-        let mut hash_map = HashMap::new();
-
-        for address in mint_addresses {
-            hash_map.insert(address.clone(), Vec::new());
-        }
-
-        let rows: Vec<models::PublicBid> = public_bids::table
-            .filter(
-                public_bids::token_mint
-                    .eq(any(mint_addresses))
-                    .and(public_bids::closed_at.is_null()),
-            )
-            .load(&conn)
-            .unwrap();
-        rows.into_iter()
-            .fold(hash_map, |mut acc, pb: models::PublicBid| {
-                PublicBid::try_from(pb)
-                    .map(|pb| {
-                        acc.entry(pb.token_mint.clone()).and_modify(|pbs| {
-                            pbs.push(pb);
-                        });
-                    })
-                    .ok();
-                acc
-            })
-    }
-}
-
 #[derive(Clone)]
 pub struct AppContext {
     listing_loader: Loader<String, Option<Listing>, ListingBatcher>,
@@ -1074,8 +1007,8 @@ pub struct AppContext {
     storefront_loader: Loader<StorefrontAddress, Option<Storefront>, StorefrontBatcher>,
     nft_creator_loader: Loader<String, Vec<NftCreator>, NftCreatorBatcher>,
     nft_attribute_loader: Loader<String, Vec<NftAttribute>, NftAttributeBatcher>,
+    nft_owner_loader: Loader<String, Option<NftOwner>, NftOwnerBatcher>,
     auction_house_loader: Loader<String, Vec<AuctionHouse>, AuctionHouseBatcher>,
-    public_bid_loader: Loader<String, Vec<PublicBid>, PublicBidBatcher>,
     db_pool: Arc<Pool>,
     twitter_bearer_token: Arc<String>,
 }
@@ -1101,10 +1034,10 @@ impl AppContext {
             nft_attribute_loader: Loader::new(NftAttributeBatcher {
                 db_pool: db_pool.clone(),
             }),
-            auction_house_loader: Loader::new(AuctionHouseBatcher {
+            nft_owner_loader: Loader::new(NftOwnerBatcher {
                 db_pool: db_pool.clone(),
             }),
-            public_bid_loader: Loader::new(PublicBidBatcher {
+            auction_house_loader: Loader::new(AuctionHouseBatcher {
                 db_pool: db_pool.clone(),
             }),
             db_pool,

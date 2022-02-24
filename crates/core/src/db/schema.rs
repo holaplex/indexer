@@ -139,8 +139,8 @@ table! {
         token_size -> Int8,
         bump -> Int2,
         trade_state_bump -> Int2,
-        activated_at -> Nullable<Int8>,
-        closed_at -> Nullable<Int8>,
+        activated_at -> Nullable<Timestamp>,
+        closed_at -> Nullable<Timestamp>,
     }
 }
 
@@ -230,8 +230,8 @@ table! {
         token_size -> Int8,
         bump -> Int2,
         trade_state_bump -> Int2,
-        activated_at -> Nullable<Int8>,
-        closed_at -> Nullable<Int8>,
+        activated_at -> Nullable<Timestamp>,
+        closed_at -> Nullable<Timestamp>,
     }
 }
 
@@ -248,7 +248,7 @@ table! {
         token_size -> Int8,
         price -> Int8,
         bump -> Int2,
-        created_at -> Nullable<Int8>,
+        created_at -> Nullable<Timestamp>,
     }
 }
 

@@ -9,8 +9,8 @@ create table public_bids (
     token_size              bigint      not null,
     bump                    smallint    not null,
     trade_state_bump        smallint    not null,
-    activated_at            bigint,
-    closed_at               bigint
+    activated_at            timestamp,
+    closed_at               timestamp
 );
 
   
@@ -25,8 +25,8 @@ create table listings (
     token_size          bigint          not null,
     bump                smallint        not null,
     trade_state_bump    smallint        not null,
-    activated_at           bigint,
-    closed_at           bigint    
+    activated_at        timestamp,
+    closed_at           timestamp    
 );
 
 create table purchases(
@@ -38,7 +38,7 @@ create table purchases(
     token_size      bigint          not null,
     price           bigint          not null,
     bump            smallint        not null,
-    created_at      bigint
+    created_at      timestamp
 );
 
 

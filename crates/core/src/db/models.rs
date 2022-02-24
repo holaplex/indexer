@@ -471,9 +471,9 @@ pub struct PublicBid<'a> {
     /// Trade State bump
     pub trade_state_bump: i16,
     /// Activated at
-    pub activated_at: Option<i64>,
+    pub activated_at: Option<NaiveDateTime>,
     /// Closed at
-    pub closed_at: Option<i64>,
+    pub closed_at: Option<NaiveDateTime>,
 }
 
 /// A row in the `listings` table
@@ -500,9 +500,9 @@ pub struct Listing<'a> {
     /// Trade State bump
     pub trade_state_bump: i16,
     /// Activated at
-    pub activated_at: Option<i64>,
+    pub activated_at: Option<NaiveDateTime>,
     /// Closed at
-    pub closed_at: Option<i64>,
+    pub closed_at: Option<NaiveDateTime>,
 }
 
 /// A row in the `purchases` table
@@ -525,5 +525,5 @@ pub struct Purchase<'a> {
     /// Bump
     pub bump: i16,
     /// Created at
-    pub created_at: Option<i64>,
+    pub created_at: Option<NaiveDateTime>,
 }

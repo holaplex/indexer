@@ -19,12 +19,12 @@ pub async fn process_listing(client: &Client, key: Pubkey, listing: Listing) -> 
         auction_house: Owned(bs58::encode(listing.auction_house).into_string()),
         seller: Owned(bs58::encode(listing.seller).into_string()),
         token_mint: Owned(bs58::encode(listing.token_mint).into_string()),
-        price: listing.price.into_string(),
-        token_size: listing.token_size.into(),
+        price: listing.price.try_into()?,
+        token_size: listing.token_size.try_into()?,
         bump: listing.bump.into(),
-        trade_state_bump: listing.trade.into(),
-        activated_at: listing.activated_at.map(Into::into),
-        closed_at: listing.closed_at.map(Into::into),
+        trade_state_bump: listing.trade_state_bump.into(),
+        activated_at: listing.activated_at.map(|t| NaiveDateTime::from_timestamp(t, 0)),
+        closed_at: listing.closed_at.map(|t| NaiveDateTime::from_timestamp(t, 0)),
     };
 
     client
@@ -50,10 +50,10 @@ pub async fn process_purchase(client: &Client, key: Pubkey, purchase: Purchase) 
         seller: Owned(bs58::encode(purchase.seller).into_string()),
         auction_house: Owned(bs58::encode(purchase.auction_house).into_string()),
         token_mint: Owned(bs58::encode(purchase.token_mint).into_string()),
-        token_size: purchase.token_size.into(),
-        price: purchase.price.into_string(),
+        token_size: purchase.token_size.try_into()?,
+        price: purchase.price.try_into()?,
         bump: purchase.bump.into(),
-        created_at: purchase.created_at.map(Into::into),
+        created_at: purchase.created_at.map(|t| NaiveDateTime::from_timestamp(t, 0)),
     };
 
     client
@@ -80,12 +80,12 @@ pub async fn process_public_bid(client: &Client, key: Pubkey, public_bid: Public
         auction_house: Owned(bs58::encode(public_bid.auction_house).into_string()),
         wallet: Owned(bs58::encode(public_bid.wallet).into_string()),
         token_mint: Owned(bs58::encode(public_bid.token_mint).into_string()),
-        price: public_bid.price.into(),
-        token_size: public_bid.token_size.into(),
+        price: public_bid.price.try_into()?,
+        token_size: public_bid.token_size.try_into()?,
         bump: public_bid.bump.into(),
         trade_state_bump: public_bid.trade_state_bump.into(),
-        activated_at: public_bid.activated_at.map(Into::into),
-        closed_at: public_bid.closed_at.map(Into::into),
+        activated_at: public_bid.activated_at.map(|t| NaiveDateTime::from_timestamp(t, 0)),
+        closed_at: public_bid.closed_at.map(|t| NaiveDateTime::from_timestamp(t, 0)),
     };
 
     client
