@@ -19,6 +19,7 @@ use indexer_core::{
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use super::{client::ArTxid, Client};
 use crate::prelude::*;
@@ -157,37 +158,84 @@ struct MetadataJson {
     external_url: Option<String>,
     properties: Option<Property>,
     #[serde(flatten)]
-    extra: HashMap<String, serde_json::Value>,
+    extra: HashMap<String, Value>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct MetadataJsonMinimal {
+    #[serde(default)]
+    name: Value,
+    #[serde(default)]
+    description: Value,
+    #[serde(default)]
+    image: Value,
+    #[serde(default)]
+    animation_url: Value,
+    #[serde(default)]
+    external_url: Value,
+    #[serde(default)]
+    category: Value,
+    #[serde(flatten)]
+    extra: HashMap<String, Value>,
+}
+
+enum MetadataJsonResult {
+    Full(MetadataJson),
+    Minimal(MetadataJsonMinimal),
 }
 
 async fn fetch_json(
     http_client: reqwest::Client,
     meta_key: Pubkey,
     url: Result<Url>,
-) -> Result<MetadataJson> {
+) -> Result<MetadataJsonResult> {
     let start_time = Local::now();
     let url = url.context("Failed to create asset URL")?;
 
-    let json = http_client
+    // TODO: what's a good timeout?
+    let timeout = Duration::from_secs(10);
+
+    let bytes = http_client
         .get(url.clone())
-        .timeout(Duration::from_secs(10)) // not sure what this should be :-(
+        .timeout(timeout)
         .send()
         .await
         .context("Metadata JSON request failed")?
-        .json()
+        .bytes()
         .await
-        .context("Failed to parse metadata JSON")?;
+        .context("Failed to download metadata JSON")?;
 
     let end_time = Local::now();
 
     debug!(
         "Metadata JSON URI {:?} for {} fetched in {}",
-        url,
+        url.as_str(),
         meta_key,
         indexer_core::util::duration_hhmmssfff(end_time - start_time)
     );
 
-    Ok(json)
+    if let Ok(full) = serde_json::from_slice(&bytes).map_err(|e| {
+        debug!(
+            "Failed to parse full metadata JSON for {:?}: {:?}",
+            url.as_str(),
+            e
+        );
+    }) {
+        Ok(MetadataJsonResult::Full(full))
+    } else if let Ok(min) = serde_json::from_slice(&bytes).map_err(|e| {
+        debug!(
+            "Failed to parse minimal metadata JSON for {:?}: {:?}",
+            url.as_str(),
+            e
+        );
+    }) {
+        Ok(MetadataJsonResult::Minimal(min))
+    } else {
+        Err(anyhow!(
+            "Failed to parse JSON response from {:?}",
+            url.as_str()
+        ))
+    }
 }
 
 async fn try_locate_json(
@@ -195,7 +243,7 @@ async fn try_locate_json(
     url: &Url,
     id: &AssetIdentifier,
     meta_key: Pubkey,
-) -> Result<(MetadataJson, Vec<u8>)> {
+) -> Result<(MetadataJsonResult, Vec<u8>)> {
     let http_client = reqwest::Client::new();
     let mut resp = None;
 
@@ -222,19 +270,148 @@ async fn try_locate_json(
     Ok(if let Some(r) = resp {
         r
     } else {
-        (
-            fetch_json(http_client, meta_key, Ok(url.clone()))
-                .await
-                .with_context(|| {
-                    format!(
-                        "Last-resort metadata fetch {:?} for {} failed",
-                        url.as_str(),
-                        meta_key,
-                    )
-                })?,
-            vec![],
-        )
+        // Set to true for fallback
+        const TRY_LAST_RESORT: bool = false;
+
+        if TRY_LAST_RESORT {
+            (
+                fetch_json(http_client, meta_key, Ok(url.clone()))
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Last-resort metadata fetch {:?} for {} failed",
+                            url.as_str(),
+                            meta_key,
+                        )
+                    })?,
+                vec![],
+            )
+        } else {
+            bail!(
+                "Cached metadata fetch {:?} for {} failed (not tryiing last-resort)",
+                url.as_str(),
+                meta_key
+            )
+        }
     })
+}
+
+async fn process_full(
+    client: &Client,
+    addr: String,
+    json: MetadataJson,
+    fingerprint: Vec<u8>,
+) -> Result<()> {
+    let raw_content: Value =
+        serde_json::value::to_value(&json).context("Failed to upcast metadata JSON")?;
+
+    let MetadataJson {
+        description,
+        image,
+        animation_url,
+        external_url,
+        ..
+    } = json;
+
+    let (files, category, _creators) = json.properties.map_or(
+        (None, None, None),
+        |Property {
+             files,
+             category,
+             creators,
+         }| (files, category, creators),
+    );
+
+    let row = DbMetadataJson {
+        metadata_address: Owned(addr.clone()),
+        fingerprint: Owned(fingerprint),
+        updated_at: Local::now().naive_utc(),
+        description: description.map(Owned),
+        image: image.map(Owned),
+        animation_url: animation_url.map(Owned),
+        external_url: external_url.map(Owned),
+        category: category.map(Owned),
+        raw_content: Owned(raw_content),
+        model: Some(Borrowed("full")),
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(metadata_jsons::table)
+                .values(&row)
+                .on_conflict(metadata_jsons::metadata_address)
+                .do_update()
+                .set(&row)
+                .execute(db)
+                .context("Failed to insert metadata")?;
+
+            // TODO: if the row updates the following functions do not clear the
+            //       previous rows from the old metadata JSON:
+
+            process_files(db, &addr, files)?;
+            process_attributes(db, &addr, json.attributes)?;
+            process_collection(db, &addr, json.collection)
+        })
+        .await
+}
+
+async fn process_minimal(
+    client: &Client,
+    addr: String,
+    json: MetadataJsonMinimal,
+    fingerprint: Vec<u8>,
+) -> Result<()> {
+    fn to_opt_string(v: &Value) -> Option<Cow<'static, str>> {
+        v.as_str().map(|s| Owned(s.to_owned())).or_else(|| {
+            if v.is_null() {
+                None
+            } else {
+                Some(Owned(v.to_string()))
+            }
+        })
+    }
+
+    let raw_content: Value =
+        serde_json::value::to_value(&json).context("Failed to upcast minimal metadata JSON")?;
+
+    let MetadataJsonMinimal {
+        name: _,
+        description,
+        image,
+        animation_url,
+        external_url,
+        category,
+        extra: _,
+    } = json;
+
+    let row = DbMetadataJson {
+        metadata_address: Owned(addr.clone()),
+        fingerprint: Owned(fingerprint),
+        updated_at: Local::now().naive_utc(),
+        description: to_opt_string(&description),
+        image: to_opt_string(&image),
+        animation_url: to_opt_string(&animation_url),
+        external_url: to_opt_string(&external_url),
+        category: to_opt_string(&category),
+        raw_content: Owned(raw_content),
+        model: Some(Borrowed("minimal")),
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(metadata_jsons::table)
+                .values(&row)
+                .on_conflict(metadata_jsons::metadata_address)
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
+        .context("Failed to insert minimal metadata")?;
+
+    Ok(())
 }
 
 fn process_files(db: &Connection, addr: &str, files: Option<Vec<File>>) -> Result<()> {
@@ -344,55 +521,8 @@ pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> 
 
     let (json, fingerprint) = try_locate_json(client, &url, &id, meta_key).await?;
 
-    let raw_content: serde_json::Value =
-        serde_json::value::to_value(&json).context("Failed to upcast metadata JSON")?;
-
-    let MetadataJson {
-        description,
-        image,
-        animation_url,
-        external_url,
-        ..
-    } = json;
-
-    let (files, category, _creators) = json.properties.map_or(
-        (None, None, None),
-        |Property {
-             files,
-             category,
-             creators,
-         }| (files, category, creators),
-    );
-
-    let row = DbMetadataJson {
-        metadata_address: Owned(addr.clone()),
-        fingerprint: Owned(fingerprint),
-        updated_at: Local::now().naive_utc(),
-        description: description.map(Owned),
-        image: image.map(Owned),
-        animation_url: animation_url.map(Owned),
-        external_url: external_url.map(Owned),
-        category: category.map(Owned),
-        raw_content: Owned(raw_content),
-    };
-
-    client
-        .db()
-        .run(move |db| {
-            insert_into(metadata_jsons::table)
-                .values(&row)
-                .on_conflict(metadata_jsons::metadata_address)
-                .do_update()
-                .set(&row)
-                .execute(db)
-                .context("Failed to insert metadata")?;
-
-            // TODO: if the row updates the following functions do not clear the
-            //       previous rows from the old metadata JSON:
-
-            process_files(db, &addr, files)?;
-            process_attributes(db, &addr, json.attributes)?;
-            process_collection(db, &addr, json.collection)
-        })
-        .await
+    match json {
+        MetadataJsonResult::Full(f) => process_full(client, addr, f, fingerprint).await,
+        MetadataJsonResult::Minimal(m) => process_minimal(client, addr, m, fingerprint).await,
+    }
 }

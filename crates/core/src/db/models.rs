@@ -285,22 +285,24 @@ pub struct ListingsTripleJoinRow {
 pub struct MetadataJson<'a> {
     /// Metadata Address
     pub metadata_address: Cow<'a, str>,
-    /// Metadata URI fingerprint - Cid for Ipfs and ArTxid for Arweave
+    /// Metadata URI fingerprint - Cid for IPFS and ArTxid for Arweave
     pub fingerprint: Cow<'a, Vec<u8>>,
-    /// Metadata Timestamp
+    /// Metadata timestamp
     pub updated_at: NaiveDateTime,
     /// Metadata description
     pub description: Option<Cow<'a, str>>,
-    /// Metadata Image url
+    /// Metadata Image URL
     pub image: Option<Cow<'a, str>>,
-    /// Metadata Animation url
+    /// Metadata Animation URL
     pub animation_url: Option<Cow<'a, str>>,
-    /// Metadata External Url
+    /// Metadata External URL
     pub external_url: Option<Cow<'a, str>>,
     /// Metadata Category
     pub category: Option<Cow<'a, str>>,
-    /// Metadata URI raw json
+    /// Metadata URI raw JSON
     pub raw_content: Cow<'a, serde_json::Value>,
+    /// Model the JSON was parsed with
+    pub model: Option<Cow<'a, str>>,
 }
 
 /// A row in the `files` table
