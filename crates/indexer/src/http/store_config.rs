@@ -19,16 +19,30 @@ pub struct Metadata {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Address {
     pub owner: String,
-    pub auctionHouse: String,
+    pub auction_house: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Upload {
+    pub url: String,
+    pub name: String,
+    #[serde(rename = "type")]
+    pub ty: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Theme {
+    pub banner: Upload,
+    pub logo: Upload,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 struct SettingUri {
     meta: Metadata,
-    logo_url: String,
-    banner_url: String,
+    theme: Theme,
     subdomain: String,
     address: Address,
     creators: Option<Vec<Creator>>,
@@ -40,6 +54,11 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
     let url = Url::parse(&uri_str).context("Couldn't parse store config URL")?;
 
     let http_client = reqwest::Client::new();
+
+    debug!(
+        "attempting to process storeconfig: {:?}, with uri: {:?}",
+        config_key, uri_str
+    );
 
     // TODO: parse failure shouldn't be an error, this stuff will be unstructured
     let json = http_client
@@ -56,11 +75,11 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         config_address: Owned(addr),
         name: Owned(json.meta.name),
         description: Owned(json.meta.description),
-        logo_url: Owned(json.logo_url),
-        banner_url: Owned(json.banner_url),
+        logo_url: Owned(json.theme.logo.url),
+        banner_url: Owned(json.theme.banner.url),
         subdomain: Owned(json.subdomain),
         owner_address: Owned(json.address.owner),
-        auction_house_address: Owned(json.address.auctionHouse),
+        auction_house_address: Owned(json.address.auction_house),
     };
 
     client

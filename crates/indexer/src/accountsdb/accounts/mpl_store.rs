@@ -25,6 +25,7 @@ pub(crate) async fn process_config(
 
     let addr = bs58::encode(key).into_string();
     if let Some(uri) = config.settings_uri.clone() {
+        debug!("dispatching store config: {:?}", uri);
         client
             .dispatch_store_config(key, uri)
             .await
