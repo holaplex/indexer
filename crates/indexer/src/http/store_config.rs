@@ -19,16 +19,18 @@ pub struct Metadata {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Address {
     pub owner: String,
-    pub auctionHouse: String,
+    pub auction_house: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Upload {
     pub url: String,
     pub name: String,
-    pub r#type: String,
+    #[serde(rename = "type")]
+    pub ty: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -77,7 +79,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         banner_url: Owned(json.theme.banner.url),
         subdomain: Owned(json.subdomain),
         owner_address: Owned(json.address.owner),
-        auction_house_address: Owned(json.address.auctionHouse),
+        auction_house_address: Owned(json.address.auction_house),
     };
 
     client
