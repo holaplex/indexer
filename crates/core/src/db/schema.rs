@@ -128,6 +128,26 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    listings (address) {
+        address -> Varchar,
+        trade_state -> Varchar,
+        bookkeeper -> Varchar,
+        auction_house -> Varchar,
+        seller -> Varchar,
+        token_mint -> Varchar,
+        price -> Int8,
+        token_size -> Int8,
+        bump -> Int2,
+        trade_state_bump -> Int2,
+        activated_at -> Nullable<Timestamp>,
+        closed_at -> Nullable<Timestamp>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     master_editions (address) {
         address -> Varchar,
         supply -> Int8,
@@ -193,6 +213,43 @@ table! {
         is_mutable -> Bool,
         edition_nonce -> Nullable<Int4>,
         edition_pda -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    public_bids (address) {
+        address -> Varchar,
+        trade_state -> Varchar,
+        bookkeeper -> Varchar,
+        auction_house -> Varchar,
+        wallet -> Varchar,
+        token_mint -> Varchar,
+        price -> Int8,
+        token_size -> Int8,
+        bump -> Int2,
+        trade_state_bump -> Int2,
+        activated_at -> Nullable<Timestamp>,
+        closed_at -> Nullable<Timestamp>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    purchases (address) {
+        address -> Varchar,
+        buyer -> Varchar,
+        seller -> Varchar,
+        auction_house -> Varchar,
+        token_mint -> Varchar,
+        token_size -> Int8,
+        price -> Int8,
+        bump -> Int2,
+        created_at -> Nullable<Timestamp>,
     }
 }
 
@@ -295,11 +352,14 @@ allow_tables_to_appear_in_same_query!(
     editions,
     files,
     listing_metadatas,
+    listings,
     master_editions,
     metadata_collections,
     metadata_creators,
     metadata_jsons,
     metadatas,
+    public_bids,
+    purchases,
     store_config_jsons,
     store_configs,
     store_denylist,

@@ -8,9 +8,9 @@ use chrono::NaiveDateTime;
 
 use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bids, editions,
-    files, listing_metadatas, master_editions, metadata_collections, metadata_creators,
-    metadata_jsons, metadatas, store_config_jsons, store_configs, storefronts, stores,
-    token_accounts, whitelisted_creators,
+    files, listing_metadatas, listings, master_editions, metadata_collections, metadata_creators,
+    metadata_jsons, metadatas, public_bids, purchases, store_config_jsons, store_configs,
+    storefronts, stores, token_accounts, whitelisted_creators,
 };
 
 /// A row in the `bids` table
@@ -447,4 +447,85 @@ pub struct AuctionHouse<'a> {
 
     /// Auction House fee account address
     pub auction_house_fee_account: Cow<'a, str>,
+}
+
+/// A row in the `public_bids` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct PublicBid<'a> {
+    /// The PublicBid account pubkey
+    pub address: Cow<'a, str>,
+    /// Trade State account pubkey
+    pub trade_state: Cow<'a, str>,
+    /// Bookkeeper account pubkey
+    pub bookkeeper: Cow<'a, str>,
+    /// Auction house account pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Wallet address of the bidder
+    pub wallet: Cow<'a, str>,
+    /// Token mint address
+    pub token_mint: Cow<'a, str>,
+    /// Price
+    pub price: i64,
+    /// Token size
+    pub token_size: i64,
+    /// Bump
+    pub bump: i16,
+    /// Trade State bump
+    pub trade_state_bump: i16,
+    /// Activated at
+    pub activated_at: Option<NaiveDateTime>,
+    /// Closed at
+    pub closed_at: Option<NaiveDateTime>,
+}
+
+/// A row in the `listings` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct Listing<'a> {
+    /// Listing account pubkey
+    pub address: Cow<'a, str>,
+    /// Trade state account pubkey
+    pub trade_state: Cow<'a, str>,
+    /// Bookkeeper account pubkey
+    pub bookkeeper: Cow<'a, str>,
+    /// Auction House pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Seller account pubkey
+    pub seller: Cow<'a, str>,
+    /// Token mint address
+    pub token_mint: Cow<'a, str>,
+    /// Price
+    pub price: i64,
+    /// Token size
+    pub token_size: i64,
+    /// Bump
+    pub bump: i16,
+    /// Trade State bump
+    pub trade_state_bump: i16,
+    /// Activated at
+    pub activated_at: Option<NaiveDateTime>,
+    /// Closed at
+    pub closed_at: Option<NaiveDateTime>,
+}
+
+/// A row in the `purchases` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct Purchase<'a> {
+    /// Purchase account pubkey
+    pub address: Cow<'a, str>,
+    /// Buyer account pubkey
+    pub buyer: Cow<'a, str>,
+    /// Seller account pubkey
+    pub seller: Cow<'a, str>,
+    /// Auction House account pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Token mint address
+    pub token_mint: Cow<'a, str>,
+    /// Token size
+    pub token_size: i64,
+    /// Price
+    pub price: i64,
+    /// Bump
+    pub bump: i16,
+    /// Created at
+    pub created_at: Option<NaiveDateTime>,
 }
