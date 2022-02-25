@@ -85,7 +85,7 @@ impl Creator {
                      trait_type, value, ..
                  }| {
                     *groups
-                        .entry(trait_type.unwrap().to_lowercase())
+                        .entry(trait_type.unwrap().into())
                         .or_insert_with(HashMap::new)
                         .entry(value)
                         .or_insert(0) += 1;
