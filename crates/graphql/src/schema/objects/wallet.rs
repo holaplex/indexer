@@ -10,8 +10,8 @@ pub struct Wallet {
 
 #[graphql_object(Context = AppContext)]
 impl Wallet {
-    pub fn address(&self) -> String {
-        self.address.clone()
+    pub fn address(&self) -> &str {
+        &self.address
     }
 
     pub fn bids(&self, ctx: &AppContext) -> FieldResult<Vec<Bid>> {
@@ -19,7 +19,7 @@ impl Wallet {
 
         let rows: Vec<models::Bid> = bids::table
             .select(bids::all_columns)
-            .filter(bids::bidder_address.eq(self.address.clone()))
+            .filter(bids::bidder_address.eq(&self.address))
             .order_by(bids::last_bid_time.desc())
             .load(&db_conn)
             .context("Failed to load wallet bids")?;

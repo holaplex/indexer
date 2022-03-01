@@ -29,20 +29,20 @@ pub struct TwitterShowResponse {
 
 #[graphql_object(Context = AppContext)]
 impl Profile {
-    fn handle(&self) -> String {
-        self.handle.clone()
+    fn handle(&self) -> &str {
+        &self.handle
     }
 
-    fn profile_image_url_lowres(&self) -> String {
-        self.profile_image_url_lowres.clone()
+    fn profile_image_url_lowres(&self) -> &str {
+        &self.profile_image_url_lowres
     }
 
-    fn profile_image_url_highres(&self) -> String {
-        self.profile_image_url_highres.clone()
+    fn profile_image_url_highres(&self) -> &str {
+        &self.profile_image_url_highres
     }
 
-    fn banner_image_url(&self) -> String {
-        self.banner_image_url.clone()
+    fn banner_image_url(&self) -> &str {
+        &self.banner_image_url
     }
 }
 

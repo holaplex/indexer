@@ -24,10 +24,10 @@ pub(crate) async fn process_config(
     trace!("{:?}", &config.settings_uri);
 
     let addr = bs58::encode(key).into_string();
-    if let Some(uri) = config.settings_uri.clone() {
+    if let Some(ref uri) = config.settings_uri {
         debug!("dispatching store config: {:?}", uri);
         client
-            .dispatch_store_config(key, uri)
+            .dispatch_store_config(key, uri.clone())
             .await
             .context("Failed to dispatch store config job")?;
     }
