@@ -1,7 +1,10 @@
 use anchor_lang::AccountDeserialize;
 use mpl_auction_house::{
-    AuctionHouse, Listing, PublicBid, Purchase, AUCTION_HOUSE_SIZE, LISTING_SIZE, PUBLIC_BID_SIZE,
-    PURCHASE_SIZE,
+    receipt::{
+        BidReceipt, ListingReceipt, PurchaseReceipt, BID_RECEIPT_SIZE, LISTING_RECEIPT_SIZE,
+        PURCHASE_RECEIPT_SIZE,
+    },
+    AuctionHouse, AUCTION_HOUSE_SIZE,
 };
 
 use super::{
@@ -17,30 +20,32 @@ async fn process_auction_house(client: &Client, update: AccountUpdate) -> Result
     auction_house::process(client, update.key, house).await
 }
 
-async fn process_listing(client: &Client, update: AccountUpdate) -> Result<()> {
-    let listing: Listing = Listing::try_deserialize(&mut update.data.as_slice())
-        .context("Failed to deserialize listing data")?;
+async fn process_listing_receipt(client: &Client, update: AccountUpdate) -> Result<()> {
+    let listing_receipt: ListingReceipt =
+        ListingReceipt::try_deserialize(&mut update.data.as_slice())
+            .context("Failed to deserialize listing receipt data")?;
 
-    receipt::process_listing(client, update.key, listing).await
+    receipt::process_listing_receipt(client, update.key, listing_receipt).await
 }
-async fn process_public_bid(client: &Client, update: AccountUpdate) -> Result<()> {
-    let public_bid: PublicBid = PublicBid::try_deserialize(&mut update.data.as_slice())
-        .context("Failed to deserialize public bid data")?;
+async fn process_bid_receipt(client: &Client, update: AccountUpdate) -> Result<()> {
+    let bid_receipt: BidReceipt = BidReceipt::try_deserialize(&mut update.data.as_slice())
+        .context("Failed to deserialize bid receipt data")?;
 
-    receipt::process_public_bid(client, update.key, public_bid).await
+    receipt::process_bid_receipt(client, update.key, bid_receipt).await
 }
-async fn process_purchase(client: &Client, update: AccountUpdate) -> Result<()> {
-    let purchase: Purchase = Purchase::try_deserialize(&mut update.data.as_slice())
-        .context("Failed to deserialize purchase data")?;
+async fn process_purchase_receipt(client: &Client, update: AccountUpdate) -> Result<()> {
+    let purchase_receipt: PurchaseReceipt =
+        PurchaseReceipt::try_deserialize(&mut update.data.as_slice())
+            .context("Failed to deserialize purchase receipt data")?;
 
-    receipt::process_purchase(client, update.key, purchase).await
+    receipt::process_purchase_receipt(client, update.key, purchase_receipt).await
 }
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
     match update.data.len() {
         AUCTION_HOUSE_SIZE => process_auction_house(client, update).await,
-        LISTING_SIZE => process_listing(client, update).await,
-        PUBLIC_BID_SIZE => process_public_bid(client, update).await,
-        PURCHASE_SIZE => process_purchase(client, update).await,
+        LISTING_RECEIPT_SIZE => process_listing_receipt(client, update).await,
+        BID_RECEIPT_SIZE => process_bid_receipt(client, update).await,
+        PURCHASE_RECEIPT_SIZE => process_purchase_receipt(client, update).await,
         _ => {
             return Ok(());
         },
