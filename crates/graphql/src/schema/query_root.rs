@@ -35,7 +35,7 @@ impl QueryRoot {
         let twitter_show_response: TwitterShowResponse = http_client
             .get("https://api.twitter.com/1.1/users/show.json")
             .header("Accept", "application/json")
-            .query(&[("screen_name", handle.clone())])
+            .query(&[("screen_name", &handle)])
             .bearer_auth(twitter_bearer_token)
             .send()
             .await
@@ -47,7 +47,7 @@ impl QueryRoot {
         let twitter_profile_picture_response: TwitterProfilePictureResponse = http_client
             .get(format!(
                 "https://api.twitter.com/2/users/by/username/{}",
-                handle.clone()
+                handle
             ))
             .header("Accept", "application/json")
             .query(&[("user.fields", "profile_image_url")])

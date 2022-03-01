@@ -40,32 +40,32 @@ impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
 
 #[graphql_object(Context = AppContext)]
 impl Marketplace {
-    pub fn subdomain(&self) -> String {
-        self.subdomain.clone()
+    pub fn subdomain(&self) -> &str {
+        &self.subdomain
     }
 
-    pub fn name(&self) -> String {
-        self.name.clone()
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
-    pub fn description(&self) -> String {
-        self.description.clone()
+    pub fn description(&self) -> &str {
+        &self.description
     }
 
-    pub fn logo_url(&self) -> String {
-        self.logo_url.clone()
+    pub fn logo_url(&self) -> &str {
+        &self.logo_url
     }
 
-    pub fn banner_url(&self) -> String {
-        self.banner_url.clone()
+    pub fn banner_url(&self) -> &str {
+        &self.banner_url
     }
 
-    pub fn owner_address(&self) -> String {
-        self.owner_address.clone()
+    pub fn owner_address(&self) -> &str {
+        &self.owner_address
     }
 
-    pub fn auction_house_address(&self) -> String {
-        self.auction_house_address.clone()
+    pub fn auction_house_address(&self) -> &str {
+        &self.auction_house_address
     }
 
     pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {

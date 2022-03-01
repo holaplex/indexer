@@ -37,16 +37,16 @@ impl<'a> TryFrom<models::Bid<'a>> for Bid {
 
 #[graphql_object(Context = AppContext)]
 impl Bid {
-    pub fn listing_address(&self) -> String {
-        self.listing_address.clone()
+    pub fn listing_address(&self) -> &str {
+        &self.listing_address
     }
 
-    pub fn bidder_address(&self) -> String {
-        self.bidder_address.clone()
+    pub fn bidder_address(&self) -> &str {
+        &self.bidder_address
     }
 
-    pub fn last_bid_time(&self) -> String {
-        self.last_bid_time.clone()
+    pub fn last_bid_time(&self) -> &str {
+        &self.last_bid_time
     }
 
     pub fn last_bid_amount(&self) -> Lamports {
@@ -105,12 +105,12 @@ impl Listing {
 
 #[graphql_object(Context = AppContext)]
 impl Listing {
-    pub fn address(&self) -> String {
-        self.address.clone()
+    pub fn address(&self) -> &str {
+        &self.address
     }
 
-    pub fn store_address(&self) -> String {
-        self.store_address.clone()
+    pub fn store_address(&self) -> &str {
+        &self.store_address
     }
 
     pub fn ended(&self) -> bool {

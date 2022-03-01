@@ -62,7 +62,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
 
     // TODO: parse failure shouldn't be an error, this stuff will be unstructured
     let json = http_client
-        .get(url.clone())
+        .get(url)
         .send()
         .await
         .context("Metadata JSON request failed")?

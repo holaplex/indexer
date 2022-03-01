@@ -9,16 +9,16 @@ pub struct NftAttribute {
 
 #[graphql_object(Context = AppContext)]
 impl NftAttribute {
-    pub fn metadata_address(&self) -> String {
-        self.metadata_address.clone()
+    pub fn metadata_address(&self) -> &str {
+        &self.metadata_address
     }
 
-    pub fn value(&self) -> String {
-        self.value.clone()
+    pub fn value(&self) -> &str {
+        &self.value
     }
 
-    pub fn trait_type(&self) -> String {
-        self.trait_type.clone()
+    pub fn trait_type(&self) -> &str {
+        &self.trait_type
     }
 }
 
@@ -55,12 +55,12 @@ pub struct NftCreator {
 
 #[graphql_object(Context = AppContext)]
 impl NftCreator {
-    pub fn address(&self) -> String {
-        self.address.clone()
+    pub fn address(&self) -> &str {
+        &self.address
     }
 
-    pub fn metadata_address(&self) -> String {
-        self.metadata_address.clone()
+    pub fn metadata_address(&self) -> &str {
+        &self.metadata_address
     }
 
     pub fn share(&self) -> i32 {
@@ -132,32 +132,32 @@ impl From<models::Nft> for Nft {
 
 #[graphql_object(Context = AppContext)]
 impl Nft {
-    pub fn address(&self) -> String {
-        self.address.clone()
+    pub fn address(&self) -> &str {
+        &self.address
     }
 
-    pub fn name(&self) -> String {
-        self.name.clone()
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn seller_fee_basis_points(&self) -> i32 {
         self.seller_fee_basis_points
     }
 
-    pub fn mint_address(&self) -> String {
-        self.mint_address.clone()
+    pub fn mint_address(&self) -> &str {
+        &self.mint_address
     }
 
     pub fn primary_sale_happened(&self) -> bool {
         self.primary_sale_happened
     }
 
-    pub fn description(&self) -> String {
-        self.description.clone()
+    pub fn description(&self) -> &str {
+        &self.description
     }
 
-    pub fn image(&self) -> String {
-        self.image.clone()
+    pub fn image(&self) -> &str {
+        &self.image
     }
 
     pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {

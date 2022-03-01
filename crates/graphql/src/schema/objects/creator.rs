@@ -23,8 +23,8 @@ struct AttributeGroup {
 
 #[graphql_object(Context = AppContext)]
 impl Creator {
-    fn address(&self) -> String {
-        self.address.clone()
+    fn address(&self) -> &str {
+        &self.address
     }
 
     pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
@@ -32,7 +32,7 @@ impl Creator {
 
         let metadatas: Vec<String> = metadata_creators::table
             .select(metadata_creators::metadata_address)
-            .filter(metadata_creators::creator_address.eq(self.address.clone()))
+            .filter(metadata_creators::creator_address.eq(&self.address))
             .load(&conn)
             .context("Failed to load metadata creators")?;
 
