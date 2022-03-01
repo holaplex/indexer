@@ -6,7 +6,7 @@ use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,
-    key: Pubkey,
+    _key: Pubkey,
     meta: BidderMetadataAccount,
 ) -> Result<()> {
     let BidderMetadataAccount {

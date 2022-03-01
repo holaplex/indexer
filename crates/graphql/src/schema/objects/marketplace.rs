@@ -9,6 +9,7 @@ pub struct Marketplace {
     pub description: String,
     pub logo_url: String,
     pub banner_url: String,
+    pub owner_address: String,
     pub auction_house_address: String,
 }
 
@@ -21,9 +22,8 @@ impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
             logo_url,
             banner_url,
             subdomain,
-            owner_address: _,
+            owner_address,
             auction_house_address,
-            ..
         }: models::StoreConfigJson,
     ) -> Self {
         Self {
@@ -32,6 +32,7 @@ impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
             description: description.into_owned(),
             logo_url: logo_url.into_owned(),
             banner_url: banner_url.into_owned(),
+            owner_address: owner_address.into_owned(),
             auction_house_address: auction_house_address.into_owned(),
         }
     }
@@ -57,6 +58,10 @@ impl Marketplace {
 
     pub fn banner_url(&self) -> String {
         self.banner_url.clone()
+    }
+
+    pub fn owner_address(&self) -> String {
+        self.owner_address.clone()
     }
 
     pub fn auction_house_address(&self) -> String {

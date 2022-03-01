@@ -54,7 +54,7 @@ impl Creator {
                         .entry(
                             trait_type
                                 .ok_or_else(|| anyhow!("Missing trait type from attribute"))?
-                                .to_lowercase(),
+                                .into_owned(),
                         )
                         .or_insert_with(HashMap::new)
                         .entry(value)
