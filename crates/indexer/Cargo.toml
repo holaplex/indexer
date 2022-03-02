@@ -41,7 +41,7 @@ tokio = { version = "1.13.0", features = ["rt"] }
 tokio-amqp = "1.0.1"
 
 # Solana & Metaplex
-anchor-lang = "0.19.0"
+anchor-lang = "~0.20.1"
 metaplex = "0.0.1"
 metaplex-auction = "0.0.1"
 metaplex-token-metadata = "0.0.1"
@@ -59,8 +59,8 @@ serde_json = { version = "1.0.70", optional = true }
 
 # Git dependencies
 [dependencies.mpl-auction-house]
-git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
-rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
+git = "https://github.com/holaplex/metaplex-program-library.git"
+rev = "bf09b3ae091cec773c37d99903eb8325a7599151"
 
 [dependencies.mpl-metaplex]
 git = "https://github.com/metaplex-foundation/metaplex-program-library.git"

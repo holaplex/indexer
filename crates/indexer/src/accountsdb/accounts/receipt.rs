@@ -14,7 +14,7 @@ use mpl_auction_house::receipt::{BidReceipt, ListingReceipt, PurchaseReceipt};
 use super::Client;
 use crate::prelude::*;
 
-pub async fn process_listing_receipt(
+pub(crate) async fn process_listing_receipt(
     client: &Client,
     key: Pubkey,
     listing: ListingReceipt,
@@ -55,7 +55,7 @@ pub async fn process_listing_receipt(
     Ok(())
 }
 
-pub async fn process_purchase_receipt(
+pub(crate) async fn process_purchase_receipt(
     client: &Client,
     key: Pubkey,
     purchase: PurchaseReceipt,
@@ -89,7 +89,7 @@ pub async fn process_purchase_receipt(
     Ok(())
 }
 
-pub async fn process_bid_receipt(
+pub(crate) async fn process_bid_receipt(
     client: &Client,
     key: Pubkey,
     bid_receipt: BidReceipt,

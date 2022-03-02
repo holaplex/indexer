@@ -46,8 +46,6 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
         LISTING_RECEIPT_SIZE => process_listing_receipt(client, update).await,
         BID_RECEIPT_SIZE => process_bid_receipt(client, update).await,
         PURCHASE_RECEIPT_SIZE => process_purchase_receipt(client, update).await,
-        _ => {
-            return Ok(());
-        },
+        _ => Ok(()),
     }
 }
