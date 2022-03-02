@@ -26,6 +26,7 @@ pub struct Metadata {
 #[serde(rename_all = "camelCase")]
 pub struct Address {
     pub owner: String,
+    pub store_address: String,
     pub auction_house: String,
 }
 
@@ -83,6 +84,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         banner_url: Owned(json.theme.banner.url),
         subdomain: Owned(json.subdomain),
         owner_address: Owned(json.address.owner),
+        store_address: Owned(json.address.store_address),
         auction_house_address: Owned(json.address.auction_house),
     };
 
@@ -97,7 +99,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
                 .execute(db)
         })
         .await
-        .context("failed to insert store config")?;
+        .context("failed to insert store config json")?;
 
     if let Some(creators) = json.creators {
         client

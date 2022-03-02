@@ -270,6 +270,7 @@ table! {
         subdomain -> Text,
         owner_address -> Varchar,
         auction_house_address -> Varchar,
+        store_address -> Varchar,
     }
 }
 
