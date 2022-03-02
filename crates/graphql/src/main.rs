@@ -73,8 +73,10 @@ fn main() {
         let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
         let twitter_bearer_token = Arc::new(twitter_bearer_token);
 
-        let db_pool =
-            Arc::new(db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?);
+        // TODO: db_ty indicates if any actions that mutate the database can be run
+        let (db_pool, _db_ty) =
+            db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
+        let db_pool = Arc::new(db_pool);
 
         let version_extension = format!(
             "/v{}",

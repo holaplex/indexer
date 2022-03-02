@@ -7,14 +7,20 @@ use indexer_core::{db, db::PooledConnection};
 use crate::prelude::*;
 
 /// Handle to a database pool used by an indexer consumer
-pub struct Pool(db::Pool);
+pub struct Pool(db::Pool, db::ConnectionType);
 
 impl std::panic::UnwindSafe for Pool {}
 impl std::panic::RefUnwindSafe for Pool {}
 
 impl Pool {
-    pub(crate) fn new(pool: db::Pool) -> Self {
-        Self(pool)
+    pub(crate) fn new((pool, ty): (db::Pool, db::ConnectionType)) -> Self {
+        Self(pool, ty)
+    }
+
+    /// Get the connection-type hint for this database connection
+    #[must_use]
+    pub fn ty(&self) -> db::ConnectionType {
+        self.1
     }
 
     /// Spawn a blocking thread to perform operations on the database.
