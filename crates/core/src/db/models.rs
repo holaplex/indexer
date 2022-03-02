@@ -10,8 +10,7 @@ use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
     bids, editions, files, listing_metadatas, listing_receipts, master_editions,
     metadata_collections, metadata_creators, metadata_jsons, metadatas, purchase_receipts,
-    store_config_jsons, store_configs, store_denylist, storefronts, stores, token_accounts,
-    whitelisted_creators,
+    store_config_jsons, store_configs, storefronts, stores, token_accounts, whitelisted_creators,
 };
 
 /// A row in the `bids` table

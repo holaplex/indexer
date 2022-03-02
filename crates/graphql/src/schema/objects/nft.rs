@@ -1,3 +1,5 @@
+use objects::{bid_receipt::BidReceipt, listing_receipt::ListingReceipt};
+
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
@@ -177,6 +179,20 @@ impl Nft {
     pub async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>> {
         ctx.nft_owner_loader
             .load(self.mint_address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<ListingReceipt>> {
+        ctx.listing_receipts_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<BidReceipt>> {
+        ctx.bid_receipts_loader
+            .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
