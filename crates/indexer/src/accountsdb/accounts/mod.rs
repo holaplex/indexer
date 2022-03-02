@@ -5,6 +5,7 @@ pub mod bidder_metadata;
 pub mod edition;
 pub mod metadata;
 pub mod mpl_store;
+pub mod receipt;
 pub mod token;
 
 pub(self) use super::Client;

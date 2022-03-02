@@ -1,5 +1,7 @@
 pub mod auction_house;
+pub mod bid_receipt;
 pub mod listing;
+pub mod listing_receipt;
 pub mod nft;
 pub mod storefront;
 
