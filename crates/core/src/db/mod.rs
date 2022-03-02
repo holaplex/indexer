@@ -9,16 +9,20 @@ pub mod tables {
     //! Diesel schema DSLs
 
     pub use super::schema::{
-        attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bids,
-        editions, files, listing_metadatas, master_editions, metadata_collections,
-        metadata_creators, metadata_jsons, metadatas, store_config_jsons, store_configs,
-        store_denylist, storefronts, stores, token_accounts, whitelisted_creators,
+        attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
+        bids, editions, files, listing_metadatas, listing_receipts, master_editions,
+        metadata_collections, metadata_creators, metadata_jsons, metadatas, purchase_receipts,
+        store_config_jsons, store_configs, store_denylist, storefronts, stores, token_accounts,
+        whitelisted_creators,
     };
 }
 
 use std::env;
 
-pub use diesel::{insert_into, pg::upsert::excluded, select, update};
+pub use diesel::{
+    backend::Backend, insert_into, pg::upsert::excluded, query_dsl, result::Error, select,
+    serialize, sql_types, update,
+};
 use diesel::{pg, r2d2};
 pub use diesel_full_text_search::{
     websearch_to_tsquery, TsQuery, TsQueryExtensions, TsVector, TsVectorExtensions,
@@ -50,6 +54,26 @@ pub enum ConnectMode {
     Write,
 }
 
+/// Hint indicating how a returned database connection should be interpreted
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ConnectionType {
+    /// The `DATABASE_URL` var was used and is likely writable
+    Default,
+    /// The `DATABASE_READ_URL` var was used and is not writable
+    Read,
+    /// The `DATABASE_WRITE_URL` var was used and should be writable
+    Write,
+}
+
+impl From<ConnectMode> for ConnectionType {
+    fn from(mode: ConnectMode) -> Self {
+        match mode {
+            ConnectMode::Read => Self::Read,
+            ConnectMode::Write => Self::Write,
+        }
+    }
+}
+
 /// Create a pooled connection to the Postgres database.  This will check for
 /// the presence of `DATABASE_(READ|WRITE)_URL` (depending on the mode
 /// specified) or else `DATABASE_URL`.
@@ -58,16 +82,17 @@ pub enum ConnectMode {
 /// This function fails if neither of the above environment variables are found,
 /// if Diesel fails to construct a connection pool, or if any pending database
 /// migrations fail to run.
-pub fn connect(mode: ConnectMode) -> Result<Pool> {
+pub fn connect(mode: ConnectMode) -> Result<(Pool, ConnectionType)> {
     let mode_env = match mode {
         ConnectMode::Read => "DATABASE_READ_URL",
         ConnectMode::Write => "DATABASE_WRITE_URL",
     };
 
-    let url = env::var_os(mode_env)
-        .or_else(|| env::var_os("DATABASE_URL"))
-        .ok_or_else(|| anyhow!("No value found for {} or DATABASE_URL", mode_env))
-        .map(move |v| v.to_string_lossy().into_owned())?;
+    let (ty, url) = env::var_os(mode_env)
+        .map(|v| (mode.into(), v))
+        .or_else(|| env::var_os("DATABASE_URL").map(|v| (ConnectionType::Default, v)))
+        .ok_or_else(|| anyhow!("No value found for {} or DATABASE_URL", mode_env))?;
+    let url = url.to_string_lossy().into_owned();
 
     debug!("Connecting to db: {:?}", url);
 
@@ -80,12 +105,20 @@ pub fn connect(mode: ConnectMode) -> Result<Pool> {
 
     let mut out = vec![];
 
-    info!("Running database migrations...");
-    embedded_migrations::run_with_output(
-        &pool.get().context("Failed to connect to the database")?,
-        &mut out,
-    )
-    .context("Failed to run database migrations")?;
+    if cfg!(not(debug_assertions)) && matches!(ty, ConnectionType::Default) {
+        warn!("Cannot determine if database is writable; assuming yes");
+    }
+
+    if matches!(ty, ConnectionType::Read) {
+        info!("Not running migrations over a read-only connection");
+    } else {
+        info!("Running database migrations...");
+        embedded_migrations::run_with_output(
+            &pool.get().context("Failed to connect to the database")?,
+            &mut out,
+        )
+        .context("Failed to run database migrations")?;
+    }
 
     match std::str::from_utf8(&out) {
         Ok(s) => {
@@ -98,5 +131,5 @@ pub fn connect(mode: ConnectMode) -> Result<Pool> {
         Err(e) => warn!("Failed to read migration output: {}", e),
     }
 
-    Ok(pool)
+    Ok((pool, ty))
 }

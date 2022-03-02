@@ -16,18 +16,6 @@ pub(crate) async fn process(
     cache_key: Pubkey,
     cache: AuctionCacheAccount,
 ) -> Result<()> {
-    // let mut acct = client
-    //     .get_account(&keys.cache)
-    //     .context("Failed to get auction cache")?;
-
-    // let cache = AuctionCacheAccount::from_account_info(&util::account_as_info(
-    //     &keys.cache,
-    //     false,
-    //     false,
-    //     &mut acct,
-    // ))
-    // .context("Failed to parse AuctionCache")?;
-
     let AuctionCacheAccount {
         metadata,
         auction,
@@ -37,40 +25,6 @@ pub(crate) async fn process(
         auction_manager,
         ..
     } = cache;
-
-    // TODO: store listing metadata
-    // let mut auction_outs = Vec::new();
-
-    // for (index, meta) in metadata.into_iter().enumerate() {
-    //     let mut deps = handle.create_node(
-    //         Job::ListingMetadata(crate::ListingMetadata {
-    //             listing: auction,
-    //             metadata: meta,
-    //             index,
-    //         }),
-    //         2,
-    //     );
-
-    //     auction_outs.push(deps.get_in_edge());
-    //     handle.push_dependency(Job::Metadata(meta), Some(deps.get_in_edge()));
-    // }
-
-    // TODO: store auction
-    // let mut auction = handle.create_node(
-    //     Job::Auction(Arc::new(AuctionKeys {
-    //         auction,
-    //         vault,
-    //         store_owner: keys.store_owner,
-    //         created_at: NaiveDateTime::from_timestamp(timestamp, 0),
-    //     })),
-    //     1,
-    // );
-
-    // auction
-    //     .set_dependents(Dependents::new(auction_outs))
-    //     .expect("Failed to sync auction outs - this shouldn't happen!");
-
-    // bid_dependents.lock().push(&handle, auction.get_in_edge());
 
     let (auction_ext, _bump) = find_auction_data_extended(auction);
     let address: Cow<str> = Owned(bs58::encode(cache_key).into_string());
