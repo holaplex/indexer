@@ -45,8 +45,8 @@ impl<'a> TryFrom<models::BidReceipt<'a>> for BidReceipt {
             token_account: token_account.map(Cow::into_owned),
             auction_house: auction_house.into_owned(),
             trade_state_bump: trade_state_bump.into(),
-            created_at: DateTime::<Utc>::from_utc(created_at, Utc),
-            canceled_at: canceled_at.map(|c| DateTime::<Utc>::from_utc(c, Utc)),
+            created_at: DateTime::from_utc(created_at, Utc),
+            canceled_at: canceled_at.map(|c| DateTime::from_utc(c, Utc)),
         })
     }
 }
