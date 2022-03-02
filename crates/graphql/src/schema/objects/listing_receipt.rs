@@ -41,8 +41,8 @@ impl<'a> TryFrom<models::ListingReceipt<'a>> for ListingReceipt {
             auction_house: auction_house.into_owned(),
             price: price.try_into()?,
             trade_state_bump: trade_state_bump.into(),
-            created_at: DateTime::<Utc>::from_utc(created_at, Utc),
-            canceled_at: canceled_at.map(|c| DateTime::<Utc>::from_utc(c, Utc)),
+            created_at: DateTime::from_utc(created_at, Utc),
+            canceled_at: canceled_at.map(|c| DateTime::from_utc(c, Utc)),
         })
     }
 }

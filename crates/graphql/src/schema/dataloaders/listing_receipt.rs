@@ -27,9 +27,7 @@ impl TryBatchFn<MetadataAddress, Vec<ListingReceipt>> for Batcher {
 
         Ok(rows
             .into_iter()
-            .map(|listing: models::ListingReceipt| {
-                (listing.metadata.clone(), ListingReceipt::try_from(listing))
-            })
+            .map(|listing| (listing.metadata.clone(), listing.try_into()))
             .batch(addresses))
     }
 }

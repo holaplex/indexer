@@ -23,7 +23,7 @@ impl TryBatchFn<MetadataAddress, Vec<BidReceipt>> for Batcher {
 
         Ok(rows
             .into_iter()
-            .map(|br: models::BidReceipt| (br.metadata.clone(), BidReceipt::try_from(br)))
+            .map(|br| (br.metadata.clone(), br.try_into()))
             .batch(addresses))
     }
 }

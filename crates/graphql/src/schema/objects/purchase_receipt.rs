@@ -30,7 +30,7 @@ impl<'a> TryFrom<models::PurchaseReceipt<'a>> for PurchaseReceipt {
             buyer: buyer.into_owned(),
             seller: seller.into_owned(),
             price: price.try_into()?,
-            created_at: DateTime::<Utc>::from_utc(created_at, Utc),
+            created_at: DateTime::from_utc(created_at, Utc),
         })
     }
 }
