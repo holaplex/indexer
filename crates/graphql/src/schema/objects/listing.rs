@@ -69,12 +69,14 @@ impl Bid {
 pub struct Listing {
     pub address: String,
     pub store_address: String,
+    pub token_mint: Option<String>,
     pub ended: bool,
 }
 
 pub type ListingRow = (
     String,                // address
     String,                // store_address
+    Option<String>,        // token_mint
     Option<NaiveDateTime>, // ends_at
     Option<i32>,           // gap_time
     Option<NaiveDateTime>, // last_bid_time
@@ -86,12 +88,13 @@ impl Listing {
     }
 
     pub fn new(
-        (address, store_address, ends_at, gap_time, last_bid_time): ListingRow,
+        (address, store_address, token_mint, ends_at, gap_time, last_bid_time): ListingRow,
         now: NaiveDateTime,
     ) -> Result<Self> {
         Ok(Self {
             address,
             store_address,
+            token_mint,
             ended: indexer_core::util::get_end_info(
                 ends_at,
                 gap_time.map(|i| chrono::Duration::seconds(i.into())),

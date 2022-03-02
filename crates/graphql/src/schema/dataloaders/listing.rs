@@ -31,6 +31,7 @@ impl TryBatchFn<PublicKey<Listing>, Option<Listing>> for Batcher {
             .select((
                 auction_datas::address,
                 auction_caches::store_address,
+                auction_datas::token_mint,
                 auction_datas::ends_at,
                 auction_datas_ext::gap_tick_size,
                 auction_datas::last_bid_time,
