@@ -287,6 +287,16 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    store_creators (store_config_address, creator_address) {
+        store_config_address -> Varchar,
+        creator_address -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     store_denylist (owner_address) {
         owner_address -> Varchar,
         hard_ban -> Bool,
@@ -366,6 +376,7 @@ allow_tables_to_appear_in_same_query!(
     purchase_receipts,
     store_config_jsons,
     store_configs,
+    store_creators,
     store_denylist,
     storefronts,
     stores,
