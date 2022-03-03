@@ -1,4 +1,4 @@
-use metaplex_token_metadata::{
+use mpl_token_metadata::{
     state::{
         Edition, Key, MasterEditionV1, MasterEditionV2, Metadata, MAX_EDITION_LEN,
         MAX_MASTER_EDITION_LEN, MAX_METADATA_LEN,
