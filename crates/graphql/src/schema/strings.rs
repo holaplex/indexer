@@ -52,4 +52,5 @@ strings![
     ListingAddress,
     MetadataAddress,
     StorefrontAddress,
+    StoreConfigAddress,
 ];

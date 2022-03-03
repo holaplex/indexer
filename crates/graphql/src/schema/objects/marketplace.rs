@@ -1,9 +1,10 @@
-use objects::auction_house::AuctionHouse;
+use objects::{auction_house::AuctionHouse, store_creator::StoreCreator};
 
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct Marketplace {
+    pub config_address: String,
     pub subdomain: String,
     pub name: String,
     pub description: String,
@@ -17,7 +18,7 @@ pub struct Marketplace {
 impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
     fn from(
         models::StoreConfigJson {
-            config_address: _,
+            config_address,
             name,
             description,
             logo_url,
@@ -29,6 +30,7 @@ impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
         }: models::StoreConfigJson,
     ) -> Self {
         Self {
+            config_address: config_address.into_owned(),
             subdomain: subdomain.into_owned(),
             name: name.into_owned(),
             description: description.into_owned(),
@@ -43,6 +45,10 @@ impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
 
 #[graphql_object(Context = AppContext)]
 impl Marketplace {
+    pub fn config_address(&self) -> &str {
+        &self.config_address
+    }
+
     pub fn subdomain(&self) -> &str {
         &self.subdomain
     }
@@ -77,6 +83,14 @@ impl Marketplace {
         context
             .auction_house_loader
             .load(self.auction_house_address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn creators(&self, context: &AppContext) -> FieldResult<Vec<StoreCreator>> {
+        context
+            .store_creator_loader
+            .load(self.config_address.clone().into())
             .await
             .map_err(Into::into)
     }
