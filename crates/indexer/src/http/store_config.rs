@@ -79,7 +79,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
     let addr = bs58::encode(config_key).into_string();
 
     if addr != json.address.store_config {
-        info!("store config address does not match setting uri json config address");
+        info!("store config address does not match setting uri JSON config address");
         return Ok(());
     }
 

@@ -1,20 +1,9 @@
 use super::prelude::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, GraphQLObject)]
 pub struct StoreCreator {
     pub store_config_address: String,
     pub creator_address: String,
-}
-
-#[graphql_object(Context = AppContext)]
-impl StoreCreator {
-    fn store_config_address(&self) -> &str {
-        &self.store_config_address
-    }
-
-    fn creator_address(&self) -> &str {
-        &self.creator_address
-    }
 }
 
 impl<'a> From<models::StoreCreator<'a>> for StoreCreator {
