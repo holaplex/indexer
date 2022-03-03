@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use indexer_core::db::{insert_into, models::StoreConfigJson, tables::store_config_jsons};
+use indexer_core::db::{
+    insert_into,
+    models::{StoreConfigJson, StoreCreator},
+    tables::{store_config_jsons, store_creators},
+};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +13,7 @@ use crate::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Creator {
-    pub creator_address: String,
+    pub address: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -23,6 +27,8 @@ pub struct Metadata {
 pub struct Address {
     pub owner: String,
     pub auction_house: String,
+    pub store: String,
+    pub store_config: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -71,8 +77,14 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         .context("Failed to parse metadata JSON")?;
 
     let addr = bs58::encode(config_key).into_string();
+
+    if addr != json.address.store_config {
+        info!("store config address does not match setting uri JSON config address");
+        return Ok(());
+    }
+
     let row = StoreConfigJson {
-        config_address: Owned(addr),
+        config_address: Owned(addr.clone()),
         name: Owned(json.meta.name),
         description: Owned(json.meta.description),
         logo_url: Owned(json.theme.logo.url),
@@ -80,6 +92,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         subdomain: Owned(json.subdomain),
         owner_address: Owned(json.address.owner),
         auction_house_address: Owned(json.address.auction_house),
+        store_address: Some(Owned(json.address.store)),
     };
 
     client
@@ -93,7 +106,33 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
                 .execute(db)
         })
         .await
-        .context("Failed to insert metadata")?;
+        .context("failed to insert store config json")?;
+
+    if let Some(creators) = json.creators {
+        client
+            .db()
+            .run(move |db| {
+                creators.into_iter().try_for_each(|creator| {
+                    let row = StoreCreator {
+                        store_config_address: Owned(addr.clone()),
+                        creator_address: Owned(creator.address),
+                    };
+
+                    insert_into(store_creators::table)
+                        .values(&row)
+                        .on_conflict((
+                            store_creators::store_config_address,
+                            store_creators::creator_address,
+                        ))
+                        .do_update()
+                        .set(&row)
+                        .execute(db)
+                        .map(|_| ())
+                })
+            })
+            .await
+            .context("failed to insert store creator")?;
+    }
 
     Ok(())
 }

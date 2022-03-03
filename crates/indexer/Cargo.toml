@@ -42,25 +42,21 @@ tokio-amqp = "1.0.1"
 
 # Solana & Metaplex
 anchor-lang = "~0.20.1"
-metaplex = "0.0.1"
-metaplex-auction = "0.0.1"
-metaplex-token-metadata = "0.0.1"
-metaplex-token-vault = "0.0.1"
-solana-client = { version = "1.8.3", optional = true }
-solana-program = { version = "1.8.3", optional = true }
-solana-sdk = "1.8.3"
-spl-token = "3.2.0"
+metaplex = { version="0.0.1", features = ["no-entrypoint"] }
+metaplex-auction = { version="0.0.1", features = ["no-entrypoint"] }
+mpl-token-metadata = { version="~1.2.4", features = ["no-entrypoint"] }
+metaplex-token-vault = { version="0.0.1", features = ["no-entrypoint"] }
+mpl-auction-house = { version="1.1.0", features = ["no-entrypoint"] }
+solana-client = { version = "~1.9.5", optional = true }
+solana-program = { version = "~1.9.5", optional = true }
+solana-sdk = "~1.9.5"
+spl-token = { version="~3.2.0", features = ["no-entrypoint"] }
 
 # HTTP indexer
 base64 = { version = "0.13.0", optional = true }
 cid = { version = "0.7.0", optional = true }
 reqwest = { version = "0.11.6", optional = true }
 serde_json = { version = "1.0.70", optional = true }
-
-# Git dependencies
-[dependencies.mpl-auction-house]
-git = "https://github.com/holaplex/metaplex-program-library.git"
-rev = "bf09b3ae091cec773c37d99903eb8325a7599151"
 
 [dependencies.mpl-metaplex]
 git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
