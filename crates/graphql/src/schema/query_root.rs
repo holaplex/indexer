@@ -25,11 +25,8 @@ struct AttributeFilter {
 }
 
 impl From<AttributeFilter> for queries::metadatas::MetadataFilterAttributes {
-    fn from(AttributeFilter{trait_type, values}: AttributeFilter) -> Self {
-        Self{
-            trait_type,
-            values
-        }
+    fn from(AttributeFilter { trait_type, values }: AttributeFilter) -> Self {
+        Self { trait_type, values }
     }
 }
 
