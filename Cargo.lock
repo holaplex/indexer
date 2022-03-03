@@ -2699,10 +2699,10 @@ dependencies = [
  "metaplex-auction",
  "metaplex-indexer-core",
  "metaplex-indexer-rabbitmq",
- "metaplex-token-metadata",
  "metaplex-token-vault",
  "mpl-auction-house",
  "mpl-metaplex",
+ "mpl-token-metadata",
  "reqwest",
  "serde",
  "serde_json",
@@ -2935,8 +2935,9 @@ dependencies = [
 
 [[package]]
 name = "mpl-auction-house"
-version = "1.0.2"
-source = "git+https://github.com/holaplex/metaplex-program-library.git?rev=bf09b3ae091cec773c37d99903eb8325a7599151#bf09b3ae091cec773c37d99903eb8325a7599151"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "576c926ff7459ac8812bbae0d0ef5a81ffca497e36fd381548f77af2ce15c680"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
