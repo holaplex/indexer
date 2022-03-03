@@ -2740,6 +2740,7 @@ dependencies = [
  "actix-web",
  "async-trait",
  "dataloader",
+ "diesel",
  "juniper",
  "metaplex-indexer-core",
  "percent-encoding",

@@ -2,3 +2,4 @@
 
 pub mod metadata_edition;
 pub mod store_denylist;
+pub mod metadatas;

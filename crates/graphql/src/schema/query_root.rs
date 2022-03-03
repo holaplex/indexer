@@ -1,3 +1,5 @@
+use diesel::{debug_query, sql_query};
+use indexer_core::{db, db::queries};
 use objects::{
     creator::Creator,
     marketplace::Marketplace,
@@ -20,6 +22,15 @@ pub struct QueryRoot;
 struct AttributeFilter {
     trait_type: String,
     values: Vec<String>,
+}
+
+impl From<AttributeFilter> for queries::metadatas::MetadataFilterAttributes {
+    fn from(AttributeFilter{trait_type, values}: AttributeFilter) -> Self {
+        Self{
+            trait_type,
+            values
+        }
+    }
 }
 
 #[graphql_object(Context = AppContext)]
@@ -86,84 +97,17 @@ impl QueryRoot {
                 graphql_value!({ "Filters": "owners: Vec<String>, creators: Vec<String>" }),
             ));
         }
-        if owners.is_some() && creators.is_some() {
-            return Err(FieldError::new(
-                "Please pass either owners or creators, not both",
-                graphql_value!({ "Filters": "owners: Vec<String>, creators: Vec<String>" }),
-            ));
-        }
 
         let conn = context.db_pool.get().context("failed to connect to db")?;
 
-        let query = metadatas::table.into_boxed();
-        let query = attributes.unwrap_or_else(Vec::new).into_iter().fold(
-            query,
-            |acc, AttributeFilter { trait_type, values }| {
-                let sub = attributes::table
-                    .select(attributes::metadata_address)
-                    .filter(
-                        attributes::trait_type
-                            .eq(trait_type)
-                            .and(attributes::value.eq(any(values))),
-                    );
+        let nfts = queries::metadatas::load_filtered(
+            &conn,
+            owners,
+            creators,
+            attributes.map(|a| a.into_iter().map(Into::into).collect()),
+        )?;
 
-                acc.filter(metadatas::address.eq(any(sub)))
-            },
-        );
-
-        let rows: Vec<models::Nft> = if let Some(creators) = creators {
-            query
-                .inner_join(
-                    metadata_creators::table
-                        .on(metadatas::address.eq(metadata_creators::metadata_address)),
-                )
-                .inner_join(
-                    metadata_jsons::table
-                        .on(metadatas::address.eq(metadata_jsons::metadata_address)),
-                )
-                .filter(metadata_creators::creator_address.eq(any(creators)))
-                .select((
-                    metadatas::address,
-                    metadatas::name,
-                    metadatas::seller_fee_basis_points,
-                    metadatas::mint_address,
-                    metadatas::primary_sale_happened,
-                    metadata_jsons::description,
-                    metadata_jsons::image,
-                ))
-                .order_by(metadatas::name.desc())
-                .load(&conn)
-                .context("failed to load nft(s)")?
-        } else if let Some(owners) = owners {
-            // owners
-            query
-                .inner_join(
-                    token_accounts::table
-                        .on(metadatas::mint_address.eq(token_accounts::mint_address)),
-                )
-                .inner_join(
-                    metadata_jsons::table
-                        .on(metadatas::address.eq(metadata_jsons::metadata_address)),
-                )
-                .filter(token_accounts::amount.eq(1))
-                .filter(token_accounts::owner_address.eq(any(owners)))
-                .select((
-                    metadatas::address,
-                    metadatas::name,
-                    metadatas::seller_fee_basis_points,
-                    metadatas::mint_address,
-                    metadatas::primary_sale_happened,
-                    metadata_jsons::description,
-                    metadata_jsons::image,
-                ))
-                .order_by(metadatas::name.desc())
-                .load(&conn)
-                .context("failed to load nft(s)")?
-        } else {
-            unreachable!("something has gone horribly wrong on NFTs query");
-        };
-
-        Ok(rows.into_iter().map(Into::into).collect())
+        Ok(nfts.into_iter().map(Into::into).collect())
     }
 
     fn wallet(
