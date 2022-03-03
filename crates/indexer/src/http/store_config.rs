@@ -26,8 +26,9 @@ pub struct Metadata {
 #[serde(rename_all = "camelCase")]
 pub struct Address {
     pub owner: String,
-    pub store: String,
     pub auction_house: String,
+    pub store: String,
+    pub store_config: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -77,7 +78,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
 
     let addr = bs58::encode(config_key).into_string();
 
-    if addr != json.address.storeConfig {
+    if addr != json.address.store_config {
         info!("store config address does not match setting uri json config address");
         return Ok(());
     }
@@ -90,8 +91,8 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         banner_url: Owned(json.theme.banner.url),
         subdomain: Owned(json.subdomain),
         owner_address: Owned(json.address.owner),
-        store_address: Some(json.address.store),
         auction_house_address: Owned(json.address.auction_house),
+        store_address: Some(Owned(json.address.store)),
     };
 
     client
