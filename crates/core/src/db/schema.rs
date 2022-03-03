@@ -81,6 +81,28 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    bid_receipts (address) {
+        address -> Varchar,
+        trade_state -> Varchar,
+        bookkeeper -> Varchar,
+        auction_house -> Varchar,
+        buyer -> Varchar,
+        metadata -> Varchar,
+        token_account -> Nullable<Varchar>,
+        purchase_receipt -> Nullable<Varchar>,
+        price -> Int8,
+        token_size -> Int8,
+        bump -> Int2,
+        trade_state_bump -> Int2,
+        created_at -> Timestamp,
+        canceled_at -> Nullable<Timestamp>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     bids (listing_address, bidder_address) {
         listing_address -> Varchar,
         bidder_address -> Varchar,
@@ -121,6 +143,27 @@ table! {
         listing_address -> Varchar,
         metadata_address -> Varchar,
         metadata_index -> Int4,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    listing_receipts (address) {
+        address -> Varchar,
+        trade_state -> Varchar,
+        bookkeeper -> Varchar,
+        auction_house -> Varchar,
+        seller -> Varchar,
+        metadata -> Varchar,
+        purchase_receipt -> Nullable<Varchar>,
+        price -> Int8,
+        token_size -> Int8,
+        bump -> Int2,
+        trade_state_bump -> Int2,
+        created_at -> Timestamp,
+        canceled_at -> Nullable<Timestamp>,
     }
 }
 
@@ -200,6 +243,24 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    purchase_receipts (address) {
+        address -> Varchar,
+        bookkeeper -> Varchar,
+        buyer -> Varchar,
+        seller -> Varchar,
+        auction_house -> Varchar,
+        metadata -> Varchar,
+        token_size -> Int8,
+        price -> Int8,
+        bump -> Int2,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     store_config_jsons (config_address) {
         config_address -> Varchar,
         name -> Text,
@@ -209,6 +270,7 @@ table! {
         subdomain -> Text,
         owner_address -> Varchar,
         auction_house_address -> Varchar,
+        store_address -> Nullable<Varchar>,
     }
 }
 
@@ -219,6 +281,16 @@ table! {
     store_configs (address) {
         address -> Varchar,
         settings_uri -> Text,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    store_creators (store_config_address, creator_address) {
+        store_config_address -> Varchar,
+        creator_address -> Varchar,
     }
 }
 
@@ -291,17 +363,21 @@ allow_tables_to_appear_in_same_query!(
     auction_datas,
     auction_datas_ext,
     auction_houses,
+    bid_receipts,
     bids,
     editions,
     files,
     listing_metadatas,
+    listing_receipts,
     master_editions,
     metadata_collections,
     metadata_creators,
     metadata_jsons,
     metadatas,
+    purchase_receipts,
     store_config_jsons,
     store_configs,
+    store_creators,
     store_denylist,
     storefronts,
     stores,

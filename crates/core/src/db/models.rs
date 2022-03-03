@@ -7,10 +7,11 @@ use std::borrow::Cow;
 use chrono::NaiveDateTime;
 
 use super::schema::{
-    attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bids, editions,
-    files, listing_metadatas, master_editions, metadata_collections, metadata_creators,
-    metadata_jsons, metadatas, store_config_jsons, store_configs, storefronts, stores,
-    token_accounts, whitelisted_creators,
+    attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
+    bids, editions, files, listing_metadatas, listing_receipts, master_editions,
+    metadata_collections, metadata_creators, metadata_jsons, metadatas, purchase_receipts,
+    store_config_jsons, store_configs, store_creators, storefronts, stores, token_accounts,
+    whitelisted_creators,
 };
 
 /// A row in the `bids` table
@@ -405,6 +406,8 @@ pub struct StoreConfigJson<'a> {
     pub owner_address: Cow<'a, str>,
     /// Auction house account address
     pub auction_house_address: Cow<'a, str>,
+    /// Storefront address
+    pub store_address: Option<Cow<'a, str>>,
 }
 
 /// A row in the `auction_houses` table
@@ -447,4 +450,102 @@ pub struct AuctionHouse<'a> {
 
     /// Auction House fee account address
     pub auction_house_fee_account: Cow<'a, str>,
+}
+
+/// A row in the `bid_reciepts` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct BidReceipt<'a> {
+    /// The BidReceipt account pubkey
+    pub address: Cow<'a, str>,
+    /// Trade State account pubkey
+    pub trade_state: Cow<'a, str>,
+    /// Bookkeeper account pubkey
+    pub bookkeeper: Cow<'a, str>,
+    /// Auction house account pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Buyer address
+    pub buyer: Cow<'a, str>,
+    /// Metadata address
+    pub metadata: Cow<'a, str>,
+    /// Token account address
+    pub token_account: Option<Cow<'a, str>>,
+    /// Purchase receipt address
+    pub purchase_receipt: Option<Cow<'a, str>>,
+    /// Price
+    pub price: i64,
+    /// Token size
+    pub token_size: i64,
+    /// Bump
+    pub bump: i16,
+    /// Trade State bump
+    pub trade_state_bump: i16,
+    /// Created_at timestamp
+    pub created_at: NaiveDateTime,
+    /// Canceled_at timestamp
+    pub canceled_at: Option<NaiveDateTime>,
+}
+
+/// A row in the `listing_receipts` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct ListingReceipt<'a> {
+    /// ListingReceipt account pubkey
+    pub address: Cow<'a, str>,
+    /// Trade state account pubkey
+    pub trade_state: Cow<'a, str>,
+    /// Bookkeeper account pubkey
+    pub bookkeeper: Cow<'a, str>,
+    /// Auction House pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Seller account pubkey
+    pub seller: Cow<'a, str>,
+    /// Metadata Address
+    pub metadata: Cow<'a, str>,
+    /// PurchaseReceipt account address
+    pub purchase_receipt: Option<Cow<'a, str>>,
+    /// Price
+    pub price: i64,
+    /// Token Size
+    pub token_size: i64,
+    /// Bump
+    pub bump: i16,
+    /// Trade State Bump
+    pub trade_state_bump: i16,
+    /// Created_at timestamp
+    pub created_at: NaiveDateTime,
+    /// Canceled_at timestamp
+    pub canceled_at: Option<NaiveDateTime>,
+}
+
+/// A row in the `purchase_receipts` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct PurchaseReceipt<'a> {
+    /// Purchase account pubkey
+    pub address: Cow<'a, str>,
+    /// Bookkeeper account pubkey
+    pub bookkeeper: Cow<'a, str>,
+    /// Buyer account pubkey
+    pub buyer: Cow<'a, str>,
+    /// Seller account pubkey
+    pub seller: Cow<'a, str>,
+    /// Auction House account pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Metadata
+    pub metadata: Cow<'a, str>,
+    /// Token size
+    pub token_size: i64,
+    /// Price
+    pub price: i64,
+    /// Bump
+    pub bump: i16,
+    /// Created at
+    pub created_at: NaiveDateTime,
+}
+
+/// A row in the `store_creators` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+pub struct StoreCreator<'a> {
+    /// Store Config account address
+    pub store_config_address: Cow<'a, str>,
+    /// Creator address
+    pub creator_address: Cow<'a, str>,
 }

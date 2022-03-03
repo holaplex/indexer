@@ -51,5 +51,6 @@ strings![
     AuctionHouseAddress,
     ListingAddress,
     MetadataAddress,
-    StorefrontAddress
+    StorefrontAddress,
+    StoreConfigAddress,
 ];

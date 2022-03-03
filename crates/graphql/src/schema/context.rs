@@ -1,11 +1,16 @@
 use dataloaders::{Batcher, Loader};
 use objects::{
     auction_house::AuctionHouse,
+    bid_receipt::BidReceipt,
     listing::{Bid, Listing},
+    listing_receipt::ListingReceipt,
     nft::{Nft, NftAttribute, NftCreator, NftOwner},
+    store_creator::StoreCreator,
     storefront::Storefront,
 };
-use strings::{AuctionHouseAddress, ListingAddress, MetadataAddress, StorefrontAddress};
+use strings::{
+    AuctionHouseAddress, ListingAddress, MetadataAddress, StoreConfigAddress, StorefrontAddress,
+};
 
 use super::prelude::*;
 
@@ -23,6 +28,9 @@ pub struct AppContext {
     pub nft_creators_loader: Loader<MetadataAddress, Vec<NftCreator>>,
     pub nft_owner_loader: Loader<MetadataAddress, Option<NftOwner>>,
     pub storefront_loader: Loader<StorefrontAddress, Option<Storefront>>,
+    pub listing_receipts_loader: Loader<MetadataAddress, Vec<ListingReceipt>>,
+    pub bid_receipts_loader: Loader<MetadataAddress, Vec<BidReceipt>>,
+    pub store_creator_loader: Loader<StoreConfigAddress, Vec<StoreCreator>>,
 }
 
 impl juniper::Context for AppContext {}
@@ -39,8 +47,10 @@ impl AppContext {
             nft_attributes_loader: Loader::new(batcher.clone()),
             nft_creators_loader: Loader::new(batcher.clone()),
             nft_owner_loader: Loader::new(batcher.clone()),
-            storefront_loader: Loader::new(batcher),
-
+            storefront_loader: Loader::new(batcher.clone()),
+            listing_receipts_loader: Loader::new(batcher.clone()),
+            bid_receipts_loader: Loader::new(batcher.clone()),
+            store_creator_loader: Loader::new(batcher),
             db_pool,
             twitter_bearer_token,
         }
