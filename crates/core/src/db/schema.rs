@@ -270,6 +270,7 @@ table! {
         subdomain -> Text,
         owner_address -> Varchar,
         auction_house_address -> Varchar,
+        store_address -> Nullable<Varchar>,
     }
 }
 
@@ -280,6 +281,16 @@ table! {
     store_configs (address) {
         address -> Varchar,
         settings_uri -> Text,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
+    store_creators (store_config_address, creator_address) {
+        store_config_address -> Varchar,
+        creator_address -> Varchar,
     }
 }
 
@@ -366,6 +377,7 @@ allow_tables_to_appear_in_same_query!(
     purchase_receipts,
     store_config_jsons,
     store_configs,
+    store_creators,
     store_denylist,
     storefronts,
     stores,
