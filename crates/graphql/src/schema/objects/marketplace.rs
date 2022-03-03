@@ -11,8 +11,8 @@ pub struct Marketplace {
     pub logo_url: String,
     pub banner_url: String,
     pub owner_address: String,
-    pub store_address: String,
     pub auction_house_address: String,
+    pub store_address: Option<String>,
 }
 
 impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
@@ -25,8 +25,8 @@ impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
             banner_url,
             subdomain,
             owner_address,
-            store_address,
             auction_house_address,
+            store_address,
         }: models::StoreConfigJson,
     ) -> Self {
         Self {
@@ -37,8 +37,8 @@ impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
             logo_url: logo_url.into_owned(),
             banner_url: banner_url.into_owned(),
             owner_address: owner_address.into_owned(),
-            store_address: store_address.into_owned(),
             auction_house_address: auction_house_address.into_owned(),
+            store_address: store_address.map(Cow::into_owned),
         }
     }
 }
@@ -72,11 +72,13 @@ impl Marketplace {
     pub fn owner_address(&self) -> &str {
         &self.owner_address
     }
-    pub fn store_address(&self) -> &str {
-        &self.store_address
-    }
+
     pub fn auction_house_address(&self) -> &str {
         &self.auction_house_address
+    }
+
+    pub fn store_address(&self) -> Option<&str> {
+        self.store_address.as_deref()
     }
 
     pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {

@@ -50,7 +50,7 @@ impl AppContext {
             storefront_loader: Loader::new(batcher.clone()),
             listing_receipts_loader: Loader::new(batcher.clone()),
             bid_receipts_loader: Loader::new(batcher.clone()),
-            store_creator_loader: Loader::new(batcher.clone()),
+            store_creator_loader: Loader::new(batcher),
             db_pool,
             twitter_bearer_token,
         }
