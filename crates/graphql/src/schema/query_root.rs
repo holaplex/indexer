@@ -1,5 +1,4 @@
-use diesel::{debug_query, sql_query};
-use indexer_core::{db, db::queries};
+use indexer_core::db::queries;
 use objects::{
     creator::Creator,
     marketplace::Marketplace,
@@ -8,10 +7,7 @@ use objects::{
     storefront::Storefront,
     wallet::Wallet,
 };
-use tables::{
-    attributes, metadata_creators, metadata_jsons, metadatas, store_config_jsons, storefronts,
-    token_accounts,
-};
+use tables::{metadata_jsons, metadatas, store_config_jsons, storefronts};
 
 use super::prelude::*;
 

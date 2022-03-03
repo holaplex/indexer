@@ -1,24 +1,20 @@
-use std::sync::Arc;
-
-use diesel::{
-    debug_query,
-    pg::{expression::dsl::any, PgQueryBuilder},
-    prelude::*,
-};
+//! Query utilities for looking up  metadatas
+use diesel::{pg::expression::dsl::any, prelude::*};
 
 use crate::{
     db::{
         models::Nft,
-        schema,
         tables::{attributes, metadata_creators, metadata_jsons, metadatas, token_accounts},
-        Connection, Pool,
+        Connection,
     },
     error::prelude::*,
-    prelude::debug,
 };
+/// Format for incoming filters on attributes
 #[derive(Debug)]
 pub struct MetadataFilterAttributes {
+    /// name of trait
     pub trait_type: String,
+    /// array of trait values
     pub values: Vec<String>,
 }
 
@@ -71,17 +67,18 @@ pub fn load_filtered(
             .filter(token_accounts::owner_address.eq(any(owners)));
     }
 
-    let test_query = query.select((
-        metadatas::address,
-        metadatas::name,
-        metadatas::seller_fee_basis_points,
-        metadatas::mint_address,
-        metadatas::primary_sale_happened,
-        metadata_jsons::description,
-        metadata_jsons::image,
-    ));
-
-    let rows: Vec<Nft> = test_query.load(conn).context("failed to load nft(s)")?;
+    let rows: Vec<Nft> = query
+        .select((
+            metadatas::address,
+            metadatas::name,
+            metadatas::seller_fee_basis_points,
+            metadatas::mint_address,
+            metadatas::primary_sale_happened,
+            metadata_jsons::description,
+            metadata_jsons::image,
+        ))
+        .load(conn)
+        .context("failed to load nft(s)")?;
 
     Ok(rows.into_iter().map(Into::into).collect())
 }
