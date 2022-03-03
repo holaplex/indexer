@@ -50,17 +50,13 @@ solana-client = { version = "~1.9.5", optional = true }
 solana-program = { version = "~1.9.5", optional = true }
 solana-sdk = "~1.9.5"
 spl-token = { version="~3.2.0", features = ["no-entrypoint"] }
+mpl-auction-house = { version="1.1.0", features = ["no-entrypoint"] }
 
 # HTTP indexer
 base64 = { version = "0.13.0", optional = true }
 cid = { version = "0.7.0", optional = true }
 reqwest = { version = "0.11.6", optional = true }
 serde_json = { version = "1.0.70", optional = true }
-
-# Git dependencies
-[dependencies.mpl-auction-house]
-git = "https://github.com/holaplex/metaplex-program-library.git"
-rev = "bf09b3ae091cec773c37d99903eb8325a7599151"
 
 [dependencies.mpl-metaplex]
 git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
