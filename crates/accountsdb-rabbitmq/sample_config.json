@@ -3,11 +3,11 @@
     "network": "devnet",
     "address": "amqp://"
   },
-  "solanaMetric": {
-   "config": "host="
-  },
   "jobs": {
     "limit": 16
+  },
+  "metrics": {
+   "config": "host="
   },
   "accounts": {
     "owners": [
