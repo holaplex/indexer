@@ -40,15 +40,12 @@ use crate::{
 };
 
 lazy_static! {
-    static ref MSG: Mutex<Instant> = Mutex::new(Instant::now());
+    static ref MSG_SENT_TIME: Mutex<Instant> = Mutex::new(Instant::now());
+    static ref MSG_RCVD_TIME: Mutex<Instant> = Mutex::new(Instant::now());
 }
 
 static MESSAGES_SENT: AtomicUsize = AtomicUsize::new(0);
 static MESSAGES_RECEIVED: AtomicUsize = AtomicUsize::new(0);
-
-fn update_message_count() {
-    *MSG.lock().unwrap() = Instant::now();
-}
 
 fn custom_err(
     e: impl Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
@@ -101,13 +98,13 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
     fn on_load(&mut self, cfg: &str) -> Result<()> {
         solana_logger::setup_with_default("info");
 
-        let (amqp, metric_config, jobs, acct, ins) = Config::read(cfg)
+        let (amqp, solana_metric, jobs, acct, ins) = Config::read(cfg)
             .and_then(Config::into_parts)
             .map_err(custom_err)?;
 
         let startup_type = acct.startup();
 
-        env::set_var("SOLANA_METRICS_CONFIG", metric_config.config.to_string());
+        env::set_var("SOLANA_METRICS_CONFIG", solana_metric.config.to_string());
 
         self.acct_sel = Some(acct);
         self.ins_sel = Some(ins);
@@ -298,11 +295,19 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
     }
 }
 
+fn update_msg_sent_time() {
+    *MSG_SENT_TIME.lock().unwrap() = Instant::now();
+}
+
+fn update_msg_rcvd_time() {
+    *MSG_RCVD_TIME.lock().unwrap() = Instant::now();
+}
+
 fn messages_sent() {
     MESSAGES_SENT.fetch_add(1, Ordering::SeqCst);
 
-    if MSG.lock().unwrap().elapsed() >= Duration::from_secs(30) {
-        update_message_count();
+    if MSG_SENT_TIME.lock().unwrap().elapsed() >= Duration::from_secs(30) {
+        update_msg_sent_time();
     }
 
     solana_metrics::submit(
@@ -319,15 +324,17 @@ fn messages_sent() {
 fn messages_received() {
     MESSAGES_RECEIVED.fetch_add(1, Ordering::SeqCst);
 
-    if MSG.lock().unwrap().elapsed() >= Duration::from_secs(30) {
-        solana_metrics::submit(
-            solana_metrics::datapoint::DataPoint::new("accountdb")
-                .add_field_i64(
-                    "msgs_rcvd",
-                    MESSAGES_RECEIVED.load(Ordering::SeqCst).try_into().unwrap(),
-                )
-                .to_owned(),
-            log::Level::Info,
-        );
+    if MSG_SENT_TIME.lock().unwrap().elapsed() >= Duration::from_secs(30) {
+        update_msg_rcvd_time();
     }
+
+    solana_metrics::submit(
+        solana_metrics::datapoint::DataPoint::new("accountdb")
+            .add_field_i64(
+                "msgs_rcvd",
+                MESSAGES_RECEIVED.load(Ordering::SeqCst).try_into().unwrap(),
+            )
+            .to_owned(),
+        log::Level::Info,
+    );
 }

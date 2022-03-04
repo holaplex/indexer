@@ -3,7 +3,7 @@
     "network": "devnet",
     "address": "amqp://"
   },
-  "config": {
+  "solanaMetric": {
    "config": "host=http://localhost:8086,db=metrics,u=holaplex,p=indexer"
   },
   "jobs": {
