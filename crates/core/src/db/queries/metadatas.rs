@@ -29,13 +29,13 @@ pub fn load_filtered(
     attributes: Option<Vec<MetadataFilterAttributes>>,
 ) -> Result<Vec<Nft>> {
     let mut query = metadatas::table
-        .left_join(
+        .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
         )
-        .left_join(
+        .inner_join(
             metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
         )
-        .left_join(
+        .inner_join(
             token_accounts::table.on(metadatas::mint_address.eq(token_accounts::mint_address)),
         )
         .into_boxed();
@@ -77,6 +77,8 @@ pub fn load_filtered(
             metadata_jsons::description,
             metadata_jsons::image,
         ))
+        .distinct()
+        .order_by(metadatas::name.desc())
         .load(conn)
         .context("failed to load nft(s)")?;
 
