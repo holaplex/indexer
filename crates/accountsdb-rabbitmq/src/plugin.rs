@@ -302,32 +302,32 @@ fn messages_sent() {
     MESSAGES_SENT.fetch_add(1, Ordering::SeqCst);
 
     if MSG.lock().unwrap().elapsed() >= Duration::from_secs(30) {
-        solana_metrics::submit(
-            solana_metrics::datapoint::DataPoint::new("accountdb")
-                .add_field_i64(
-                    "msgs_sent",
-                    MESSAGES_SENT.load(Ordering::SeqCst).try_into().unwrap(),
-                )
-                .to_owned(),
-            log::Level::Info,
-        );
-    }
-}
-
-fn messages_received() {
-    MESSAGES_RECEIVED.fetch_add(1, Ordering::SeqCst);
-
-    if MSG.lock().unwrap().elapsed() >= Duration::from_secs(30) {
         update_message_count();
     }
 
     solana_metrics::submit(
         solana_metrics::datapoint::DataPoint::new("accountdb")
             .add_field_i64(
-                "msgs_rcvd",
-                MESSAGES_RECEIVED.load(Ordering::SeqCst).try_into().unwrap(),
+                "msgs_sent",
+                MESSAGES_SENT.load(Ordering::SeqCst).try_into().unwrap(),
             )
             .to_owned(),
         log::Level::Info,
     );
+}
+
+fn messages_received() {
+    MESSAGES_RECEIVED.fetch_add(1, Ordering::SeqCst);
+
+    if MSG.lock().unwrap().elapsed() >= Duration::from_secs(30) {
+        solana_metrics::submit(
+            solana_metrics::datapoint::DataPoint::new("accountdb")
+                .add_field_i64(
+                    "msgs_rcvd",
+                    MESSAGES_RECEIVED.load(Ordering::SeqCst).try_into().unwrap(),
+                )
+                .to_owned(),
+            log::Level::Info,
+        );
+    }
 }
