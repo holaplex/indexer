@@ -12,6 +12,8 @@ use crate::{
 pub struct Config {
     amqp: Amqp,
 
+    metric_config: MetricConfig,
+
     jobs: Jobs,
 
     #[serde(default)]
@@ -29,6 +31,12 @@ pub struct Amqp {
 
     #[serde_as(as = "serde_with::DisplayFromStr")]
     pub network: indexer_rabbitmq::accountsdb::Network,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MetricConfig {
+    pub config: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -61,9 +69,18 @@ impl Config {
         Ok(cfg)
     }
 
-    pub fn into_parts(self) -> Result<(Amqp, Jobs, AccountSelector, InstructionSelector)> {
+    pub fn into_parts(
+        self,
+    ) -> Result<(
+        Amqp,
+        MetricConfig,
+        Jobs,
+        AccountSelector,
+        InstructionSelector,
+    )> {
         let Self {
             amqp,
+            metric_config,
             jobs,
             accounts,
             instruction_programs,
@@ -74,6 +91,6 @@ impl Config {
         let ins = InstructionSelector::from_config(instruction_programs)
             .context("Failed to create instruction selector")?;
 
-        Ok((amqp, jobs, acct, ins))
+        Ok((amqp, metric_config, jobs, acct, ins))
     }
 }

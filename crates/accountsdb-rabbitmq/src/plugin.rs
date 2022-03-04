@@ -1,4 +1,12 @@
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    env,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Mutex,
+    },
+    time::{Duration, Instant},
+};
 
 use indexer_rabbitmq::{
     accountsdb::{AccountUpdate, Message, Producer, QueueType},
@@ -6,6 +14,7 @@ use indexer_rabbitmq::{
     prelude::*,
 };
 use lapinou::LapinSmolExt;
+use lazy_static::lazy_static;
 use solana_program::{
     instruction::CompiledInstruction, message::SanitizedMessage, program_pack::Pack,
 };
@@ -29,6 +38,14 @@ use crate::{
     selectors::{AccountSelector, InstructionSelector},
     sender::Sender,
 };
+
+lazy_static! {
+    static ref MSG: Mutex<Instant> = Mutex::new(Instant::now());
+}
+static MESSAGES: AtomicUsize = AtomicUsize::new(0);
+fn update_message_count() {
+    *MSG.lock().unwrap() = Instant::now();
+}
 
 fn custom_err(
     e: impl Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
@@ -81,15 +98,17 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
     fn on_load(&mut self, cfg: &str) -> Result<()> {
         solana_logger::setup_with_default("info");
 
-        let (amqp, jobs, acct, ins) = Config::read(cfg)
+        let (amqp, metric_config, jobs, acct, ins) = Config::read(cfg)
             .and_then(Config::into_parts)
             .map_err(custom_err)?;
 
         let startup_type = acct.startup();
 
+        env::set_var("SOLANA_METRICS_CONFIG", metric_config.config);
+
         self.acct_sel = Some(acct);
         self.ins_sel = Some(ins);
-
+        
         self.token_addresses = Self::load_token_reg()?;
 
         smol::block_on(async {
@@ -181,6 +200,21 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                             .map_err(Into::into)
                         })
                         .await;
+                    MESSAGES.fetch_add(1, Ordering::SeqCst);
+
+                    if MSG.lock().unwrap().elapsed() >= Duration::from_secs(30) {
+                        update_message_count();
+                    }
+
+                    solana_metrics::submit(
+                        solana_metrics::datapoint::DataPoint::new("accountdb")
+                            .add_field_i64(
+                                "messages",
+                                MESSAGES.load(Ordering::SeqCst).try_into().unwrap(),
+                            )
+                            .to_owned(),
+                        log::Level::Info,
+                    )
                 },
             }
 
