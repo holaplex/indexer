@@ -3,7 +3,7 @@
     "network": "devnet",
     "address": "amqp://"
   },
-  "metrics": {
+  "config": {
    "config": "host=http://localhost:8086,db=metrics,u=holaplex,p=indexer"
   },
   "jobs": {

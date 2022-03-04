@@ -12,7 +12,7 @@ use crate::{
 pub struct Config {
     amqp: Amqp,
 
-    metric_config: MetricConfig,
+    config: MetricConfig,
 
     jobs: Jobs,
 
@@ -80,7 +80,7 @@ impl Config {
     )> {
         let Self {
             amqp,
-            metric_config,
+            config,
             jobs,
             accounts,
             instruction_programs,
@@ -91,6 +91,6 @@ impl Config {
         let ins = InstructionSelector::from_config(instruction_programs)
             .context("Failed to create instruction selector")?;
 
-        Ok((amqp, metric_config, jobs, acct, ins))
+        Ok((amqp, config, jobs, acct, ins))
     }
 }

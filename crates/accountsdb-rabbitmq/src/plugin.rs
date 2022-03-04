@@ -42,7 +42,10 @@ use crate::{
 lazy_static! {
     static ref MSG: Mutex<Instant> = Mutex::new(Instant::now());
 }
-static MESSAGES: AtomicUsize = AtomicUsize::new(0);
+
+static MESSAGES_SENT: AtomicUsize = AtomicUsize::new(0);
+static MESSAGES_RECEIVED: AtomicUsize = AtomicUsize::new(0);
+
 fn update_message_count() {
     *MSG.lock().unwrap() = Instant::now();
 }
@@ -104,11 +107,11 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
 
         let startup_type = acct.startup();
 
-        env::set_var("SOLANA_METRICS_CONFIG", metric_config.config);
+        env::set_var("SOLANA_METRICS_CONFIG", metric_config.config.to_string());
 
         self.acct_sel = Some(acct);
         self.ins_sel = Some(ins);
-        
+
         self.token_addresses = Self::load_token_reg()?;
 
         smol::block_on(async {
@@ -140,6 +143,8 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                 msg: "RabbitMQ plugin not initialized yet!".into(),
             }
         }
+
+        messages_received();
 
         smol::block_on(async {
             match account {
@@ -200,21 +205,7 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                             .map_err(Into::into)
                         })
                         .await;
-                    MESSAGES.fetch_add(1, Ordering::SeqCst);
-
-                    if MSG.lock().unwrap().elapsed() >= Duration::from_secs(30) {
-                        update_message_count();
-                    }
-
-                    solana_metrics::submit(
-                        solana_metrics::datapoint::DataPoint::new("accountdb")
-                            .add_field_i64(
-                                "messages",
-                                MESSAGES.load(Ordering::SeqCst).try_into().unwrap(),
-                            )
-                            .to_owned(),
-                        log::Level::Info,
-                    )
+                    messages_sent();
                 },
             }
 
@@ -305,4 +296,38 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
             Ok(())
         })
     }
+}
+
+fn messages_sent() {
+    MESSAGES_SENT.fetch_add(1, Ordering::SeqCst);
+
+    if MSG.lock().unwrap().elapsed() >= Duration::from_secs(30) {
+        solana_metrics::submit(
+            solana_metrics::datapoint::DataPoint::new("accountdb")
+                .add_field_i64(
+                    "msgs_sent",
+                    MESSAGES_SENT.load(Ordering::SeqCst).try_into().unwrap(),
+                )
+                .to_owned(),
+            log::Level::Info,
+        );
+    }
+}
+
+fn messages_received() {
+    MESSAGES_RECEIVED.fetch_add(1, Ordering::SeqCst);
+
+    if MSG.lock().unwrap().elapsed() >= Duration::from_secs(30) {
+        update_message_count();
+    }
+
+    solana_metrics::submit(
+        solana_metrics::datapoint::DataPoint::new("accountdb")
+            .add_field_i64(
+                "msgs_rcvd",
+                MESSAGES_RECEIVED.load(Ordering::SeqCst).try_into().unwrap(),
+            )
+            .to_owned(),
+        log::Level::Info,
+    );
 }
