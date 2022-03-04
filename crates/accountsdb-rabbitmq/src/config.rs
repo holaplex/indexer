@@ -11,10 +11,10 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct Config {
     amqp: Amqp,
-
-    solana_metric: MetricConfig,
-
     jobs: Jobs,
+
+    #[serde(default)]
+    metrics: Metrics,
 
     #[serde(default)]
     accounts: Accounts,
@@ -35,14 +35,14 @@ pub struct Amqp {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MetricConfig {
-    pub config: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Jobs {
     pub limit: usize,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Metrics {
+    pub config: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -69,19 +69,11 @@ impl Config {
         Ok(cfg)
     }
 
-    pub fn into_parts(
-        self,
-    ) -> Result<(
-        Amqp,
-        MetricConfig,
-        Jobs,
-        AccountSelector,
-        InstructionSelector,
-    )> {
+    pub fn into_parts(self) -> Result<(Amqp, Jobs, Metrics, AccountSelector, InstructionSelector)> {
         let Self {
             amqp,
-            solana_metric,
             jobs,
+            metrics,
             accounts,
             instruction_programs,
         } = self;
@@ -91,6 +83,6 @@ impl Config {
         let ins = InstructionSelector::from_config(instruction_programs)
             .context("Failed to create instruction selector")?;
 
-        Ok((amqp, solana_metric, jobs, acct, ins))
+        Ok((amqp, jobs, metrics, acct, ins))
     }
 }
