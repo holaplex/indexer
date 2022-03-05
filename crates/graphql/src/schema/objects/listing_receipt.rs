@@ -11,6 +11,10 @@ pub struct ListingReceipt {
     pub trade_state_bump: i32,
     pub created_at: DateTime<Utc>,
     pub canceled_at: Option<DateTime<Utc>>,
+    pub bookkeeper: String,
+    pub purchase_receipt: Option<String>,
+    pub token_size: i32,
+    pub bump: i32,
 }
 
 impl<'a> TryFrom<models::ListingReceipt<'a>> for ListingReceipt {
@@ -26,11 +30,10 @@ impl<'a> TryFrom<models::ListingReceipt<'a>> for ListingReceipt {
             trade_state_bump,
             created_at,
             canceled_at,
-            bookkeeper: _,
-            purchase_receipt: _,
-            token_size: _,
-            bump: _,
-            ..
+            bookkeeper,
+            purchase_receipt,
+            token_size,
+            bump,
         }: models::ListingReceipt,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -43,6 +46,10 @@ impl<'a> TryFrom<models::ListingReceipt<'a>> for ListingReceipt {
             trade_state_bump: trade_state_bump.into(),
             created_at: DateTime::from_utc(created_at, Utc),
             canceled_at: canceled_at.map(|c| DateTime::from_utc(c, Utc)),
+            bookkeeper: bookkeeper.into_owned(),
+            purchase_receipt: purchase_receipt.map(|pr| pr.into_owned()),
+            token_size: token_size.try_into().unwrap(),
+            bump: bump.into(),
         })
     }
 }
