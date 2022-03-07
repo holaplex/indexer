@@ -13,6 +13,8 @@ pub mod accountsdb;
 pub mod db;
 #[cfg(any(test, feature = "http"))]
 pub mod http;
+#[cfg(any(test, feature = "http"))]
+pub mod legacy_storefronts;
 pub(crate) mod util;
 
 pub use runtime::{amqp_connect, run};

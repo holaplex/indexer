@@ -139,6 +139,16 @@ table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
 
+    listing_denylist (listing_address) {
+        listing_address -> Varchar,
+        hard_ban -> Bool,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+
     listing_metadatas (listing_address, metadata_address) {
         listing_address -> Varchar,
         metadata_address -> Varchar,
@@ -367,6 +377,7 @@ allow_tables_to_appear_in_same_query!(
     bids,
     editions,
     files,
+    listing_denylist,
     listing_metadatas,
     listing_receipts,
     master_editions,

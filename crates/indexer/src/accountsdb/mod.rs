@@ -2,9 +2,7 @@
 
 mod accounts;
 mod client;
-// mod get_storefronts;
 mod programs;
-// mod store_owner;
 
 pub use client::Client;
 use indexer_core::pubkeys;
