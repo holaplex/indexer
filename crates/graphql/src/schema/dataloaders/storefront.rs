@@ -1,4 +1,4 @@
-use objects::storefront::Storefront;
+use objects::storefront::{Storefront, StorefrontColumns};
 use scalars::PublicKey;
 use tables::storefronts;
 
@@ -12,20 +12,8 @@ impl TryBatchFn<PublicKey<Storefront>, Option<Storefront>> for Batcher {
     ) -> TryBatchMap<PublicKey<Storefront>, Option<Storefront>> {
         let conn = self.db()?;
 
-        let columns = (
-            storefronts::owner_address,
-            storefronts::subdomain,
-            storefronts::title,
-            storefronts::description,
-            storefronts::favicon_url,
-            storefronts::logo_url,
-            storefronts::updated_at,
-            storefronts::banner_url,
-            storefronts::address,
-        );
-
         let rows: Vec<models::Storefront> = storefronts::table
-            .select(columns)
+            .select(StorefrontColumns::default())
             .filter(storefronts::address.eq(any(keys)))
             .load(&conn)
             .context("Failed to load storefronts")?;

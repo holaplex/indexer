@@ -1,5 +1,5 @@
 use objects::{
-    listing::{Bid, Listing, ListingRow},
+    listing::{Bid, Listing, ListingColumns, ListingRow},
     nft::Nft,
 };
 use scalars::PublicKey;
@@ -28,14 +28,7 @@ impl TryBatchFn<PublicKey<Listing>, Option<Listing>> for Batcher {
                 auction_datas_ext::table
                     .on(auction_caches::auction_ext.eq(auction_datas_ext::address)),
             )
-            .select((
-                auction_datas::address,
-                auction_caches::store_address,
-                auction_datas::token_mint,
-                auction_datas::ends_at,
-                auction_datas_ext::gap_tick_size,
-                auction_datas::last_bid_time,
-            ))
+            .select(ListingColumns::default())
             .load(&conn)
             .context("Failed to load listings")?;
 

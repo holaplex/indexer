@@ -1,4 +1,18 @@
+use tables::storefronts;
+
 use super::prelude::*;
+
+pub type StorefrontColumns = (
+    storefronts::owner_address,
+    storefronts::subdomain,
+    storefronts::title,
+    storefronts::description,
+    storefronts::favicon_url,
+    storefronts::logo_url,
+    storefronts::updated_at,
+    storefronts::banner_url,
+    storefronts::address,
+);
 
 #[derive(Debug, Clone, GraphQLObject)]
 #[graphql(description = "A Metaplex storefront")]

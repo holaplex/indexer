@@ -1,5 +1,6 @@
 use objects::{nft::Nft, storefront::Storefront};
 use scalars::Lamports;
+use tables::{auction_caches, auction_datas, auction_datas_ext};
 
 use super::prelude::*;
 
@@ -65,13 +66,14 @@ impl Bid {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Listing {
-    pub address: String,
-    pub store_address: String,
-    pub token_mint: Option<String>,
-    pub ended: bool,
-}
+pub type ListingColumns = (
+    auction_datas::address,
+    auction_caches::store_address,
+    auction_datas::token_mint,
+    auction_datas::ends_at,
+    auction_datas_ext::gap_tick_size,
+    auction_datas::last_bid_time,
+);
 
 pub type ListingRow = (
     String,                // address
@@ -81,6 +83,14 @@ pub type ListingRow = (
     Option<i32>,           // gap_time
     Option<NaiveDateTime>, // last_bid_time
 );
+
+#[derive(Debug, Clone)]
+pub struct Listing {
+    pub address: String,
+    pub store_address: String,
+    pub token_mint: Option<String>,
+    pub ended: bool,
+}
 
 impl Listing {
     pub fn address((address, ..): &ListingRow) -> String {
