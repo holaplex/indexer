@@ -4,12 +4,11 @@ use objects::{
     bid_receipt::BidReceipt,
     listing::{Bid, Listing},
     listing_receipt::ListingReceipt,
-    marketplace::Marketplace,
     nft::{Nft, NftAttribute, NftCreator, NftOwner},
     store_creator::StoreCreator,
     storefront::Storefront,
 };
-use scalars::PublicKey;
+use scalars::{markers::StoreConfig, PublicKey};
 
 use super::prelude::*;
 
@@ -29,7 +28,7 @@ pub struct AppContext {
     pub storefront_loader: Loader<PublicKey<Storefront>, Option<Storefront>>,
     pub listing_receipts_loader: Loader<PublicKey<Nft>, Vec<ListingReceipt>>,
     pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
-    pub store_creator_loader: Loader<PublicKey<Marketplace>, Vec<StoreCreator>>,
+    pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
 }
 
 impl juniper::Context for AppContext {}
