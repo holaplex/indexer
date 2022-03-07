@@ -1,15 +1,15 @@
 use objects::store_creator::StoreCreator;
-use strings::StoreConfigAddress;
+use scalars::{markers::StoreConfig, PublicKey};
 use tables::store_creators;
 
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<StoreConfigAddress, Vec<StoreCreator>> for Batcher {
+impl TryBatchFn<PublicKey<StoreConfig>, Vec<StoreCreator>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[StoreConfigAddress],
-    ) -> TryBatchMap<StoreConfigAddress, Vec<StoreCreator>> {
+        addresses: &[PublicKey<StoreConfig>],
+    ) -> TryBatchMap<PublicKey<StoreConfig>, Vec<StoreCreator>> {
         let conn = self.db()?;
 
         let rows: Vec<models::StoreCreator> = store_creators::table

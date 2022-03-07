@@ -1,5 +1,6 @@
 use indexer_core::db::queries;
 use objects::{
+    auction_house::AuctionHouse,
     creator::Creator,
     marketplace::Marketplace,
     nft::Nft,
@@ -7,6 +8,7 @@ use objects::{
     storefront::Storefront,
     wallet::Wallet,
 };
+use scalars::PublicKey;
 use tables::{metadata_jsons, metadatas, store_config_jsons, storefronts};
 
 use super::prelude::*;
@@ -20,7 +22,7 @@ struct AttributeFilter {
     values: Vec<String>,
 }
 
-impl From<AttributeFilter> for queries::metadatas::MetadataFilterAttributes {
+impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
     fn from(AttributeFilter { trait_type, values }: AttributeFilter) -> Self {
         Self { trait_type, values }
     }
@@ -80,25 +82,30 @@ impl QueryRoot {
     fn nfts(
         &self,
         context: &AppContext,
-        #[graphql(description = "Filter on owner address")] owners: Option<Vec<String>>,
-        #[graphql(description = "Filter on creator address")] creators: Option<Vec<String>>,
+        #[graphql(description = "Filter on owner address")] owners: Option<Vec<PublicKey<Wallet>>>,
+        #[graphql(description = "Filter on creator address")] creators: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
+        #[graphql(description = "Filter on listed")] listed: Option<Vec<PublicKey<AuctionHouse>>>,
     ) -> FieldResult<Vec<Nft>> {
-        if owners.is_none() && creators.is_none() {
+        if owners.is_none() && creators.is_none() && listed.is_none() {
             return Err(FieldError::new(
                 "No filter provided! Please provide at least one of the filters",
-                graphql_value!({ "Filters": "owners: Vec<String>, creators: Vec<String>" }),
+                graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, listed: Vec<PublicKey>" }),
             ));
         }
 
         let conn = context.db_pool.get().context("failed to connect to db")?;
 
-        let nfts = queries::metadatas::load_filtered(
-            &conn,
-            owners,
-            creators,
-            attributes.map(|a| a.into_iter().map(Into::into).collect()),
-        )?;
+        let query_options = queries::metadatas::ListQueryOptions {
+            owners: owners.map(|a| a.into_iter().map(Into::into).collect()),
+            creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
+            attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
+            listed: listed.map(|a| a.into_iter().map(Into::into).collect()),
+        };
+
+        let nfts = queries::metadatas::list(&conn, query_options)?;
 
         Ok(nfts.into_iter().map(Into::into).collect())
     }

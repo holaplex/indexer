@@ -8,9 +8,7 @@ use objects::{
     store_creator::StoreCreator,
     storefront::Storefront,
 };
-use strings::{
-    AuctionHouseAddress, ListingAddress, MetadataAddress, StoreConfigAddress, StorefrontAddress,
-};
+use scalars::{markers::StoreConfig, PublicKey};
 
 use super::prelude::*;
 
@@ -20,17 +18,17 @@ pub struct AppContext {
     pub twitter_bearer_token: Arc<String>,
 
     // Data loaders
-    pub auction_house_loader: Loader<AuctionHouseAddress, Option<AuctionHouse>>,
-    pub listing_loader: Loader<ListingAddress, Option<Listing>>,
-    pub listing_bids_loader: Loader<ListingAddress, Vec<Bid>>,
-    pub listing_nfts_loader: Loader<ListingAddress, Vec<Nft>>,
-    pub nft_attributes_loader: Loader<MetadataAddress, Vec<NftAttribute>>,
-    pub nft_creators_loader: Loader<MetadataAddress, Vec<NftCreator>>,
-    pub nft_owner_loader: Loader<MetadataAddress, Option<NftOwner>>,
-    pub storefront_loader: Loader<StorefrontAddress, Option<Storefront>>,
-    pub listing_receipts_loader: Loader<MetadataAddress, Vec<ListingReceipt>>,
-    pub bid_receipts_loader: Loader<MetadataAddress, Vec<BidReceipt>>,
-    pub store_creator_loader: Loader<StoreConfigAddress, Vec<StoreCreator>>,
+    pub auction_house_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
+    pub listing_loader: Loader<PublicKey<Listing>, Option<Listing>>,
+    pub listing_bids_loader: Loader<PublicKey<Listing>, Vec<Bid>>,
+    pub listing_nfts_loader: Loader<PublicKey<Listing>, Vec<Nft>>,
+    pub nft_attributes_loader: Loader<PublicKey<Nft>, Vec<NftAttribute>>,
+    pub nft_creators_loader: Loader<PublicKey<Nft>, Vec<NftCreator>>,
+    pub nft_owner_loader: Loader<PublicKey<Nft>, Option<NftOwner>>,
+    pub storefront_loader: Loader<PublicKey<Storefront>, Option<Storefront>>,
+    pub listing_receipts_loader: Loader<PublicKey<Nft>, Vec<ListingReceipt>>,
+    pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
+    pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
 }
 
 impl juniper::Context for AppContext {}

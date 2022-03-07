@@ -1,15 +1,15 @@
 use objects::storefront::Storefront;
-use strings::StorefrontAddress;
+use scalars::PublicKey;
 use tables::storefronts;
 
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<StorefrontAddress, Option<Storefront>> for Batcher {
+impl TryBatchFn<PublicKey<Storefront>, Option<Storefront>> for Batcher {
     async fn load(
         &mut self,
-        keys: &[StorefrontAddress],
-    ) -> TryBatchMap<StorefrontAddress, Option<Storefront>> {
+        keys: &[PublicKey<Storefront>],
+    ) -> TryBatchMap<PublicKey<Storefront>, Option<Storefront>> {
         let conn = self.db()?;
 
         let columns = (

@@ -7,7 +7,6 @@ pub(self) mod dataloaders;
 pub(self) mod objects;
 mod query_root;
 pub(self) mod scalars;
-pub(self) mod strings;
 
 pub(self) mod prelude {
     pub use std::{collections::HashMap, sync::Arc};
@@ -20,7 +19,7 @@ pub(self) mod prelude {
         graphql_object, graphql_value, FieldError, FieldResult, GraphQLInputObject, GraphQLObject,
     };
 
-    pub(super) use super::{context::AppContext, dataloaders, objects, scalars, strings};
+    pub(super) use super::{context::AppContext, dataloaders, objects, scalars};
 }
 
 pub use context::AppContext;
