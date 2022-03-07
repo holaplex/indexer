@@ -6,6 +6,7 @@ use objects::{
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
     storefront::Storefront,
     wallet::Wallet,
+    auction_house::AuctionHouse,
 };
 use scalars::PublicKey;
 use tables::{metadata_jsons, metadatas, store_config_jsons, storefronts};
@@ -81,10 +82,10 @@ impl QueryRoot {
     fn nfts(
         &self,
         context: &AppContext,
-        #[graphql(description = "Filter on owner address")] owners: Option<Vec<PublicKey>>,
-        #[graphql(description = "Filter on creator address")] creators: Option<Vec<PublicKey>>,
+        #[graphql(description = "Filter on owner address")] owners: Option<Vec<PublicKey<Wallet>>>,
+        #[graphql(description = "Filter on creator address")] creators: Option<Vec<PublicKey<Wallet>>>,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
-        #[graphql(description = "Filter on listed")] listed: Option<Vec<PublicKey>>,
+        #[graphql(description = "Filter on listed")] listed: Option<Vec<PublicKey<AuctionHouse>>>,
     ) -> FieldResult<Vec<Nft>> {
         if owners.is_none() && creators.is_none() && listed.is_none() {
             return Err(FieldError::new(

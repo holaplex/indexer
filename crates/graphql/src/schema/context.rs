@@ -7,6 +7,7 @@ use objects::{
     nft::{Nft, NftAttribute, NftCreator, NftOwner},
     store_creator::StoreCreator,
     storefront::Storefront,
+    marketplace::Marketplace
 };
 use scalars::PublicKey;
 
@@ -18,17 +19,17 @@ pub struct AppContext {
     pub twitter_bearer_token: Arc<String>,
 
     // Data loaders
-    pub auction_house_loader: Loader<PublicKey, Option<AuctionHouse>>,
-    pub listing_loader: Loader<PublicKey, Option<Listing>>,
-    pub listing_bids_loader: Loader<PublicKey, Vec<Bid>>,
-    pub listing_nfts_loader: Loader<PublicKey, Vec<Nft>>,
-    pub nft_attributes_loader: Loader<PublicKey, Vec<NftAttribute>>,
-    pub nft_creators_loader: Loader<PublicKey, Vec<NftCreator>>,
-    pub nft_owner_loader: Loader<PublicKey, Option<NftOwner>>,
-    pub storefront_loader: Loader<PublicKey, Option<Storefront>>,
-    pub listing_receipts_loader: Loader<PublicKey, Vec<ListingReceipt>>,
-    pub bid_receipts_loader: Loader<PublicKey, Vec<BidReceipt>>,
-    pub store_creator_loader: Loader<PublicKey, Vec<StoreCreator>>,
+    pub auction_house_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
+    pub listing_loader: Loader<PublicKey<Listing>, Option<Listing>>,
+    pub listing_bids_loader: Loader<PublicKey<Listing>, Vec<Bid>>,
+    pub listing_nfts_loader: Loader<PublicKey<Listing>, Vec<Nft>>,
+    pub nft_attributes_loader: Loader<PublicKey<Nft>, Vec<NftAttribute>>,
+    pub nft_creators_loader: Loader<PublicKey<Nft>, Vec<NftCreator>>,
+    pub nft_owner_loader: Loader<PublicKey<Nft>, Option<NftOwner>>,
+    pub storefront_loader: Loader<PublicKey<Storefront>, Option<Storefront>>,
+    pub listing_receipts_loader: Loader<PublicKey<Nft>, Vec<ListingReceipt>>,
+    pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
+    pub store_creator_loader: Loader<PublicKey<Marketplace>, Vec<StoreCreator>>,
 }
 
 impl juniper::Context for AppContext {}

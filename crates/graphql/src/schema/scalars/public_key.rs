@@ -1,18 +1,17 @@
 use super::prelude::*;
+use std::marker::PhantomData;
 
+#[repr(transparent)]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-pub struct PublicKey(String);
+pub struct PublicKey<T>(String, PhantomData<T>);
 
 #[graphql_scalar(description = "PublicKey")]
-impl<S> GraphQLScalar for PublicKey
-where
-    S: ScalarValue,
-{
+impl<T, S: ScalarValue> GraphQLScalar for PublicKey<T> {
     fn resolve(&self) -> Value {
         Value::scalar(self.0.to_string())
     }
 
-    fn from_input_value(v: &InputValue) -> Option<PublicKey> {
+    fn from_input_value(v: &InputValue) -> Option<PublicKey<T>> {
         v.as_string_value().and_then(|s| s.parse().ok()).map(Self)
     }
 
@@ -21,46 +20,46 @@ where
     }
 }
 
-impl std::fmt::Display for PublicKey {
+impl<T> std::fmt::Display for PublicKey<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         std::fmt::Display::fmt(&self.0, f)
     }
 }
 
-impl AsRef<str> for PublicKey {
+impl<T> AsRef<str> for PublicKey<T> {
     fn as_ref(&self) -> &str {
         &self.0
     }
 }
 
-impl AsMut<str> for PublicKey {
+impl<T> AsMut<str> for PublicKey<T> {
     fn as_mut(&mut self) -> &mut str {
         &mut self.0
     }
 }
 
-impl<'a> From<std::borrow::Cow<'a, str>> for PublicKey {
+impl<'a, T> From<std::borrow::Cow<'a, str>> for PublicKey<T> {
     fn from(c: std::borrow::Cow<str>) -> Self {
         Self(c.into_owned())
     }
 }
 
-impl From<String> for PublicKey {
+impl<T> From<String> for PublicKey<T> {
     fn from(s: String) -> Self {
         Self(s)
     }
 }
 
-impl From<PublicKey> for String {
-    fn from(s: PublicKey) -> Self {
+impl<T> From<PublicKey<T>> for String {
+    fn from(s: PublicKey<T>) -> Self {
         s.0
     }
 }
 
-impl<T, B> indexer_core::db::serialize::ToSql<T, B> for PublicKey
+impl<T, U, B> indexer_core::db::serialize::ToSql<U, B> for PublicKey<T>
 where
     B: indexer_core::db::Backend,
-    String: indexer_core::db::serialize::ToSql<T, B>,
+    String: indexer_core::db::serialize::ToSql<U, B>,
 {
     fn to_sql<W: std::io::Write>(
         &self,

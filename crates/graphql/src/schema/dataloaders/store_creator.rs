@@ -1,12 +1,12 @@
-use objects::store_creator::StoreCreator;
+use objects::{marketplace::Marketplace, store_creator::StoreCreator};
 use scalars::PublicKey;
 use tables::store_creators;
 
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<PublicKey, Vec<StoreCreator>> for Batcher {
-    async fn load(&mut self, addresses: &[PublicKey]) -> TryBatchMap<PublicKey, Vec<StoreCreator>> {
+impl TryBatchFn<PublicKey<Marketplace>, Vec<StoreCreator>> for Batcher {
+    async fn load(&mut self, addresses: &[PublicKey<Marketplace>]) -> TryBatchMap<PublicKey<Marketplace>, Vec<StoreCreator>> {
         let conn = self.db()?;
 
         let rows: Vec<models::StoreCreator> = store_creators::table

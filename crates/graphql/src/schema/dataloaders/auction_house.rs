@@ -5,11 +5,11 @@ use tables::auction_houses;
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<PublicKey, Option<AuctionHouse>> for Batcher {
+impl TryBatchFn<PublicKey<AuctionHouse>, Option<AuctionHouse>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey],
-    ) -> TryBatchMap<PublicKey, Option<AuctionHouse>> {
+        addresses: &[PublicKey<AuctionHouse>],
+    ) -> TryBatchMap<PublicKey<AuctionHouse>, Option<AuctionHouse>> {
         let conn = self.db()?;
 
         let rows: Vec<models::AuctionHouse> = auction_houses::table
