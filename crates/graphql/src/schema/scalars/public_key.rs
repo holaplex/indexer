@@ -102,6 +102,21 @@ where
     }
 }
 
+impl<T, U, B> indexer_core::db::Queryable<U, B> for PublicKey<T>
+where
+    B: indexer_core::db::Backend,
+    String: indexer_core::db::Queryable<U, B>,
+{
+    type Row = <String as indexer_core::db::Queryable<U, B>>::Row;
+
+    fn build(row: Self::Row) -> Self {
+        Self(
+            <String as indexer_core::db::Queryable<U, B>>::build(row),
+            PhantomData::default(),
+        )
+    }
+}
+
 //// BUG: juniper v0.15 does not support implementing GraphQLScalar on structs
 ////      with generic parameters.  As a result the expansion of this macro has
 ////      been manually included in the code and tweaked to compile, and should
@@ -165,6 +180,25 @@ where
         executor: &::juniper::Executor<Self::Context, S>,
     ) -> ::juniper::ExecutionResult<S> {
         Ok(Value::scalar(self.0.to_string()))
+    }
+}
+#[automatically_derived]
+impl<T, S> ::juniper::GraphQLValueAsync<S> for PublicKey<T>
+where
+    Self: Sync,
+    Self::TypeInfo: Sync,
+    Self::Context: Sync,
+    S: ::juniper::ScalarValue + Send + Sync,
+{
+    fn resolve_async<'a>(
+        &'a self,
+        info: &'a Self::TypeInfo,
+        selection_set: Option<&'a [::juniper::Selection<S>]>,
+        executor: &'a ::juniper::Executor<Self::Context, S>,
+    ) -> ::juniper::BoxFuture<'a, ::juniper::ExecutionResult<S>> {
+        use ::juniper::futures::future;
+        let v = ::juniper::GraphQLValue::resolve(self, info, selection_set, executor);
+        Box::pin(future::ready(v))
     }
 }
 #[automatically_derived]

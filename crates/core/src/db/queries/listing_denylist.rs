@@ -5,10 +5,11 @@ use diesel::{
     dsl::{exists, not, AsExprOf, Filter},
     expression::{exists::Exists, operators::Eq, AsExpression},
     helper_types::not as Not,
+    pg::Pg,
     prelude::*,
     query_builder::{SelectQuery, SelectStatement},
     query_dsl::methods::FilterDsl,
-    sql_types::VarChar,
+    sql_types::{Text, VarChar},
 };
 
 use crate::{
@@ -39,7 +40,7 @@ where
 ///
 /// # Errors
 /// This function fails if the underlying query fails to execute.
-pub fn get_hard_banned(conn: &Connection) -> Result<Vec<String>> {
+pub fn get_hard_banned<T: Queryable<Text, Pg>>(conn: &Connection) -> Result<Vec<T>> {
     FilterDsl::filter(listing_denylist::table, listing_denylist::hard_ban)
         .select(listing_denylist::listing_address)
         .load(conn)

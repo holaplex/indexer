@@ -2,6 +2,7 @@ use indexer_core::db::queries;
 use objects::{
     auction_house::AuctionHouse,
     creator::Creator,
+    denylist::Denylist,
     marketplace::Marketplace,
     nft::Nft,
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
@@ -189,5 +190,9 @@ impl QueryRoot {
             .context("Failed to load store config JSON")?;
 
         Ok(rows.pop().map(Into::into))
+    }
+
+    fn denylist() -> Denylist {
+        Denylist
     }
 }
