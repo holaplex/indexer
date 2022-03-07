@@ -6,7 +6,10 @@ use super::prelude::*;
 
 #[async_trait]
 impl TryBatchFn<PublicKey<Storefront>, Option<Storefront>> for Batcher {
-    async fn load(&mut self, keys: &[PublicKey<Storefront>]) -> TryBatchMap<PublicKey<Storefront>, Option<Storefront>> {
+    async fn load(
+        &mut self,
+        keys: &[PublicKey<Storefront>],
+    ) -> TryBatchMap<PublicKey<Storefront>, Option<Storefront>> {
         let conn = self.db()?;
 
         let columns = (

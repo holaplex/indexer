@@ -6,7 +6,10 @@ use super::prelude::*;
 
 #[async_trait]
 impl TryBatchFn<PublicKey<Nft>, Vec<BidReceipt>> for Batcher {
-    async fn load(&mut self, addresses: &[PublicKey<Nft>]) -> TryBatchMap<PublicKey<Nft>, Vec<BidReceipt>> {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Nft>],
+    ) -> TryBatchMap<PublicKey<Nft>, Vec<BidReceipt>> {
         let conn = self.db()?;
 
         let rows: Vec<models::BidReceipt> = bid_receipts::table

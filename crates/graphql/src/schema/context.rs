@@ -4,10 +4,10 @@ use objects::{
     bid_receipt::BidReceipt,
     listing::{Bid, Listing},
     listing_receipt::ListingReceipt,
+    marketplace::Marketplace,
     nft::{Nft, NftAttribute, NftCreator, NftOwner},
     store_creator::StoreCreator,
     storefront::Storefront,
-    marketplace::Marketplace
 };
 use scalars::PublicKey;
 
