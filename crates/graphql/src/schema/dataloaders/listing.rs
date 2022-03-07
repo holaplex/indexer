@@ -2,7 +2,7 @@ use objects::{
     listing::{Bid, Listing, ListingRow},
     nft::Nft,
 };
-use strings::ListingAddress;
+use scalars::PublicKey;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, bids, listing_metadatas, metadata_jsons,
     metadatas,
@@ -11,11 +11,8 @@ use tables::{
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<ListingAddress, Option<Listing>> for Batcher {
-    async fn load(
-        &mut self,
-        keys: &[ListingAddress],
-    ) -> TryBatchMap<ListingAddress, Option<Listing>> {
+impl TryBatchFn<PublicKey, Option<Listing>> for Batcher {
+    async fn load(&mut self, keys: &[PublicKey]) -> TryBatchMap<PublicKey, Option<Listing>> {
         let now = Local::now().naive_utc();
         let conn = self.db()?;
 
@@ -46,8 +43,8 @@ impl TryBatchFn<ListingAddress, Option<Listing>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<ListingAddress, Vec<Bid>> for Batcher {
-    async fn load(&mut self, keys: &[ListingAddress]) -> TryBatchMap<ListingAddress, Vec<Bid>> {
+impl TryBatchFn<PublicKey, Vec<Bid>> for Batcher {
+    async fn load(&mut self, keys: &[PublicKey]) -> TryBatchMap<PublicKey, Vec<Bid>> {
         let conn = self.db()?;
 
         let rows: Vec<models::Bid> = bids::table
@@ -64,8 +61,8 @@ impl TryBatchFn<ListingAddress, Vec<Bid>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<ListingAddress, Vec<Nft>> for Batcher {
-    async fn load(&mut self, keys: &[ListingAddress]) -> TryBatchMap<ListingAddress, Vec<Nft>> {
+impl TryBatchFn<PublicKey, Vec<Nft>> for Batcher {
+    async fn load(&mut self, keys: &[PublicKey]) -> TryBatchMap<PublicKey, Vec<Nft>> {
         let conn = self.db()?;
 
         let rows: Vec<(String, models::Nft)> = listing_metadatas::table

@@ -8,9 +8,7 @@ use objects::{
     store_creator::StoreCreator,
     storefront::Storefront,
 };
-use strings::{
-    AuctionHouseAddress, ListingAddress, MetadataAddress, StoreConfigAddress, StorefrontAddress,
-};
+use scalars::PublicKey;
 
 use super::prelude::*;
 
@@ -20,17 +18,17 @@ pub struct AppContext {
     pub twitter_bearer_token: Arc<String>,
 
     // Data loaders
-    pub auction_house_loader: Loader<AuctionHouseAddress, Option<AuctionHouse>>,
-    pub listing_loader: Loader<ListingAddress, Option<Listing>>,
-    pub listing_bids_loader: Loader<ListingAddress, Vec<Bid>>,
-    pub listing_nfts_loader: Loader<ListingAddress, Vec<Nft>>,
-    pub nft_attributes_loader: Loader<MetadataAddress, Vec<NftAttribute>>,
-    pub nft_creators_loader: Loader<MetadataAddress, Vec<NftCreator>>,
-    pub nft_owner_loader: Loader<MetadataAddress, Option<NftOwner>>,
-    pub storefront_loader: Loader<StorefrontAddress, Option<Storefront>>,
-    pub listing_receipts_loader: Loader<MetadataAddress, Vec<ListingReceipt>>,
-    pub bid_receipts_loader: Loader<MetadataAddress, Vec<BidReceipt>>,
-    pub store_creator_loader: Loader<StoreConfigAddress, Vec<StoreCreator>>,
+    pub auction_house_loader: Loader<PublicKey, Option<AuctionHouse>>,
+    pub listing_loader: Loader<PublicKey, Option<Listing>>,
+    pub listing_bids_loader: Loader<PublicKey, Vec<Bid>>,
+    pub listing_nfts_loader: Loader<PublicKey, Vec<Nft>>,
+    pub nft_attributes_loader: Loader<PublicKey, Vec<NftAttribute>>,
+    pub nft_creators_loader: Loader<PublicKey, Vec<NftCreator>>,
+    pub nft_owner_loader: Loader<PublicKey, Option<NftOwner>>,
+    pub storefront_loader: Loader<PublicKey, Option<Storefront>>,
+    pub listing_receipts_loader: Loader<PublicKey, Vec<ListingReceipt>>,
+    pub bid_receipts_loader: Loader<PublicKey, Vec<BidReceipt>>,
+    pub store_creator_loader: Loader<PublicKey, Vec<StoreCreator>>,
 }
 
 impl juniper::Context for AppContext {}

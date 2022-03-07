@@ -1,15 +1,12 @@
 use objects::nft::{NftAttribute, NftCreator, NftOwner};
-use strings::MetadataAddress;
+use scalars::PublicKey;
 use tables::{attributes, metadata_creators, token_accounts};
 
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<MetadataAddress, Vec<NftAttribute>> for Batcher {
-    async fn load(
-        &mut self,
-        addresses: &[MetadataAddress],
-    ) -> TryBatchMap<MetadataAddress, Vec<NftAttribute>> {
+impl TryBatchFn<PublicKey, Vec<NftAttribute>> for Batcher {
+    async fn load(&mut self, addresses: &[PublicKey]) -> TryBatchMap<PublicKey, Vec<NftAttribute>> {
         let conn = self.db()?;
 
         let rows: Vec<models::MetadataAttribute> = attributes::table
@@ -25,11 +22,8 @@ impl TryBatchFn<MetadataAddress, Vec<NftAttribute>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<MetadataAddress, Vec<NftCreator>> for Batcher {
-    async fn load(
-        &mut self,
-        addresses: &[MetadataAddress],
-    ) -> TryBatchMap<MetadataAddress, Vec<NftCreator>> {
+impl TryBatchFn<PublicKey, Vec<NftCreator>> for Batcher {
+    async fn load(&mut self, addresses: &[PublicKey]) -> TryBatchMap<PublicKey, Vec<NftCreator>> {
         let conn = self.db()?;
 
         let rows: Vec<models::MetadataCreator> = metadata_creators::table
@@ -45,11 +39,11 @@ impl TryBatchFn<MetadataAddress, Vec<NftCreator>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<MetadataAddress, Option<NftOwner>> for Batcher {
+impl TryBatchFn<PublicKey, Option<NftOwner>> for Batcher {
     async fn load(
         &mut self,
-        mint_addresses: &[MetadataAddress],
-    ) -> TryBatchMap<MetadataAddress, Option<NftOwner>> {
+        mint_addresses: &[PublicKey],
+    ) -> TryBatchMap<PublicKey, Option<NftOwner>> {
         let conn = self.db()?;
 
         let rows: Vec<models::TokenAccount> = token_accounts::table

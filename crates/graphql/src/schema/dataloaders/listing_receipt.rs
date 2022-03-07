@@ -1,15 +1,15 @@
 use objects::listing_receipt::ListingReceipt;
-use strings::MetadataAddress;
+use scalars::PublicKey;
 use tables::{listing_receipts, metadatas, token_accounts};
 
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<MetadataAddress, Vec<ListingReceipt>> for Batcher {
+impl TryBatchFn<PublicKey, Vec<ListingReceipt>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[MetadataAddress],
-    ) -> TryBatchMap<MetadataAddress, Vec<ListingReceipt>> {
+        addresses: &[PublicKey],
+    ) -> TryBatchMap<PublicKey, Vec<ListingReceipt>> {
         let conn = self.db()?;
 
         let rows: Vec<models::ListingReceipt> = listing_receipts::table
