@@ -2806,6 +2806,7 @@ dependencies = [
  "smol",
  "solana-accountsdb-plugin-interface",
  "solana-logger",
+ "solana-metrics",
  "solana-program",
  "solana-sdk",
  "spl-token",

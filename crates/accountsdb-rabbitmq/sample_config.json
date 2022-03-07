@@ -6,6 +6,9 @@
   "jobs": {
     "limit": 16
   },
+  "metrics": {
+   "config": "host="
+  },
   "accounts": {
     "owners": [
       "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",

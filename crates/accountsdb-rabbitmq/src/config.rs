@@ -11,8 +11,10 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct Config {
     amqp: Amqp,
-
     jobs: Jobs,
+
+    #[serde(default)]
+    metrics: Metrics,
 
     #[serde(default)]
     accounts: Accounts,
@@ -39,6 +41,12 @@ pub struct Jobs {
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct Metrics {
+    pub config: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Accounts {
     #[serde(default)]
     pub owners: HashSet<String>,
@@ -61,10 +69,11 @@ impl Config {
         Ok(cfg)
     }
 
-    pub fn into_parts(self) -> Result<(Amqp, Jobs, AccountSelector, InstructionSelector)> {
+    pub fn into_parts(self) -> Result<(Amqp, Jobs, Metrics, AccountSelector, InstructionSelector)> {
         let Self {
             amqp,
             jobs,
+            metrics,
             accounts,
             instruction_programs,
         } = self;
@@ -74,6 +83,6 @@ impl Config {
         let ins = InstructionSelector::from_config(instruction_programs)
             .context("Failed to create instruction selector")?;
 
-        Ok((amqp, jobs, acct, ins))
+        Ok((amqp, jobs, metrics, acct, ins))
     }
 }
