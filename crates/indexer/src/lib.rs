@@ -26,7 +26,7 @@ pub mod prelude {
 }
 
 mod runtime {
-    use std::{fmt::Debug, future::Future};
+    use std::{fmt::Debug, future::Future, sync::Arc};
 
     use indexer_core::{
         clap,
@@ -34,6 +34,7 @@ mod runtime {
         db,
     };
     use indexer_rabbitmq::lapin;
+    use tokio::sync::Semaphore;
     use tokio_amqp::LapinTokioExt;
 
     use super::{db::Pool, prelude::*};
@@ -48,8 +49,17 @@ mod runtime {
         extra: T,
     }
 
+    /// Common parameters for all indexers
+    #[allow(missing_copy_implementations)]
+    #[derive(Debug)]
+    pub struct Params {
+        concurrency: usize,
+    }
+
     /// Entrypoint for `metaplex-indexer` binaries
-    pub fn run<T: Debug + Args, F: Future<Output = Result<()>>>(f: impl FnOnce(T, Pool) -> F) -> ! {
+    pub fn run<T: Debug + Args, F: Future<Output = Result<()>>>(
+        f: impl FnOnce(T, Params, Pool) -> F,
+    ) -> ! {
         indexer_core::run(|| {
             let opts = Opts::parse();
 
@@ -76,7 +86,9 @@ mod runtime {
                     .context("Failed to initialize async runtime")?
             };
 
-            rt.block_on(f(extra, db))
+            let concurrency = thread_count.unwrap_or_else(num_cpus::get);
+
+            rt.block_on(f(extra, Params { concurrency }, db))
         })
     }
 
@@ -98,28 +110,80 @@ mod runtime {
     /// # Errors
     /// This function fails if a message cannot be received, but _does not_ fail
     /// if a received message fails to process.
+    ///
+    /// # Panics
+    /// This function will panic if the internal scheduler enters a deadlock
+    /// state.
     pub async fn amqp_consume<
         M: Debug + for<'a> serde::Deserialize<'a>,
         Q: indexer_rabbitmq::QueueType<M>,
-        F: Future<Output = Result<()>>,
+        F: Send + Future<Output = Result<()>> + 'static,
     >(
+        params: &Params,
         mut consumer: indexer_rabbitmq::consumer::Consumer<M, Q>,
         process: impl Fn(M) -> F,
     ) -> Result<()> {
-        while let Some(msg) = consumer
-            .read()
-            .await
-            .context("Failed to read AMQP message")?
-        {
-            trace!("{:?}", msg);
+        use futures_util::StreamExt;
 
-            match process(msg).await {
-                Ok(()) => (),
-                Err(e) => error!("Failed to process message: {:?}", e),
+        type JobResult = Result<Result<()>, tokio::task::JoinError>;
+
+        fn finish_job(res: JobResult) {
+            match res {
+                Ok(Ok(())) => (),
+                Ok(Err(e)) => error!("Failed to process message: {:?}", e),
+                Err(e) => error!("Failed to join worker: {:?}", e),
             }
         }
 
-        warn!("AMQP server hung up!");
+        let Params { concurrency } = *params;
+        let mut futures = futures_util::stream::FuturesUnordered::new();
+        let sem = Arc::new(Semaphore::new(concurrency));
+
+        loop {
+            enum Message {
+                Permit(Result<tokio::sync::OwnedSemaphorePermit, tokio::sync::AcquireError>),
+                Handle(JobResult),
+            }
+
+            let msg = tokio::select! {
+                p = sem.clone().acquire_owned() => Message::Permit(p),
+                Some(h) = futures.next() => Message::Handle(h),
+            };
+
+            match msg {
+                Message::Permit(p) => {
+                    if let Some(m) = consumer
+                        .read()
+                        .await
+                        .context("Failed to read AMQP message")?
+                    {
+                        trace!("{:?}", m);
+
+                        let process = process(m);
+
+                        futures.push(tokio::task::spawn(async move {
+                            let res = process.await;
+
+                            std::mem::drop(p); // Hang on to the permit until here
+
+                            res
+                        }));
+                    } else {
+                        warn!("AMQP server hung up!");
+                        break;
+                    }
+                },
+                Message::Handle(h) => finish_job(h),
+            }
+        }
+
+        if !futures.is_empty() {
+            info!("Waiting for additional jobs to finish...");
+        }
+
+        while let Some(h) = futures.next().await {
+            finish_job(h);
+        }
 
         Ok(())
     }

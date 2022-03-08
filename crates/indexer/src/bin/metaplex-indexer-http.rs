@@ -32,21 +32,22 @@ struct Args {
 }
 
 fn main() {
-    metaplex_indexer::run(|args: Args, db| async move {
+    metaplex_indexer::run(|args: Args, params, db| async move {
         use http_indexer::{EntityId, MetadataJson, StoreConfig};
 
         // Note: each match arm will increase the compiled size of this
         //       binary, it may be advantageous to split this into separate
         //       binaries at some point.
         match args.entity {
-            EntityId::MetadataJson => run::<MetadataJson>(args, db).await,
-            EntityId::StoreConfig => run::<StoreConfig>(args, db).await,
+            EntityId::MetadataJson => run::<MetadataJson>(args, params, db).await,
+            EntityId::StoreConfig => run::<StoreConfig>(args, params, db).await,
         }
     });
 }
 
-async fn run<E: metaplex_indexer::http::Process>(
+async fn run<E: Send + metaplex_indexer::http::Process + 'static>(
     args: Args,
+    params: metaplex_indexer::Params,
     db: metaplex_indexer::db::Pool,
 ) -> Result<()> {
     let Args {
@@ -75,5 +76,9 @@ async fn run<E: metaplex_indexer::http::Process>(
     .await
     .context("Failed to create queue consumer")?;
 
-    metaplex_indexer::amqp_consume(consumer, |m| m.process(&client)).await
+    metaplex_indexer::amqp_consume(&params, consumer, move |m| {
+        let client = client.clone();
+        async move { m.process(&client).await }
+    })
+    .await
 }

@@ -31,6 +31,7 @@ fn main() {
              startup,
              queue_suffix,
          },
+         params,
          db| async move {
             if cfg!(debug_assertions) && queue_suffix.is_none() {
                 bail!("Debug builds must specify a RabbitMQ queue suffix!");
@@ -55,8 +56,9 @@ fn main() {
             .await
             .context("Failed to create queue consumer")?;
 
-            metaplex_indexer::amqp_consume(consumer, |m| {
-                metaplex_indexer::accountsdb::process_message(m, &*client)
+            metaplex_indexer::amqp_consume(&params, consumer, move |m| {
+                let client = client.clone();
+                async move { metaplex_indexer::accountsdb::process_message(m, &*client).await }
             })
             .await
         },

@@ -9,22 +9,28 @@ use super::{
 };
 use crate::{prelude::*, util};
 
-pub(crate) async fn process(client: &Client, mut update: AccountUpdate) -> Result<()> {
-    let mut zero_lamports = 0_u64;
-    let owner = pubkeys::auction();
-    let account_info =
-        util::account_data_as_info(&update.key, &mut update.data, &owner, &mut zero_lamports);
+pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
+    let accounts = util::account_data_as_info(
+        update.key,
+        update.data,
+        pubkeys::auction(),
+        0,
+        |account_info| {
+            let auction = if account_info.data_len() >= BASE_AUCTION_DATA_SIZE {
+                AuctionData::from_account_info(&account_info).map_err(Into::into)
+            } else {
+                // TODO: this is a bug in the Metaplex code
+                Err(anyhow!("Data length shorter than BASE_AUCTION_DATA_SIZE"))
+            };
+            let ext = AuctionDataExtended::from_account_info(&account_info);
+            let bidder = BidderMetadata::from_account_info(&account_info);
 
-    let auction = if account_info.data_len() >= BASE_AUCTION_DATA_SIZE {
-        AuctionData::from_account_info(&account_info).map_err(Into::into)
-    } else {
-        // TODO: this is a bug in the Metaplex code
-        Err(anyhow!("Data length shorter than BASE_AUCTION_DATA_SIZE"))
-    };
-    let ext = AuctionDataExtended::from_account_info(&account_info);
-    let bidder = BidderMetadata::from_account_info(&account_info);
+            (auction, ext, bidder)
+        },
+    )
+    .await?;
 
-    match (auction, ext, bidder) {
+    match accounts {
         (Ok(a), Err(_), Err(_)) => auction_data::process(client, update.key, a).await,
         (Err(_), Ok(e), Err(_)) => auction_data::process_extended(client, update.key, e).await,
         (Err(_), Err(_), Ok(b)) => bidder_metadata::process(client, update.key, b).await,
