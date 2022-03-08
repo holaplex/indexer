@@ -1,13 +1,20 @@
 use indexer_core::db::queries;
 use objects::{
+    auction_house::AuctionHouse,
     creator::Creator,
+    denylist::Denylist,
+    listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
     nft::Nft,
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
-    storefront::Storefront,
+    storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
-use tables::{metadata_jsons, metadatas, store_config_jsons, storefronts};
+use scalars::PublicKey;
+use tables::{
+    auction_caches, auction_datas, auction_datas_ext, metadata_jsons, metadatas,
+    store_config_jsons, storefronts,
+};
 
 use super::prelude::*;
 
@@ -20,7 +27,7 @@ struct AttributeFilter {
     values: Vec<String>,
 }
 
-impl From<AttributeFilter> for queries::metadatas::MetadataFilterAttributes {
+impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
     fn from(AttributeFilter { trait_type, values }: AttributeFilter) -> Self {
         Self { trait_type, values }
     }
@@ -80,25 +87,30 @@ impl QueryRoot {
     fn nfts(
         &self,
         context: &AppContext,
-        #[graphql(description = "Filter on owner address")] owners: Option<Vec<String>>,
-        #[graphql(description = "Filter on creator address")] creators: Option<Vec<String>>,
+        #[graphql(description = "Filter on owner address")] owners: Option<Vec<PublicKey<Wallet>>>,
+        #[graphql(description = "Filter on creator address")] creators: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
+        #[graphql(description = "Filter on listed")] listed: Option<Vec<PublicKey<AuctionHouse>>>,
     ) -> FieldResult<Vec<Nft>> {
-        if owners.is_none() && creators.is_none() {
+        if owners.is_none() && creators.is_none() && listed.is_none() {
             return Err(FieldError::new(
                 "No filter provided! Please provide at least one of the filters",
-                graphql_value!({ "Filters": "owners: Vec<String>, creators: Vec<String>" }),
+                graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, listed: Vec<PublicKey>" }),
             ));
         }
 
         let conn = context.db_pool.get().context("failed to connect to db")?;
 
-        let nfts = queries::metadatas::load_filtered(
-            &conn,
-            owners,
-            creators,
-            attributes.map(|a| a.into_iter().map(Into::into).collect()),
-        )?;
+        let query_options = queries::metadatas::ListQueryOptions {
+            owners: owners.map(|a| a.into_iter().map(Into::into).collect()),
+            creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
+            attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
+            listed: listed.map(|a| a.into_iter().map(Into::into).collect()),
+        };
+
+        let nfts = queries::metadatas::list(&conn, query_options)?;
 
         Ok(nfts.into_iter().map(Into::into).collect())
     }
@@ -109,6 +121,36 @@ impl QueryRoot {
         #[graphql(description = "Address of NFT")] address: String,
     ) -> Option<Wallet> {
         Some(Wallet { address })
+    }
+
+    fn listings(&self, context: &AppContext) -> FieldResult<Vec<Listing>> {
+        let now = Local::now().naive_utc();
+        let conn = context.db_pool.get()?;
+
+        let rows: Vec<ListingRow> = auction_caches::table
+            .inner_join(
+                auction_datas::table.on(auction_caches::auction_data.eq(auction_datas::address)),
+            )
+            .inner_join(
+                auction_datas_ext::table
+                    .on(auction_caches::auction_ext.eq(auction_datas_ext::address)),
+            )
+            .inner_join(
+                storefronts::table.on(storefronts::address.eq(auction_caches::store_address)),
+            )
+            .filter(
+                queries::store_denylist::owner_address_ok(storefronts::owner_address).and(
+                    queries::listing_denylist::listing_address_ok(auction_datas::address),
+                ),
+            )
+            .select(ListingColumns::default())
+            .load(&conn)
+            .context("Failed to load listings")?;
+
+        rows.into_iter()
+            .map(|l| Listing::new(l, now))
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     fn nft(
@@ -138,28 +180,29 @@ impl QueryRoot {
         Ok(rows.pop().map(Into::into))
     }
 
+    fn storefronts(&self, context: &AppContext) -> FieldResult<Vec<Storefront>> {
+        let conn = context.db_pool.get()?;
+        let rows: Vec<models::Storefront> = storefronts::table
+            .filter(queries::store_denylist::owner_address_ok(
+                storefronts::owner_address,
+            ))
+            .select(StorefrontColumns::default())
+            .load(&conn)
+            .context("Failed to load storefront")?;
+
+        Ok(rows.into_iter().map(Into::into).collect())
+    }
+
     #[graphql(description = "A storefront")]
     fn storefront(
         &self,
         context: &AppContext,
         subdomain: String,
     ) -> FieldResult<Option<Storefront>> {
-        let columns = (
-            storefronts::owner_address,
-            storefronts::subdomain,
-            storefronts::title,
-            storefronts::description,
-            storefronts::favicon_url,
-            storefronts::logo_url,
-            storefronts::updated_at,
-            storefronts::banner_url,
-            storefronts::address,
-        );
-
         let conn = context.db_pool.get()?;
         let mut rows: Vec<models::Storefront> = storefronts::table
             .filter(storefronts::subdomain.eq(subdomain))
-            .select(columns)
+            .select(StorefrontColumns::default())
             .limit(1)
             .load(&conn)
             .context("Failed to load storefront")?;
@@ -182,5 +225,9 @@ impl QueryRoot {
             .context("Failed to load store config JSON")?;
 
         Ok(rows.pop().map(Into::into))
+    }
+
+    fn denylist() -> Denylist {
+        Denylist
     }
 }

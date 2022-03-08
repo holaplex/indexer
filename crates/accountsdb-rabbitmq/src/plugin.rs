@@ -1,4 +1,9 @@
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    env,
+    sync::atomic::{AtomicUsize, Ordering},
+    time::{Duration, Instant},
+};
 
 use indexer_rabbitmq::{
     accountsdb::{AccountUpdate, Message, Producer, QueueType},
@@ -6,6 +11,7 @@ use indexer_rabbitmq::{
     prelude::*,
 };
 use lapinou::LapinSmolExt;
+use smol::lock::Mutex;
 use solana_program::{
     instruction::CompiledInstruction, message::SanitizedMessage, program_pack::Pack,
 };
@@ -36,12 +42,57 @@ fn custom_err(
     AccountsDbPluginError::Custom(e.into())
 }
 
+#[derive(Debug)]
+struct Metrics {
+    last_send: Mutex<Instant>,
+    last_recv: Mutex<Instant>,
+    send_count: AtomicUsize,
+    recv_count: AtomicUsize,
+}
+
+impl Metrics {
+    async fn try_submit(last: &Mutex<Instant>, f: impl FnOnce()) {
+        let now = Instant::now();
+        let mut time = last.lock().await;
+
+        if now - *time >= Duration::from_secs(30) {
+            *time = now;
+            f();
+        }
+    }
+
+    async fn log_send(&self) {
+        let n = self.send_count.fetch_add(1, Ordering::SeqCst) + 1;
+
+        Self::try_submit(&self.last_send, || {
+            solana_metrics::datapoint_info!(
+                "accountsdb_rabbitmq",
+                ("msgs_sent", i64::try_from(n).unwrap(), i64),
+            );
+        })
+        .await;
+    }
+
+    async fn log_recv(&self) {
+        let n = self.recv_count.fetch_add(1, Ordering::SeqCst) + 1;
+
+        Self::try_submit(&self.last_recv, || {
+            solana_metrics::datapoint_info!(
+                "accountsdb_rabbitmq",
+                ("msgs_sent", i64::try_from(n).unwrap(), i64),
+            );
+        })
+        .await;
+    }
+}
+
 /// An instance of the plugin
 #[derive(Debug, Default)]
 pub struct AccountsDbPluginRabbitMq {
     producer: Option<Sender<Producer>>,
     acct_sel: Option<AccountSelector>,
     ins_sel: Option<InstructionSelector>,
+    metrics: Option<Metrics>,
     token_addresses: HashSet<Pubkey>,
 }
 
@@ -81,16 +132,33 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
     fn on_load(&mut self, cfg: &str) -> Result<()> {
         solana_logger::setup_with_default("info");
 
-        let (amqp, jobs, acct, ins) = Config::read(cfg)
+        let (amqp, jobs, metrics, acct, ins) = Config::read(cfg)
             .and_then(Config::into_parts)
             .map_err(custom_err)?;
 
         let startup_type = acct.startup();
 
+        if let Some(config) = metrics.config {
+            const VAR: &str = "SOLANA_METRICS_CONFIG";
+
+            if env::var_os(VAR).is_some() {
+                warn!("Overriding existing value for {}", VAR);
+            }
+
+            env::set_var(VAR, config);
+        }
+
         self.acct_sel = Some(acct);
         self.ins_sel = Some(ins);
 
         self.token_addresses = Self::load_token_reg()?;
+
+        self.metrics = Some(Metrics {
+            last_send: Mutex::new(Instant::now()),
+            last_recv: Mutex::new(Instant::now()),
+            send_count: AtomicUsize::new(0),
+            recv_count: AtomicUsize::new(0),
+        });
 
         smol::block_on(async {
             let conn =
@@ -123,6 +191,10 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
         }
 
         smol::block_on(async {
+            let metrics = self.metrics.as_ref().ok_or_else(uninit)?;
+
+            metrics.log_recv().await;
+
             match account {
                 ReplicaAccountInfoVersions::V0_0_1(acct) => {
                     if !self
@@ -181,6 +253,8 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
                             .map_err(Into::into)
                         })
                         .await;
+
+                    metrics.log_send().await;
                 },
             }
 

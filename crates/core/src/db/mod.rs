@@ -8,20 +8,14 @@ mod schema;
 pub mod tables {
     //! Diesel schema DSLs
 
-    pub use super::schema::{
-        attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
-        bids, editions, files, listing_metadatas, listing_receipts, master_editions,
-        metadata_collections, metadata_creators, metadata_jsons, metadatas, purchase_receipts,
-        store_config_jsons, store_configs, store_creators, store_denylist, storefronts, stores,
-        token_accounts, whitelisted_creators,
-    };
+    pub use super::schema::*;
 }
 
 use std::env;
 
 pub use diesel::{
     backend::Backend, insert_into, pg::upsert::excluded, query_dsl, result::Error, select,
-    serialize, sql_types, update,
+    serialize, sql_types, update, Queryable,
 };
 use diesel::{pg, r2d2};
 pub use diesel_full_text_search::{

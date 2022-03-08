@@ -24,11 +24,11 @@ struct Args {
 
     /// A valid base URL to use when fetching IPFS links
     #[clap(long, env)]
-    ipfs_cdn: Option<String>,
+    ipfs_cdn: String,
 
     /// A valid base URL to use when fetching Arweave links
     #[clap(long, env)]
-    arweave_cdn: Option<String>,
+    arweave_cdn: String,
 }
 
 fn main() {
@@ -61,12 +61,8 @@ async fn run<E: metaplex_indexer::http::Process>(
     let conn = metaplex_indexer::amqp_connect(amqp_url).await?;
     let client = Client::new_rc(
         db,
-        ipfs_cdn
-            .ok_or_else(|| anyhow!("Missing IPFS CDN"))?
-            .parse()
-            .context("Failed to parse IPFS CDN URL")?,
+        ipfs_cdn.parse().context("Failed to parse IPFS CDN URL")?,
         arweave_cdn
-            .ok_or_else(|| anyhow!("Missing Arweave CDN"))?
             .parse()
             .context("Failed to parse Arweave CDN URL")?,
     )

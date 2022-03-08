@@ -19,7 +19,7 @@ actix-web = "4.0.0-beta.21"
 async-trait = "0.1"
 dataloader = "0.14.0"
 reqwest = { version = "0.11.6", features =["json"] }
-juniper = "0.15"
+juniper = "0.15.9"
 percent-encoding = "2.1.0"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.70"

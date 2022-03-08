@@ -4,57 +4,79 @@ use diesel::{pg::expression::dsl::any, prelude::*};
 use crate::{
     db::{
         models::Nft,
-        tables::{attributes, metadata_creators, metadata_jsons, metadatas, token_accounts},
+        tables::{
+            attributes, listing_receipts, metadata_creators, metadata_jsons, metadatas,
+            token_accounts,
+        },
         Connection,
     },
     error::prelude::*,
 };
 /// Format for incoming filters on attributes
 #[derive(Debug)]
-pub struct MetadataFilterAttributes {
+pub struct AttributeFilter {
     /// name of trait
     pub trait_type: String,
     /// array of trait values
     pub values: Vec<String>,
 }
 
+/// List query options
+#[derive(Debug)]
+pub struct ListQueryOptions {
+    /// nft owners
+    pub owners: Option<Vec<String>>,
+    /// nft creators
+    pub creators: Option<Vec<String>>,
+    /// nft attributes
+    pub attributes: Option<Vec<AttributeFilter>>,
+    /// nft listed with auction house
+    pub listed: Option<Vec<String>>,
+}
+
 /// Handles queries for NFTs
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
-pub fn load_filtered(
+pub fn list(
     conn: &Connection,
-    owners: Option<Vec<String>>,
-    creators: Option<Vec<String>>,
-    attributes: Option<Vec<MetadataFilterAttributes>>,
+    ListQueryOptions {
+        owners,
+        creators,
+        attributes,
+        listed,
+    }: ListQueryOptions,
 ) -> Result<Vec<Nft>> {
     let mut query = metadatas::table
-        .left_join(
+        .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
         )
-        .left_join(
+        .inner_join(
             metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
         )
-        .left_join(
+        .inner_join(
             token_accounts::table.on(metadatas::mint_address.eq(token_accounts::mint_address)),
+        )
+        .left_outer_join(
+            listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)),
         )
         .into_boxed();
 
     if let Some(attributes) = attributes {
-        query = attributes.into_iter().fold(
-            query,
-            |acc, MetadataFilterAttributes { trait_type, values }| {
-                let sub = attributes::table
-                    .select(attributes::metadata_address)
-                    .filter(
-                        attributes::trait_type
-                            .eq(trait_type)
-                            .and(attributes::value.eq(any(values))),
-                    );
+        query =
+            attributes
+                .into_iter()
+                .fold(query, |acc, AttributeFilter { trait_type, values }| {
+                    let sub = attributes::table
+                        .select(attributes::metadata_address)
+                        .filter(
+                            attributes::trait_type
+                                .eq(trait_type)
+                                .and(attributes::value.eq(any(values))),
+                        );
 
-                acc.filter(metadatas::address.eq(any(sub)))
-            },
-        );
+                    acc.filter(metadatas::address.eq(any(sub)))
+                });
     }
 
     if let Some(creators) = creators {
@@ -67,6 +89,14 @@ pub fn load_filtered(
             .filter(token_accounts::owner_address.eq(any(owners)));
     }
 
+    if let Some(listed) = listed {
+        query = query
+            .filter(listing_receipts::auction_house.eq(any(listed)))
+            .filter(listing_receipts::purchase_receipt.is_null())
+            .filter(listing_receipts::canceled_at.is_null())
+            .filter(token_accounts::amount.eq(1));
+    }
+
     let rows: Vec<Nft> = query
         .select((
             metadatas::address,
@@ -77,6 +107,8 @@ pub fn load_filtered(
             metadata_jsons::description,
             metadata_jsons::image,
         ))
+        .distinct()
+        .order_by(metadatas::name.desc())
         .load(conn)
         .context("failed to load nft(s)")?;
 

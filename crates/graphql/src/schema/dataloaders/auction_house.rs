@@ -1,15 +1,15 @@
 use objects::auction_house::AuctionHouse;
-use strings::AuctionHouseAddress;
+use scalars::PublicKey;
 use tables::auction_houses;
 
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<AuctionHouseAddress, Option<AuctionHouse>> for Batcher {
+impl TryBatchFn<PublicKey<AuctionHouse>, Option<AuctionHouse>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[AuctionHouseAddress],
-    ) -> TryBatchMap<AuctionHouseAddress, Option<AuctionHouse>> {
+        addresses: &[PublicKey<AuctionHouse>],
+    ) -> TryBatchMap<PublicKey<AuctionHouse>, Option<AuctionHouse>> {
         let conn = self.db()?;
 
         let rows: Vec<models::AuctionHouse> = auction_houses::table

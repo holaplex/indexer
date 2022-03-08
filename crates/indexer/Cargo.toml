@@ -34,6 +34,10 @@ required-features = ["accountsdb"]
 name = "metaplex-indexer-http"
 required-features = ["http"]
 
+[[bin]]
+name = "metaplex-indexer-legacy-storefronts"
+required-features = ["http"]
+
 [dependencies]
 async-trait = "0.1.52"
 serde = { version = "1.0.130", features = ["derive"] }

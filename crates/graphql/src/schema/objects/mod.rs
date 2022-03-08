@@ -1,6 +1,7 @@
 pub mod auction_house;
 pub mod bid_receipt;
 pub mod creator;
+pub mod denylist;
 pub mod listing;
 pub mod listing_receipt;
 pub mod marketplace;

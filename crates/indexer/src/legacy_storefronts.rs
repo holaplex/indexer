@@ -1,4 +1,6 @@
-use std::{env, sync::Arc};
+//! Support types for v1 storefront indexing.
+
+use std::sync::Arc;
 
 use indexer_core::{
     db::{insert_into, models::Storefront, tables::storefronts, PooledConnection},
@@ -9,7 +11,7 @@ use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{prelude::*, Client};
+use crate::{db::Pool, prelude::*};
 
 #[derive(Serialize)]
 struct Query {
@@ -112,7 +114,7 @@ fn process_tags(
     mut tags: HashMap<String, String>,
     updated_at: Option<NaiveDateTime>,
     db: &PooledConnection,
-    known_pubkeys: Arc<DashSet<Pubkey>>,
+    known_pubkeys: impl AsRef<DashSet<Pubkey>>,
 ) -> Result<()> {
     let owner = Pubkey::try_from(
         tags.remove("solana:pubkey")
@@ -121,7 +123,7 @@ fn process_tags(
     )
     .context("Failed to parse owner pubkey")?;
 
-    if known_pubkeys.insert(owner) {
+    if known_pubkeys.as_ref().insert(owner) {
         let subdomain = tags
             .remove("holaplex:metadata:subdomain")
             .ok_or_else(|| anyhow!("Missing storefront subdomain"))?;
@@ -155,14 +157,11 @@ fn process_tags(
 
         insert_into(storefronts::table)
             .values(&row)
-            .on_conflict(storefronts::owner_address)
+            .on_conflict(storefronts::address)
             .do_update()
             .set(&row)
             .execute(db)
             .context("Failed to insert storefront")?;
-
-        // TODO
-        // handle.push(Job::StoreOwner(owner));
     } else {
         // This isn't terribly useful on its own as a trace log
         // trace!("Skipping duplicate owner {:?}", owner);
@@ -171,15 +170,15 @@ fn process_tags(
     Ok(())
 }
 
-async fn run(client: &Client) -> Result<()> {
+/// Scan Arweave for a list of v1 Holaplex storefronts
+///
+/// # Errors
+/// This function fails if
+pub async fn run(db: &Pool, mut url: Url) -> Result<()> {
+    url.set_path("/graphql");
+    let url = url;
+
     let http_client = reqwest::Client::new();
-    let url = env::var("ARWEAVE_URL")
-        .context("Couldn't get Arweave URL")
-        .and_then(|s| Url::parse(&s).context("Couldn't parse Arweave URL"))
-        .map(|mut u| {
-            u.set_path("/graphql");
-            u
-        })?;
     let mut after = String::new();
     let known_pubkeys = Arc::new(DashSet::default());
 
@@ -217,25 +216,23 @@ async fn run(client: &Client) -> Result<()> {
         for edge in edges {
             let known_pubkeys = Arc::clone(&known_pubkeys);
 
-            client
-                .db()
-                .run(|db| {
-                    process_tags(
-                        edge.node
-                            .tags
-                            .into_iter()
-                            .map(|QueryTag { name, value }| (name, value))
-                            .collect(),
-                        edge.node
-                            .block
-                            .map(|b| NaiveDateTime::from_timestamp(b.timestamp, 0)),
-                        db,
-                        known_pubkeys,
-                    )
-                })
-                .await
-                .map_err(|e| error!("{:?}", e))
-                .ok();
+            db.run(|db| {
+                process_tags(
+                    edge.node
+                        .tags
+                        .into_iter()
+                        .map(|QueryTag { name, value }| (name, value))
+                        .collect(),
+                    edge.node
+                        .block
+                        .map(|b| NaiveDateTime::from_timestamp(b.timestamp, 0)),
+                    db,
+                    known_pubkeys,
+                )
+            })
+            .await
+            .map_err(|e| error!("{:?}", e))
+            .ok();
 
             next_after = Some(edge.cursor);
         }
