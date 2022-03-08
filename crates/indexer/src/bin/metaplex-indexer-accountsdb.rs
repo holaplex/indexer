@@ -48,29 +48,17 @@ fn main() {
             .await
             .context("Failed to construct Client")?;
 
-            let mut consumer = accountsdb::Consumer::new(
+            let consumer = accountsdb::Consumer::new(
                 &conn,
                 accountsdb::QueueType::new(network, startup, queue_suffix.as_deref()),
             )
             .await
             .context("Failed to create queue consumer")?;
 
-            while let Some(msg) = consumer
-                .read()
-                .await
-                .context("Failed to read message from RabbitMQ")?
-            {
-                trace!("{:?}", msg);
-
-                match metaplex_indexer::accountsdb::process_message(msg, &*client).await {
-                    Ok(()) => (),
-                    Err(e) => error!("Failed to process message: {:?}", e),
-                }
-            }
-
-            warn!("AMQP server hung up!");
-
-            Ok(())
+            metaplex_indexer::amqp_consume(consumer, |m| {
+                metaplex_indexer::accountsdb::process_message(m, &*client)
+            })
+            .await
         },
     );
 }

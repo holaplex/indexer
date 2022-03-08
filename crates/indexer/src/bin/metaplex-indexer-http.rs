@@ -68,27 +68,12 @@ async fn run<E: metaplex_indexer::http::Process>(
     )
     .context("Failed to construct Client")?;
 
-    let mut consumer = http_indexer::Consumer::new(
+    let consumer = http_indexer::Consumer::new(
         &conn,
         http_indexer::QueueType::<E>::new(&sender, queue_suffix.as_deref()),
     )
     .await
     .context("Failed to create queue consumer")?;
 
-    while let Some(msg) = consumer
-        .read()
-        .await
-        .context("Failed to read message from RabbitMQ")?
-    {
-        trace!("{:?}", msg);
-
-        match msg.process(&client).await {
-            Ok(()) => (),
-            Err(e) => error!("Failed to process message: {:?}", e),
-        }
-    }
-
-    warn!("AMQP server hung up!");
-
-    Ok(())
+    metaplex_indexer::amqp_consume(consumer, |m| m.process(&client)).await
 }

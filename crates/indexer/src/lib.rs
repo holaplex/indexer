@@ -17,7 +17,7 @@ pub mod http;
 pub mod legacy_storefronts;
 pub(crate) mod util;
 
-pub use runtime::{amqp_connect, run};
+pub use runtime::*;
 
 /// Common traits and re-exports
 pub mod prelude {
@@ -91,5 +91,36 @@ mod runtime {
         )
         .await
         .context("Failed to connect to the AMQP server")
+    }
+
+    /// Consume messages from an AMQP consumer until the connection closes
+    ///
+    /// # Errors
+    /// This function fails if a message cannot be received, but _does not_ fail
+    /// if a received message fails to process.
+    pub async fn amqp_consume<
+        M: Debug + for<'a> serde::Deserialize<'a>,
+        Q: indexer_rabbitmq::QueueType<M>,
+        F: Future<Output = Result<()>>,
+    >(
+        mut consumer: indexer_rabbitmq::consumer::Consumer<M, Q>,
+        process: impl Fn(M) -> F,
+    ) -> Result<()> {
+        while let Some(msg) = consumer
+            .read()
+            .await
+            .context("Failed to read AMQP message")?
+        {
+            trace!("{:?}", msg);
+
+            match process(msg).await {
+                Ok(()) => (),
+                Err(e) => error!("Failed to process message: {:?}", e),
+            }
+        }
+
+        warn!("AMQP server hung up!");
+
+        Ok(())
     }
 }
