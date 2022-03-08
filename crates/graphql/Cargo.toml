@@ -1,6 +1,6 @@
 [package]
 name = "holaplex-indexer-graphql"
-version = "0.1.0"
+version = "1.0.0"
 authors = [
   "Holaplex Engineering <hola@holaplex.com>"
 ]
@@ -32,6 +32,6 @@ md5 = "0.7.0"
 
 [dependencies.indexer-core]
 package = "holaplex-indexer-core"
-version = "=0.1.0"
+version = "=1.0.0"
 path = "../core"
 features = ["meilisearch"]

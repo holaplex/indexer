@@ -2756,7 +2756,7 @@ dependencies = [
 
 [[package]]
 name = "holaplex-indexer"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anchor-lang 0.20.1",
  "anchor-lang 0.21.0",
@@ -2812,7 +2812,7 @@ dependencies = [
 
 [[package]]
 name = "holaplex-indexer-core"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2844,7 +2844,7 @@ dependencies = [
 
 [[package]]
 name = "holaplex-indexer-graphql"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "actix-cors",
  "actix-web",
@@ -2866,7 +2866,7 @@ dependencies = [
 
 [[package]]
 name = "holaplex-indexer-rabbitmq"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "clap",
  "futures-util",
@@ -2883,7 +2883,7 @@ dependencies = [
 
 [[package]]
 name = "holaplex-indexer-rabbitmq-geyser"
-version = "0.3.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "bs58 0.4.0",
