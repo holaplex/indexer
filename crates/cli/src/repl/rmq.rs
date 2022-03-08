@@ -5,7 +5,6 @@ use indexer_rabbitmq::{
     lapin::{Connection, ConnectionProperties},
     prelude::*,
 };
-use lapinou::LapinSmolExt;
 
 #[derive(Docbot)]
 pub enum RmqCommand {
@@ -23,9 +22,12 @@ pub enum RmqCommand {
 pub fn handle(cmd: RmqCommand) -> super::Result {
     match cmd {
         RmqCommand::Listen(addr, network, startup, suffix) => smol::block_on(async {
-            let conn = Connection::connect(&addr, ConnectionProperties::default().with_smol())
-                .await
-                .context("Failed to connect to the AMQP server")?;
+            let conn = Connection::connect(
+                &addr,
+                ConnectionProperties::default().with_executor(smol_executor_trait::Smol),
+            )
+            .await
+            .context("Failed to connect to the AMQP server")?;
             let mut consumer = QueueType::new(network, startup, Some(&suffix))
                 .consumer(&conn)
                 .await

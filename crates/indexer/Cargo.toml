@@ -47,7 +47,8 @@ futures-util = "0.3.21"
 num_cpus = "1.13.1"
 serde = { version = "1.0.130", features = ["derive"] }
 tokio = { version = "1.13.0", features = ["macros", "rt", "rt-multi-thread", "sync"] }
-tokio-amqp = "1.0.1"
+tokio-executor-trait = "2.1.0"
+tokio-reactor-trait = "1.1.0"
 
 # Solana & Metaplex
 anchor-lang = "~0.20.1"

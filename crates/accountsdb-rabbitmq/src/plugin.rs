@@ -10,7 +10,6 @@ use indexer_rabbitmq::{
     lapin::{Connection, ConnectionProperties},
     prelude::*,
 };
-use lapinou::LapinSmolExt;
 use smol::lock::Mutex;
 use solana_program::{
     instruction::CompiledInstruction, message::SanitizedMessage, program_pack::Pack,
@@ -161,10 +160,12 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
         });
 
         smol::block_on(async {
-            let conn =
-                Connection::connect(&amqp.address, ConnectionProperties::default().with_smol())
-                    .await
-                    .map_err(custom_err)?;
+            let conn = Connection::connect(
+                &amqp.address,
+                ConnectionProperties::default().with_executor(smol_executor_trait::Smol),
+            )
+            .await
+            .map_err(custom_err)?;
 
             self.producer = Some(Sender::new(
                 QueueType::new(amqp.network, startup_type, None)

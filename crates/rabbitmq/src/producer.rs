@@ -48,7 +48,7 @@ impl<T: serde::Serialize, Q: QueueType<T>> Producer<T, Q> {
                 self.ty.exchange().as_ref(),
                 self.ty.queue().as_ref(),
                 self.ty.publish_opts(val),
-                vec,
+                &vec,
                 self.ty.properties(val),
             )
             .await?

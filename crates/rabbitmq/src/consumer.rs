@@ -3,7 +3,7 @@
 use std::marker::PhantomData;
 
 use futures_util::StreamExt;
-use lapin::{options::BasicAckOptions, Connection};
+use lapin::{acker::Acker, Connection};
 
 use crate::{serialize::deserialize, QueueType, Result};
 
@@ -40,14 +40,14 @@ impl<T: for<'a> serde::Deserialize<'a>, Q: QueueType<T>> Consumer<T, Q> {
     /// # Errors
     /// This function fails if the delivery cannot be successfully performed or
     /// the payload cannot be deserialized.
-    pub async fn read(&mut self) -> Result<Option<T>> {
-        let (_chan, delivery) = match self.consumer.next().await {
+    pub async fn read(&mut self) -> Result<Option<(T, Acker)>> {
+        let delivery = match self.consumer.next().await {
             Some(d) => d?,
             None => return Ok(None),
         };
 
-        delivery.ack(BasicAckOptions::default()).await?;
+        let data = deserialize(std::io::Cursor::new(delivery.data))?;
 
-        deserialize(std::io::Cursor::new(delivery.data)).map_err(Into::into)
+        Ok(Some((data, delivery.acker)))
     }
 }

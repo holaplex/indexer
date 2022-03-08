@@ -28,6 +28,7 @@ pub mod prelude {
 mod runtime {
     use std::{fmt::Debug, future::Future, sync::Arc};
 
+    use futures_util::{FutureExt, StreamExt};
     use indexer_core::{
         clap,
         clap::{Args, Parser},
@@ -35,7 +36,6 @@ mod runtime {
     };
     use indexer_rabbitmq::lapin;
     use tokio::sync::Semaphore;
-    use tokio_amqp::LapinTokioExt;
 
     use super::{db::Pool, prelude::*};
 
@@ -99,7 +99,9 @@ mod runtime {
     pub async fn amqp_connect(addr: impl AsRef<str>) -> Result<lapin::Connection> {
         lapin::Connection::connect(
             addr.as_ref(),
-            lapin::ConnectionProperties::default().with_tokio(),
+            lapin::ConnectionProperties::default()
+                .with_executor(tokio_executor_trait::Tokio::current())
+                .with_reactor(tokio_reactor_trait::Tokio),
         )
         .await
         .context("Failed to connect to the AMQP server")
@@ -123,15 +125,31 @@ mod runtime {
         mut consumer: indexer_rabbitmq::consumer::Consumer<M, Q>,
         process: impl Fn(M) -> F,
     ) -> Result<()> {
-        use futures_util::StreamExt;
+        type JobResult = (
+            Result<Result<()>, tokio::task::JoinError>,
+            indexer_rabbitmq::lapin::acker::Acker,
+        );
 
-        type JobResult = Result<Result<()>, tokio::task::JoinError>;
+        async fn finish_job((res, acker): JobResult) -> Result<()> {
+            use indexer_rabbitmq::lapin::options::{BasicAckOptions, BasicNackOptions};
 
-        fn finish_job(res: JobResult) {
             match res {
-                Ok(Ok(())) => (),
-                Ok(Err(e)) => error!("Failed to process message: {:?}", e),
-                Err(e) => error!("Failed to join worker: {:?}", e),
+                Ok(Ok(())) => acker
+                    .ack(BasicAckOptions::default())
+                    .await
+                    .context("Failed to send ACK for delivery"),
+                Ok(Err(e)) => {
+                    warn!("Failed to process message: {:?}", e);
+
+                    acker
+                        .nack(BasicNackOptions {
+                            multiple: false,
+                            requeue: true,
+                        })
+                        .await
+                        .context("Failed to send NAK for delivery")
+                },
+                Err(e) => Err(e).context("Failed to join async worker"),
             }
         }
 
@@ -142,38 +160,41 @@ mod runtime {
         loop {
             enum Message {
                 Permit(Result<tokio::sync::OwnedSemaphorePermit, tokio::sync::AcquireError>),
-                Handle(JobResult),
+                JobDone(JobResult),
             }
 
             let msg = tokio::select! {
                 p = sem.clone().acquire_owned() => Message::Permit(p),
-                Some(h) = futures.next() => Message::Handle(h),
+                Some(r) = futures.next() => Message::JobDone(r),
             };
 
             match msg {
                 Message::Permit(p) => {
-                    if let Some(m) = consumer
+                    if let Some((msg, acker)) = consumer
                         .read()
                         .await
                         .context("Failed to read AMQP message")?
                     {
-                        trace!("{:?}", m);
+                        trace!("{:?}", msg);
 
-                        let process = process(m);
+                        let process = process(msg);
 
-                        futures.push(tokio::task::spawn(async move {
-                            let res = process.await;
+                        futures.push(
+                            tokio::task::spawn(async move {
+                                let res = process.await;
 
-                            std::mem::drop(p); // Hang on to the permit until here
+                                std::mem::drop(p); // Hang on to the permit until here
 
-                            res
-                        }));
+                                res
+                            })
+                            .map(|r| (r, acker)),
+                        );
                     } else {
                         warn!("AMQP server hung up!");
                         break;
                     }
                 },
-                Message::Handle(h) => finish_job(h),
+                Message::JobDone(r) => finish_job(r).await?,
             }
         }
 
@@ -181,8 +202,8 @@ mod runtime {
             info!("Waiting for additional jobs to finish...");
         }
 
-        while let Some(h) = futures.next().await {
-            finish_job(h);
+        while let Some(r) = futures.next().await {
+            finish_job(r).await?;
         }
 
         Ok(())

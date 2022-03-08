@@ -23,7 +23,7 @@ http-indexer = []
 [dependencies]
 async-trait = "0.1.52"
 futures-util = "0.3.19"
-lapin = "1.9.0"
+lapin = "2.0.3"
 rmp-serde = "1.0.0-beta.2"
 serde = { version = "1.0.133", features = ["derive"] }
 solana-sdk = { version = "1.9.4", optional = true }
