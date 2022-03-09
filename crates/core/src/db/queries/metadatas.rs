@@ -32,6 +32,10 @@ pub struct ListQueryOptions {
     pub attributes: Option<Vec<AttributeFilter>>,
     /// nft listed with auction house
     pub listed: Option<Vec<String>>,
+    /// limit to apply to query
+    pub limit: i64,
+    /// offset to apply to query
+    pub offset: i64,
 }
 
 /// Handles queries for NFTs
@@ -45,6 +49,8 @@ pub fn list(
         creators,
         attributes,
         listed,
+        limit,
+        offset,
     }: ListQueryOptions,
 ) -> Result<Vec<Nft>> {
     let mut query = metadatas::table
@@ -109,6 +115,8 @@ pub fn list(
         ))
         .distinct()
         .order_by(metadatas::name.desc())
+        .limit(limit)
+        .offset(offset)
         .load(conn)
         .context("failed to load nft(s)")?;
 
