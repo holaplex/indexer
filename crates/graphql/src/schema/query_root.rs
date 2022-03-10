@@ -110,8 +110,8 @@ impl QueryRoot {
             creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed: listed.map(|a| a.into_iter().map(Into::into).collect()),
-            limit: i64::try_from(limit).unwrap(),
-            offset: i64::try_from(offset).unwrap(),
+            limit: limit.into(),
+            offset: offset.into(),
         };
 
         let nfts = queries::metadatas::list(&conn, query_options)?;
