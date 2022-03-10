@@ -197,3 +197,10 @@ impl Nft {
             .map_err(Into::into)
     }
 }
+
+#[derive(Debug, Clone, GraphQLObject)]
+#[graphql(context = AppContext)]
+pub struct NftWithCount {
+    pub nft: Vec<Nft>,
+    pub count: scalars::Lamports,
+}
