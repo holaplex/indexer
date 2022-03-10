@@ -93,6 +93,8 @@ impl QueryRoot {
         >,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
         #[graphql(description = "Filter on listed")] listed: Option<Vec<PublicKey<AuctionHouse>>>,
+        #[graphql(description = "Limit for query")] limit: i32,
+        #[graphql(description = "Offset for query")] offset: i32,
     ) -> FieldResult<Vec<Nft>> {
         if owners.is_none() && creators.is_none() && listed.is_none() {
             return Err(FieldError::new(
@@ -108,6 +110,8 @@ impl QueryRoot {
             creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed: listed.map(|a| a.into_iter().map(Into::into).collect()),
+            limit: limit.into(),
+            offset: offset.into(),
         };
 
         let nfts = queries::metadatas::list(&conn, query_options)?;
