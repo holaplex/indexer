@@ -16,6 +16,7 @@ use super::schema::{
 
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "AuctionData<'_>", foreign_key = "listing_address")]
 pub struct Bid<'a> {
     /// The auction being bid on
@@ -32,6 +33,7 @@ pub struct Bid<'a> {
 
 /// A row in the `editions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "MasterEdition<'_>", foreign_key = "parent_address")]
 pub struct Edition<'a> {
     /// The address of this account
@@ -45,6 +47,7 @@ pub struct Edition<'a> {
 /// A row in the `listing_metadatas` table.  This is a join on `listings` and
 /// `metadatas`
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "AuctionCache<'_>", foreign_key = "listing_address")]
 #[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
 pub struct ListingMetadata<'a> {
@@ -58,6 +61,7 @@ pub struct ListingMetadata<'a> {
 
 /// A row in the `auction_caches` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
 pub struct AuctionCache<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -77,6 +81,7 @@ pub struct AuctionCache<'a> {
 
 /// A row in the `auction_datas` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
 pub struct AuctionData<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -100,6 +105,7 @@ pub struct AuctionData<'a> {
 
 /// A row in the `auction_datas_ext` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
 #[table_name = "auction_datas_ext"]
 pub struct AuctionDataExt<'a> {
     /// The address of this account
@@ -115,6 +121,7 @@ pub struct AuctionDataExt<'a> {
 
 /// A row in the `master_editions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct MasterEdition<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -128,6 +135,7 @@ pub struct MasterEdition<'a> {
 /// A row in the `metadata_creators` table.  This is a join on `metadatas` and
 /// creator wallets.
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "Metadata<'_>", foreign_key = "metadata_address")]
 pub struct MetadataCreator<'a> {
     /// The address of this record's metadata
@@ -143,6 +151,7 @@ pub struct MetadataCreator<'a> {
 /// A row in the `token_accounts` table
 /// helpful for tracking exchanges of tokens
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct TokenAccount<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -158,6 +167,7 @@ pub struct TokenAccount<'a> {
 
 /// A row in the `metadatas` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct Metadata<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -186,6 +196,7 @@ pub struct Metadata<'a> {
 
 /// A row in the `storefronts` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct Storefront<'a> {
     /// The address of this store's owner's wallet
     pub owner_address: Cow<'a, str>,
@@ -283,6 +294,7 @@ pub struct ListingsTripleJoinRow {
 
 /// A row in the `metadata_jsons` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct MetadataJson<'a> {
     /// Metadata Address
     pub metadata_address: Cow<'a, str>,
@@ -308,6 +320,7 @@ pub struct MetadataJson<'a> {
 
 /// A row in the `files` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct File<'a> {
     /// Metadata address
     pub metadata_address: Cow<'a, str>,
@@ -319,6 +332,7 @@ pub struct File<'a> {
 
 /// A row in the `attributes` table
 #[derive(Debug, Clone, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 #[table_name = "attributes"]
 pub struct MetadataAttributeWrite<'a> {
     /// Metadata address
@@ -344,6 +358,7 @@ pub struct MetadataAttribute<'a> {
 
 /// A row in the `metadata_collections` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct MetadataCollection<'a> {
     /// Metadata address
     pub metadata_address: Cow<'a, str>,
@@ -355,6 +370,7 @@ pub struct MetadataCollection<'a> {
 
 /// A row in the `store_configs` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct StoreConfig<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -364,6 +380,7 @@ pub struct StoreConfig<'a> {
 
 /// A row in the `whitelisted_creators` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct WhitelistedCreator<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -375,6 +392,7 @@ pub struct WhitelistedCreator<'a> {
 
 /// A row in the `stores` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct Store<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -389,6 +407,7 @@ pub struct Store<'a> {
 
 /// A row in the `settings_uri_jsons` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct StoreConfigJson<'a> {
     /// The address of the StoreConfig account this record refers to
     pub config_address: Cow<'a, str>,
@@ -412,6 +431,7 @@ pub struct StoreConfigJson<'a> {
 
 /// A row in the `auction_houses` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct AuctionHouse<'a> {
     /// The address of this account
     pub address: Cow<'a, str>,
@@ -454,6 +474,7 @@ pub struct AuctionHouse<'a> {
 
 /// A row in the `bid_reciepts` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct BidReceipt<'a> {
     /// The BidReceipt account pubkey
     pub address: Cow<'a, str>,
@@ -487,6 +508,7 @@ pub struct BidReceipt<'a> {
 
 /// A row in the `listing_receipts` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct ListingReceipt<'a> {
     /// ListingReceipt account pubkey
     pub address: Cow<'a, str>,
@@ -518,6 +540,7 @@ pub struct ListingReceipt<'a> {
 
 /// A row in the `purchase_receipts` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct PurchaseReceipt<'a> {
     /// Purchase account pubkey
     pub address: Cow<'a, str>,
@@ -543,6 +566,7 @@ pub struct PurchaseReceipt<'a> {
 
 /// A row in the `store_creators` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 pub struct StoreCreator<'a> {
     /// Store Config account address
     pub store_config_address: Cow<'a, str>,

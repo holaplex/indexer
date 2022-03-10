@@ -33,9 +33,9 @@ pub struct ListQueryOptions {
     pub attributes: Option<Vec<AttributeFilter>>,
     /// nft listed with auction house
     pub listed: Option<Vec<String>>,
-    /// limit
+    /// limit to apply to query
     pub limit: Option<i64>,
-    /// offset
+    /// offset to apply to query
     pub offset: Option<i64>,
 }
 
