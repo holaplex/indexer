@@ -37,3 +37,7 @@ diesel_full_text_search = { version = "1.0.1", git = "https://github.com/diesel-
 # Solana
 solana-sdk = "1.8.3"
 
+# Asset id
+base64 = "0.13.0"
+cid = "0.8.3"
+url = "2.2.2"

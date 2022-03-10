@@ -17,6 +17,7 @@ extern crate diesel_migrations;
 pub extern crate chrono;
 pub extern crate clap;
 
+pub mod assets;
 pub mod db;
 pub mod error;
 pub mod hash;

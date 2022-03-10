@@ -1,4 +1,4 @@
-use indexer_core::db::queries;
+use indexer_core::{assets::AssetIdentifier, db::queries};
 use objects::{
     auction_house::AuctionHouse,
     creator::Creator,
@@ -10,6 +10,7 @@ use objects::{
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
+use reqwest::Url;
 use scalars::PublicKey;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, metadata_jsons, metadatas,
@@ -17,7 +18,6 @@ use tables::{
 };
 
 use super::prelude::*;
-
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
@@ -109,7 +109,6 @@ impl QueryRoot {
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed: listed.map(|a| a.into_iter().map(Into::into).collect()),
         };
-
         let nfts = queries::metadatas::list(&conn, query_options)?;
 
         Ok(nfts.into_iter().map(Into::into).collect())
@@ -177,7 +176,14 @@ impl QueryRoot {
             .load(&conn)
             .context("Failed to load metadata")?;
 
-        Ok(rows.pop().map(Into::into))
+        Ok(rows.pop().map(|mut n| {
+            n.image = Some(format!(
+                "https://assets.holaplex.com/{}",
+                AssetIdentifier::new(&Url::parse(&n.image.unwrap_or(String::new())).unwrap())
+                    .get_cid_with_svc()
+            ));
+            n.into()
+        }))
     }
 
     fn storefronts(&self, context: &AppContext) -> FieldResult<Vec<Storefront>> {
