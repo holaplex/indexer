@@ -66,6 +66,7 @@ pub fn list(
         .left_outer_join(
             listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)),
         )
+        .left_outer_join(attributes::table.on(metadatas::address.eq(attributes::metadata_address)))
         .into_boxed();
 
     if let Some(attributes) = attributes {
@@ -73,15 +74,11 @@ pub fn list(
             attributes
                 .into_iter()
                 .fold(query, |acc, AttributeFilter { trait_type, values }| {
-                    let sub = attributes::table
-                        .select(attributes::metadata_address)
-                        .filter(
-                            attributes::trait_type
-                                .eq(trait_type)
-                                .and(attributes::value.eq(any(values))),
-                        );
-
-                    acc.filter(metadatas::address.eq(any(sub)))
+                    acc.filter(
+                        attributes::trait_type
+                            .eq(trait_type)
+                            .and(attributes::value.eq(any(values))),
+                    )
                 });
     }
 
