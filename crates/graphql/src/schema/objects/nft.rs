@@ -161,11 +161,7 @@ impl Nft {
         &self.description
     }
 
-    #[graphql(
-        arguments(
-            width(description = "image width"),
-        )
-    )]
+    #[graphql(arguments(width(description = "image width"),))]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> String {
         let width = ImageSize::from(width.unwrap_or(ImageSize::Medium as i32));
 
@@ -180,7 +176,12 @@ impl Nft {
                 width as i32,
             )
         } else if asset.ipfs.is_some() && asset.arweave.is_none() {
-            format!("{}/ipfs/{}?width={}", assets_cdn, asset.ipfs.unwrap(), width as i32)
+            format!(
+                "{}/ipfs/{}?width={}",
+                assets_cdn,
+                asset.ipfs.unwrap(),
+                width as i32
+            )
         } else {
             String::from(&self.image)
         }

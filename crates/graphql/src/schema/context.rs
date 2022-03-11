@@ -35,7 +35,11 @@ pub struct AppContext {
 impl juniper::Context for AppContext {}
 
 impl AppContext {
-    pub fn new(db_pool: Arc<Pool>, twitter_bearer_token: Arc<String>, asset_proxy_endpoint: Arc<String>) -> AppContext {
+    pub fn new(
+        db_pool: Arc<Pool>,
+        twitter_bearer_token: Arc<String>,
+        asset_proxy_endpoint: Arc<String>,
+    ) -> AppContext {
         let batcher = Batcher::new(db_pool.clone());
 
         Self {
