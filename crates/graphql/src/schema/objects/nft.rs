@@ -1,4 +1,7 @@
+use base64::display::Base64Display;
+use indexer_core::assets::AssetIdentifier;
 use objects::{bid_receipt::BidReceipt, listing_receipt::ListingReceipt};
+use reqwest::Url;
 
 use super::prelude::*;
 
@@ -158,8 +161,20 @@ impl Nft {
         &self.description
     }
 
-    pub fn image(&self) -> &str {
-        &self.image
+    pub fn image(&self) -> String {
+        let assets_cdn = "https://assets.holaplex.com";
+        let asset = AssetIdentifier::new(&Url::parse(&self.image).unwrap());
+        if asset.arweave.is_some() && asset.ipfs.is_none() {
+            format!(
+                "{}/arweave/{}",
+                assets_cdn,
+                Base64Display::with_config(&asset.arweave.unwrap().0, base64::URL_SAFE_NO_PAD)
+            )
+        } else if asset.ipfs.is_some() && asset.arweave.is_none() {
+            format!("{}/ipfs/{}", assets_cdn, asset.ipfs.unwrap())
+        } else {
+            String::from(&self.image)
+        }
     }
 
     pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
