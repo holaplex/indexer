@@ -63,7 +63,6 @@ pub fn list(
         .inner_join(
             token_accounts::table.on(metadatas::mint_address.eq(token_accounts::mint_address)),
         )
-        .inner_join(listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)))
         .into_boxed();
 
     if let Some(attributes) = attributes {
@@ -95,6 +94,9 @@ pub fn list(
 
     if let Some(listed) = listed {
         query = query
+            .inner_join(
+                listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)),
+            )
             .filter(listing_receipts::auction_house.eq(any(listed)))
             .filter(listing_receipts::purchase_receipt.is_null())
             .filter(listing_receipts::canceled_at.is_null())
