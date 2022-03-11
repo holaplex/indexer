@@ -63,9 +63,7 @@ pub fn list(
         .inner_join(
             token_accounts::table.on(metadatas::mint_address.eq(token_accounts::mint_address)),
         )
-        .left_outer_join(
-            listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)),
-        )
+        .inner_join(listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)))
         .into_boxed();
 
     if let Some(attributes) = attributes {
