@@ -39,5 +39,5 @@ solana-sdk = "1.8.3"
 
 # Asset id
 base64 = "0.13.0"
-cid = "0.8.3"
+cid = "0.7.0"
 url = "2.2.2"

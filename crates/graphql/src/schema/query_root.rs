@@ -1,4 +1,4 @@
-use indexer_core::{assets::AssetIdentifier, db::queries};
+use indexer_core::db::queries;
 use objects::{
     auction_house::AuctionHouse,
     creator::Creator,
@@ -10,7 +10,6 @@ use objects::{
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
-use reqwest::Url;
 use scalars::PublicKey;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, metadata_jsons, metadatas,
@@ -176,14 +175,7 @@ impl QueryRoot {
             .load(&conn)
             .context("Failed to load metadata")?;
 
-        Ok(rows.pop().map(|mut n| {
-            n.image = Some(format!(
-                "https://assets.holaplex.com/{}",
-                AssetIdentifier::new(&Url::parse(&n.image.unwrap_or(String::new())).unwrap())
-                    .get_cid_with_svc()
-            ));
-            n.into()
-        }))
+        Ok(rows.pop().map(Into::into))
     }
 
     fn storefronts(&self, context: &AppContext) -> FieldResult<Vec<Storefront>> {

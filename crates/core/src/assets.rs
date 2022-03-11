@@ -1,5 +1,4 @@
-//! AssetIdentifier utils - Parse and capture tx and cid
-use base64::display::Base64Display;
+//! ``AssetIdentifier`` utils - Parse and capture tx and cid
 use cid::Cid;
 use url::Url;
 /// An Arweave transaction ID
@@ -61,19 +60,9 @@ impl AssetIdentifier {
             Err(()) => (),
         }
     }
-    /// Extract cid from asset
-    pub fn get_cid_with_svc(&self) -> String {
-        if self.arweave.is_some() {
-            format!(
-                "arweave/{}",
-                Base64Display::with_config(&self.arweave.unwrap().0, base64::URL_SAFE_NO_PAD)
-                    .to_string()
-            )
-        } else {
-            format!("ipfs/{}", self.ipfs.unwrap().to_string())
-        }
-    }
+
     /// parse cid from url
+    #[must_use]
     pub fn new(url: &Url) -> Self {
         let mut ipfs = Ok(None);
         let mut arweave = Ok(None);
