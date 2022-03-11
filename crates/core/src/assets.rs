@@ -21,17 +21,17 @@ pub enum ImageSize {
     /// image natural size
     Original = 0,
     /// small image
-    Small = 100,
+    Small = 600,
     /// medium image
-    Medium = 400,
+    Medium = 800,
     /// large image
-    Large = 600,
+    Large = 1400,
 }
 
 impl From<i32> for ImageSize {
     fn from(value: i32) -> Self {
         match value {
-            400 => Self::Small,
+            600 => Self::Small,
             800 => Self::Medium,
             1400 => Self::Large,
             _ => Self::Original,
