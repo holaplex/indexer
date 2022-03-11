@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use tables::{attributes, metadata_creators};
+use tables::{attributes, metadata_creators, metadatas};
 
 use super::prelude::*;
 
@@ -30,15 +30,11 @@ impl Creator {
     pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
         let conn = context.db_pool.get()?;
 
-        let metadatas: Vec<String> = metadata_creators::table
-            .select(metadata_creators::metadata_address)
-            .filter(metadata_creators::creator_address.eq(&self.address))
-            .load(&conn)
-            .context("Failed to load metadata creators")?;
-
         let metadata_attributes: Vec<models::MetadataAttribute> = attributes::table
+            .inner_join(metadata_creators::table.on(attributes::metadata_address.eq(metadata_creators::metadata_address)))
+            .inner_join(metadatas::table.on(attributes::metadata_address.eq(metadatas::address)))
+            .filter(metadata_creators::creator_address.eq(&self.address))
             .select(attributes::all_columns)
-            .filter(attributes::metadata_address.eq(any(metadatas)))
             .load(&conn)
             .context("Failed to load metadata attributes")?;
 
