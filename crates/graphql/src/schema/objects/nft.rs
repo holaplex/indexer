@@ -173,7 +173,7 @@ impl Nft {
                 "{}/arweave/{}?width={}",
                 assets_cdn,
                 Base64Display::with_config(&asset.arweave.unwrap().0, base64::URL_SAFE_NO_PAD),
-                width as i32,
+                width as i32
             )
         } else if asset.ipfs.is_some() && asset.arweave.is_none() {
             format!(
