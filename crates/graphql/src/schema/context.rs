@@ -16,6 +16,7 @@ use super::prelude::*;
 pub struct AppContext {
     pub db_pool: Arc<Pool>,
     pub twitter_bearer_token: Arc<String>,
+    pub asset_proxy_endpoint: Arc<String>,
 
     // Data loaders
     pub auction_house_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
@@ -34,7 +35,7 @@ pub struct AppContext {
 impl juniper::Context for AppContext {}
 
 impl AppContext {
-    pub fn new(db_pool: Arc<Pool>, twitter_bearer_token: Arc<String>) -> AppContext {
+    pub fn new(db_pool: Arc<Pool>, twitter_bearer_token: Arc<String>, asset_proxy_endpoint: Arc<String>) -> AppContext {
         let batcher = Batcher::new(db_pool.clone());
 
         Self {
@@ -51,6 +52,7 @@ impl AppContext {
             store_creator_loader: Loader::new(batcher),
             db_pool,
             twitter_bearer_token,
+            asset_proxy_endpoint,
         }
     }
 }

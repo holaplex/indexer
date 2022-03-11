@@ -26,6 +26,9 @@ struct Opts {
 
     #[clap(long, env)]
     twitter_bearer_token: Option<String>,
+
+    #[clap(long, env)]
+    asset_proxy_endpoint: Option<String>,
 }
 
 fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
@@ -41,6 +44,7 @@ fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
 fn graphql(
     db_pool: Arc<Pool>,
     twitter_bearer_token: Arc<String>,
+    asset_proxy_host: Arc<String>,
 ) -> impl Fn(
     web::Data<Arc<Schema>>,
     web::Json<GraphQLRequest>,
@@ -49,9 +53,10 @@ fn graphql(
     move |st: web::Data<Arc<Schema>>, data: web::Json<GraphQLRequest>| {
         let pool = Arc::clone(&db_pool);
         let twitter_bearer_token = Arc::clone(&twitter_bearer_token);
+        let asset_proxy_host = Arc::clone(&asset_proxy_host);
 
         Box::pin(async move {
-            let ctx = AppContext::new(pool, twitter_bearer_token);
+            let ctx = AppContext::new(pool, twitter_bearer_token, asset_proxy_host);
             let res = data.execute(&st, &ctx).await;
 
             let json = serde_json::to_string(&res)?;
@@ -68,9 +73,11 @@ fn main() {
         let Opts {
             server: ServerOpts { port },
             twitter_bearer_token,
+            asset_proxy_endpoint,
         } = Opts::parse();
 
         let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
+        let asset_proxy_endpoint = Arc::new(asset_proxy_endpoint.unwrap_or("https://asset.holaplex.com".to_string()));
         let twitter_bearer_token = Arc::new(twitter_bearer_token);
 
         // TODO: db_ty indicates if any actions that mutate the database can be run
@@ -113,7 +120,7 @@ fn main() {
                                 .max_age(3600),
                         )
                         .service(web::resource(&version_extension).route(
-                            web::post().to(graphql(db_pool.clone(), twitter_bearer_token.clone())),
+                            web::post().to(graphql(db_pool.clone(), twitter_bearer_token.clone(), asset_proxy_endpoint.clone())),
                         ))
                         .service(
                             web::resource("/graphiql")

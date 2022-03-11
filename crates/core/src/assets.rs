@@ -1,6 +1,8 @@
 //! ``AssetIdentifier`` utils - Parse and capture tx and cid
 use cid::Cid;
 use url::Url;
+use std::fmt;
+
 /// An Arweave transaction ID
 #[derive(Debug, Clone, Copy)]
 pub struct ArTxid(pub [u8; 32]);
@@ -12,6 +14,30 @@ pub struct AssetIdentifier {
     pub ipfs: Option<Cid>,
     /// Arweave tx id
     pub arweave: Option<ArTxid>,
+}
+
+/// Supported width sizes for asset proxy
+#[derive(Debug, Clone, Copy)]
+pub enum ImageSize {
+    /// image natural size
+    Original = 0,
+    /// small image
+    Small = 100,
+    /// medium image
+    Medium = 400,
+    /// large image
+    Large = 600,
+}
+
+impl From<i32> for ImageSize {
+    fn from(value: i32) -> Self {
+        match value {
+            400 => Self::Small,
+            800 => Self::Medium,
+            1400 => Self::Large,
+            _ => Self::Original,
+        } 
+    }
 }
 
 impl AssetIdentifier {
