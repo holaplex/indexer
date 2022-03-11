@@ -78,7 +78,7 @@ fn main() {
 
         let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
         let asset_proxy_endpoint = Arc::new(
-            asset_proxy_endpoint.unwrap_or_else(|| "https://asset.holaplex.com".to_string()),
+            asset_proxy_endpoint.unwrap_or_else(|| "https://assets.holaplex.com".to_string()),
         );
         let twitter_bearer_token = Arc::new(twitter_bearer_token);
 
