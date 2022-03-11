@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use tables::{attributes, metadata_creators, metadatas};
+use indexer_core::prelude::*;
+use tables::{attributes, metadata_creators};
 
 use super::prelude::*;
 
@@ -31,8 +32,10 @@ impl Creator {
         let conn = context.db_pool.get()?;
 
         let metadata_attributes: Vec<models::MetadataAttribute> = attributes::table
-            .inner_join(metadata_creators::table.on(attributes::metadata_address.eq(metadata_creators::metadata_address)))
-            .inner_join(metadatas::table.on(attributes::metadata_address.eq(metadatas::address)))
+            .inner_join(
+                metadata_creators::table
+                    .on(attributes::metadata_address.eq(metadata_creators::metadata_address)),
+            )
             .filter(metadata_creators::creator_address.eq(&self.address))
             .select(attributes::all_columns)
             .load(&conn)
