@@ -77,7 +77,9 @@ fn main() {
         } = Opts::parse();
 
         let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
-        let asset_proxy_endpoint = Arc::new(asset_proxy_endpoint.unwrap_or("https://asset.holaplex.com".to_string()));
+        let asset_proxy_endpoint = Arc::new(
+            asset_proxy_endpoint.unwrap_or_else(|| "https://asset.holaplex.com".to_string()),
+        );
         let twitter_bearer_token = Arc::new(twitter_bearer_token);
 
         // TODO: db_ty indicates if any actions that mutate the database can be run
@@ -119,9 +121,13 @@ fn main() {
                                 .allowed_header(http::header::CONTENT_TYPE)
                                 .max_age(3600),
                         )
-                        .service(web::resource(&version_extension).route(
-                            web::post().to(graphql(db_pool.clone(), twitter_bearer_token.clone(), asset_proxy_endpoint.clone())),
-                        ))
+                        .service(
+                            web::resource(&version_extension).route(web::post().to(graphql(
+                                db_pool.clone(),
+                                twitter_bearer_token.clone(),
+                                asset_proxy_endpoint.clone(),
+                            ))),
+                        )
                         .service(
                             web::resource("/graphiql")
                                 .route(web::get().to(graphiql(graphiql_uri.clone()))),

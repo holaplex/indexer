@@ -1,7 +1,6 @@
 //! ``AssetIdentifier`` utils - Parse and capture tx and cid
 use cid::Cid;
 use url::Url;
-use std::fmt;
 
 /// An Arweave transaction ID
 #[derive(Debug, Clone, Copy)]
@@ -36,7 +35,7 @@ impl From<i32> for ImageSize {
             800 => Self::Medium,
             1400 => Self::Large,
             _ => Self::Original,
-        } 
+        }
     }
 }
 
