@@ -1,8 +1,9 @@
 //! Query utilities for looking up  metadatas
-use diesel::{pg::expression::dsl::any, prelude::*};
+use diesel::prelude::*;
 
 use crate::{
     db::{
+        any,
         models::Nft,
         tables::{
             attributes, listing_receipts, metadata_creators, metadata_jsons, metadatas,
@@ -96,8 +97,7 @@ pub fn list(
         query = query
             .filter(listing_receipts::auction_house.eq(any(listed)))
             .filter(listing_receipts::purchase_receipt.is_null())
-            .filter(listing_receipts::canceled_at.is_null())
-            .filter(token_accounts::amount.eq(1));
+            .filter(listing_receipts::canceled_at.is_null());
     }
 
     let rows: Vec<Nft> = query
@@ -110,6 +110,7 @@ pub fn list(
             metadata_jsons::description,
             metadata_jsons::image,
         ))
+        .filter(token_accounts::amount.eq(1))
         .distinct()
         .order_by(metadatas::name.desc())
         .limit(limit)
