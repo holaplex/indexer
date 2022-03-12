@@ -8,7 +8,7 @@ use chrono::NaiveDateTime;
 
 use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
-    bids, editions, files, listing_metadatas, listing_receipts, master_editions,
+    bids, editions, files, graph_connections, listing_metadatas, listing_receipts, master_editions,
     metadata_collections, metadata_creators, metadata_jsons, metadatas, purchase_receipts,
     store_config_jsons, store_configs, store_creators, storefronts, stores, token_accounts,
     whitelisted_creators,
@@ -572,4 +572,16 @@ pub struct StoreCreator<'a> {
     pub store_config_address: Cow<'a, str>,
     /// Creator address
     pub creator_address: Cow<'a, str>,
+}
+
+/// A row in the `graph_connections` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct GraphConnection<'a> {
+    /// Graph Program account address
+    pub address: Cow<'a, str>,
+    /// Graph Connection 'from' account address
+    pub from_account: Cow<'a, str>,
+    /// Graph Connection 'to' account address
+    pub to_account: Cow<'a, str>,
 }
