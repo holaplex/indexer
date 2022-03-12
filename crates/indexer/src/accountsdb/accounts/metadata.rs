@@ -27,6 +27,11 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
         edition_nonce: meta.edition_nonce.map(Into::into),
         edition_pda: Owned(bs58::encode(edition_pda_key).into_string()),
     };
+    let first_verified_creator: Option<Pubkey> = meta
+        .data
+        .creators
+        .clone()
+        .and_then(|creators| creators.iter().find(|c| c.verified).map(|c| c.address));
 
     client
         .db()
@@ -42,16 +47,27 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
         .context("Failed to insert metadata")?;
 
     client
-        .dispatch_metadata_json(key, meta.data.uri.trim_end_matches('\0').to_owned())
+        .dispatch_metadata_json(
+            key,
+            first_verified_creator,
+            meta.data.uri.trim_end_matches('\0').to_owned(),
+        )
         .await
         .context("Failed to dispatch metadata JSON job")?;
 
-    for creator in meta.data.creators.iter().flatten() {
+    for (position, creator) in meta
+        .data
+        .creators
+        .unwrap_or_else(Vec::new)
+        .iter()
+        .enumerate()
+    {
         let row = MetadataCreator {
             metadata_address: Owned(addr.clone()),
             creator_address: Owned(bs58::encode(creator.address).into_string()),
             share: creator.share.into(),
             verified: creator.verified,
+            position: Some(position.try_into().unwrap()),
         };
 
         client

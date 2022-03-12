@@ -146,6 +146,8 @@ pub struct MetadataCreator<'a> {
     pub share: i32,
     /// Whether this creator has verified this metadata
     pub verified: bool,
+    /// position of creator in metadata creator array
+    pub position: Option<i32>,
 }
 
 /// A row in the `token_accounts` table
@@ -341,6 +343,8 @@ pub struct MetadataAttributeWrite<'a> {
     pub value: Option<Cow<'a, str>>,
     /// Attribute trait type
     pub trait_type: Option<Cow<'a, str>>,
+    /// Address of metadata first verified creator
+    pub first_verified_creator: Option<Cow<'a, str>>,
 }
 
 /// A row in the `attributes` table
@@ -354,6 +358,8 @@ pub struct MetadataAttribute<'a> {
     pub trait_type: Option<Cow<'a, str>>,
     /// Attribute generated id
     pub id: Cow<'a, uuid::Uuid>,
+    /// Address of metadata first verified creator
+    pub first_verified_creator: Option<Cow<'a, str>>,
 }
 
 /// A row in the `metadata_collections` table

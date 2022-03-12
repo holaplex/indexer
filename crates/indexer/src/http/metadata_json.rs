@@ -226,6 +226,7 @@ async fn try_locate_json(
 async fn process_full(
     client: &Client,
     addr: String,
+    first_verified_creator: Option<String>,
     json: MetadataJson,
     fingerprint: Vec<u8>,
 ) -> Result<()> {
@@ -277,7 +278,7 @@ async fn process_full(
             //       previous rows from the old metadata JSON:
 
             process_files(db, &addr, files)?;
-            process_attributes(db, &addr, json.attributes)?;
+            process_attributes(db, &addr, &first_verified_creator, json.attributes)?;
             process_collection(db, &addr, json.collection)
         })
         .await
@@ -370,6 +371,7 @@ fn process_files(db: &Connection, addr: &str, files: Option<Vec<File>>) -> Resul
 fn process_attributes(
     db: &Connection,
     addr: &str,
+    first_verified_creator: &Option<String>,
     attributes: Option<Vec<Attribute>>,
 ) -> Result<()> {
     for Attribute { trait_type, value } in attributes.unwrap_or_else(Vec::new) {
@@ -377,6 +379,9 @@ fn process_attributes(
             metadata_address: Borrowed(addr),
             trait_type: trait_type.map(Owned),
             value: value.as_ref().map(|v| Owned(v.to_string())),
+            first_verified_creator: first_verified_creator
+                .as_ref()
+                .map(|a| Owned(a.to_string())),
         };
 
         insert_into(attributes::table)
@@ -408,7 +413,12 @@ fn process_collection(db: &Connection, addr: &str, collection: Option<Collection
     Ok(())
 }
 
-pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> Result<()> {
+pub async fn process<'a>(
+    client: &Client,
+    meta_key: Pubkey,
+    first_verified_creator: Option<Pubkey>,
+    uri_str: String,
+) -> Result<()> {
     let url = Url::parse(&uri_str).context("Couldn't parse metadata JSON URL")?;
     let id = AssetIdentifier::new(&url);
 
@@ -419,6 +429,8 @@ pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> 
         .chain(id.arweave.map(|a| a.0.to_vec()))
         .collect();
     let addr = bs58::encode(meta_key).into_string();
+    let first_verified_creator =
+        first_verified_creator.map(|address| bs58::encode(address).into_string());
 
     let is_present = client
         .db()
@@ -449,7 +461,9 @@ pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> 
     let (json, fingerprint) = try_locate_json(client, &url, &id, meta_key).await?;
 
     match json {
-        MetadataJsonResult::Full(f) => process_full(client, addr, f, fingerprint).await,
+        MetadataJsonResult::Full(f) => {
+            process_full(client, addr, first_verified_creator, f, fingerprint).await
+        },
         MetadataJsonResult::Minimal(m) => process_minimal(client, addr, m, fingerprint).await,
     }
 }

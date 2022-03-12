@@ -51,6 +51,8 @@ pub struct MetadataJson {
     pub meta_address: Pubkey,
     /// The URI to retrieve the file from
     pub uri: String,
+    /// possibly the first verified creator
+    pub first_verified_creator: Option<Pubkey>,
 }
 
 impl Entity for MetadataJson {
