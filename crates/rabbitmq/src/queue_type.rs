@@ -1,8 +1,16 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, time::Duration};
 
 use lapin::{Channel, Connection};
 
 use crate::Result;
+
+#[derive(Debug)]
+pub struct RetryInfo {
+    pub exchange: String,
+    pub routing_key: String,
+    pub max_tries: usize,
+    pub delay_hint: Duration,
+}
 
 /// Trait containing the required infrastructure to create AMQP producers and
 /// consumers conformant to a specific protocol.
@@ -17,6 +25,11 @@ pub trait QueueType<T> {
     async fn init_producer(&self, chan: &Channel) -> Result<()>;
     /// Initialize and return a consumer with the correct queue config
     async fn init_consumer(&self, chan: &Channel) -> Result<lapin::Consumer>;
+
+    /// Information for controlling consumer retries
+    fn retry_info(&self) -> Option<RetryInfo>;
+    /// Initialize the dead letter consumer
+    async fn init_dl_consumer(&self, chan: &Channel) -> Result<lapin::Consumer>;
 
     /// Publish options for producer basic_publish calls
     fn publish_opts(&self, msg: &T) -> lapin::options::BasicPublishOptions;

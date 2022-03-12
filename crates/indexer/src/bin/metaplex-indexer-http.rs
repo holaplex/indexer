@@ -1,5 +1,5 @@
 use indexer_core::{clap, prelude::*};
-use indexer_rabbitmq::http_indexer;
+use indexer_rabbitmq::{http_indexer, prelude::*};
 use metaplex_indexer::http::Client;
 
 #[derive(Debug, clap::Parser)]
@@ -69,12 +69,10 @@ async fn run<E: Send + metaplex_indexer::http::Process + 'static>(
     )
     .context("Failed to construct Client")?;
 
-    let consumer = http_indexer::Consumer::new(
-        &conn,
-        http_indexer::QueueType::<E>::new(&sender, queue_suffix.as_deref()),
-    )
-    .await
-    .context("Failed to create queue consumer")?;
+    let consumer = http_indexer::QueueType::<E>::new(&sender, queue_suffix.as_deref())
+        .consumer(&conn)
+        .await
+        .context("Failed to create queue consumer")?;
 
     metaplex_indexer::amqp_consume(&params, consumer, move |m| {
         let client = client.clone();

@@ -1,7 +1,7 @@
 //! Queue configuration for the HTTP-driven indexer to receive requests from
 //! the `accountsdb` consumer.
 
-use std::{borrow::Cow, marker::PhantomData};
+use std::{borrow::Cow, marker::PhantomData, time::Duration};
 
 use lapin::{
     options::{
@@ -14,7 +14,7 @@ use lapin::{
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
 
-use crate::Result;
+use crate::{queue_type::RetryInfo, Result};
 
 /// AMQP configuration for HTTP indexers
 #[derive(Debug, Clone)]
@@ -22,6 +22,9 @@ pub struct QueueType<E> {
     suffixed: bool,
     exchange: String,
     queue: String,
+    dl_exchange: String,
+    dl_queue: String,
+    dl_key: String,
     _p: PhantomData<fn(E) -> ()>,
 }
 
@@ -89,6 +92,9 @@ impl<E: Entity> QueueType<E> {
 
         Self {
             suffixed: id.is_some() || cfg!(debug_assertions),
+            dl_exchange: format!("dlx.{}", exchange),
+            dl_queue: format!("dlx.{}", queue),
+            dl_key: id.map_or_else(String::new, ToOwned::to_owned),
             exchange,
             queue,
             _p: PhantomData::default(),
@@ -96,11 +102,45 @@ impl<E: Entity> QueueType<E> {
     }
 
     async fn exchange_declare(&self, chan: &Channel) -> Result<()> {
+        let mut exchg_fields = FieldTable::default();
+
+        exchg_fields.insert(
+            "x-dead-letter-exchange".into(),
+            AMQPValue::LongString(self.dl_exchange.as_str().into()),
+        );
+
         chan.exchange_declare(
             crate::QueueType::exchange(self).as_ref(),
             ExchangeKind::Fanout,
             ExchangeDeclareOptions::default(),
-            FieldTable::default(),
+            exchg_fields,
+        )
+        .await?;
+
+        Ok(())
+    }
+
+    async fn dl_exchange_declare(&self, chan: &Channel) -> Result<()> {
+        let mut exchg_fields = FieldTable::default();
+
+        exchg_fields.insert(
+            "x-delayed-type".into(),
+            AMQPValue::LongString("direct".into()),
+        );
+
+        exchg_fields.insert(
+            "x-dead-letter-exchange".into(),
+            AMQPValue::LongString(crate::QueueType::exchange(self).as_ref().into()),
+        );
+
+        chan.exchange_declare(
+            self.dl_exchange.as_ref(),
+            ExchangeKind::Custom("x-delayed-message".into()),
+            ExchangeDeclareOptions {
+                durable: true,
+                ..ExchangeDeclareOptions::default()
+            },
+            exchg_fields,
         )
         .await?;
 
@@ -156,6 +196,53 @@ impl<E: Entity> crate::QueueType<E> for QueueType<E> {
         chan.basic_consume(
             self.queue().as_ref(),
             self.queue().as_ref(),
+            BasicConsumeOptions::default(),
+            FieldTable::default(),
+        )
+        .await
+        .map_err(Into::into)
+    }
+
+    fn retry_info(&self) -> Option<RetryInfo> {
+        Some(RetryInfo {
+            exchange: self.dl_exchange.clone(),
+            routing_key: self.dl_key.clone(),
+            max_tries: 10,
+            delay_hint: Duration::from_secs(2),
+        })
+    }
+
+    async fn init_dl_consumer(&self, chan: &Channel) -> Result<lapin::Consumer> {
+        self.exchange_declare(chan).await?;
+        self.dl_exchange_declare(chan).await?;
+
+        let mut queue_fields = FieldTable::default();
+        queue_fields.insert(
+            "x-max-length-bytes".into(),
+            AMQPValue::LongLongInt(100 * 1024 * 1024), // 100 MiB
+        );
+
+        chan.queue_declare(
+            self.dl_queue.as_ref(),
+            QueueDeclareOptions::default(),
+            queue_fields,
+        )
+        .await?;
+
+        chan.queue_bind(
+            self.dl_queue.as_ref(),
+            self.dl_exchange.as_ref(),
+            self.dl_key.as_ref(),
+            QueueBindOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+
+        chan.basic_qos(1024, BasicQosOptions::default()).await?;
+
+        chan.basic_consume(
+            self.dl_queue.as_ref(),
+            self.dl_queue.as_ref(),
             BasicConsumeOptions::default(),
             FieldTable::default(),
         )
