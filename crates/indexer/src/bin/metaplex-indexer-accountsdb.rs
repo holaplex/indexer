@@ -49,12 +49,14 @@ fn main() {
             .await
             .context("Failed to construct Client")?;
 
-            let consumer = accountsdb::QueueType::new(network, startup, queue_suffix.as_deref())
+            let queue_type = accountsdb::QueueType::new(network, startup, queue_suffix.as_deref());
+            let consumer = queue_type
+                .clone()
                 .consumer(&conn)
                 .await
                 .context("Failed to create queue consumer")?;
 
-            metaplex_indexer::amqp_consume(&params, consumer, move |m| {
+            metaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
                 let client = client.clone();
                 async move { metaplex_indexer::accountsdb::process_message(m, &*client).await }
             })

@@ -117,12 +117,14 @@ mod runtime {
     /// This function will panic if the internal scheduler enters a deadlock
     /// state.
     pub async fn amqp_consume<
-        M: Debug + for<'a> serde::Deserialize<'a>,
-        Q: indexer_rabbitmq::QueueType<M>,
+        M: Debug + for<'a> serde::Deserialize<'a> + 'static,
+        Q: indexer_rabbitmq::QueueType<M> + Send + Sync + 'static,
         F: Send + Future<Output = Result<()>> + 'static,
     >(
         params: &Params,
+        conn: indexer_rabbitmq::lapin::Connection,
         mut consumer: indexer_rabbitmq::consumer::Consumer<M, Q>,
+        queue_type: Q,
         process: impl Fn(M) -> F,
     ) -> Result<()> {
         type JobResult = (
@@ -156,6 +158,12 @@ mod runtime {
         let Params { concurrency } = *params;
         let mut futures = futures_util::stream::FuturesUnordered::new();
         let sem = Arc::new(Semaphore::new(concurrency));
+
+        let dl_task = tokio::spawn(indexer_rabbitmq::consumer::dl_consume(
+            conn,
+            queue_type,
+            tokio::time::sleep,
+        ));
 
         loop {
             enum Message {
@@ -198,6 +206,8 @@ mod runtime {
             }
         }
 
+        dl_task.abort();
+
         if !futures.is_empty() {
             info!("Waiting for additional jobs to finish...");
         }
@@ -205,6 +215,8 @@ mod runtime {
         while let Some(r) = futures.next().await {
             finish_job(r).await?;
         }
+
+        dl_task.await?;
 
         Ok(())
     }

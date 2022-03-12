@@ -62,6 +62,13 @@ impl<T: serde::Serialize, Q: QueueType<T> + Sized> QueueTypeProducerExt<T> for Q
 pub trait QueueTypeConsumerExt<T>: QueueType<T> + Sized {
     /// Create a new [`Consumer`](crate::consumer::Consumer)
     async fn consumer(self, conn: &Connection) -> Result<crate::consumer::Consumer<T, Self>>;
+
+    /// Run the dead-letter consumer for this queue type
+    async fn dl_consume<S: std::future::Future<Output = ()>>(
+        self,
+        conn: &Connection,
+        sleep: impl Fn(Duration) -> S + 'async_trait,
+    );
 }
 
 #[cfg(any(test, feature = "consumer"))]
@@ -70,5 +77,14 @@ impl<T: for<'a> serde::Deserialize<'a>, Q: QueueType<T> + Sized> QueueTypeConsum
     #[inline]
     async fn consumer(self, conn: &Connection) -> Result<crate::consumer::Consumer<T, Self>> {
         crate::consumer::Consumer::new(conn, self).await
+    }
+
+    #[inline]
+    async fn dl_consume<S: std::future::Future<Output = ()>>(
+        self,
+        conn: &Connection,
+        sleep: impl Fn(Duration) -> S + 'async_trait,
+    ) {
+        crate::consumer::dl_consume(conn, self, sleep).await;
     }
 }

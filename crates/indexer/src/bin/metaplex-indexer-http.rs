@@ -69,12 +69,14 @@ async fn run<E: Send + metaplex_indexer::http::Process + 'static>(
     )
     .context("Failed to construct Client")?;
 
-    let consumer = http_indexer::QueueType::<E>::new(&sender, queue_suffix.as_deref())
+    let queue_type = http_indexer::QueueType::<E>::new(&sender, queue_suffix.as_deref());
+    let consumer = queue_type
+        .clone()
         .consumer(&conn)
         .await
         .context("Failed to create queue consumer")?;
 
-    metaplex_indexer::amqp_consume(&params, consumer, move |m| {
+    metaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
         let client = client.clone();
         async move { m.process(&client).await }
     })

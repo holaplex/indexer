@@ -1,6 +1,6 @@
 //! An AMQP consumer configured from a [`QueueType`]
 
-use std::marker::PhantomData;
+use std::{marker::PhantomData, time::Duration};
 
 use futures_util::StreamExt;
 use lapin::{acker::Acker, Connection};
@@ -49,5 +49,35 @@ impl<T: for<'a> serde::Deserialize<'a>, Q: QueueType<T>> Consumer<T, Q> {
         let data = deserialize(std::io::Cursor::new(delivery.data))?;
 
         Ok(Some((data, delivery.acker)))
+    }
+}
+
+/// Run the dead-letter consumer for a [`QueueType`]
+pub async fn dl_consume<T, Q: QueueType<T>, S: std::future::Future<Output = ()>>(
+    conn: impl std::borrow::Borrow<Connection>,
+    ty: Q,
+    sleep: impl Fn(Duration) -> S,
+) {
+    async fn try_consume<T, Q: QueueType<T>>(conn: &Connection, ty: &Q) -> Result<()> {
+        let chan = conn.create_channel().await?;
+        let mut consumer = ty.init_dl_consumer(&chan).await?;
+
+        while let Some(del) = consumer.next().await {
+            let del = del?;
+
+            todo!("Process delivery {:?}", del);
+        }
+
+        Ok(())
+    }
+
+    loop {
+        match try_consume(conn.borrow(), &ty).await {
+            Ok(()) => (),
+            Err(e) => {
+                log::error!("Dead-letter consumer failed: {:?}", e);
+                sleep(Duration::from_secs(5)).await;
+            },
+        }
     }
 }

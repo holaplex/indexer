@@ -2884,6 +2884,7 @@ dependencies = [
  "async-trait",
  "futures-util",
  "lapin",
+ "log",
  "rmp-serde",
  "serde",
  "solana-sdk",

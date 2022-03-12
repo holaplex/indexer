@@ -17,7 +17,7 @@ use solana_sdk::pubkey::Pubkey;
 use crate::{queue_type::RetryInfo, Result};
 
 /// AMQP configuration for HTTP indexers
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct QueueType<E> {
     suffixed: bool,
     exchange: String,
@@ -26,6 +26,30 @@ pub struct QueueType<E> {
     dl_queue: String,
     dl_key: String,
     _p: PhantomData<fn(E) -> ()>,
+}
+
+impl<E> Clone for QueueType<E> {
+    fn clone(&self) -> Self {
+        let Self {
+            suffixed,
+            ref exchange,
+            ref queue,
+            ref dl_exchange,
+            ref dl_queue,
+            ref dl_key,
+            _p: p,
+        } = *self;
+
+        Self {
+            suffixed,
+            exchange: exchange.clone(),
+            queue: queue.clone(),
+            dl_exchange: dl_exchange.clone(),
+            dl_queue: dl_queue.clone(),
+            dl_key: dl_key.clone(),
+            _p: p,
+        }
+    }
 }
 
 /// Identifier for an entity type
