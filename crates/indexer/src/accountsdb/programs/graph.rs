@@ -6,6 +6,6 @@ use crate::prelude::*;
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
     let connection: Connection = Connection::try_deserialize(&mut update.data.as_slice())
-        .context("Failed to graph program Connection data")?;
+        .context("Failed to deserialize graph program Connection data")?;
     graph::process(client, update.key, connection).await
 }
