@@ -70,6 +70,7 @@ rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
 
 [dependencies.graph_program]
 git = "https://github.com/holaplex/graph-program.git"
+rev = "709a8768a7f71df2aba48cf9862835877a036e08"
 
 # Workspace dependencies
 [dependencies.indexer-core]

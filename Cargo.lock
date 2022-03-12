@@ -2267,7 +2267,7 @@ dependencies = [
 [[package]]
 name = "graph_program"
 version = "0.1.0"
-source = "git+https://github.com/holaplex/graph-program.git#709a8768a7f71df2aba48cf9862835877a036e08"
+source = "git+https://github.com/holaplex/graph-program.git?rev=709a8768a7f71df2aba48cf9862835877a036e08#709a8768a7f71df2aba48cf9862835877a036e08"
 dependencies = [
  "anchor-lang 0.22.1",
 ]
