@@ -7,6 +7,7 @@ table! {
         value -> Nullable<Text>,
         trait_type -> Nullable<Text>,
         id -> Uuid,
+        first_verified_creator -> Nullable<Varchar>,
     }
 }
 
@@ -209,6 +210,7 @@ table! {
         creator_address -> Varchar,
         share -> Int4,
         verified -> Bool,
+        position -> Nullable<Int4>,
     }
 }
 

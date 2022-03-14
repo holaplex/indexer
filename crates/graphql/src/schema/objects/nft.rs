@@ -50,31 +50,13 @@ impl<'a> TryFrom<models::MetadataAttribute<'a>> for NftAttribute {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, GraphQLObject)]
 pub struct NftCreator {
     pub address: String,
     pub metadata_address: String,
     pub share: i32,
     pub verified: bool,
-}
-
-#[graphql_object(Context = AppContext)]
-impl NftCreator {
-    pub fn address(&self) -> &str {
-        &self.address
-    }
-
-    pub fn metadata_address(&self) -> &str {
-        &self.metadata_address
-    }
-
-    pub fn share(&self) -> i32 {
-        self.share
-    }
-
-    pub fn verified(&self) -> bool {
-        self.verified
-    }
+    pub position: Option<i32>,
 }
 
 impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
@@ -84,6 +66,7 @@ impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
             metadata_address,
             share,
             verified,
+            position,
         }: models::MetadataCreator,
     ) -> Self {
         Self {
@@ -91,6 +74,7 @@ impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
             metadata_address: metadata_address.into_owned(),
             share,
             verified,
+            position,
         }
     }
 }

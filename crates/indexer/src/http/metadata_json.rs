@@ -14,7 +14,7 @@ use indexer_core::{
         },
         select,
         tables::{attributes, files, metadata_collections, metadata_jsons},
-        Connection,
+        update, Connection,
     },
     hash::HashMap,
 };
@@ -226,6 +226,7 @@ async fn try_locate_json(
 async fn process_full(
     client: &Client,
     addr: String,
+    first_verified_creator: Option<String>,
     json: MetadataJson,
     fingerprint: Vec<u8>,
 ) -> Result<()> {
@@ -277,7 +278,12 @@ async fn process_full(
             //       previous rows from the old metadata JSON:
 
             process_files(db, &addr, files)?;
-            process_attributes(db, &addr, json.attributes)?;
+            process_attributes(
+                db,
+                &addr,
+                first_verified_creator.as_deref(),
+                json.attributes,
+            )?;
             process_collection(db, &addr, json.collection)
         })
         .await
@@ -370,6 +376,7 @@ fn process_files(db: &Connection, addr: &str, files: Option<Vec<File>>) -> Resul
 fn process_attributes(
     db: &Connection,
     addr: &str,
+    first_verified_creator: Option<&str>,
     attributes: Option<Vec<Attribute>>,
 ) -> Result<()> {
     for Attribute { trait_type, value } in attributes.unwrap_or_else(Vec::new) {
@@ -377,6 +384,7 @@ fn process_attributes(
             metadata_address: Borrowed(addr),
             trait_type: trait_type.map(Owned),
             value: value.as_ref().map(|v| Owned(v.to_string())),
+            first_verified_creator: first_verified_creator.map(Borrowed),
         };
 
         insert_into(attributes::table)
@@ -408,7 +416,30 @@ fn process_collection(db: &Connection, addr: &str, collection: Option<Collection
     Ok(())
 }
 
-pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> Result<()> {
+async fn reprocess_attributes(
+    client: &Client,
+    addr: String,
+    first_verified_creator: Option<String>,
+) -> Result<()> {
+    client
+        .db()
+        .run(move |db| {
+            update(attributes::table.filter(attributes::metadata_address.eq(addr)))
+                .set(attributes::first_verified_creator.eq(first_verified_creator))
+                .execute(db)
+        })
+        .await
+        .context("Failed to update attributes")?;
+
+    Ok(())
+}
+
+pub async fn process<'a>(
+    client: &Client,
+    meta_key: Pubkey,
+    first_verified_creator: Option<Pubkey>,
+    uri_str: String,
+) -> Result<()> {
     let url = Url::parse(&uri_str).context("Couldn't parse metadata JSON URL")?;
     let id = AssetIdentifier::new(&url);
 
@@ -438,8 +469,21 @@ pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> 
         .await
         .context("Failed to check for already-indexed metadata JSON")?;
 
+    let first_verified_creator =
+        first_verified_creator.map(|address| bs58::encode(address).into_string());
+
     if is_present {
         debug!("Skipping already-indexed metadata JSON for {}", meta_key);
+
+        // NOTE: For future reference, this introduces a situation with non-
+        //       idempotent updates.  It is possible that with job retries, a
+        //       sequence of two metadata jobs with differing values for
+        //       first_verified_creator can write the wrong value.  If the first
+        //       job fails, it will be eventually requeued after the second job.
+        //       If the second job subsequently succeeds, then this reprocess
+        //       function will be called by the first job and the first
+        //       verified creator will be updated to an out-of-date value.
+        reprocess_attributes(client, addr, first_verified_creator).await?;
 
         return Ok(());
     }
@@ -449,7 +493,9 @@ pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> 
     let (json, fingerprint) = try_locate_json(client, &url, &id, meta_key).await?;
 
     match json {
-        MetadataJsonResult::Full(f) => process_full(client, addr, f, fingerprint).await,
+        MetadataJsonResult::Full(f) => {
+            process_full(client, addr, first_verified_creator, f, fingerprint).await
+        },
         MetadataJsonResult::Minimal(m) => process_minimal(client, addr, m, fingerprint).await,
     }
 }

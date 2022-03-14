@@ -19,9 +19,13 @@ pub trait Process: Entity {
 #[async_trait::async_trait]
 impl Process for MetadataJson {
     async fn process(self, client: &Client) -> Result<()> {
-        let MetadataJson { meta_address, uri } = self;
+        let MetadataJson {
+            meta_address,
+            first_verified_creator,
+            uri,
+        } = self;
 
-        metadata_json::process(client, meta_address, uri).await
+        metadata_json::process(client, meta_address, first_verified_creator, uri).await
     }
 }
 
