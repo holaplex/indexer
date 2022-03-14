@@ -55,19 +55,17 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
         .await
         .context("Failed to dispatch metadata JSON job")?;
 
-    for (position, creator) in meta
-        .data
-        .creators
-        .iter()
-        .flatten()
-        .enumerate()
-    {
+    for (position, creator) in meta.data.creators.iter().flatten().enumerate() {
         let row = MetadataCreator {
             metadata_address: Owned(addr.clone()),
             creator_address: Owned(bs58::encode(creator.address).into_string()),
             share: creator.share.into(),
             verified: creator.verified,
-            position: Some(position.try_into().context("Position was too big to store")?),
+            position: Some(
+                position
+                    .try_into()
+                    .context("Position was too big to store")?,
+            ),
         };
 
         client

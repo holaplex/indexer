@@ -14,7 +14,7 @@ use indexer_core::{
         },
         select,
         tables::{attributes, files, metadata_collections, metadata_jsons},
-        Connection,
+        update, Connection,
     },
     hash::HashMap,
 };
@@ -278,7 +278,12 @@ async fn process_full(
             //       previous rows from the old metadata JSON:
 
             process_files(db, &addr, files)?;
-            process_attributes(db, &addr, &first_verified_creator, json.attributes)?;
+            process_attributes(
+                db,
+                &addr,
+                first_verified_creator.as_deref(),
+                json.attributes,
+            )?;
             process_collection(db, &addr, json.collection)
         })
         .await
@@ -371,7 +376,7 @@ fn process_files(db: &Connection, addr: &str, files: Option<Vec<File>>) -> Resul
 fn process_attributes(
     db: &Connection,
     addr: &str,
-    first_verified_creator: &Option<String>,
+    first_verified_creator: Option<&str>,
     attributes: Option<Vec<Attribute>>,
 ) -> Result<()> {
     for Attribute { trait_type, value } in attributes.unwrap_or_else(Vec::new) {
@@ -379,9 +384,7 @@ fn process_attributes(
             metadata_address: Borrowed(addr),
             trait_type: trait_type.map(Owned),
             value: value.as_ref().map(|v| Owned(v.to_string())),
-            first_verified_creator: first_verified_creator
-                .as_ref()
-                .map(|a| Owned(a.to_string())),
+            first_verified_creator: first_verified_creator.map(Borrowed),
         };
 
         insert_into(attributes::table)
@@ -413,6 +416,24 @@ fn process_collection(db: &Connection, addr: &str, collection: Option<Collection
     Ok(())
 }
 
+async fn reprocess_attributes(
+    client: &Client,
+    addr: String,
+    first_verified_creator: Option<String>,
+) -> Result<()> {
+    client
+        .db()
+        .run(move |db| {
+            update(attributes::table.filter(attributes::metadata_address.eq(addr)))
+                .set(attributes::first_verified_creator.eq(first_verified_creator))
+                .execute(db)
+        })
+        .await
+        .context("Failed to update attributes")?;
+
+    Ok(())
+}
+
 pub async fn process<'a>(
     client: &Client,
     meta_key: Pubkey,
@@ -429,8 +450,6 @@ pub async fn process<'a>(
         .chain(id.arweave.map(|a| a.0.to_vec()))
         .collect();
     let addr = bs58::encode(meta_key).into_string();
-    let first_verified_creator =
-        first_verified_creator.map(|address| bs58::encode(address).into_string());
 
     let is_present = client
         .db()
@@ -450,8 +469,13 @@ pub async fn process<'a>(
         .await
         .context("Failed to check for already-indexed metadata JSON")?;
 
+    let first_verified_creator =
+        first_verified_creator.map(|address| bs58::encode(address).into_string());
+
     if is_present {
         debug!("Skipping already-indexed metadata JSON for {}", meta_key);
+
+        reprocess_attributes(client, addr, first_verified_creator).await?;
 
         return Ok(());
     }
