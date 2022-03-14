@@ -30,7 +30,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
     let first_verified_creator: Option<Pubkey> = meta
         .data
         .creators
-        .clone()
+        .as_ref()
         .and_then(|creators| creators.iter().find(|c| c.verified).map(|c| c.address));
 
     client
@@ -58,8 +58,8 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
     for (position, creator) in meta
         .data
         .creators
-        .unwrap_or_else(Vec::new)
         .iter()
+        .flatten()
         .enumerate()
     {
         let row = MetadataCreator {
@@ -67,7 +67,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
             creator_address: Owned(bs58::encode(creator.address).into_string()),
             share: creator.share.into(),
             verified: creator.verified,
-            position: Some(position.try_into().unwrap()),
+            position: Some(position.try_into().context("Position was too big to store")?),
         };
 
         client
