@@ -41,15 +41,10 @@ ENV SUFFIX=$SUFFIX
 COPY crates crates
 COPY Cargo.toml Cargo.lock ./
 
-RUN cargo build --profile heroku  --features=accountsdb --bin metaplex-indexer-accountsdb
 RUN cargo build --profile heroku --features=http --bin metaplex-indexer-http
 
-RUN strip target/heroku/metaplex-indexer-accountsdb && \
-  mkdir bin && \
-  mv target/heroku/metaplex-indexer-accountsdb \
-    bin
-
 RUN strip target/heroku/metaplex-indexer-http && \
+  mkdir bin && \
   mv target/heroku/metaplex-indexer-http \
     bin
 
