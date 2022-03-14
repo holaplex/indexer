@@ -475,6 +475,14 @@ pub async fn process<'a>(
     if is_present {
         debug!("Skipping already-indexed metadata JSON for {}", meta_key);
 
+        // NOTE: For future reference, this introduces a situation with non-
+        //       idempotent updates.  It is possible that with job retries, a
+        //       sequence of two metadata jobs with differing values for
+        //       first_verified_creator can write the wrong value.  If the first
+        //       job fails, it will be eventually requeued after the second job.
+        //       If the second job subsequently succeeds, then this reprocess
+        //       function will be called by the first job and the first
+        //       verified creator will be updated to an out-of-date value.
         reprocess_attributes(client, addr, first_verified_creator).await?;
 
         return Ok(());
