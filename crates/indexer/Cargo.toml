@@ -57,7 +57,6 @@ solana-program = { version = "~1.9.5", optional = true }
 solana-sdk = "~1.9.5"
 spl-token = { version="~3.2.0", features = ["no-entrypoint"] }
 
-
 # HTTP indexer
 base64 = { version = "0.13.0", optional = true }
 cid = { version = "0.7.0", optional = true }
