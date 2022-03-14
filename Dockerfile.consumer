@@ -36,21 +36,17 @@ ENV AMQP_URL=$AMQP_URL
 ARG SUFFIX
 ENV SUFFIX=$SUFFIX
 
-
+ARG STARTUP
+ENV STARTUP=$STARTUP
 
 COPY crates crates
 COPY Cargo.toml Cargo.lock ./
 
 RUN cargo build --profile heroku  --features=accountsdb --bin metaplex-indexer-accountsdb
-RUN cargo build --profile heroku --features=http --bin metaplex-indexer-http
 
 RUN strip target/heroku/metaplex-indexer-accountsdb && \
   mkdir bin && \
   mv target/heroku/metaplex-indexer-accountsdb \
-    bin
-
-RUN strip target/heroku/metaplex-indexer-http && \
-  mv target/heroku/metaplex-indexer-http \
     bin
 
 RUN rm -rf target /usr/local/cargo/registry && \
