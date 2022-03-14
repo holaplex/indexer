@@ -1,8 +1,6 @@
-
 # Your workflow name.
-name: Deploy to heroku.
+name: Heroku (production)
 
-# Run workflow on every push to master branch.
 on:
   push:
     branches: [master]
@@ -43,4 +41,3 @@ jobs:
           heroku_app_name: accountsdbhttpconsumer
           dockerfile_name: Dockerfile.http-consumer
           process_type: worker
-          

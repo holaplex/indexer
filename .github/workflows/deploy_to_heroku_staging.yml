@@ -1,5 +1,5 @@
 # Your workflow name.
-name: Deploy to heroku.
+name: Heroku (staging)
 
 on:
   push:
@@ -48,5 +48,3 @@ jobs:
           heroku_app_name: accountsdbhttpconsumerstaging
           dockerfile_name: Dockerfile.http-consumer
           process_type: worker
-
-   
