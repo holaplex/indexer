@@ -8,6 +8,7 @@ lto = "thin"
 [profile.release-lite]
 inherits = "release"
 opt-level = 2
+lto = false
 
 [profile.debug-opt]
 inherits = "release"
@@ -15,8 +16,6 @@ debug = 2
 debug-assertions = true
 incremental = true
 
-[profile.heroku]
+[profile.docker]
 inherits = "release"
-# Uncomment below if build performance declines
-# opt-level = "z"
-# lto = false
+# strip = "symbols" # Not supported in the workspace toolchain version
