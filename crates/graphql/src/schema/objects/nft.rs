@@ -160,19 +160,19 @@ impl Nft {
                     .to_string();
 
             let rem = md5::compute(&cid).to_vec()[0].rem_euclid(cdn_count);
-            let assets_cdn = if rem != 0 {
-                assets_cdn.replace("assets", &format!("assets{}", rem))
-            } else {
+            let assets_cdn = if rem == 0 {
                 assets_cdn.to_string()
+            } else {
+                assets_cdn.replace("assets", &format!("assets{}", rem))
             };
             format!("{}arweave/{}?width={}", assets_cdn, cid, width as i32)
         } else if asset.ipfs.is_some() && asset.arweave.is_none() {
             let cid = asset.ipfs.unwrap().to_string();
             let rem = md5::compute(&cid).to_vec()[0].rem_euclid(cdn_count);
-            let assets_cdn = if rem != 0 {
-                assets_cdn.replace("assets", &format!("assets{}", rem))
-            } else {
+            let assets_cdn = if rem == 0 {
                 assets_cdn.to_string()
+            } else {
+                assets_cdn.replace("assets", &format!("assets{}", rem))
             };
             format!("{}ipfs/{}?width={}", assets_cdn, cid, width as i32)
         } else {
