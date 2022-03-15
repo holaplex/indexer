@@ -9,7 +9,7 @@ on:
 jobs:
   debug-build:
     name: cargo build/test (debug profile)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: install dependencies
         run: |
@@ -30,7 +30,7 @@ jobs:
 
   release-build:
     name: cargo build/test (release profile)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: install dependencies
         run: |
