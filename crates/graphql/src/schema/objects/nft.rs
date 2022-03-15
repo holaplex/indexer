@@ -165,7 +165,7 @@ impl Nft {
             } else {
                 assets_cdn.to_string()
             };
-            format!("{}/arweave/{}?width={}", assets_cdn, cid, width as i32)
+            format!("{}arweave/{}?width={}", assets_cdn, cid, width as i32)
         } else if asset.ipfs.is_some() && asset.arweave.is_none() {
             let cid = asset.ipfs.unwrap().to_string();
             let rem = md5::compute(&cid).to_vec()[0].rem_euclid(cdn_count);
@@ -174,7 +174,7 @@ impl Nft {
             } else {
                 assets_cdn.to_string()
             };
-            format!("{}/ipfs/{}?width={}", assets_cdn, cid, width as i32)
+            format!("{}ipfs/{}?width={}", assets_cdn, cid, width as i32)
         } else {
             String::from(&self.image)
         }
