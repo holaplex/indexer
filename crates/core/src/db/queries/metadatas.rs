@@ -1,8 +1,9 @@
 //! Query utilities for looking up  metadatas
-use diesel::{pg::expression::dsl::any, prelude::*};
+use diesel::prelude::*;
 
 use crate::{
     db::{
+        any,
         models::Nft,
         tables::{
             attributes, listing_receipts, metadata_creators, metadata_jsons, metadatas,
@@ -66,6 +67,7 @@ pub fn list(
         .left_outer_join(
             listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)),
         )
+        .left_outer_join(attributes::table.on(metadatas::address.eq(attributes::metadata_address)))
         .into_boxed();
 
     if let Some(attributes) = attributes {
@@ -73,15 +75,11 @@ pub fn list(
             attributes
                 .into_iter()
                 .fold(query, |acc, AttributeFilter { trait_type, values }| {
-                    let sub = attributes::table
-                        .select(attributes::metadata_address)
-                        .filter(
-                            attributes::trait_type
-                                .eq(trait_type)
-                                .and(attributes::value.eq(any(values))),
-                        );
-
-                    acc.filter(metadatas::address.eq(any(sub)))
+                    acc.filter(
+                        attributes::trait_type
+                            .eq(trait_type)
+                            .and(attributes::value.eq(any(values))),
+                    )
                 });
     }
 
@@ -99,8 +97,7 @@ pub fn list(
         query = query
             .filter(listing_receipts::auction_house.eq(any(listed)))
             .filter(listing_receipts::purchase_receipt.is_null())
-            .filter(listing_receipts::canceled_at.is_null())
-            .filter(token_accounts::amount.eq(1));
+            .filter(listing_receipts::canceled_at.is_null());
     }
 
     let rows: Vec<Nft> = query
@@ -113,6 +110,7 @@ pub fn list(
             metadata_jsons::description,
             metadata_jsons::image,
         ))
+        .filter(token_accounts::amount.eq(1))
         .distinct()
         .order_by(metadatas::name.desc())
         .limit(limit)

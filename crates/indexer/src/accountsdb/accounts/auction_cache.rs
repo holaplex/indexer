@@ -26,7 +26,7 @@ pub(crate) async fn process(
         ..
     } = cache;
 
-    let (auction_ext, _bump) = find_auction_data_extended(auction);
+    let (auction_ext, _bump) = find_auction_data_extended(vault);
     let address: Cow<str> = Owned(bs58::encode(cache_key).into_string());
 
     let values = AuctionCache {

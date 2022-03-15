@@ -17,7 +17,6 @@ use tables::{
 };
 
 use super::prelude::*;
-
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
@@ -113,7 +112,6 @@ impl QueryRoot {
             limit: limit.into(),
             offset: offset.into(),
         };
-
         let nfts = queries::metadatas::list(&conn, query_options)?;
 
         Ok(nfts.into_iter().map(Into::into).collect())

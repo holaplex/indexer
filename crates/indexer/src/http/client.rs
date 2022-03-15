@@ -1,13 +1,10 @@
 use std::sync::Arc;
 
 use cid::Cid;
+use indexer_core::assets::ArTxid;
 use reqwest::Url;
 
 use crate::{db::Pool, prelude::*};
-
-/// An Arweave transaction ID
-#[derive(Debug, Clone, Copy)]
-pub struct ArTxid(pub [u8; 32]);
 
 /// Wrapper for handling networking logic
 #[derive(Debug)]

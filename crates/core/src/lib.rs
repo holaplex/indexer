@@ -17,6 +17,7 @@ extern crate diesel_migrations;
 pub extern crate chrono;
 pub extern crate clap;
 
+pub mod assets;
 pub mod db;
 pub mod error;
 pub mod hash;
@@ -32,8 +33,10 @@ pub mod prelude {
 
     pub use chrono::{self, prelude::*};
     pub use diesel::{
+        debug_query,
         dsl::{any, exists, not},
         expression_methods::*,
+        pg::Pg,
         query_dsl::{BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl},
     };
     pub use diesel_full_text_search::{TsQueryExtensions, TsVectorExtensions};

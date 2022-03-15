@@ -1,21 +1,16 @@
-# Your workflow name.
-name: Deploy to heroku.
+name: Heroku (staging)
 
 on:
   push:
     branches: [dev, deploy_config, debug_validator]
 
-# Your workflows jobs.
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Check-out your repository.
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-      - name: Cargo Cache
-        uses: actions/cache@v1
+      - uses: actions/cache@v1
         with:
           path: ~/.cargo
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
@@ -23,30 +18,31 @@ jobs:
             ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
             ${{ runner.os }}-cargo
 
-      - name: Deploy graphql app to heroku. # Your custom step name
-        uses: gonuit/heroku-docker-deploy@v1.3.3 # GitHub action name (leave it as it is).
-        with:
-          email: ${{ secrets.HEROKU_EMAIL }}
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: indexer-graphql-staging
-          dockerfile_name: Dockerfile.graphql
-
-      - name: Deploy accountsdb consumer app to heroku. # Your custom step name
-        uses: gonuit/heroku-docker-deploy@v1.3.3 # GitHub action name (leave it as it is).
+      - name: AccountsDB consumer
+        uses: gonuit/heroku-docker-deploy@v1.3.3
         with:
           email: ${{ secrets.HEROKU_EMAIL }}
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
           heroku_app_name: accounts-db-consumer-staging
-          dockerfile_name: Dockerfile.consumer
+          dockerfile_name: Dockerfile
+          docker_options: '--target accountsdb-consumer'
           process_type: worker
 
-      - name: Deploy accountsdb http-consumer app to heroku. # Your custom step name
-        uses: gonuit/heroku-docker-deploy@v1.3.3 # GitHub action name (leave it as it is).
+      - name: HTTP consumer
+        uses: gonuit/heroku-docker-deploy@v1.3.3
         with:
           email: ${{ secrets.HEROKU_EMAIL }}
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
           heroku_app_name: accountsdbhttpconsumerstaging
-          dockerfile_name: Dockerfile.http-consumer
+          dockerfile_name: Dockerfile
+          docker_options: '--target http-consumer'
           process_type: worker
 
-   
+      - name: GraphQL server
+        uses: gonuit/heroku-docker-deploy@v1.3.3
+        with:
+          email: ${{ secrets.HEROKU_EMAIL }}
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: indexer-graphql-staging
+          dockerfile_name: Dockerfile
+          docker_options: '--target graphql'

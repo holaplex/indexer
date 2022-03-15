@@ -5,6 +5,7 @@ use std::{
 
 use cid::Cid;
 use indexer_core::{
+    assets::AssetIdentifier,
     db::{
         insert_into,
         models::{
@@ -13,7 +14,7 @@ use indexer_core::{
         },
         select,
         tables::{attributes, files, metadata_collections, metadata_jsons},
-        Connection,
+        update, Connection,
     },
     hash::HashMap,
 };
@@ -21,82 +22,8 @@ use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{client::ArTxid, Client};
+use super::Client;
 use crate::prelude::*;
-
-#[derive(Debug, Clone, Copy)]
-struct AssetIdentifier {
-    ipfs: Option<Cid>,
-    arweave: Option<ArTxid>,
-}
-
-impl AssetIdentifier {
-    fn visit_url(url: &Url, mut f: impl FnMut(&str)) {
-        Some(url.scheme())
-            .into_iter()
-            .chain(url.domain().into_iter().flat_map(|s| s.split('.')))
-            .chain(Some(url.username()))
-            .chain(url.password())
-            .chain(Some(url.path()))
-            .chain(url.path_segments().into_iter().flatten())
-            .chain(url.query())
-            .chain(url.fragment().into_iter().flat_map(|s| s.split('/')))
-            .for_each(&mut f);
-
-        url.query_pairs().for_each(|(k, v)| {
-            f(k.as_ref());
-            f(v.as_ref());
-        });
-    }
-
-    fn try_ipfs(s: &str) -> Option<Cid> {
-        s.try_into().ok()
-    }
-
-    fn try_arweave(s: &str) -> Option<ArTxid> {
-        [
-            base64::URL_SAFE,
-            base64::URL_SAFE_NO_PAD,
-            base64::STANDARD,
-            base64::STANDARD_NO_PAD,
-        ]
-        .into_iter()
-        .find_map(|c| {
-            base64::decode_config(s.as_bytes(), c)
-                .ok()
-                .and_then(|v| v.try_into().ok())
-                .map(ArTxid)
-        })
-    }
-
-    fn advance_heuristic<T>(state: &mut Result<Option<T>, ()>, value: T) {
-        match state {
-            Ok(None) => *state = Ok(Some(value)),
-            Ok(Some(_)) => *state = Err(()),
-            Err(()) => (),
-        }
-    }
-
-    fn new(url: &Url) -> Self {
-        let mut ipfs = Ok(None);
-        let mut arweave = Ok(None);
-
-        Self::visit_url(url, |s| {
-            if let Some(c) = Self::try_ipfs(s) {
-                Self::advance_heuristic(&mut ipfs, c);
-            }
-
-            if let Some(t) = Self::try_arweave(s) {
-                Self::advance_heuristic(&mut arweave, t);
-            }
-        });
-
-        Self {
-            ipfs: ipfs.ok().flatten(),
-            arweave: arweave.ok().flatten(),
-        }
-    }
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 struct File {
@@ -299,6 +226,7 @@ async fn try_locate_json(
 async fn process_full(
     client: &Client,
     addr: String,
+    first_verified_creator: Option<String>,
     json: MetadataJson,
     fingerprint: Vec<u8>,
 ) -> Result<()> {
@@ -350,7 +278,12 @@ async fn process_full(
             //       previous rows from the old metadata JSON:
 
             process_files(db, &addr, files)?;
-            process_attributes(db, &addr, json.attributes)?;
+            process_attributes(
+                db,
+                &addr,
+                first_verified_creator.as_deref(),
+                json.attributes,
+            )?;
             process_collection(db, &addr, json.collection)
         })
         .await
@@ -443,6 +376,7 @@ fn process_files(db: &Connection, addr: &str, files: Option<Vec<File>>) -> Resul
 fn process_attributes(
     db: &Connection,
     addr: &str,
+    first_verified_creator: Option<&str>,
     attributes: Option<Vec<Attribute>>,
 ) -> Result<()> {
     for Attribute { trait_type, value } in attributes.unwrap_or_else(Vec::new) {
@@ -450,6 +384,7 @@ fn process_attributes(
             metadata_address: Borrowed(addr),
             trait_type: trait_type.map(Owned),
             value: value.as_ref().map(|v| Owned(v.to_string())),
+            first_verified_creator: first_verified_creator.map(Borrowed),
         };
 
         insert_into(attributes::table)
@@ -481,7 +416,30 @@ fn process_collection(db: &Connection, addr: &str, collection: Option<Collection
     Ok(())
 }
 
-pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> Result<()> {
+async fn reprocess_attributes(
+    client: &Client,
+    addr: String,
+    first_verified_creator: Option<String>,
+) -> Result<()> {
+    client
+        .db()
+        .run(move |db| {
+            update(attributes::table.filter(attributes::metadata_address.eq(addr)))
+                .set(attributes::first_verified_creator.eq(first_verified_creator))
+                .execute(db)
+        })
+        .await
+        .context("Failed to update attributes")?;
+
+    Ok(())
+}
+
+pub async fn process<'a>(
+    client: &Client,
+    meta_key: Pubkey,
+    first_verified_creator: Option<Pubkey>,
+    uri_str: String,
+) -> Result<()> {
     let url = Url::parse(&uri_str).context("Couldn't parse metadata JSON URL")?;
     let id = AssetIdentifier::new(&url);
 
@@ -511,8 +469,21 @@ pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> 
         .await
         .context("Failed to check for already-indexed metadata JSON")?;
 
+    let first_verified_creator =
+        first_verified_creator.map(|address| bs58::encode(address).into_string());
+
     if is_present {
         debug!("Skipping already-indexed metadata JSON for {}", meta_key);
+
+        // NOTE: For future reference, this introduces a situation with non-
+        //       idempotent updates.  It is possible that with job retries, a
+        //       sequence of two metadata jobs with differing values for
+        //       first_verified_creator can write the wrong value.  If the first
+        //       job fails, it will be eventually requeued after the second job.
+        //       If the second job subsequently succeeds, then this reprocess
+        //       function will be called by the first job and the first
+        //       verified creator will be updated to an out-of-date value.
+        reprocess_attributes(client, addr, first_verified_creator).await?;
 
         return Ok(());
     }
@@ -522,7 +493,9 @@ pub async fn process<'a>(client: &Client, meta_key: Pubkey, uri_str: String) -> 
     let (json, fingerprint) = try_locate_json(client, &url, &id, meta_key).await?;
 
     match json {
-        MetadataJsonResult::Full(f) => process_full(client, addr, f, fingerprint).await,
+        MetadataJsonResult::Full(f) => {
+            process_full(client, addr, first_verified_creator, f, fingerprint).await
+        },
         MetadataJsonResult::Minimal(m) => process_minimal(client, addr, m, fingerprint).await,
     }
 }

@@ -132,11 +132,16 @@ impl Client {
     pub async fn dispatch_metadata_json(
         &self,
         meta_address: Pubkey,
+        first_verified_creator: Option<Pubkey>,
         uri: String,
     ) -> Result<(), indexer_rabbitmq::Error> {
         self.http
             .metadata_json
-            .write(http_indexer::MetadataJson { meta_address, uri })
+            .write(http_indexer::MetadataJson {
+                meta_address,
+                uri,
+                first_verified_creator,
+            })
             .await
     }
 

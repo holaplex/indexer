@@ -1,4 +1,7 @@
+use base64::display::Base64Display;
+use indexer_core::assets::{AssetIdentifier, ImageSize};
 use objects::{bid_receipt::BidReceipt, listing_receipt::ListingReceipt};
+use reqwest::Url;
 
 use super::prelude::*;
 
@@ -47,31 +50,13 @@ impl<'a> TryFrom<models::MetadataAttribute<'a>> for NftAttribute {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, GraphQLObject)]
 pub struct NftCreator {
     pub address: String,
     pub metadata_address: String,
     pub share: i32,
     pub verified: bool,
-}
-
-#[graphql_object(Context = AppContext)]
-impl NftCreator {
-    pub fn address(&self) -> &str {
-        &self.address
-    }
-
-    pub fn metadata_address(&self) -> &str {
-        &self.metadata_address
-    }
-
-    pub fn share(&self) -> i32 {
-        self.share
-    }
-
-    pub fn verified(&self) -> bool {
-        self.verified
-    }
+    pub position: Option<i32>,
 }
 
 impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
@@ -81,6 +66,7 @@ impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
             metadata_address,
             share,
             verified,
+            position,
         }: models::MetadataCreator,
     ) -> Self {
         Self {
@@ -88,6 +74,7 @@ impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
             metadata_address: metadata_address.into_owned(),
             share,
             verified,
+            position,
         }
     }
 }
@@ -158,8 +145,30 @@ impl Nft {
         &self.description
     }
 
-    pub fn image(&self) -> &str {
-        &self.image
+    #[graphql(arguments(width(description = "image width"),))]
+    pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> String {
+        let width = ImageSize::from(width.unwrap_or(ImageSize::Medium as i32));
+
+        let assets_cdn = &ctx.asset_proxy_endpoint;
+        let asset = AssetIdentifier::new(&Url::parse(&self.image).unwrap());
+
+        if asset.arweave.is_some() && asset.ipfs.is_none() {
+            format!(
+                "{}/arweave/{}?width={}",
+                assets_cdn,
+                Base64Display::with_config(&asset.arweave.unwrap().0, base64::URL_SAFE_NO_PAD),
+                width as i32
+            )
+        } else if asset.ipfs.is_some() && asset.arweave.is_none() {
+            format!(
+                "{}/ipfs/{}?width={}",
+                assets_cdn,
+                asset.ipfs.unwrap(),
+                width as i32
+            )
+        } else {
+            String::from(&self.image)
+        }
     }
 
     pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
