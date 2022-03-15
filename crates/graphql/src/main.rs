@@ -29,6 +29,9 @@ struct Opts {
 
     #[clap(long, env)]
     asset_proxy_endpoint: String,
+
+    #[clap(long, env)]
+    asset_proxy_count: u8,
 }
 
 fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
@@ -68,6 +71,7 @@ fn graphql(
 
 pub(crate) struct SharedData {
     pub asset_proxy_endpoint: String,
+    pub asset_proxy_count: u8,
     pub twitter_bearer_token: String,
 }
 
@@ -77,11 +81,13 @@ fn main() {
             server: ServerOpts { port },
             twitter_bearer_token,
             asset_proxy_endpoint,
+            asset_proxy_count,
         } = Opts::parse();
 
         let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
         let shared = Arc::new(SharedData {
             asset_proxy_endpoint,
+            asset_proxy_count,
             twitter_bearer_token,
         });
 
