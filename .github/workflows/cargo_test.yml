@@ -1,0 +1,50 @@
+name: Cargo test
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [dev, master]
+
+jobs:
+  debug-build:
+    name: cargo build/test (debug profile)
+    runs-on: ubuntu-latest
+    steps:
+      - name: install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libudev-dev
+
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-11-09
+          components: cargo, rustc
+          profile: minimal
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all --lib --bins --all-features --profile=debug-lite
+
+  release-build:
+    name: cargo build/test (release profile)
+    runs-on: ubuntu-latest
+    steps:
+      - name: install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libudev-dev
+
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-11-09
+          components: cargo, rustc
+          profile: minimal
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all --lib --bins --all-features --profile=release-lite

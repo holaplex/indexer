@@ -1,3 +1,4 @@
 #!/bin/sh
 
-./bin/metaplex-indexer-accountsdb --network=mainnet
+./bin/metaplex-indexer-accountsdb --network=mainnet --startup=all &
+./bin/metaplex-indexer-accountsdb --network=mainnet --startup=normal
