@@ -145,27 +145,36 @@ impl Nft {
         &self.description
     }
 
-    #[graphql(arguments(width(description = "image width"),))]
+    #[graphql(arguments(width(
+        description = "Image width possible values are:\n- 0 (Original size)\n- 600 (Small)\n- 800 (Medium)\n- 1400 (Large)\n\n Any other value will return the original image size.\n\n If no value is provided, it will return width 800"
+    ),))]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> String {
         let width = ImageSize::from(width.unwrap_or(ImageSize::Medium as i32));
-
+        let cdn_count = ctx.shared.asset_proxy_count;
         let assets_cdn = &ctx.shared.asset_proxy_endpoint;
         let asset = AssetIdentifier::new(&Url::parse(&self.image).unwrap());
 
         if asset.arweave.is_some() && asset.ipfs.is_none() {
-            format!(
-                "{}/arweave/{}?width={}",
-                assets_cdn,
-                Base64Display::with_config(&asset.arweave.unwrap().0, base64::URL_SAFE_NO_PAD),
-                width as i32
-            )
+            let cid =
+                Base64Display::with_config(&asset.arweave.unwrap().0, base64::URL_SAFE_NO_PAD)
+                    .to_string();
+
+            let rem = md5::compute(&cid).to_vec()[0].rem_euclid(cdn_count);
+            let assets_cdn = if rem != 0 {
+                assets_cdn.replace("assets", &format!("assets{}", rem))
+            } else {
+                assets_cdn.to_string()
+            };
+            format!("{}/arweave/{}?width={}", assets_cdn, cid, width as i32)
         } else if asset.ipfs.is_some() && asset.arweave.is_none() {
-            format!(
-                "{}/ipfs/{}?width={}",
-                assets_cdn,
-                asset.ipfs.unwrap(),
-                width as i32
-            )
+            let cid = asset.ipfs.unwrap().to_string();
+            let rem = md5::compute(&cid).to_vec()[0].rem_euclid(cdn_count);
+            let assets_cdn = if rem != 0 {
+                assets_cdn.replace("assets", &format!("assets{}", rem))
+            } else {
+                assets_cdn.to_string()
+            };
+            format!("{}/ipfs/{}?width={}", assets_cdn, cid, width as i32)
         } else {
             String::from(&self.image)
         }
