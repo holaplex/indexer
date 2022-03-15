@@ -1,4 +1,4 @@
-FROM rust:1.58.1-slim
+FROM rust:1.58.1-slim-bullseye AS build
 WORKDIR /metaplex-indexer
 
 RUN apt-get update -y && \
@@ -10,47 +10,59 @@ RUN apt-get update -y && \
   && \
   rm -rf /var/lib/apt/lists/*
 
-RUN rustup toolchain uninstall 1.58.1
-
 COPY rust-toolchain.toml ./
 
 # Force rustup to install toolchain
 RUN rustc --version
 
-ARG PORT
-ENV PORT=$PORT
-
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
-
-ARG SOLANA_ENDPOINT
-ENV SOLANA_ENDPOINT=$SOLANA_ENDPOINT
-
-ARG ARWEAVE_URL
-ENV ARWEAVE_URL=$ARWEAVE_URL
-
 COPY crates crates
 COPY Cargo.toml Cargo.lock ./
 
-RUN cargo build --profile heroku \
-  -pmetaplex-indexer \
-  -pmetaplex-indexer-graphql
+RUN cargo build --profile docker \
+  --features " \
+    metaplex-indexer/accountsdb, \
+    metaplex-indexer/http \
+  " \
+  --bin metaplex-indexer-accountsdb \
+  --bin metaplex-indexer-http \
+  --bin metaplex-indexer-legacy-storefronts \
+  --bin metaplex-indexer-graphql
 
-RUN rm -rf target /usr/local/cargo/registry && \
-  rustup toolchain uninstall \
-    nightly-2021-11-09 \
-    nightly \
-    stable
+COPY scripts scripts
 
-RUN apt-get install -y libpq5 && \
-  apt-get remove -y \
-    libssl-dev \
-    libpq-dev \
-    libudev-dev \
-    pkg-config \
+RUN scripts/strip-bins.sh target/docker bin
+
+FROM debian:bullseye-slim AS base
+WORKDIR /metaplex-indexer
+
+RUN apt-get update -y && \
+  apt-get install -y \
+    ca-certificates \
+    libpq5 \
+    libssl1.1 \
   && \
   rm -rf /var/lib/apt/lists/*
 
-ADD heroku_graphql_startup.sh /metaplex-indexer/heroku_graphql_startup.sh
+RUN mkdir -p bin
 
-CMD ["./heroku_startup.sh"]
+CMD ["./startup.sh"]
+
+FROM base AS accountsdb-consumer
+
+COPY --from=build metaplex-indexer/bin/metaplex-indexer-accountsdb bin/
+COPY --from=build metaplex-indexer/scripts/docker/accountsdb-consumer.sh startup.sh
+
+FROM base AS http-consumer
+
+COPY --from=build metaplex-indexer/bin/metaplex-indexer-http bin/
+COPY --from=build metaplex-indexer/scripts/docker/http-consumer.sh startup.sh
+
+FROM base AS legacy-storefronts
+
+COPY --from=build metaplex-indexer/bin/metaplex-indexer-legacy-storefronts bin/
+COPY --from=build metaplex-indexer/scripts/docker/legacy-storefronts.sh startup.sh
+
+FROM base AS graphql
+
+COPY --from=build metaplex-indexer/bin/metaplex-indexer-graphql bin/
+COPY --from=build metaplex-indexer/scripts/docker/graphql.sh startup.sh
