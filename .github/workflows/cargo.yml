@@ -1,9 +1,9 @@
-name: Cargo
+name: Cargo fmt/lint
 
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [dev, master]
 
 jobs:
   fmt:
@@ -41,33 +41,12 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all --lib --bins --all-features
+          args: --all --lib --bins --all-features --no-deps --profile=debug-lite
 
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --lib --bins --all-features --no-deps
-
-  debug-build:
-    name: cargo build/test (debug profile)
-    runs-on: ubuntu-latest
-    steps:
-      - name: install dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libudev-dev
-
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2021-11-09
-          components: cargo, rustc
-          profile: minimal
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all --lib --bins --all-features
+          args: --all --lib --bins --all-features --no-deps --profile=debug-lite
 
   release-check:
     name: cargo check/doc/clippy (release profile)
@@ -94,26 +73,3 @@ jobs:
         with:
           command: doc
           args: --all --lib --bins --all-features --no-deps --profile=release-lite
-
-  # NOTE: in case of emergency, break glass
-  # release-build:
-  #   name: cargo build/test (release profile)
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: install dependencies
-  #       run: |
-  #         sudo apt-get update -y
-  #         sudo apt-get install -y libudev-dev
-
-  #     - uses: actions/checkout@v2
-  #     - uses: actions-rs/toolchain@v1
-  #       with:
-  #         toolchain: nightly-2021-11-09
-  #         components: cargo, rustc
-  #         profile: minimal
-
-  #     - uses: actions-rs/cargo@v1
-  #       with:
-  #         command: test
-  #         args: --all --lib --bins --all-features --profile=release-lite
-

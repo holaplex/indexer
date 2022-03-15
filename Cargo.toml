@@ -5,10 +5,16 @@ members = ["crates/*"]
 opt-level = 3
 lto = "thin"
 
+[profile.debug-lite]
+inherits = "dev"
+incremental = false
+opt-level = 0
+debug = 1
+lto = "none"
+
 [profile.release-lite]
 inherits = "release"
 opt-level = 2
-lto = false
 
 [profile.debug-opt]
 inherits = "release"
