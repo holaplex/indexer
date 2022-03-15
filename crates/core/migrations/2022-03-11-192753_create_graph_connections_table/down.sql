@@ -1,0 +1,1 @@
+drop table graph_connections;
