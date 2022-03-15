@@ -39,7 +39,7 @@ impl QueryRoot {
         ctx: &AppContext,
         #[graphql(description = "Twitter handle")] handle: String,
     ) -> Option<Profile> {
-        let twitter_bearer_token = &ctx.twitter_bearer_token;
+        let twitter_bearer_token = &ctx.shared.twitter_bearer_token;
         let http_client = reqwest::Client::new();
 
         let twitter_show_response: TwitterShowResponse = http_client

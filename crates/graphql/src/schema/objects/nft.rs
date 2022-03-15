@@ -149,7 +149,7 @@ impl Nft {
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> String {
         let width = ImageSize::from(width.unwrap_or(ImageSize::Medium as i32));
 
-        let assets_cdn = &ctx.asset_proxy_endpoint;
+        let assets_cdn = &ctx.shared.asset_proxy_endpoint;
         let asset = AssetIdentifier::new(&Url::parse(&self.image).unwrap());
 
         if asset.arweave.is_some() && asset.ipfs.is_none() {
