@@ -50,6 +50,7 @@ tokio-amqp = "1.0.1"
 
 # Solana & Metaplex
 anchor-lang = "~0.20.1"
+anchor-lang-v0-22-1 = { package = "anchor-lang", version = "0.22.1" }
 metaplex = { version="0.0.1", features = ["no-entrypoint"] }
 metaplex-auction = { version="0.0.1", features = ["no-entrypoint"] }
 mpl-token-metadata = { version="~1.2.4", features = ["no-entrypoint"] }
@@ -69,6 +70,10 @@ serde_json = { version = "1.0.70", optional = true }
 [dependencies.mpl-metaplex]
 git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
 rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
+
+[dependencies.graph_program]
+git = "https://github.com/holaplex/graph-program.git"
+rev = "709a8768a7f71df2aba48cf9862835877a036e08"
 
 # Workspace dependencies
 [dependencies.indexer-core]
