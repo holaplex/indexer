@@ -45,6 +45,8 @@ RUN apt-get update -y && \
 
 RUN mkdir -p bin
 
+COPY .env .env.prod ./
+
 CMD ["./startup.sh"]
 
 FROM base AS accountsdb-consumer
