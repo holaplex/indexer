@@ -25,6 +25,7 @@ RUN cargo build --profile docker \
   " \
   --bin metaplex-indexer-accountsdb \
   --bin metaplex-indexer-http \
+  --bin metaplex-indexer-legacy-storefronts \
   --bin metaplex-indexer-graphql
 
 COPY scripts scripts
@@ -55,6 +56,11 @@ FROM base AS http-consumer
 
 COPY --from=build metaplex-indexer/bin/metaplex-indexer-http bin/
 COPY --from=build metaplex-indexer/scripts/docker/http-consumer.sh startup.sh
+
+FROM base AS legacy-storefronts
+
+COPY --from=build metaplex-indexer/bin/metaplex-indexer-legacy-storefronts bin/
+COPY --from=build metaplex-indexer/scripts/docker/legacy-storefronts.sh startup.sh
 
 FROM base AS graphql
 
