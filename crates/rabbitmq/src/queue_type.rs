@@ -5,11 +5,29 @@ use lapin::{Channel, Connection};
 use crate::Result;
 
 #[derive(Debug)]
-pub struct RetryInfo {
-    pub exchange: String,
-    pub routing_key: String,
-    pub max_tries: usize,
+pub struct RetryInfo<'a> {
+    pub exchange: Cow<'a, str>,
+    pub routing_key: Cow<'a, str>,
+    pub max_tries: u32,
     pub delay_hint: Duration,
+}
+
+impl<'a> RetryInfo<'a> {
+    pub fn into_owned(self) -> RetryInfo<'static> {
+        let Self {
+            exchange,
+            routing_key,
+            max_tries,
+            delay_hint,
+        } = self;
+
+        RetryInfo {
+            exchange: Cow::Owned(exchange.into_owned()),
+            routing_key: Cow::Owned(routing_key.into_owned()),
+            max_tries,
+            delay_hint,
+        }
+    }
 }
 
 /// Trait containing the required infrastructure to create AMQP producers and

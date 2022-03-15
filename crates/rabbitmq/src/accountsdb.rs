@@ -241,8 +241,8 @@ impl crate::QueueType<Message> for QueueType {
 
     fn retry_info(&self) -> Option<RetryInfo> {
         Some(RetryInfo {
-            exchange: self.dl_exchange.clone(),
-            routing_key: self.dl_key.clone(),
+            exchange: Cow::Borrowed(&self.dl_exchange),
+            routing_key: Cow::Borrowed(&self.dl_key),
             max_tries: 5,
             delay_hint: Duration::from_millis(500),
         })
