@@ -28,7 +28,10 @@ struct Opts {
     twitter_bearer_token: Option<String>,
 
     #[clap(long, env)]
-    asset_proxy_endpoint: Option<String>,
+    asset_proxy_endpoint: String,
+
+    #[clap(long, env)]
+    asset_proxy_count: u8,
 }
 
 fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
@@ -43,8 +46,7 @@ fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
 
 fn graphql(
     db_pool: Arc<Pool>,
-    twitter_bearer_token: Arc<String>,
-    asset_proxy_host: Arc<String>,
+    shared: Arc<SharedData>,
 ) -> impl Fn(
     web::Data<Arc<Schema>>,
     web::Json<GraphQLRequest>,
@@ -52,11 +54,10 @@ fn graphql(
 + Clone {
     move |st: web::Data<Arc<Schema>>, data: web::Json<GraphQLRequest>| {
         let pool = Arc::clone(&db_pool);
-        let twitter_bearer_token = Arc::clone(&twitter_bearer_token);
-        let asset_proxy_host = Arc::clone(&asset_proxy_host);
+        let shared = Arc::clone(&shared);
 
         Box::pin(async move {
-            let ctx = AppContext::new(pool, twitter_bearer_token, asset_proxy_host);
+            let ctx = AppContext::new(pool, shared);
             let res = data.execute(&st, &ctx).await;
 
             let json = serde_json::to_string(&res)?;
@@ -68,19 +69,27 @@ fn graphql(
     }
 }
 
+pub(crate) struct SharedData {
+    pub asset_proxy_endpoint: String,
+    pub asset_proxy_count: u8,
+    pub twitter_bearer_token: String,
+}
+
 fn main() {
     indexer_core::run(|| {
         let Opts {
             server: ServerOpts { port },
             twitter_bearer_token,
             asset_proxy_endpoint,
+            asset_proxy_count,
         } = Opts::parse();
 
         let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
-        let asset_proxy_endpoint = Arc::new(
-            asset_proxy_endpoint.unwrap_or_else(|| "https://assets.holaplex.com".to_string()),
-        );
-        let twitter_bearer_token = Arc::new(twitter_bearer_token);
+        let shared = Arc::new(SharedData {
+            asset_proxy_endpoint,
+            asset_proxy_count,
+            twitter_bearer_token,
+        });
 
         // TODO: db_ty indicates if any actions that mutate the database can be run
         let (db_pool, _db_ty) =
@@ -122,11 +131,8 @@ fn main() {
                                 .max_age(3600),
                         )
                         .service(
-                            web::resource(&version_extension).route(web::post().to(graphql(
-                                db_pool.clone(),
-                                twitter_bearer_token.clone(),
-                                asset_proxy_endpoint.clone(),
-                            ))),
+                            web::resource(&version_extension)
+                                .route(web::post().to(graphql(db_pool.clone(), shared.clone()))),
                         )
                         .service(
                             web::resource("/graphiql")

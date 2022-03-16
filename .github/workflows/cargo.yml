@@ -8,7 +8,7 @@ on:
 jobs:
   fmt:
     name: cargo fmt
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -24,7 +24,7 @@ jobs:
 
   debug-check:
     name: cargo check/doc/clippy (debug profile)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: install dependencies
         run: |
@@ -43,6 +43,10 @@ jobs:
           command: clippy
           args: --all --lib --bins --all-features --no-deps --profile=debug-lite
 
+      - name: check lockfile
+        run: |
+          diff Cargo.lock <(git show HEAD:Cargo.lock)
+
       - uses: actions-rs/cargo@v1
         with:
           command: doc
@@ -50,7 +54,7 @@ jobs:
 
   release-check:
     name: cargo check/doc/clippy (release profile)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: install dependencies
         run: |

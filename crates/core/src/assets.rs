@@ -16,7 +16,8 @@ pub struct AssetIdentifier {
 }
 
 /// Supported width sizes for asset proxy
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, strum::FromRepr)]
+#[repr(i32)]
 pub enum ImageSize {
     /// image natural size
     Original = 0,
@@ -30,12 +31,7 @@ pub enum ImageSize {
 
 impl From<i32> for ImageSize {
     fn from(value: i32) -> Self {
-        match value {
-            600 => Self::Small,
-            800 => Self::Medium,
-            1400 => Self::Large,
-            _ => Self::Original,
-        }
+        Self::from_repr(value).unwrap_or(Self::Original)
     }
 }
 

@@ -20,6 +20,7 @@ pub(self) mod prelude {
     };
 
     pub(super) use super::{context::AppContext, dataloaders, objects, scalars};
+    pub(crate) use crate::SharedData;
 }
 
 pub use context::AppContext;

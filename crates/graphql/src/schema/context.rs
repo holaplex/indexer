@@ -15,14 +15,13 @@ use super::prelude::*;
 #[derive(Clone)]
 pub struct AppContext {
     pub db_pool: Arc<Pool>,
-    pub twitter_bearer_token: Arc<String>,
-    pub asset_proxy_endpoint: Arc<String>,
+    pub(crate) shared: Arc<SharedData>,
 
     // Data loaders
     pub auction_house_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
     pub listing_loader: Loader<PublicKey<Listing>, Option<Listing>>,
     pub listing_bids_loader: Loader<PublicKey<Listing>, Vec<Bid>>,
-    pub listing_nfts_loader: Loader<PublicKey<Listing>, Vec<Nft>>,
+    pub listing_nfts_loader: Loader<PublicKey<Listing>, Vec<(usize, Nft)>>,
     pub nft_attributes_loader: Loader<PublicKey<Nft>, Vec<NftAttribute>>,
     pub nft_creators_loader: Loader<PublicKey<Nft>, Vec<NftCreator>>,
     pub nft_owner_loader: Loader<PublicKey<Nft>, Option<NftOwner>>,
@@ -35,11 +34,7 @@ pub struct AppContext {
 impl juniper::Context for AppContext {}
 
 impl AppContext {
-    pub fn new(
-        db_pool: Arc<Pool>,
-        twitter_bearer_token: Arc<String>,
-        asset_proxy_endpoint: Arc<String>,
-    ) -> AppContext {
+    pub(crate) fn new(db_pool: Arc<Pool>, shared: Arc<SharedData>) -> AppContext {
         let batcher = Batcher::new(db_pool.clone());
 
         Self {
@@ -55,8 +50,7 @@ impl AppContext {
             bid_receipts_loader: Loader::new(batcher.clone()),
             store_creator_loader: Loader::new(batcher),
             db_pool,
-            twitter_bearer_token,
-            asset_proxy_endpoint,
+            shared,
         }
     }
 }
