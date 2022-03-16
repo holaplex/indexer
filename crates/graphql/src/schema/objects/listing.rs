@@ -68,6 +68,8 @@ impl Bid {
 
 pub type ListingColumns = (
     auction_datas::address,
+    auction_datas_ext::address,
+    auction_caches::address,
     auction_caches::store_address,
     auction_datas::token_mint,
     auction_datas::ends_at,
@@ -77,6 +79,8 @@ pub type ListingColumns = (
 
 pub type ListingRow = (
     String,                // address
+    String,                // ext_address
+    String,                // cache_address
     String,                // store_address
     Option<String>,        // token_mint
     Option<NaiveDateTime>, // ends_at
@@ -87,6 +91,8 @@ pub type ListingRow = (
 #[derive(Debug, Clone)]
 pub struct Listing {
     pub address: String,
+    pub ext_address: String,
+    pub cache_address: String,
     pub store_address: String,
     pub token_mint: Option<String>,
     pub ended: bool,
@@ -98,11 +104,22 @@ impl Listing {
     }
 
     pub fn new(
-        (address, store_address, token_mint, ends_at, gap_time, last_bid_time): ListingRow,
+        (
+            address,
+            ext_address,
+            cache_address,
+            store_address,
+            token_mint,
+            ends_at,
+            gap_time,
+            last_bid_time,
+        ): ListingRow,
         now: NaiveDateTime,
     ) -> Result<Self> {
         Ok(Self {
             address,
+            ext_address,
+            cache_address,
             store_address,
             token_mint,
             ended: indexer_core::util::get_end_info(
@@ -120,6 +137,14 @@ impl Listing {
 impl Listing {
     pub fn address(&self) -> &str {
         &self.address
+    }
+
+    pub fn ext_address(&self) -> &str {
+        &self.ext_address
+    }
+
+    pub fn cache_address(&self) -> &str {
+        &self.cache_address
     }
 
     pub fn store_address(&self) -> &str {
@@ -142,6 +167,10 @@ impl Listing {
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
+            .map(|mut v| {
+                v.sort_unstable_by_key(|(i, _)| *i);
+                v.into_iter().map(|(_, n)| n).collect()
+            })
     }
 
     pub async fn bids(&self, ctx: &AppContext) -> FieldResult<Vec<Bid>> {
