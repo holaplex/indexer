@@ -27,10 +27,9 @@ pub(crate) async fn process(
     } = cache;
 
     let (auction_ext, _bump) = find_auction_data_extended(vault);
-    let address: Cow<str> = Owned(bs58::encode(cache_key).into_string());
 
     let values = AuctionCache {
-        address: address.clone(),
+        address: Owned(bs58::encode(cache_key).into_string()),
         store_address: Owned(bs58::encode(store).into_string()),
         timestamp: NaiveDateTime::from_timestamp(timestamp, 0),
         auction_data: Owned(bs58::encode(auction).into_string()),
@@ -39,12 +38,13 @@ pub(crate) async fn process(
         auction_manager: Owned(bs58::encode(auction_manager).into_string()),
     };
 
+    let listing_address: Cow<str> = Owned(bs58::encode(auction).into_string());
     let metadata_values = metadata
         .into_iter()
         .enumerate()
         .map(|(i, meta)| {
             Ok(ListingMetadata {
-                listing_address: address.clone(),
+                listing_address: listing_address.clone(),
                 metadata_address: Owned(bs58::encode(meta).into_string()),
                 metadata_index: i
                     .try_into()
