@@ -43,6 +43,10 @@ jobs:
           command: clippy
           args: --all --lib --bins --all-features --no-deps --profile=debug-lite
 
+      - name: check lockfile
+        run: |
+          diff Cargo.lock <(git show HEAD:Cargo.lock)
+
       - uses: actions-rs/cargo@v1
         with:
           command: doc
