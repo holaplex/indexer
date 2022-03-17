@@ -102,7 +102,11 @@ impl QueryRoot {
             ));
         }
 
+        let timestamp_1 = Local::now().format("%Y-%m-%dT%H:%M:%S");
+        debug!("attempting to connect to DB: {:?}", timestamp_1);
         let conn = context.db_pool.get().context("failed to connect to db")?;
+        let timestamp_2 = Local::now().format("%Y-%m-%dT%H:%M:%S");
+        debug!("connected to DB: {:?}", timestamp_2);
 
         let query_options = queries::metadatas::ListQueryOptions {
             owners: owners.map(|a| a.into_iter().map(Into::into).collect()),
