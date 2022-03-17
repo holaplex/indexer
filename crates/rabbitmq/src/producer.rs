@@ -1,20 +1,20 @@
 //! An AMQP producer configured from a [`QueueType`]
 
-use std::marker::PhantomData;
-
 use lapin::{Channel, Connection};
 
 use crate::{serialize::serialize, QueueType, Result};
 
 /// A producer consisting of a configured channel and additional queue config
 #[derive(Debug)]
-pub struct Producer<T, Q> {
+pub struct Producer<Q> {
     chan: Channel,
     ty: Q,
-    _p: PhantomData<T>,
 }
 
-impl<T: serde::Serialize, Q: QueueType<T>> Producer<T, Q> {
+impl<Q: QueueType> Producer<Q>
+where
+    Q::Message: serde::Serialize,
+{
     /// Construct a new producer from a [`QueueType`]
     ///
     /// # Errors
@@ -23,13 +23,9 @@ impl<T: serde::Serialize, Q: QueueType<T>> Producer<T, Q> {
     pub async fn new(conn: &Connection, ty: Q) -> Result<Self> {
         let chan = conn.create_channel().await?;
 
-        ty.init_producer(&chan).await?;
+        ty.info().init_producer(&chan).await?;
 
-        Ok(Self {
-            chan,
-            ty,
-            _p: PhantomData::default(),
-        })
+        Ok(Self { chan, ty })
     }
 
     /// Write a single message to this producer
@@ -37,22 +33,13 @@ impl<T: serde::Serialize, Q: QueueType<T>> Producer<T, Q> {
     /// # Errors
     /// This function fails if the value cannot be serialized or the serialized
     /// payload cannot be transmitted.
-    pub async fn write(&self, val: impl std::borrow::Borrow<T>) -> Result<()> {
+    pub async fn write(&self, val: impl std::borrow::Borrow<Q::Message>) -> Result<()> {
         let val = val.borrow();
 
         let mut vec = Vec::new();
         serialize(&mut vec, val)?;
 
-        self.chan
-            .basic_publish(
-                self.ty.exchange().as_ref(),
-                self.ty.queue().as_ref(),
-                self.ty.publish_opts(val),
-                &vec,
-                self.ty.properties(val),
-            )
-            .await?
-            .await?;
+        self.ty.info().publish(&self.chan, &vec).await?.await?;
 
         Ok(())
     }

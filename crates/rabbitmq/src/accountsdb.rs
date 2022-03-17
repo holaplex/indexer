@@ -1,20 +1,12 @@
 //! Queue configuration for Solana `accountsdb` plugins intended to communicate
 //! with `metaplex-indexer`.
 
-use std::{borrow::Cow, time::Duration};
+use std::time::Duration;
 
-use lapin::{
-    options::{
-        BasicConsumeOptions, BasicPublishOptions, BasicQosOptions, ExchangeDeclareOptions,
-        QueueBindOptions, QueueDeclareOptions,
-    },
-    types::{AMQPValue, FieldTable},
-    BasicProperties, Channel, ExchangeKind,
-};
 use serde::{Deserialize, Serialize};
 pub use solana_sdk::pubkey::Pubkey;
 
-use crate::{queue_type::RetryInfo, Result};
+use crate::queue_type::{Binding, QueueInfo, QueueProps, RetryProps};
 
 /// Message data for an account update
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,13 +50,7 @@ pub enum Message {
 /// AMQP configuration for `accountsdb` plugins
 #[derive(Debug, Clone)]
 pub struct QueueType {
-    suffixed: bool,
-    startup_type: StartupType,
-    exchange: String,
-    queue: String,
-    dl_exchange: String,
-    dl_queue: String,
-    dl_key: String,
+    props: QueueProps,
 }
 
 /// Network hint for declaring exchange and queue names
@@ -119,185 +105,41 @@ impl QueueType {
             queue = format!("{}.{}", queue, id);
         }
 
+        let auto_delete = id.is_some() || cfg!(debug_assertions);
+
         Self {
-            suffixed: id.is_some(),
-            startup_type,
-            dl_exchange: format!("dlx.{}", exchange),
-            dl_queue: format!("dlx.{}", queue),
-            dl_key: id.map_or_else(String::new, ToOwned::to_owned),
-            exchange,
-            queue,
-        }
-    }
-
-    async fn exchange_declare(&self, chan: &Channel) -> Result<()> {
-        let mut exchg_fields = FieldTable::default();
-
-        exchg_fields.insert(
-            "x-dead-letter-exchange".into(),
-            AMQPValue::LongString(self.dl_exchange.as_str().into()),
-        );
-
-        chan.exchange_declare(
-            crate::QueueType::exchange(self).as_ref(),
-            ExchangeKind::Fanout,
-            ExchangeDeclareOptions::default(),
-            exchg_fields,
-        )
-        .await?;
-
-        Ok(())
-    }
-
-    async fn dl_exchange_declare(&self, chan: &Channel) -> Result<()> {
-        let mut exchg_fields = FieldTable::default();
-
-        exchg_fields.insert(
-            "x-delayed-type".into(),
-            AMQPValue::LongString("direct".into()),
-        );
-
-        exchg_fields.insert(
-            "x-dead-letter-exchange".into(),
-            AMQPValue::LongString(crate::QueueType::exchange(self).as_ref().into()),
-        );
-
-        chan.exchange_declare(
-            self.dl_exchange.as_ref(),
-            ExchangeKind::Custom("x-delayed-message".into()),
-            ExchangeDeclareOptions {
-                durable: true,
-                ..ExchangeDeclareOptions::default()
-            },
-            exchg_fields,
-        )
-        .await?;
-
-        Ok(())
-    }
-}
-
-#[async_trait::async_trait]
-impl crate::QueueType<Message> for QueueType {
-    fn exchange(&self) -> Cow<str> {
-        Cow::Borrowed(&self.exchange)
-    }
-
-    fn queue(&self) -> Cow<str> {
-        Cow::Borrowed(&self.queue)
-    }
-
-    async fn init_producer(&self, chan: &Channel) -> Result<()> {
-        self.exchange_declare(chan).await?;
-
-        Ok(())
-    }
-
-    async fn init_consumer(&self, chan: &Channel) -> Result<lapin::Consumer> {
-        self.dl_exchange_declare(chan).await?;
-        self.exchange_declare(chan).await?;
-
-        let mut queue_fields = FieldTable::default();
-        queue_fields.insert(
-            "x-max-length-bytes".into(),
-            AMQPValue::LongLongInt(
-                if self.suffixed || matches!(self.startup_type, StartupType::Normal) {
+            props: QueueProps {
+                exchange,
+                queue,
+                binding: Binding::Fanout,
+                prefetch: 4096,
+                max_len_bytes: if auto_delete || matches!(startup_type, StartupType::Normal) {
                     100 * 1024 * 1024 // 100 MiB
                 } else {
                     8 * 1024 * 1024 * 1024 // 8 GiB
                 },
-            ),
-        );
-
-        let mut queue_options = QueueDeclareOptions::default();
-
-        if self.suffixed {
-            queue_options.auto_delete = true;
+                auto_delete,
+                retry: Some(RetryProps {
+                    max_tries: 3,
+                    delay_hint: Duration::from_millis(500),
+                }),
+            },
         }
-
-        chan.queue_declare(self.queue().as_ref(), queue_options, queue_fields)
-            .await?;
-
-        chan.queue_bind(
-            self.queue().as_ref(),
-            self.exchange().as_ref(),
-            "",
-            QueueBindOptions::default(),
-            FieldTable::default(),
-        )
-        .await?;
-
-        chan.basic_qos(4096, BasicQosOptions::default()).await?;
-
-        chan.basic_consume(
-            self.queue().as_ref(),
-            self.queue().as_ref(),
-            BasicConsumeOptions::default(),
-            FieldTable::default(),
-        )
-        .await
-        .map_err(Into::into)
     }
+}
 
-    fn retry_info(&self) -> Option<RetryInfo> {
-        Some(RetryInfo {
-            exchange: Cow::Borrowed(&self.dl_exchange),
-            routing_key: Cow::Borrowed(&self.dl_key),
-            max_tries: 5,
-            delay_hint: Duration::from_millis(500),
-        })
-    }
+impl crate::QueueType for QueueType {
+    type Message = Message;
 
-    async fn init_dl_consumer(&self, chan: &Channel) -> Result<lapin::Consumer> {
-        self.exchange_declare(chan).await?;
-        self.dl_exchange_declare(chan).await?;
-
-        let mut queue_fields = FieldTable::default();
-        queue_fields.insert(
-            "x-max-length-bytes".into(),
-            AMQPValue::LongLongInt(100 * 1024 * 1024), // 100 MiB
-        );
-
-        chan.queue_declare(
-            self.dl_queue.as_ref(),
-            QueueDeclareOptions::default(),
-            queue_fields,
-        )
-        .await?;
-
-        chan.queue_bind(
-            self.dl_queue.as_ref(),
-            self.dl_exchange.as_ref(),
-            self.dl_key.as_ref(),
-            QueueBindOptions::default(),
-            FieldTable::default(),
-        )
-        .await?;
-
-        chan.basic_qos(1024, BasicQosOptions::default()).await?;
-
-        chan.basic_consume(
-            self.dl_queue.as_ref(),
-            self.dl_queue.as_ref(),
-            BasicConsumeOptions::default(),
-            FieldTable::default(),
-        )
-        .await
-        .map_err(Into::into)
-    }
-
-    fn publish_opts(&self, _: &Message) -> BasicPublishOptions {
-        BasicPublishOptions::default()
-    }
-
-    fn properties(&self, _: &Message) -> BasicProperties {
-        BasicProperties::default()
+    #[inline]
+    fn info(&self) -> QueueInfo {
+        (&self.props).into()
     }
 }
 
 /// The type of an `accountsdb` producer
 #[cfg(feature = "producer")]
-pub type Producer = crate::producer::Producer<Message, QueueType>;
+pub type Producer = crate::producer::Producer<QueueType>;
 /// The type of an `accountsdb` consumer
 #[cfg(feature = "consumer")]
-pub type Consumer = crate::consumer::Consumer<Message, QueueType>;
+pub type Consumer = crate::consumer::Consumer<QueueType>;

@@ -117,16 +117,18 @@ mod runtime {
     /// This function will panic if the internal scheduler enters a deadlock
     /// state.
     pub async fn amqp_consume<
-        M: Debug + for<'a> serde::Deserialize<'a> + 'static,
-        Q: indexer_rabbitmq::QueueType<M> + Send + Sync + 'static,
+        Q: indexer_rabbitmq::QueueType + Send + Sync + 'static,
         F: Send + Future<Output = Result<()>> + 'static,
     >(
         params: &Params,
         conn: indexer_rabbitmq::lapin::Connection,
-        mut consumer: indexer_rabbitmq::consumer::Consumer<M, Q>,
+        mut consumer: indexer_rabbitmq::consumer::Consumer<Q>,
         queue_type: Q,
-        process: impl Fn(M) -> F,
-    ) -> Result<()> {
+        process: impl Fn(Q::Message) -> F,
+    ) -> Result<()>
+    where
+        Q::Message: Debug + for<'a> serde::Deserialize<'a>,
+    {
         type JobResult = (
             Result<Result<()>, tokio::task::JoinError>,
             indexer_rabbitmq::lapin::acker::Acker,
@@ -144,10 +146,7 @@ mod runtime {
                     warn!("Failed to process message: {:?}", e);
 
                     acker
-                        .nack(BasicNackOptions {
-                            multiple: false,
-                            requeue: true,
-                        })
+                        .nack(BasicNackOptions::default())
                         .await
                         .context("Failed to send NAK for delivery")
                 },
@@ -155,7 +154,7 @@ mod runtime {
                     warn!("Could not gracefully join worker task: {:?}", e);
 
                     Ok(())
-                }
+                },
             }
         }
 
@@ -163,7 +162,7 @@ mod runtime {
         let mut futures = futures_util::stream::FuturesUnordered::new();
         let sem = Arc::new(Semaphore::new(concurrency));
 
-        let dl_task = tokio::spawn(indexer_rabbitmq::consumer::dl_consume(
+        let dl_task = tokio::spawn(indexer_rabbitmq::dl_consumer::run(
             conn,
             queue_type,
             tokio::time::sleep,

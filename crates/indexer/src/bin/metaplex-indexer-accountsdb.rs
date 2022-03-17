@@ -1,5 +1,5 @@
 use indexer_core::{clap, prelude::*};
-use indexer_rabbitmq::{accountsdb, http_indexer, prelude::*};
+use indexer_rabbitmq::{accountsdb, http_indexer};
 use metaplex_indexer::accountsdb::Client;
 
 #[derive(Debug, clap::Parser)]
@@ -50,9 +50,7 @@ fn main() {
             .context("Failed to construct Client")?;
 
             let queue_type = accountsdb::QueueType::new(network, startup, queue_suffix.as_deref());
-            let consumer = queue_type
-                .clone()
-                .consumer(&conn)
+            let consumer = accountsdb::Consumer::new(&conn, queue_type.clone())
                 .await
                 .context("Failed to create queue consumer")?;
 

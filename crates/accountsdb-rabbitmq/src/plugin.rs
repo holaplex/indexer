@@ -8,7 +8,6 @@ use std::{
 use indexer_rabbitmq::{
     accountsdb::{AccountUpdate, Message, Producer, QueueType},
     lapin::{Connection, ConnectionProperties},
-    prelude::*,
 };
 use smol::lock::Mutex;
 use solana_program::{
@@ -168,8 +167,7 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
             .map_err(custom_err)?;
 
             self.producer = Some(Sender::new(
-                QueueType::new(amqp.network, startup_type, None)
-                    .producer(&conn)
+                Producer::new(&conn, QueueType::new(amqp.network, startup_type, None))
                     .await
                     .map_err(custom_err)?,
                 jobs.limit,

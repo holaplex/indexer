@@ -1,108 +1,271 @@
 use std::{borrow::Cow, time::Duration};
 
-use lapin::{Channel, Connection};
+use lapin::{
+    options::{
+        BasicConsumeOptions, BasicPublishOptions, BasicQosOptions, ExchangeDeclareOptions,
+        QueueBindOptions, QueueDeclareOptions,
+    },
+    publisher_confirm::PublisherConfirm,
+    types::{AMQPValue, FieldTable},
+    BasicProperties, Channel, Consumer, ExchangeKind,
+};
 
 use crate::Result;
 
-#[derive(Debug)]
-pub struct RetryInfo<'a> {
-    pub exchange: Cow<'a, str>,
-    pub routing_key: Cow<'a, str>,
-    pub max_tries: u32,
-    pub delay_hint: Duration,
+/// A trait representing an AMQP queue with a specific message type and AMQP
+/// configuration.
+pub trait QueueType {
+    /// The type of message vendored by this queue
+    type Message;
+
+    /// Expose the underlying queue info for this queue
+    fn info(&self) -> QueueInfo;
 }
 
-impl<'a> RetryInfo<'a> {
-    pub fn into_owned(self) -> RetryInfo<'static> {
-        let Self {
-            exchange,
-            routing_key,
-            max_tries,
-            delay_hint,
-        } = self;
+#[derive(Debug, Clone)]
+pub enum Binding {
+    Fanout,
+    Direct(String),
+}
 
-        RetryInfo {
-            exchange: Cow::Owned(exchange.into_owned()),
-            routing_key: Cow::Owned(routing_key.into_owned()),
-            max_tries,
-            delay_hint,
+impl Binding {
+    fn routing_key(&self) -> &str {
+        match self {
+            Self::Fanout => "",
+            Self::Direct(k) => k.as_ref(),
         }
     }
 }
 
-/// Trait containing the required infrastructure to create AMQP producers and
-/// consumers conformant to a specific protocol.
-#[async_trait::async_trait]
-pub trait QueueType<T> {
-    /// The expected exchange name of participating channels
-    fn exchange(&self) -> Cow<str>;
-    /// The expected queue name of participating channels
-    fn queue(&self) -> Cow<str>;
-
-    /// Initialize a new producer with the correct queue config
-    async fn init_producer(&self, chan: &Channel) -> Result<()>;
-    /// Initialize and return a consumer with the correct queue config
-    async fn init_consumer(&self, chan: &Channel) -> Result<lapin::Consumer>;
-
-    /// Information for controlling consumer retries
-    fn retry_info(&self) -> Option<RetryInfo>;
-    /// Initialize the dead letter consumer
-    async fn init_dl_consumer(&self, chan: &Channel) -> Result<lapin::Consumer>;
-
-    /// Publish options for producer basic_publish calls
-    fn publish_opts(&self, msg: &T) -> lapin::options::BasicPublishOptions;
-    /// Properties for producer basic_publish calls
-    fn properties(&self, msg: &T) -> lapin::BasicProperties;
+#[derive(Debug, Clone, Copy)]
+pub struct RetryProps {
+    pub max_tries: u32,
+    pub delay_hint: Duration,
 }
 
-/// Helper trait for constructing a producer from a [`QueueType`]
-#[cfg(any(test, feature = "producer"))]
-#[async_trait::async_trait(?Send)]
-#[allow(clippy::module_name_repetitions)]
-pub trait QueueTypeProducerExt<T>: QueueType<T> + Sized {
-    /// Create a new [`Producer`](crate::producer::Producer)
-    async fn producer(self, conn: &Connection) -> Result<crate::producer::Producer<T, Self>>;
+#[derive(Debug, Clone)]
+pub struct QueueProps {
+    pub exchange: String,
+    pub queue: String,
+    pub binding: Binding,
+    pub prefetch: u16,
+    pub max_len_bytes: i64,
+    pub auto_delete: bool,
+    pub retry: Option<RetryProps>,
 }
 
-#[cfg(any(test, feature = "producer"))]
-#[async_trait::async_trait(?Send)]
-impl<T: serde::Serialize, Q: QueueType<T> + Sized> QueueTypeProducerExt<T> for Q {
-    #[inline]
-    async fn producer(self, conn: &Connection) -> Result<crate::producer::Producer<T, Self>> {
-        crate::producer::Producer::new(conn, self).await
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct QueueInfo<'a>(&'a QueueProps);
+
+impl<'a> From<&'a QueueProps> for QueueInfo<'a> {
+    fn from(props: &'a QueueProps) -> Self {
+        Self(props)
     }
 }
 
-/// Helper trait for constructing a consumer from a [`QueueType`]
-#[cfg(any(test, feature = "consumer"))]
-#[async_trait::async_trait(?Send)]
-#[allow(clippy::module_name_repetitions)]
-pub trait QueueTypeConsumerExt<T>: QueueType<T> + Sized {
-    /// Create a new [`Consumer`](crate::consumer::Consumer)
-    async fn consumer(self, conn: &Connection) -> Result<crate::consumer::Consumer<T, Self>>;
-
-    /// Run the dead-letter consumer for this queue type
-    async fn dl_consume<S: std::future::Future<Output = ()>>(
-        self,
-        conn: &Connection,
-        sleep: impl Fn(Duration) -> S + 'async_trait,
-    );
-}
-
-#[cfg(any(test, feature = "consumer"))]
-#[async_trait::async_trait(?Send)]
-impl<T: for<'a> serde::Deserialize<'a>, Q: QueueType<T> + Sized> QueueTypeConsumerExt<T> for Q {
-    #[inline]
-    async fn consumer(self, conn: &Connection) -> Result<crate::consumer::Consumer<T, Self>> {
-        crate::consumer::Consumer::new(conn, self).await
+impl<'a> QueueInfo<'a> {
+    fn dl_exchange(self) -> String {
+        format!("dlx.{}", self.0.exchange)
     }
 
-    #[inline]
-    async fn dl_consume<S: std::future::Future<Output = ()>>(
+    fn dl_queue(self) -> String {
+        format!("dlx.{}", self.0.queue)
+    }
+
+    fn dl_requeue_key(self) -> Cow<'a, str> {
+        todo!();
+        match self.0.binding.routing_key() {
+            "" => Cow::Borrowed("requeue"),
+            s => Cow::Owned(format!("{}.requeue", s)),
+        }
+    }
+
+    async fn exchange_declare(self, chan: &Channel) -> Result<()> {
+        let mut exchg_fields = FieldTable::default();
+
+        exchg_fields.insert(
+            "x-dead-letter-exchange".into(),
+            AMQPValue::LongString(self.dl_exchange().into()),
+        );
+
+        chan.exchange_declare(
+            self.0.exchange.as_ref(),
+            match self.0.binding {
+                Binding::Fanout => ExchangeKind::Fanout,
+                Binding::Direct(_) => ExchangeKind::Direct,
+            },
+            ExchangeDeclareOptions::default(),
+            exchg_fields,
+        )
+        .await?;
+
+        Ok(())
+    }
+
+    /// Returns (`dl_exchange`, `dl_queue`)
+    async fn dl_exchange_declare(self, chan: &Channel) -> Result<(String, String)> {
+        let mut exchg_fields = FieldTable::default();
+
+        let exchg = self.dl_exchange();
+
+        exchg_fields.insert(
+            "x-delayed-type".into(),
+            AMQPValue::LongString("direct".into()),
+        );
+
+        chan.exchange_declare(
+            exchg.as_ref(),
+            ExchangeKind::Custom("x-delayed-message".into()),
+            ExchangeDeclareOptions {
+                durable: true,
+                ..ExchangeDeclareOptions::default()
+            },
+            exchg_fields,
+        )
+        .await?;
+
+        Ok((exchg, self.dl_queue()))
+    }
+
+    pub(crate) async fn init_producer(self, chan: &Channel) -> Result<()> {
+        self.exchange_declare(chan).await?;
+
+        Ok(())
+    }
+
+    pub(crate) async fn publish(self, chan: &Channel, data: &[u8]) -> Result<PublisherConfirm> {
+        chan.basic_publish(
+            self.0.exchange.as_ref(),
+            self.0.queue.as_ref(),
+            BasicPublishOptions::default(),
+            data,
+            BasicProperties::default(),
+        )
+        .await
+        .map_err(Into::into)
+    }
+
+    pub(crate) async fn init_consumer(self, chan: &Channel) -> Result<Consumer> {
+        self.dl_exchange_declare(chan).await?;
+        self.exchange_declare(chan).await?;
+
+        let mut queue_fields = FieldTable::default();
+        queue_fields.insert(
+            "x-max-length-bytes".into(),
+            AMQPValue::LongLongInt(self.0.max_len_bytes),
+        );
+
+        chan.queue_declare(
+            self.0.queue.as_ref(),
+            QueueDeclareOptions {
+                auto_delete: self.0.auto_delete,
+                ..QueueDeclareOptions::default()
+            },
+            queue_fields,
+        )
+        .await?;
+
+        chan.queue_bind(
+            self.0.queue.as_ref(),
+            self.0.exchange.as_ref(),
+            self.0.binding.routing_key(),
+            QueueBindOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+
+        chan.basic_qos(self.0.prefetch, BasicQosOptions::default())
+            .await?;
+
+        chan.basic_consume(
+            self.0.queue.as_ref(),
+            self.0.queue.as_ref(),
+            BasicConsumeOptions::default(),
+            FieldTable::default(),
+        )
+        .await
+        .map_err(Into::into)
+    }
+
+    pub(crate) async fn init_dl_consumer(
         self,
-        conn: &Connection,
-        sleep: impl Fn(Duration) -> S + 'async_trait,
-    ) {
-        crate::consumer::dl_consume(conn, self, sleep).await;
+        chan: &Channel,
+    ) -> Result<(Consumer, DlConsumerInfo)> {
+        let (exchg, q) = self.dl_exchange_declare(chan).await?;
+
+        let mut queue_fields = FieldTable::default();
+        queue_fields.insert(
+            "x-max-length-bytes".into(),
+            AMQPValue::LongLongInt(self.0.max_len_bytes),
+        );
+
+        chan.queue_declare(q.as_ref(), QueueDeclareOptions::default(), queue_fields)
+            .await?;
+
+        chan.queue_bind(
+            q.as_ref(),
+            exchg.as_ref(),
+            self.0.binding.routing_key().as_ref(),
+            QueueBindOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+
+        chan.basic_qos(self.0.prefetch, BasicQosOptions::default())
+            .await?;
+
+        let consumer = chan
+            .basic_consume(
+                q.as_ref(),
+                q.as_ref(),
+                BasicConsumeOptions::default(),
+                FieldTable::default(),
+            )
+            .await?;
+
+        let retry = self
+            .0
+            .retry
+            .ok_or(crate::Error::InvalidQueueType("Missing retry properties"))?;
+
+        Ok((consumer, DlConsumerInfo { retry }))
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct DlConsumerInfo {
+    retry: RetryProps,
+}
+
+impl DlConsumerInfo {
+    pub fn dl_exchange(&self) -> &str {
+        todo!()
+    }
+
+    pub fn dl_routing_key(&self) -> &str {
+        todo!()
+    }
+
+    pub fn live_exchange(&self) -> &str {
+        todo!()
+    }
+
+    pub fn live_routing_key(&self) -> &str {
+        todo!()
+    }
+
+    pub fn max_tries(&self) -> u32 {
+        self.retry.max_tries
+    }
+
+    /// Return the retry delay given the value of the retries-left header
+    pub fn get_delay(&self, retries_left: u32) -> Option<u32> {
+        let try_number = self.retry.max_tries.checked_sub(retries_left)?;
+
+        let multiplier = 2_u128.checked_pow(try_number)?;
+        let millis = self.retry.delay_hint.as_millis().checked_mul(multiplier)?;
+
+        millis.try_into().ok()
     }
 }

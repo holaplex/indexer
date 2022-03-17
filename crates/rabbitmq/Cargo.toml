@@ -21,7 +21,6 @@ accountsdb = ["solana-sdk", "strum"]
 http-indexer = []
 
 [dependencies]
-async-trait = "0.1.52"
 futures-util = "0.3.19"
 lapin = "2.0.3"
 log = "0.4.14"
