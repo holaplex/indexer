@@ -144,6 +144,8 @@ pub async fn dl_consume<T, Q: QueueType<T>, S: std::future::Future<Output = ()>>
                 properties,
             )
             .await?;
+
+            acker.ack(BasicAckOptions::default()).await?;
         }
 
         Ok(())

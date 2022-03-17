@@ -151,7 +151,11 @@ mod runtime {
                         .await
                         .context("Failed to send NAK for delivery")
                 },
-                Err(e) => Err(e).context("Failed to join async worker"),
+                Err(e) => {
+                    warn!("Could not gracefully join worker task: {:?}", e);
+
+                    Ok(())
+                }
             }
         }
 
@@ -213,10 +217,16 @@ mod runtime {
         }
 
         while let Some(r) = futures.next().await {
-            finish_job(r).await?;
+            finish_job(r)
+                .await
+                .map_err(|e| error!("Job cleanup failed: {:?}", e))
+                .unwrap_or(());
         }
 
-        dl_task.await?;
+        dl_task
+            .await
+            .map_err(|e| error!("DLX consumer cleanup failed: {:?}", e))
+            .unwrap_or(());
 
         Ok(())
     }
