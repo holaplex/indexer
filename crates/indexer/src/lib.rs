@@ -135,7 +135,7 @@ mod runtime {
         );
 
         async fn finish_job((res, acker): JobResult) -> Result<()> {
-            use indexer_rabbitmq::lapin::options::{BasicAckOptions, BasicNackOptions};
+            use indexer_rabbitmq::lapin::options::{BasicAckOptions, BasicRejectOptions};
 
             match res {
                 Ok(Ok(())) => acker
@@ -146,7 +146,7 @@ mod runtime {
                     warn!("Failed to process message: {:?}", e);
 
                     acker
-                        .nack(BasicNackOptions::default())
+                        .reject(BasicRejectOptions { requeue: false })
                         .await
                         .context("Failed to send NAK for delivery")
                 },

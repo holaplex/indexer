@@ -10,7 +10,10 @@ use lapin::{
     Connection,
 };
 
-use crate::{QueueType, Result};
+use crate::{
+    queue_type::{DLX_DEAD_KEY, DLX_LIVE_KEY},
+    QueueType, Result,
+};
 
 /// Run the dead-letter consumer for a [`QueueType`]
 pub async fn run<Q: QueueType, S: std::future::Future<Output = ()>>(
@@ -38,14 +41,12 @@ pub async fn run<Q: QueueType, S: std::future::Future<Output = ()>>(
             let retries_left = headers.and_then(|h| h.get(RETRIES_LEFT));
 
             let mut new_headers = headers.cloned().unwrap_or_else(BTreeMap::new);
-            let new_exchange;
             let routing_key;
 
             let retries_left =
                 if let Some(retries_left) = retries_left.and_then(AMQPValue::as_long_uint) {
                     if let Some(retries_left) = retries_left.checked_sub(1) {
-                        new_exchange = inf.live_exchange();
-                        routing_key = inf.live_routing_key();
+                        routing_key = DLX_LIVE_KEY;
 
                         retries_left
                     } else {
@@ -55,8 +56,8 @@ pub async fn run<Q: QueueType, S: std::future::Future<Output = ()>>(
                         continue;
                     }
                 } else {
-                    new_exchange = inf.dl_exchange();
-                    routing_key = inf.dl_routing_key();
+                    // Missing required headers, requeue in DLX
+                    routing_key = DLX_DEAD_KEY;
 
                     inf.max_tries()
                 };
@@ -75,7 +76,7 @@ pub async fn run<Q: QueueType, S: std::future::Future<Output = ()>>(
             properties = properties.with_headers(new_headers.into());
 
             chan.basic_publish(
-                new_exchange,
+                inf.exchange(),
                 routing_key,
                 BasicPublishOptions::default(),
                 &data,

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, time::Duration};
+use std::time::Duration;
 
 use lapin::{
     options::{
@@ -64,31 +64,19 @@ impl<'a> From<&'a QueueProps> for QueueInfo<'a> {
     }
 }
 
+pub const DLX_DEAD_KEY: &str = "dead";
+pub const DLX_LIVE_KEY: &str = "live";
+
 impl<'a> QueueInfo<'a> {
     fn dl_exchange(self) -> String {
-        format!("dlx.{}", self.0.exchange)
-    }
-
-    fn dl_queue(self) -> String {
         format!("dlx.{}", self.0.queue)
     }
 
-    fn dl_requeue_key(self) -> Cow<'a, str> {
-        todo!();
-        match self.0.binding.routing_key() {
-            "" => Cow::Borrowed("requeue"),
-            s => Cow::Owned(format!("{}.requeue", s)),
-        }
+    fn dl_queue(self) -> String {
+        format!("dlq.{}", self.0.queue)
     }
 
     async fn exchange_declare(self, chan: &Channel) -> Result<()> {
-        let mut exchg_fields = FieldTable::default();
-
-        exchg_fields.insert(
-            "x-dead-letter-exchange".into(),
-            AMQPValue::LongString(self.dl_exchange().into()),
-        );
-
         chan.exchange_declare(
             self.0.exchange.as_ref(),
             match self.0.binding {
@@ -96,7 +84,38 @@ impl<'a> QueueInfo<'a> {
                 Binding::Direct(_) => ExchangeKind::Direct,
             },
             ExchangeDeclareOptions::default(),
-            exchg_fields,
+            FieldTable::default(),
+        )
+        .await?;
+
+        Ok(())
+    }
+
+    async fn queue_declare(self, chan: &Channel) -> Result<()> {
+        let mut queue_fields = FieldTable::default();
+
+        queue_fields.insert(
+            "x-max-length-bytes".into(),
+            AMQPValue::LongLongInt(self.0.max_len_bytes),
+        );
+
+        queue_fields.insert(
+            "x-dead-letter-exchange".into(),
+            AMQPValue::LongString(self.dl_exchange().into()),
+        );
+
+        queue_fields.insert(
+            "x-dead-letter-routing-key".into(),
+            AMQPValue::LongString(DLX_DEAD_KEY.into()),
+        );
+
+        chan.queue_declare(
+            self.0.queue.as_ref(),
+            QueueDeclareOptions {
+                auto_delete: self.0.auto_delete,
+                ..QueueDeclareOptions::default()
+            },
+            queue_fields,
         )
         .await?;
 
@@ -149,22 +168,7 @@ impl<'a> QueueInfo<'a> {
     pub(crate) async fn init_consumer(self, chan: &Channel) -> Result<Consumer> {
         self.dl_exchange_declare(chan).await?;
         self.exchange_declare(chan).await?;
-
-        let mut queue_fields = FieldTable::default();
-        queue_fields.insert(
-            "x-max-length-bytes".into(),
-            AMQPValue::LongLongInt(self.0.max_len_bytes),
-        );
-
-        chan.queue_declare(
-            self.0.queue.as_ref(),
-            QueueDeclareOptions {
-                auto_delete: self.0.auto_delete,
-                ..QueueDeclareOptions::default()
-            },
-            queue_fields,
-        )
-        .await?;
+        self.queue_declare(chan).await?;
 
         chan.queue_bind(
             self.0.queue.as_ref(),
@@ -192,7 +196,7 @@ impl<'a> QueueInfo<'a> {
         self,
         chan: &Channel,
     ) -> Result<(Consumer, DlConsumerInfo)> {
-        let (exchg, q) = self.dl_exchange_declare(chan).await?;
+        let (exchange, queue) = self.dl_exchange_declare(chan).await?;
 
         let mut queue_fields = FieldTable::default();
         queue_fields.insert(
@@ -200,13 +204,30 @@ impl<'a> QueueInfo<'a> {
             AMQPValue::LongLongInt(self.0.max_len_bytes),
         );
 
-        chan.queue_declare(q.as_ref(), QueueDeclareOptions::default(), queue_fields)
-            .await?;
+        chan.queue_declare(
+            queue.as_ref(),
+            QueueDeclareOptions {
+                auto_delete: self.0.auto_delete,
+                ..QueueDeclareOptions::default()
+            },
+            queue_fields,
+        )
+        .await?;
 
         chan.queue_bind(
-            q.as_ref(),
-            exchg.as_ref(),
-            self.0.binding.routing_key().as_ref(),
+            queue.as_ref(),
+            exchange.as_ref(),
+            DLX_DEAD_KEY,
+            QueueBindOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+
+        self.queue_declare(chan).await?;
+        chan.queue_bind(
+            self.0.queue.as_ref(),
+            exchange.as_ref(),
+            DLX_LIVE_KEY,
             QueueBindOptions::default(),
             FieldTable::default(),
         )
@@ -217,8 +238,8 @@ impl<'a> QueueInfo<'a> {
 
         let consumer = chan
             .basic_consume(
-                q.as_ref(),
-                q.as_ref(),
+                queue.as_ref(),
+                queue.as_ref(),
                 BasicConsumeOptions::default(),
                 FieldTable::default(),
             )
@@ -229,30 +250,19 @@ impl<'a> QueueInfo<'a> {
             .retry
             .ok_or(crate::Error::InvalidQueueType("Missing retry properties"))?;
 
-        Ok((consumer, DlConsumerInfo { retry }))
+        Ok((consumer, DlConsumerInfo { exchange, retry }))
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub(crate) struct DlConsumerInfo {
+    exchange: String,
     retry: RetryProps,
 }
 
 impl DlConsumerInfo {
-    pub fn dl_exchange(&self) -> &str {
-        todo!()
-    }
-
-    pub fn dl_routing_key(&self) -> &str {
-        todo!()
-    }
-
-    pub fn live_exchange(&self) -> &str {
-        todo!()
-    }
-
-    pub fn live_routing_key(&self) -> &str {
-        todo!()
+    pub fn exchange(&self) -> &str {
+        &self.exchange
     }
 
     pub fn max_tries(&self) -> u32 {
