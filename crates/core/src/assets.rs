@@ -21,6 +21,10 @@ pub struct AssetIdentifier {
 pub enum ImageSize {
     /// image natural size
     Original = 0,
+    /// tiny image
+    Tiny = 100,
+    /// extra small image
+    XSmall = 400,
     /// small image
     Small = 600,
     /// medium image
