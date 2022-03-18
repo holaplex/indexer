@@ -1,4 +1,5 @@
 //! Query utilities for looking up  metadatas
+
 use diesel::prelude::*;
 
 use crate::{
@@ -112,11 +113,10 @@ pub fn list(
         ))
         .filter(token_accounts::amount.eq(1))
         .distinct()
-        .order_by(metadatas::name.desc())
         .limit(limit)
         .offset(offset)
         .load(conn)
         .context("failed to load nft(s)")?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    Ok(rows)
 }
