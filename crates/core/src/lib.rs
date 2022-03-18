@@ -17,6 +17,9 @@ extern crate diesel_migrations;
 
 pub extern crate chrono;
 pub extern crate clap;
+pub extern crate tracing;
+pub extern crate tracing_futures;
+pub extern crate tracing_timing;
 pub extern crate url;
 
 pub mod assets;
@@ -42,7 +45,12 @@ pub mod prelude {
         query_dsl::{BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl},
     };
     pub use diesel_full_text_search::{TsQueryExtensions, TsVectorExtensions};
-    pub use log::{debug, error, info, trace, warn};
+    pub use tracing::{
+        self, debug, debug_span, error, error_span, info, info_span, span, trace, trace_span, warn,
+        warn_span,
+    };
+    pub use tracing_futures;
+    pub use tracing_timing;
 
     pub use super::error::prelude::*;
 }
@@ -94,7 +102,10 @@ impl ServerOpts {
 ///
 /// # Panics
 /// This function panics if dotenv fails to load a .env file
-pub fn run(main: impl FnOnce() -> Result<()>) -> ! {
+pub fn run<S: tracing::Subscriber + Send + Sync + 'static>(
+    subscriber: impl FnOnce() -> S,
+    main: impl FnOnce() -> Result<()>,
+) -> ! {
     [
         ".env.local",
         if cfg!(debug_assertions) {
@@ -112,14 +123,10 @@ pub fn run(main: impl FnOnce() -> Result<()>) -> ! {
     })
     .expect("Failed to load .env files");
 
-    env_logger::builder()
-        .filter_level(if cfg!(debug_assertions) {
-            log::LevelFilter::Debug
-        } else {
-            log::LevelFilter::Warn
-        })
-        .parse_default_env()
-        .init();
+    tracing_log::env_logger::init();
+    tracing::subscriber::set_global_default(subscriber()).unwrap();
+
+    tracing::error_span!("what");
 
     std::process::exit(match main() {
         Ok(()) => 0,
@@ -128,4 +135,28 @@ pub fn run(main: impl FnOnce() -> Result<()>) -> ! {
             1
         },
     });
+}
+
+/// TODO: ???????
+#[cfg(feature = "prometheus")]
+#[must_use]
+pub fn prometheus_subscriber() -> impl tracing::Subscriber {
+    use tracing_subscriber::prelude::*;
+
+    // ???? where is the API intersection between this and tracing_opentelemetry?
+    let exporter = opentelemetry_prometheus::exporter().init();
+
+    let telemetry = tracing_opentelemetry::layer();
+
+    tracing_subscriber::registry().with(telemetry)
+}
+
+/// Create a tracing subscriber configured fron the `RUST_LOG` env var that
+/// prints to stdout
+#[must_use]
+pub fn env_subscriber() -> impl tracing::Subscriber {
+    tracing_subscriber::fmt()
+        .pretty()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .finish()
 }

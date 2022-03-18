@@ -22,6 +22,7 @@ RUN cargo build --profile docker \
   --features " \
     holaplex-indexer/geyser, \
     holaplex-indexer/http \
+    holaplex-indexer-graphql/prometheus \
   " \
   --bin holaplex-indexer-geyser \
   --bin holaplex-indexer-http \

@@ -65,7 +65,7 @@ mod runtime {
     pub fn run<T: Debug + Args, F: Future<Output = Result<()>>>(
         f: impl FnOnce(T, Params, Pool) -> F,
     ) -> ! {
-        indexer_core::run(|| {
+        indexer_core::run(indexer_core::env_subscriber, || {
             let opts = Opts::parse();
 
             debug!("{:#?}", opts);
