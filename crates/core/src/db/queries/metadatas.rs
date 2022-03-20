@@ -54,6 +54,41 @@ pub fn list(
         offset,
     }: ListQueryOptions,
 ) -> Result<Vec<Nft>> {
+    if creators.is_some() && attributes.is_none() && owners.is_none() && listed.is_none() {
+        if let Some(creators) = creators {
+            let query = metadatas::table
+                .inner_join(
+                    metadata_creators::table
+                        .on(metadatas::address.eq(metadata_creators::metadata_address)),
+                )
+                .inner_join(
+                    metadata_jsons::table
+                        .on(metadatas::address.eq(metadata_jsons::metadata_address)),
+                )
+                .filter(metadata_creators::creator_address.eq(any(creators)))
+                .select((
+                    metadatas::address,
+                    metadatas::name,
+                    metadatas::seller_fee_basis_points,
+                    metadatas::mint_address,
+                    metadatas::primary_sale_happened,
+                    metadata_jsons::description,
+                    metadata_jsons::image,
+                ))
+                .distinct()
+                .limit(limit)
+                .offset(offset);
+
+            let sql = debug_query::<Pg, _>(&query);
+            let result = sql.to_string().replace("\"", "");
+            debug!("{:?}", result);
+
+            let rows: Vec<Nft> = query.load(conn).context("failed to load nft(s)")?;
+
+            return Ok(rows.into_iter().map(Into::into).collect());
+        }
+    }
+
     let mut query = metadatas::table
         .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
