@@ -80,10 +80,6 @@ pub fn list(
                 .limit(limit)
                 .offset(offset);
 
-            let sql = debug_query::<Pg, _>(&query);
-            let result = sql.to_string().replace("\"", "");
-            debug!("{:?}", result);
-
             let rows: Vec<Nft> = query.load(conn).context("failed to load nft(s)")?;
 
             return Ok(rows.into_iter().map(Into::into).collect());
