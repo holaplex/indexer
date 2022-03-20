@@ -21,7 +21,7 @@ pub struct AppContext {
     pub auction_house_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
     pub listing_loader: Loader<PublicKey<Listing>, Option<Listing>>,
     pub listing_bids_loader: Loader<PublicKey<Listing>, Vec<Bid>>,
-    pub listing_nfts_loader: Loader<PublicKey<Listing>, Vec<Nft>>,
+    pub listing_nfts_loader: Loader<PublicKey<Listing>, Vec<(usize, Nft)>>,
     pub nft_attributes_loader: Loader<PublicKey<Nft>, Vec<NftAttribute>>,
     pub nft_creators_loader: Loader<PublicKey<Nft>, Vec<NftCreator>>,
     pub nft_owner_loader: Loader<PublicKey<Nft>, Option<NftOwner>>,

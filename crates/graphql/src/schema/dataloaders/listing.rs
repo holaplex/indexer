@@ -61,14 +61,14 @@ impl TryBatchFn<PublicKey<Listing>, Vec<Bid>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Listing>, Vec<Nft>> for Batcher {
+impl TryBatchFn<PublicKey<Listing>, Vec<(usize, Nft)>> for Batcher {
     async fn load(
         &mut self,
         keys: &[PublicKey<Listing>],
-    ) -> TryBatchMap<PublicKey<Listing>, Vec<Nft>> {
+    ) -> TryBatchMap<PublicKey<Listing>, Vec<(usize, Nft)>> {
         let conn = self.db()?;
 
-        let rows: Vec<(String, models::Nft)> = listing_metadatas::table
+        let rows: Vec<(String, i32, models::Nft)> = listing_metadatas::table
             .filter(listing_metadatas::listing_address.eq(any(keys)))
             .inner_join(
                 metadatas::table.on(listing_metadatas::metadata_address.eq(metadatas::address)),
@@ -79,6 +79,7 @@ impl TryBatchFn<PublicKey<Listing>, Vec<Nft>> for Batcher {
             )
             .select((
                 listing_metadatas::listing_address,
+                listing_metadatas::metadata_index,
                 (
                     metadatas::address,
                     metadatas::name,
@@ -92,6 +93,9 @@ impl TryBatchFn<PublicKey<Listing>, Vec<Nft>> for Batcher {
             .load(&conn)
             .context("Failed to load listing NFTs")?;
 
-        Ok(rows.into_iter().map(|(k, v)| (k, v.try_into())).batch(keys))
+        Ok(rows
+            .into_iter()
+            .map(|(k, i, v)| (k, usize::try_from(i).and_then(|i| Ok((i, v.try_into()?)))))
+            .batch(keys))
     }
 }
