@@ -146,10 +146,10 @@ impl Nft {
     }
 
     #[graphql(arguments(width(
-        description = "Image width possible values are:\n- 0 (Original size)\n- 600 (Small)\n- 800 (Medium)\n- 1400 (Large)\n\n Any other value will return the original image size.\n\n If no value is provided, it will return width 800"
+        description = "Image width possible values are:\n- 0 (Original size)\n- 100 (Tiny)\n- 400 (XSmall)\n- 600 (Small)\n- 800 (Medium)\n- 1400 (Large)\n\n Any other value will return the original image size.\n\n If no value is provided, it will return XSmall"
     ),))]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> String {
-        let width = ImageSize::from(width.unwrap_or(ImageSize::Medium as i32));
+        let width = ImageSize::from(width.unwrap_or(ImageSize::XSmall as i32));
         let cdn_count = ctx.shared.asset_proxy_count;
         let assets_cdn = &ctx.shared.asset_proxy_endpoint;
         let asset = AssetIdentifier::new(&Url::parse(&self.image).unwrap());
