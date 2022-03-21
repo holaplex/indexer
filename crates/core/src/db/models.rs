@@ -5,6 +5,7 @@
 use std::borrow::Cow;
 
 use chrono::NaiveDateTime;
+use diesel::sql_types::{Bool, Int4, Nullable, Text, VarChar};
 
 use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
@@ -223,30 +224,77 @@ pub struct Storefront<'a> {
 }
 
 /// Join of `metadatas` and `metadata_jsons` for an NFT
-#[derive(Debug, Clone, Queryable)]
+#[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct Nft {
     // Table metadata
     /// The address of this account
+    #[sql_type = "VarChar"]
     pub address: String,
 
     /// The name of this item
+    #[sql_type = "Text"]
     pub name: String,
 
     /// The royalty percentage of the creator, in basis points (0.01%, values
     /// range from 0-10,000)
+    #[sql_type = "Int4"]
     pub seller_fee_basis_points: i32,
 
     /// The token address for this item
+    #[sql_type = "VarChar"]
     pub mint_address: String,
 
     /// True if this item is in the secondary market.  Immutable once set.
+    #[sql_type = "Bool"]
     pub primary_sale_happened: bool,
 
     // Table metadata_json
     /// Metadata description
+    #[sql_type = "Nullable<Text>"]
     pub description: Option<String>,
 
     /// Metadata Image url
+    #[sql_type = "Nullable<Text>"]
+    pub image: Option<String>,
+}
+
+/// Join of `metadatas` `metadata_jsons` `store_creators` for an collection preview
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct SampleNft {
+    // Table store_creators
+    /// The store creators address
+    #[sql_type = "VarChar"]
+    pub creator_address: String,
+
+    // Table metadata
+    /// The address of this account
+    #[sql_type = "VarChar"]
+    pub address: String,
+
+    /// The name of this item
+    #[sql_type = "Text"]
+    pub name: String,
+
+    /// The royalty percentage of the creator, in basis points (0.01%, values
+    /// range from 0-10,000)
+    #[sql_type = "Int4"]
+    pub seller_fee_basis_points: i32,
+
+    /// The token address for this item
+    #[sql_type = "VarChar"]
+    pub mint_address: String,
+
+    /// True if this item is in the secondary market.  Immutable once set.
+    #[sql_type = "Bool"]
+    pub primary_sale_happened: bool,
+
+    // Table metadata_json
+    /// Metadata description
+    #[sql_type = "Nullable<Text>"]
+    pub description: Option<String>,
+
+    /// Metadata Image url
+    #[sql_type = "Nullable<Text>"]
     pub image: Option<String>,
 }
 
@@ -571,8 +619,9 @@ pub struct PurchaseReceipt<'a> {
 }
 
 /// A row in the `store_creators` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
 #[diesel(treat_none_as_null = true)]
+#[table_name = "store_creators"]
 pub struct StoreCreator<'a> {
     /// Store Config account address
     pub store_config_address: Cow<'a, str>,

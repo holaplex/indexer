@@ -34,6 +34,7 @@ impl TryBatchFn<PublicKey<Nft>, Vec<NftCreator>> for Batcher {
 
         let rows: Vec<models::MetadataCreator> = metadata_creators::table
             .filter(metadata_creators::metadata_address.eq(any(addresses)))
+            .order(metadata_creators::position.asc())
             .load(&conn)
             .context("Failed to load NFT creators")?;
 
