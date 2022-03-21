@@ -5,6 +5,7 @@ pub mod denylist;
 pub mod listing;
 pub mod listing_receipt;
 pub mod marketplace;
+pub mod mint_stats;
 pub mod nft;
 pub mod profile;
 pub mod purchase_receipt;
