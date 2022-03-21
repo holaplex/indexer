@@ -67,6 +67,7 @@ pub fn list(
                         .on(metadatas::address.eq(metadata_jsons::metadata_address)),
                 )
                 .filter(metadata_creators::creator_address.eq(any(creators)))
+                .filter(metadata_creators::verified.eq(true))
                 .select((
                     metadatas::address,
                     metadatas::name,
@@ -117,6 +118,7 @@ pub fn list(
 
     if let Some(creators) = creators {
         query = query.filter(metadata_creators::creator_address.eq(any(creators)));
+        query = query.filter(metadata_creators::verified.eq(true));
     }
 
     if let Some(owners) = owners {
@@ -142,7 +144,6 @@ pub fn list(
             metadata_jsons::description,
             metadata_jsons::image,
         ))
-        .filter(token_accounts::amount.eq(1))
         .distinct()
         .limit(limit)
         .offset(offset)
