@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use indexer_core::prelude::*;
+use itertools::Itertools;
 use tables::{attributes, metadata_creators};
 
 use super::prelude::*;
@@ -10,13 +11,13 @@ pub struct Creator {
     pub address: String,
 }
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone, GraphQLObject, PartialEq, Eq, PartialOrd, Ord)]
 struct AttributeVariant {
     name: String,
     count: i32,
 }
 
-#[derive(Debug, GraphQLObject)]
+#[derive(Debug, GraphQLObject, PartialEq, Eq, PartialOrd, Ord)]
 struct AttributeGroup {
     name: String,
     variants: Vec<AttributeVariant>,
@@ -37,6 +38,7 @@ impl Creator {
                     .on(attributes::metadata_address.eq(metadata_creators::metadata_address)),
             )
             .filter(metadata_creators::creator_address.eq(&self.address))
+            .filter(metadata_creators::verified.eq(true))
             .select(attributes::all_columns)
             .load(&conn)
             .context("Failed to load metadata attributes")?;
@@ -72,8 +74,10 @@ impl Creator {
 
                         AttributeVariant { name, count }
                     })
+                    .sorted()
                     .collect(),
             })
+            .sorted()
             .collect::<Vec<_>>())
     }
 }
