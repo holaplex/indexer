@@ -29,6 +29,7 @@ pub struct AppContext {
     pub listing_receipts_loader: Loader<PublicKey<Nft>, Vec<ListingReceipt>>,
     pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
+    pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
 }
 
 impl juniper::Context for AppContext {}
@@ -48,7 +49,8 @@ impl AppContext {
             storefront_loader: Loader::new(batcher.clone()),
             listing_receipts_loader: Loader::new(batcher.clone()),
             bid_receipts_loader: Loader::new(batcher.clone()),
-            store_creator_loader: Loader::new(batcher),
+            store_creator_loader: Loader::new(batcher.clone()),
+            collection_loader: Loader::new(batcher),
             db_pool,
             shared,
         }

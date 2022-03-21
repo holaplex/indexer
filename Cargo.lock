@@ -2949,6 +2949,7 @@ dependencies = [
  "async-trait",
  "base64 0.13.0",
  "dataloader",
+ "itertools",
  "juniper",
  "md5",
  "metaplex-indexer-core",
