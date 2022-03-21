@@ -15,10 +15,6 @@ pub mod prelude {
     pub use lapin;
 
     pub use crate::queue_type::QueueType;
-    #[cfg(any(test, feature = "consumer"))]
-    pub use crate::queue_type::QueueTypeConsumerExt;
-    #[cfg(any(test, feature = "producer"))]
-    pub use crate::queue_type::QueueTypeProducerExt;
 }
 
 /// An error originating in this crate
@@ -33,6 +29,9 @@ pub enum Error {
     /// An error propagated from [`rmp_serde`] during decoding
     #[error("MsgPack decode error: {0:?}")]
     MsgDecode(#[from] rmp_serde::decode::Error),
+    /// An error occurred related to a queue's configuration
+    #[error("Invalid queue type for operation: {0}")]
+    InvalidQueueType(&'static str),
 }
 
 pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
@@ -41,6 +40,8 @@ pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 pub mod accountsdb;
 #[cfg(any(test, feature = "consumer"))]
 pub mod consumer;
+#[cfg(any(test, feature = "consumer"))]
+pub mod dl_consumer;
 #[cfg(any(test, feature = "http-indexer"))]
 pub mod http_indexer;
 #[cfg(any(test, feature = "producer"))]

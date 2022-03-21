@@ -7,7 +7,7 @@ struct Args {
 }
 
 fn main() {
-    metaplex_indexer::run(|args: Args, db| async move {
+    metaplex_indexer::run(|args: Args, _params, db| async move {
         let Args { arweave_url } = args;
 
         metaplex_indexer::legacy_storefronts::run(
