@@ -9,11 +9,15 @@ use diesel::sql_types::{Bool, Int4, Nullable, Text, VarChar};
 
 use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
-    bids, editions, files, graph_connections, listing_metadatas, listing_receipts, master_editions,
+    bids, candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators,
+    candy_machine_datas, candy_machine_end_settings, candy_machine_gate_keeper_configs,
+    candy_machine_hidden_settings, candy_machine_whitelist_mint_settings, candy_machines, editions,
+    files, graph_connections, listing_metadatas, listing_receipts, master_editions,
     metadata_collections, metadata_creators, metadata_jsons, metadatas, purchase_receipts,
     store_config_jsons, store_configs, store_creators, storefronts, stores, token_accounts,
     whitelisted_creators,
 };
+use crate::db::custom_types::{EndSettingType, WhitelistMintMode};
 
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
@@ -639,4 +643,158 @@ pub struct GraphConnection<'a> {
     pub from_account: Cow<'a, str>,
     /// Graph Connection 'to' account address
     pub to_account: Cow<'a, str>,
+}
+
+/// A row in the `candy_machines` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct CandyMachine<'a> {
+    /// CandyMachine account address
+    pub address: Cow<'a, str>,
+    /// CandyMachine 'Authority' address
+    pub authority: Cow<'a, str>,
+    /// CandyMachine 'Wallet' address
+    pub wallet: Cow<'a, str>,
+    /// Token mint address
+    pub token_mint: Option<Cow<'a, str>>,
+    /// Items redeemed
+    pub items_redeemed: i64,
+}
+
+/// A row in the `candy_machine_datas` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct CandyMachineData<'a> {
+    /// CandyMachine account address
+    pub candy_machine_address: Cow<'a, str>,
+    /// Uuid
+    pub uuid: Cow<'a, str>,
+    /// The amount in SOL or SPL token for a mint
+    pub price: i64,
+    /// Symbol
+    pub symbol: Cow<'a, str>,
+    /// Royalty basis points that goes to creators in secondary sales (0-10000)
+    pub seller_fee_basis_points: i16,
+    /// Max supply
+    pub max_supply: i64,
+    /// Whether or not the data struct is mutable, default is not
+    pub is_mutable: bool,
+    /// Indicates whether the candy machine authority has the update authority for each mint
+    /// or if it is transferred to the minter
+    pub retain_authority: bool,
+    /// Timestamp when minting is allowed
+    /// the Candy Machine authority and whitelists can bypass this constraint
+    pub go_live_date: Option<i64>,
+    /// Number of items available
+    pub items_available: i64,
+}
+
+/// A row in the `candy_machine_config_lines` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "candy_machine_config_lines"]
+pub struct CMConfigLine<'a> {
+    /// ConfigLine account address
+    pub address: Cow<'a, str>,
+    /// Name
+    pub name: Cow<'a, str>,
+    /// URI pointing to JSON representing the asset
+    pub uri: Cow<'a, str>,
+}
+
+/// A row in the `candy_machine_creators` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "candy_machine_creators"]
+pub struct CMCreator<'a> {
+    /// CandyMachine account address
+    pub candy_machine_address: Cow<'a, str>,
+    /// Creator account address
+    pub creator_address: Cow<'a, str>,
+    /// Boolean value to indidicate wheter creator is verified or not
+    pub verified: bool,
+    /// In percentages, NOT basis points
+    pub share: i16,
+}
+
+/// A row in the `candy_machine_collection_pdas` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "candy_machine_collection_pdas"]
+pub struct CMCollectionPDA<'a> {
+    /// CollectionPDA address
+    pub address: Cow<'a, str>,
+    /// Mint address
+    pub mint: Cow<'a, str>,
+    /// CandyMachine account address
+    pub candy_machine: Cow<'a, str>,
+}
+
+/// A row in the `candy_machine_hidden_settings` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "candy_machine_hidden_settings"]
+pub struct CMHiddenSetting<'a> {
+    /// CandyMachine account address
+    pub candy_machine_address: Cow<'a, str>,
+    /// Name of the mint.
+    /// The number of the mint will be appended to the name
+    pub name: Cow<'a, str>,
+    /// Single URI to all mints
+    pub uri: Cow<'a, str>,
+    /// 32 character hash
+    /// in most cases this is the hash of the cache file with the mapping between
+    /// mint number and metadata so that the order can be verified when the mint is complete
+    pub hash: Vec<u8>,
+}
+
+/// A row in the `candy_machine_whitelist_mint_settings` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "candy_machine_whitelist_mint_settings"]
+pub struct CMWhitelistMintSetting<'a> {
+    /// CandyMachine account address
+    pub candy_machine_address: Cow<'a, str>,
+    /// Mode
+    /// 'burnEveryTime': true Whitelist token is burned after the mint
+    /// 'neverBurn': true Whitelist token is returned to holder
+    pub mode: WhitelistMintMode,
+    /// Mint address of the whitelist token
+    pub mint: Cow<'a, str>,
+    /// Indicates whether whitelist token holders can mint before goLiveDate
+    pub presale: bool,
+    /// Price for whitelist token holders
+    pub discount_price: Option<i64>,
+}
+
+/// A row in the `candy_machine_gate_keeper_configs` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "candy_machine_gate_keeper_configs"]
+pub struct CMGateKeeperConfig<'a> {
+    /// CandyMachine account address
+    pub candy_machine_address: Cow<'a, str>,
+    /// Gateway provider address
+    pub gatekeeper_network: Cow<'a, str>,
+    /// Requires a new gateway challenge after a use
+    pub expire_on_use: bool,
+}
+
+/// A row in the `candy_machine_end_settings` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "candy_machine_end_settings"]
+pub struct CMEndSetting<'a> {
+    /// CandyMachine account address
+    pub candy_machine_address: Cow<'a, str>,
+    /// EndSettingType
+    /// date : Enable the use of a date to stop the mint
+    /// when the date specified in the value option is reached, the mint stops
+    /// amount: Enable stopping the mint after a specific amount is minted
+    /// the amount is specified in the value option
+    pub end_setting_type: EndSettingType,
+    /// Value to test the end condition.
+    /// This will be either a date (if date is set to true)
+    /// or a integer amount value (if amount is set to true)
+    pub number: i64,
 }

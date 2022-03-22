@@ -1,5 +1,6 @@
 //! Interface with the indexer database
 
+pub mod custom_types;
 pub mod models;
 pub mod queries;
 #[allow(missing_docs, unused_imports)]
