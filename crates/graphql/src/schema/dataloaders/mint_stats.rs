@@ -5,11 +5,11 @@ use scalars::PublicKey;
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<PublicKey<AuctionHouse>, Vec<MintStats>> for Batcher {
+impl TryBatchFn<PublicKey<AuctionHouse>, Option<MintStats>> for Batcher {
     async fn load(
         &mut self,
         addresses: &[PublicKey<AuctionHouse>],
-    ) -> TryBatchMap<PublicKey<AuctionHouse>, Vec<MintStats>> {
+    ) -> TryBatchMap<PublicKey<AuctionHouse>, Option<MintStats>> {
         let db = self.db()?;
         let rows = mint_stats::load(&db, addresses)?;
 

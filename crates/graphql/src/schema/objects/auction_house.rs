@@ -60,7 +60,7 @@ impl<'a> From<models::AuctionHouse<'a>> for AuctionHouse {
 
 #[graphql_object(Context = AppContext)]
 impl AuctionHouse {
-    pub async fn stats(&self, context: &AppContext) -> FieldResult<Vec<MintStats>> {
+    pub async fn stats(&self, context: &AppContext) -> FieldResult<Option<MintStats>> {
         context
             .mint_stats_loader
             .load(self.address.clone().into())
