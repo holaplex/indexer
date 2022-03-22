@@ -25,7 +25,6 @@ use mpl_candy_machine::{
 use super::Client;
 use crate::prelude::*;
 
-#[allow(unused_must_use)]
 pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
@@ -54,23 +53,23 @@ pub(crate) async fn process(
         .await
         .context("failed to insert candy machine")?;
 
-    process_data(client, key, candy_machine.data.clone()).await;
-    process_creators(client, key, candy_machine.data.creators).await;
+    process_data(client, key, candy_machine.data.clone()).await?;
+    process_creators(client, key, candy_machine.data.creators).await?;
 
     if let Some(es) = candy_machine.data.end_settings {
-        process_end_settings(client, key, es).await;
+        process_end_settings(client, key, es).await?
     };
 
     if let Some(hs) = candy_machine.data.hidden_settings {
-        process_hidden_settings(client, key, hs).await;
+        process_hidden_settings(client, key, hs).await?
     }
 
     if let Some(gk) = candy_machine.data.gatekeeper {
-        process_gatekeeper_config(client, key, gk).await;
+        process_gatekeeper_config(client, key, gk).await?
     }
 
     if let Some(wlms) = candy_machine.data.whitelist_mint_settings {
-        process_whitelist_mint_settings(client, key, wlms).await;
+        process_whitelist_mint_settings(client, key, wlms).await?
     }
 
     Ok(())
