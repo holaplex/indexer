@@ -228,7 +228,11 @@ async fn process_whitelist_mint_settings(
         },
         mint: Owned(bs58::encode(wlms.mint).into_string()),
         presale: wlms.presale,
-        discount_price: wlms.discount_price.map(|dp| dp.try_into().unwrap()),
+        discount_price: wlms
+            .discount_price
+            .map(|dp| dp.try_into())
+            .transpose()
+            .context("error casting u64 to i64!")?,
     };
 
     client
