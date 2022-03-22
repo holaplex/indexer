@@ -1,5 +1,3 @@
-use std::pin::Pin;
-
 use futures_util::{future::join_all, Future};
 use indexer_core::{
     db::{
@@ -56,7 +54,7 @@ pub(crate) async fn process(
         .await
         .context("failed to insert candy machine")?;
 
-    let mut futures: Vec<Pin<Box<dyn Future<Output = Result<()>> + Send>>> = Vec::new();
+    let mut futures: Vec<std::pin::Pin<Box<dyn Future<Output = Result<()>> + Send>>> = Vec::new();
 
     futures.push(Box::pin(process_data(
         client,
@@ -85,7 +83,7 @@ pub(crate) async fn process(
         futures.push(Box::pin(process_whitelist_mint_settings(client, key, wlms)));
     }
 
-    join_all(v).await;
+    join_all(futures).await;
 
     Ok(())
 }
