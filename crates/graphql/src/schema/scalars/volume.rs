@@ -1,19 +1,15 @@
 use super::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
-#[repr(transparent)]
-pub struct Lamports(u64);
+pub struct Volume(u64);
 
-#[graphql_scalar(description = "Lamports")]
-impl<S> GraphQLScalar for Lamports
-where
-    S: ScalarValue,
-{
+#[graphql_scalar(description = "Volume")]
+impl<S: ScalarValue> GraphQLScalar for Volume {
     fn resolve(&self) -> Value {
         Value::scalar(self.0.to_string())
     }
 
-    fn from_input_value(v: &InputValue) -> Option<Lamports> {
+    fn from_input_value(v: &InputValue) -> Option<Self> {
         v.as_string_value().and_then(|s| s.parse().ok()).map(Self)
     }
 
@@ -22,13 +18,13 @@ where
     }
 }
 
-impl From<u64> for Lamports {
+impl From<u64> for Volume {
     fn from(value: u64) -> Self {
         Self(value)
     }
 }
 
-impl TryFrom<i64> for Lamports {
+impl TryFrom<i64> for Volume {
     type Error = std::num::TryFromIntError;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {

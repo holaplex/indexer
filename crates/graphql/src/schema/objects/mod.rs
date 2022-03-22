@@ -8,6 +8,7 @@ pub mod marketplace;
 pub mod nft;
 pub mod profile;
 pub mod purchase_receipt;
+pub mod stats;
 pub mod store_creator;
 pub mod storefront;
 pub mod wallet;

@@ -5,7 +5,7 @@
 use std::borrow::Cow;
 
 use chrono::NaiveDateTime;
-use diesel::sql_types::{Bool, Int4, Nullable, Text, VarChar};
+use diesel::sql_types::{Bool, Int4, Int8, Nullable, Text, VarChar};
 
 use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
@@ -797,4 +797,38 @@ pub struct CMEndSetting<'a> {
     /// This will be either a date (if date is set to true)
     /// or a integer amount value (if amount is set to true)
     pub number: i64,
+}
+
+/// A row in a `mint_stats` query, representing stats for a single token type
+/// identified by its mint
+#[derive(Debug, Clone, QueryableByName)]
+pub struct MintStats<'a> {
+    /// The auction house for which stats were collected
+    #[sql_type = "VarChar"]
+    pub auction_house: Cow<'a, str>,
+    /// The mint of this token
+    #[sql_type = "Text"]
+    pub mint: Cow<'a, str>,
+    /// The floor price in this token
+    #[sql_type = "Nullable<Int8>"]
+    pub floor: Option<i64>,
+    /// The average price in this token
+    #[sql_type = "Nullable<Int8>"]
+    pub average: Option<i64>,
+    /// 24-hour volume for this token
+    #[sql_type = "Nullable<Int8>"]
+    pub volume_24hr: Option<i64>,
+}
+
+/// A row in a `metadatas::count_by_marketplace` query, representing stats for
+/// a single marketplace
+#[derive(Debug, Clone, QueryableByName)]
+pub struct MarketStats<'a> {
+    /// The store config address of the marketplace for which stats were
+    /// collected
+    #[sql_type = "VarChar"]
+    pub store_config: Cow<'a, str>,
+    /// Number of NFTs in this marketplace
+    #[sql_type = "Nullable<Int8>"]
+    pub nfts: Option<i64>,
 }
