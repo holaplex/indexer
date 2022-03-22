@@ -1,3 +1,4 @@
+use indexer_core::db::queries::mint_stats;
 use objects::{auction_house::AuctionHouse, mint_stats::MintStats};
 use scalars::PublicKey;
 
@@ -9,6 +10,12 @@ impl TryBatchFn<PublicKey<AuctionHouse>, Vec<MintStats>> for Batcher {
         &mut self,
         addresses: &[PublicKey<AuctionHouse>],
     ) -> TryBatchMap<PublicKey<AuctionHouse>, Vec<MintStats>> {
-        todo!()
+        let db = self.db()?;
+        let rows = mint_stats::load(&db, addresses)?;
+
+        Ok(rows
+            .into_iter()
+            .map(|s| (s.auction_house.clone(), s.try_into()))
+            .batch(addresses))
     }
 }

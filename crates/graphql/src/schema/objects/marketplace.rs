@@ -100,7 +100,7 @@ impl Marketplace {
     pub async fn mint_stats(&self, context: &AppContext) -> FieldResult<Vec<MintStats>> {
         context
             .mint_stats_loader
-            .load(self.owner_address.clone().into())
+            .load(self.auction_house_address.clone().into())
             .await
             .map_err(Into::into)
     }

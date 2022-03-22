@@ -5,7 +5,7 @@
 use std::borrow::Cow;
 
 use chrono::NaiveDateTime;
-use diesel::sql_types::{Bool, Int4, Nullable, Text, VarChar};
+use diesel::sql_types::{Bool, Int4, Int8, Nullable, Text, VarChar};
 
 use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
@@ -797,4 +797,28 @@ pub struct CMEndSetting<'a> {
     /// This will be either a date (if date is set to true)
     /// or a integer amount value (if amount is set to true)
     pub number: i64,
+}
+
+/// A row in a `mint_stats` query, representing stats for a single token type
+/// identified by its mint
+#[derive(Debug, Clone, QueryableByName)]
+pub struct MintStats<'a> {
+    /// The auction house for which stats were collected
+    #[sql_type = "VarChar"]
+    pub auction_house: Cow<'a, str>,
+    /// The mint of this token
+    #[sql_type = "Text"]
+    pub mint: Cow<'a, str>,
+    /// The floor price in this token
+    #[sql_type = "Int8"]
+    pub floor: i64,
+    /// The average price in this token
+    #[sql_type = "Int8"]
+    pub average: i64,
+    /// 24-hour volume for this token
+    #[sql_type = "Int8"]
+    pub volume_24hr: i64,
+    /// Number of items using this token
+    #[sql_type = "Int8"]
+    pub count: i64,
 }
