@@ -54,18 +54,10 @@ pub(crate) async fn process(
         .await
         .context("failed to insert candy machine")?;
 
-    let mut futures: Vec<std::pin::Pin<Box<dyn Future<Output = Result<()>> + Send>>> = Vec::new();
-
-    futures.push(Box::pin(process_data(
-        client,
-        key,
-        candy_machine.data.clone(),
-    )));
-    futures.push(Box::pin(process_creators(
-        client,
-        key,
-        candy_machine.data.creators,
-    )));
+    let mut futures: Vec<std::pin::Pin<Box<dyn Future<Output = Result<()>> + Send>>> = vec![
+        Box::pin(process_data(client, key, candy_machine.data.clone())),
+        Box::pin(process_creators(client, key, candy_machine.data.creators)),
+    ];
 
     if let Some(es) = candy_machine.data.end_settings {
         futures.push(Box::pin(process_end_settings(client, key, es)));
@@ -230,7 +222,7 @@ async fn process_whitelist_mint_settings(
         presale: wlms.presale,
         discount_price: wlms
             .discount_price
-            .map(|dp| dp.try_into())
+            .map(TryInto::try_into)
             .transpose()
             .context("error casting u64 to i64!")?,
     };
