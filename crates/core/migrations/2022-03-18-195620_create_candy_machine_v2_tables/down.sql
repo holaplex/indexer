@@ -1,0 +1,11 @@
+drop table candy_machines;
+drop table candy_machine_datas;
+drop table candy_machine_config_lines;
+drop table candy_machine_creators;
+drop table candy_machine_collection_pdas;
+drop table candy_machine_hidden_settings;
+drop table candy_machine_whitelist_mint_settings;
+drop table candy_machine_gate_keeper_configs;
+drop table candy_machine_end_settings;
+drop type if exists settingtype;
+drop type if exists mode;

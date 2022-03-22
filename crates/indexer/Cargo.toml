@@ -53,11 +53,13 @@ tokio-reactor-trait = "1.1.0"
 # Solana & Metaplex
 anchor-lang = "~0.20.1"
 anchor-lang-v0-22-1 = { package = "anchor-lang", version = "0.22.1" }
+anchor-lang-v0-21-0 = { package = "anchor-lang", version = "0.21.0" }
 metaplex = { version="0.0.1", features = ["no-entrypoint"] }
 metaplex-auction = { version="0.0.1", features = ["no-entrypoint"] }
 mpl-token-metadata = { version="~1.2.4", features = ["no-entrypoint"] }
 metaplex-token-vault = { version="0.0.1", features = ["no-entrypoint"] }
 mpl-auction-house = { version="1.1.0", features = ["no-entrypoint"] }
+mpl-candy-machine = { version="~3.1.1", features = ["no-entrypoint"] }
 solana-program = { version = "~1.9.5", optional = true }
 solana-sdk = "~1.9.5"
 spl-token = { version="~3.2.0", features = ["no-entrypoint"] }
