@@ -29,8 +29,8 @@ pub enum EndSettingType {
 impl ToSql<SettingType, Pg> for EndSettingType {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
         match *self {
-            EndSettingType::Date => out.write_all(b"date")?,
-            EndSettingType::Amount => out.write_all(b"amount")?,
+            EndSettingType::Date => out.write_all(b"Date")?,
+            EndSettingType::Amount => out.write_all(b"Amount")?,
         }
         Ok(IsNull::No)
     }
