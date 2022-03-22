@@ -5,9 +5,9 @@ use super::prelude::*;
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct MintStats {
     pub mint: String,
-    pub floor: Volume,
-    pub average: Volume,
-    pub volume_24hr: Volume,
+    pub floor: Option<Volume>,
+    pub average: Option<Volume>,
+    pub volume_24hr: Option<Volume>,
 }
 
 impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
@@ -24,16 +24,16 @@ impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             mint: mint.into_owned(),
-            floor: floor.try_into()?,
-            average: average.try_into()?,
-            volume_24hr: volume_24hr.try_into()?,
+            floor: floor.map(TryInto::try_into).transpose()?,
+            average: average.map(TryInto::try_into).transpose()?,
+            volume_24hr: volume_24hr.map(TryInto::try_into).transpose()?,
         })
     }
 }
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct MarketStats {
-    pub nfts: Volume,
+    pub nfts: Option<Volume>,
 }
 
 impl<'a> TryFrom<models::MarketStats<'a>> for MarketStats {
@@ -46,7 +46,7 @@ impl<'a> TryFrom<models::MarketStats<'a>> for MarketStats {
         }: models::MarketStats,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            nfts: nfts.try_into()?,
+            nfts: nfts.map(TryInto::try_into).transpose()?,
         })
     }
 }

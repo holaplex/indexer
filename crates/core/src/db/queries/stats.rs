@@ -21,7 +21,7 @@ const MINT_QUERY: &str = r"
 select
     ah.address                      as auction_house,
     ah.treasury_mint                as mint,
-    min(pr.price)::bigint           as floor,
+    min(f.min)::bigint              as floor,
     round(avg(pr.price))::bigint    as average,
 
     sum(case
@@ -33,6 +33,13 @@ select
 from auction_houses ah
     inner join purchase_receipts pr
         on (pr.auction_house = ah.address)
+
+    inner join (
+        select lr.auction_house, min(lr.price)::bigint
+        from listing_receipts lr
+        where lr.auction_house = any($1)
+        group by lr.auction_house
+    ) f on (f.auction_house = ah.address)
 
 where ah.address = any($1)
 group by ah.address;
@@ -64,7 +71,7 @@ from store_creators sc
     inner join metadata_creators mc
         on (mc.creator_address = sc.creator_address)
 
-where sc.store_config_address = any($1)
+where sc.store_config_address = any($1) and mc.verified
 group by sc.store_config_address;
  -- $1: store config addresses::text[]
 ";

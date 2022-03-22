@@ -810,14 +810,14 @@ pub struct MintStats<'a> {
     #[sql_type = "Text"]
     pub mint: Cow<'a, str>,
     /// The floor price in this token
-    #[sql_type = "Int8"]
-    pub floor: i64,
+    #[sql_type = "Nullable<Int8>"]
+    pub floor: Option<i64>,
     /// The average price in this token
-    #[sql_type = "Int8"]
-    pub average: i64,
+    #[sql_type = "Nullable<Int8>"]
+    pub average: Option<i64>,
     /// 24-hour volume for this token
-    #[sql_type = "Int8"]
-    pub volume_24hr: i64,
+    #[sql_type = "Nullable<Int8>"]
+    pub volume_24hr: Option<i64>,
 }
 
 /// A row in a `metadatas::count_by_marketplace` query, representing stats for
@@ -829,6 +829,6 @@ pub struct MarketStats<'a> {
     #[sql_type = "VarChar"]
     pub store_config: Cow<'a, str>,
     /// Number of NFTs in this marketplace
-    #[sql_type = "Int8"]
-    pub nfts: i64,
+    #[sql_type = "Nullable<Int8>"]
+    pub nfts: Option<i64>,
 }
