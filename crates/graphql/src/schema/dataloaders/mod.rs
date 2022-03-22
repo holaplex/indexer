@@ -3,8 +3,8 @@ pub mod bid_receipt;
 pub mod collection;
 pub mod listing;
 pub mod listing_receipt;
-pub mod mint_stats;
 pub mod nft;
+pub mod stats;
 pub mod store_creator;
 pub mod storefront;
 

@@ -1,4 +1,4 @@
-use objects::mint_stats::MintStats;
+use objects::stats::MintStats;
 
 use super::prelude::*;
 

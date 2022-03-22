@@ -8,7 +8,6 @@ pub struct MintStats {
     pub floor: Volume,
     pub average: Volume,
     pub volume_24hr: Volume,
-    pub count: Volume,
 }
 
 impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
@@ -21,7 +20,6 @@ impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
             floor,
             average,
             volume_24hr,
-            count,
         }: models::MintStats,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -29,7 +27,26 @@ impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
             floor: floor.try_into()?,
             average: average.try_into()?,
             volume_24hr: volume_24hr.try_into()?,
-            count: count.try_into()?,
+        })
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct MarketStats {
+    pub nfts: Volume,
+}
+
+impl<'a> TryFrom<models::MarketStats<'a>> for MarketStats {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::MarketStats {
+            store_config: _,
+            nfts,
+        }: models::MarketStats,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            nfts: nfts.try_into()?,
         })
     }
 }

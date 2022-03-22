@@ -818,7 +818,17 @@ pub struct MintStats<'a> {
     /// 24-hour volume for this token
     #[sql_type = "Int8"]
     pub volume_24hr: i64,
-    /// Number of items using this token
+}
+
+/// A row in a `metadatas::count_by_marketplace` query, representing stats for
+/// a single marketplace
+#[derive(Debug, Clone, QueryableByName)]
+pub struct MarketStats<'a> {
+    /// The store config address of the marketplace for which stats were
+    /// collected
+    #[sql_type = "VarChar"]
+    pub store_config: Cow<'a, str>,
+    /// Number of NFTs in this marketplace
     #[sql_type = "Int8"]
-    pub count: i64,
+    pub nfts: i64,
 }
