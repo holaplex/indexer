@@ -1,4 +1,4 @@
-use objects::{auction_house::AuctionHouse, mint_stats::MintStats, store_creator::StoreCreator};
+use objects::{auction_house::AuctionHouse, store_creator::StoreCreator};
 
 use super::prelude::*;
 
@@ -93,14 +93,6 @@ impl Marketplace {
         context
             .store_creator_loader
             .load(self.config_address.clone().into())
-            .await
-            .map_err(Into::into)
-    }
-
-    pub async fn mint_stats(&self, context: &AppContext) -> FieldResult<Vec<MintStats>> {
-        context
-            .mint_stats_loader
-            .load(self.auction_house_address.clone().into())
             .await
             .map_err(Into::into)
     }
