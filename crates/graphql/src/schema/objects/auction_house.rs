@@ -1,6 +1,8 @@
+use objects::stats::MintStats;
+
 use super::prelude::*;
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 pub struct AuctionHouse {
     pub address: String,
     pub treasury_mint: String,
@@ -53,5 +55,72 @@ impl<'a> From<models::AuctionHouse<'a>> for AuctionHouse {
             can_change_sale_price,
             auction_house_fee_account: auction_house_fee_account.into_owned(),
         }
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl AuctionHouse {
+    pub async fn stats(&self, context: &AppContext) -> FieldResult<Option<MintStats>> {
+        context
+            .mint_stats_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub fn address(&self) -> &str {
+        &self.address
+    }
+
+    pub fn treasury_mint(&self) -> &str {
+        &self.treasury_mint
+    }
+
+    pub fn auction_house_treasury(&self) -> &str {
+        &self.auction_house_treasury
+    }
+
+    pub fn treasury_withdrawal_destination(&self) -> &str {
+        &self.treasury_withdrawal_destination
+    }
+
+    pub fn fee_withdrawal_destination(&self) -> &str {
+        &self.fee_withdrawal_destination
+    }
+
+    pub fn authority(&self) -> &str {
+        &self.authority
+    }
+
+    pub fn creator(&self) -> &str {
+        &self.creator
+    }
+
+    pub fn bump(&self) -> i32 {
+        self.bump
+    }
+
+    pub fn treasury_bump(&self) -> i32 {
+        self.treasury_bump
+    }
+
+    pub fn fee_payer_bump(&self) -> i32 {
+        self.fee_payer_bump
+    }
+
+    pub fn seller_fee_basis_points(&self) -> i32 {
+        self.seller_fee_basis_points
+    }
+
+    pub fn requires_sign_off(&self) -> bool {
+        self.requires_sign_off
+    }
+
+    pub fn can_change_sale_price(&self) -> bool {
+        self.can_change_sale_price
+    }
+
+    pub fn auction_house_fee_account(&self) -> &str {
+        &self.auction_house_fee_account
     }
 }

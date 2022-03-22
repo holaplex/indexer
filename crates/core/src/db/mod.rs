@@ -1,5 +1,6 @@
 //! Interface with the indexer database
 
+pub mod custom_types;
 pub mod models;
 pub mod queries;
 #[allow(missing_docs, unused_imports)]
@@ -14,8 +15,12 @@ pub mod tables {
 use std::env;
 
 pub use diesel::{
-    backend::Backend, insert_into, pg::upsert::excluded, query_dsl, result::Error, select,
-    serialize, sql_types, update, Queryable,
+    backend::Backend,
+    debug_query, insert_into,
+    pg::{upsert::excluded, Pg},
+    query_dsl,
+    result::Error,
+    select, serialize, sql_query, sql_types, update, Queryable,
 };
 use diesel::{pg, r2d2};
 pub use diesel_full_text_search::{

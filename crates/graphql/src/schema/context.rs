@@ -5,6 +5,7 @@ use objects::{
     listing::{Bid, Listing},
     listing_receipt::ListingReceipt,
     nft::{Nft, NftAttribute, NftCreator, NftOwner},
+    stats::{MarketStats, MintStats},
     store_creator::StoreCreator,
     storefront::Storefront,
 };
@@ -22,6 +23,8 @@ pub struct AppContext {
     pub listing_loader: Loader<PublicKey<Listing>, Option<Listing>>,
     pub listing_bids_loader: Loader<PublicKey<Listing>, Vec<Bid>>,
     pub listing_nfts_loader: Loader<PublicKey<Listing>, Vec<(usize, Nft)>>,
+    pub market_stats_loader: Loader<PublicKey<StoreConfig>, Option<MarketStats>>,
+    pub mint_stats_loader: Loader<PublicKey<AuctionHouse>, Option<MintStats>>,
     pub nft_attributes_loader: Loader<PublicKey<Nft>, Vec<NftAttribute>>,
     pub nft_creators_loader: Loader<PublicKey<Nft>, Vec<NftCreator>>,
     pub nft_owner_loader: Loader<PublicKey<Nft>, Option<NftOwner>>,
@@ -29,6 +32,7 @@ pub struct AppContext {
     pub listing_receipts_loader: Loader<PublicKey<Nft>, Vec<ListingReceipt>>,
     pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
+    pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
 }
 
 impl juniper::Context for AppContext {}
@@ -42,13 +46,16 @@ impl AppContext {
             listing_loader: Loader::new(batcher.clone()),
             listing_bids_loader: Loader::new(batcher.clone()),
             listing_nfts_loader: Loader::new(batcher.clone()),
+            market_stats_loader: Loader::new(batcher.clone()),
+            mint_stats_loader: Loader::new(batcher.clone()),
             nft_attributes_loader: Loader::new(batcher.clone()),
             nft_creators_loader: Loader::new(batcher.clone()),
             nft_owner_loader: Loader::new(batcher.clone()),
             storefront_loader: Loader::new(batcher.clone()),
             listing_receipts_loader: Loader::new(batcher.clone()),
             bid_receipts_loader: Loader::new(batcher.clone()),
-            store_creator_loader: Loader::new(batcher),
+            store_creator_loader: Loader::new(batcher.clone()),
+            collection_loader: Loader::new(batcher),
             db_pool,
             shared,
         }

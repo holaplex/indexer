@@ -45,7 +45,10 @@ pub mod prelude {
     pub use super::error::prelude::*;
 }
 
-use std::path::{Path, PathBuf};
+use std::{
+    net::SocketAddr,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Context;
 use error::Result;
@@ -61,9 +64,27 @@ fn dotenv(name: impl AsRef<Path>) -> Result<Option<PathBuf>, dotenv::Error> {
 /// Common options for all server crates.
 #[derive(Debug, Clone, Copy, clap::Parser)]
 pub struct ServerOpts {
-    /// The port to listen on
-    #[clap(short, long, default_value_t = 3000, env)]
-    pub port: u16,
+    /// The address to bind to
+    #[clap(long = "addr", default_value = "0.0.0.0:3000", env)]
+    address: SocketAddr,
+
+    /// Overrides the port of the provided binding address
+    #[clap(short, long, env)]
+    port: Option<u16>,
+}
+
+impl ServerOpts {
+    /// Process and expose the server options
+    #[must_use]
+    pub fn into_parts(self) -> (SocketAddr,) {
+        let Self { mut address, port } = self;
+
+        if let Some(port) = port {
+            address.set_port(port);
+        }
+
+        (address,)
+    }
 }
 
 /// Process environment variables, initialize logging, and then execute the

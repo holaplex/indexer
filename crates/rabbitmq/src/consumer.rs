@@ -3,20 +3,23 @@
 use std::marker::PhantomData;
 
 use futures_util::StreamExt;
-use lapin::{options::BasicAckOptions, Connection};
+use lapin::{acker::Acker, Connection};
 
 use crate::{serialize::deserialize, QueueType, Result};
 
 /// A consumer consisting of a configured AMQP consumer and queue config
 #[derive(Debug)]
-pub struct Consumer<T, Q> {
+pub struct Consumer<Q> {
     // chan: Channel,
     consumer: lapin::Consumer,
     // ty: Q,
-    _p: PhantomData<(T, Q)>,
+    _p: PhantomData<Q>,
 }
 
-impl<T: for<'a> serde::Deserialize<'a>, Q: QueueType<T>> Consumer<T, Q> {
+impl<Q: QueueType> Consumer<Q>
+where
+    Q::Message: for<'a> serde::Deserialize<'a>,
+{
     /// Construct a new consumer from a [`QueueType`]
     ///
     /// # Errors
@@ -25,7 +28,7 @@ impl<T: for<'a> serde::Deserialize<'a>, Q: QueueType<T>> Consumer<T, Q> {
     pub async fn new(conn: &Connection, ty: Q) -> Result<Self> {
         let chan = conn.create_channel().await?;
 
-        let consumer = ty.init_consumer(&chan).await?;
+        let consumer = ty.info().init_consumer(&chan).await?;
 
         Ok(Self {
             // chan,
@@ -40,14 +43,14 @@ impl<T: for<'a> serde::Deserialize<'a>, Q: QueueType<T>> Consumer<T, Q> {
     /// # Errors
     /// This function fails if the delivery cannot be successfully performed or
     /// the payload cannot be deserialized.
-    pub async fn read(&mut self) -> Result<Option<T>> {
-        let (_chan, delivery) = match self.consumer.next().await {
+    pub async fn read(&mut self) -> Result<Option<(Q::Message, Acker)>> {
+        let delivery = match self.consumer.next().await {
             Some(d) => d?,
             None => return Ok(None),
         };
 
-        delivery.ack(BasicAckOptions::default()).await?;
+        let data = deserialize(std::io::Cursor::new(delivery.data))?;
 
-        deserialize(std::io::Cursor::new(delivery.data)).map_err(Into::into)
+        Ok(Some((data, delivery.acker)))
     }
 }

@@ -12,33 +12,62 @@ use {
 
 /// Borrow a `solana-sdk` account as a `solana-program` account info struct.
 #[cfg(feature = "solana-program")]
-pub fn account_as_info<'a>(
-    key: &'a Pubkey,
+pub async fn account_as_info<T: Send + 'static>(
+    key: Pubkey,
     is_signer: bool,
     is_writable: bool,
-    acct: &'a mut Account,
-) -> AccountInfo<'a> {
-    AccountInfo::new(
-        key,
-        is_signer,
-        is_writable,
-        &mut acct.lamports,
-        &mut *acct.data,
-        &acct.owner,
-        acct.executable,
-        acct.rent_epoch,
-    )
+    mut acct: Account,
+    f: impl Send + FnOnce(AccountInfo<'_>) -> T + 'static,
+) -> Result<T> {
+    // NOTE: this is here because metaplex_auction only allows parsing via
+    //       AccountInfo, which stores lamports as Rc<RefCell<&mut u64>>, which
+    //       does not implement Send and therefore cannot ever be used in
+    //       multithreaded code.  Thus the only way to access it is to spawn a
+    //       dedicated thread in Tokio's thread pool to run all code that needs
+    //       to use the account info and prevent the need for a Send impl.
+
+    tokio::task::spawn_blocking(move || {
+        let inf = AccountInfo::new(
+            &key,
+            is_signer,
+            is_writable,
+            &mut acct.lamports,
+            &mut *acct.data,
+            &acct.owner,
+            acct.executable,
+            acct.rent_epoch,
+        );
+
+        f(inf)
+    })
+    .await
+    .context("Failed to spawn dedicated thread for AccountInfo processing")
 }
 
 /// Borrow an account's raw as a `solana-program` account info struct.
 #[cfg(feature = "solana-program")]
-pub fn account_data_as_info<'a>(
-    key: &'a Pubkey,
-    data: &'a mut [u8],
-    owner: &'a Pubkey,
-    lamports: &'a mut u64,
-) -> AccountInfo<'a> {
-    AccountInfo::new(key, false, false, lamports, data, owner, false, 0)
+#[inline]
+pub async fn account_data_as_info<T: Send + 'static>(
+    key: Pubkey,
+    data: impl std::borrow::ToOwned<Owned = Vec<u8>>,
+    owner: Pubkey,
+    lamports: u64,
+    f: impl Send + FnOnce(AccountInfo<'_>) -> T + 'static,
+) -> Result<T> {
+    account_as_info(
+        key,
+        false,
+        false,
+        Account {
+            lamports,
+            data: data.to_owned(),
+            owner,
+            executable: false,
+            rent_epoch: 0,
+        },
+        f,
+    )
+    .await
 }
 
 /// Convenience wrapper for Metaplex's [`MasterEdition`] trait and structs

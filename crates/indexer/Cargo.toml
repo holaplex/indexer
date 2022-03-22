@@ -16,7 +16,6 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 [features]
 default = []
 accountsdb = [
-  "solana-client",
   "solana-program",
   "indexer-rabbitmq/accountsdb",
   "indexer-rabbitmq/http-indexer",
@@ -44,19 +43,23 @@ required-features = ["http"]
 
 [dependencies]
 async-trait = "0.1.52"
+futures-util = "0.3.21"
+num_cpus = "1.13.1"
 serde = { version = "1.0.130", features = ["derive"] }
-tokio = { version = "1.13.0", features = ["rt", "rt-multi-thread"] }
-tokio-amqp = "1.0.1"
+tokio = { version = "1.13.0", features = ["macros", "rt", "rt-multi-thread", "sync"] }
+tokio-executor-trait = "2.1.0"
+tokio-reactor-trait = "1.1.0"
 
 # Solana & Metaplex
 anchor-lang = "~0.20.1"
 anchor-lang-v0-22-1 = { package = "anchor-lang", version = "0.22.1" }
+anchor-lang-v0-21-0 = { package = "anchor-lang", version = "0.21.0" }
 metaplex = { version="0.0.1", features = ["no-entrypoint"] }
 metaplex-auction = { version="0.0.1", features = ["no-entrypoint"] }
 mpl-token-metadata = { version="~1.2.4", features = ["no-entrypoint"] }
 metaplex-token-vault = { version="0.0.1", features = ["no-entrypoint"] }
 mpl-auction-house = { version="1.1.0", features = ["no-entrypoint"] }
-solana-client = { version = "~1.9.5", optional = true }
+mpl-candy-machine = { version="~3.1.1", features = ["no-entrypoint"] }
 solana-program = { version = "~1.9.5", optional = true }
 solana-sdk = "~1.9.5"
 spl-token = { version="~3.2.0", features = ["no-entrypoint"] }

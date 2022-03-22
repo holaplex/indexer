@@ -1,4 +1,4 @@
-use objects::{auction_house::AuctionHouse, store_creator::StoreCreator};
+use objects::{auction_house::AuctionHouse, stats::MarketStats, store_creator::StoreCreator};
 
 use super::prelude::*;
 
@@ -92,6 +92,13 @@ impl Marketplace {
     pub async fn creators(&self, context: &AppContext) -> FieldResult<Vec<StoreCreator>> {
         context
             .store_creator_loader
+            .load(self.config_address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn stats(&self, ctx: &AppContext) -> FieldResult<Option<MarketStats>> {
+        ctx.market_stats_loader
             .load(self.config_address.clone().into())
             .await
             .map_err(Into::into)

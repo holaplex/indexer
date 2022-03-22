@@ -31,6 +31,7 @@ fn main() {
              startup,
              queue_suffix,
          },
+         params,
          db| async move {
             if cfg!(debug_assertions) && queue_suffix.is_none() {
                 bail!("Debug builds must specify a RabbitMQ queue suffix!");
@@ -48,29 +49,16 @@ fn main() {
             .await
             .context("Failed to construct Client")?;
 
-            let mut consumer = accountsdb::Consumer::new(
-                &conn,
-                accountsdb::QueueType::new(network, startup, queue_suffix.as_deref()),
-            )
-            .await
-            .context("Failed to create queue consumer")?;
-
-            while let Some(msg) = consumer
-                .read()
+            let queue_type = accountsdb::QueueType::new(network, startup, queue_suffix.as_deref());
+            let consumer = accountsdb::Consumer::new(&conn, queue_type.clone())
                 .await
-                .context("Failed to read message from RabbitMQ")?
-            {
-                trace!("{:?}", msg);
+                .context("Failed to create queue consumer")?;
 
-                match metaplex_indexer::accountsdb::process_message(msg, &*client).await {
-                    Ok(()) => (),
-                    Err(e) => error!("Failed to process message: {:?}", e),
-                }
-            }
-
-            warn!("AMQP server hung up!");
-
-            Ok(())
+            metaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
+                let client = client.clone();
+                async move { metaplex_indexer::accountsdb::process_message(m, &*client).await }
+            })
+            .await
         },
     );
 }
