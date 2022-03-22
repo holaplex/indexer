@@ -25,6 +25,7 @@ use mpl_candy_machine::{
 use super::Client;
 use crate::prelude::*;
 
+#[allow(unused_must_use)]
 pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
