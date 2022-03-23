@@ -249,7 +249,7 @@ pub(crate) async fn process_config_line(
     let row = CMConfigLine {
         address: Owned(bs58::encode(key).into_string()),
         name: Owned(config_line.name),
-        uri: Owned(config_line.uri),
+        uri: Owned(config_line.uri.trim_end_matches('\0').to_owned()),
     };
 
     client
