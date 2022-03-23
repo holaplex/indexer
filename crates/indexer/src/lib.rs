@@ -26,19 +26,21 @@ pub mod prelude {
 }
 
 mod runtime {
-    use std::{fmt::Debug, future::Future, sync::Arc};
+    use std::{fmt::Debug, future::Future};
 
-    use futures_util::StreamExt;
+    use futures_util::{FutureExt, StreamExt};
     use indexer_core::{
         clap,
         clap::{Args, Parser},
         db,
     };
     use indexer_rabbitmq::{
+        consumer::Consumer,
         lapin,
         lapin::options::{BasicAckOptions, BasicRejectOptions},
+        QueueType,
     };
-    use tokio::{sync::Semaphore, task::JoinError};
+    use tokio::sync::{broadcast, broadcast::error::RecvError};
 
     use super::{db::Pool, prelude::*};
 
@@ -120,27 +122,69 @@ mod runtime {
     /// This function will panic if the internal scheduler enters a deadlock
     /// state.
     pub async fn amqp_consume<
-        Q: indexer_rabbitmq::QueueType + Send + Sync + 'static,
+        Q: QueueType + Send + Sync + 'static,
         F: Send + Future<Output = Result<()>> + 'static,
     >(
         params: &Params,
         conn: indexer_rabbitmq::lapin::Connection,
-        consumer: indexer_rabbitmq::consumer::Consumer<Q>,
+        consumer: Consumer<Q>,
         queue_type: Q,
-        process: impl Fn(Q::Message) -> F + Send + Sync + 'static,
+        process: impl Fn(Q::Message) -> F + Send + Sync + Clone + 'static,
     ) -> Result<()>
     where
         Q::Message: Debug + Send + for<'a> serde::Deserialize<'a>,
     {
-        enum JobResult {
-            Continue,
-            Hangup,
+        async fn consume_one<Q: QueueType, F: Future<Output = Result<()>>>(
+            worker_id: usize,
+            mut consumer: Consumer<Q>,
+            process: impl Fn(Q::Message) -> F,
+            mut stop_rx: broadcast::Receiver<()>,
+        ) -> Result<()>
+        where
+            Q::Message: Debug + for<'de> serde::Deserialize<'de>,
+        {
+            // Ideally T would be ! but ! is unstable.
+            fn handle_stop<T>(r: Result<(), RecvError>) -> Result<Option<T>> {
+                match r {
+                    Ok(()) | Err(RecvError::Closed) => Ok(None),
+                    Err(e) => Err(e).context("Error receiving stop signal"),
+                }
+            }
+
+            loop {
+                let val = tokio::select! {
+                    r = consumer.read() => r.context("Failed to read AMQP message")?,
+                    r = stop_rx.recv() => handle_stop(r)?,
+                };
+
+                let (msg, acker) = if let Some(del) = val {
+                    del
+                } else {
+                    break;
+                };
+
+                trace!("Worker {}: {:?}", worker_id, msg);
+
+                match process(msg).await {
+                    Ok(()) => acker
+                        .ack(BasicAckOptions::default())
+                        .await
+                        .context("Failed to send ACK for delivery")?,
+                    Err(e) => {
+                        warn!("Failed to process message: {:?}", e);
+
+                        acker
+                            .reject(BasicRejectOptions { requeue: false })
+                            .await
+                            .context("Failed to send NAK for delivery")?;
+                    },
+                }
+            }
+
+            Ok(())
         }
 
         let Params { concurrency } = *params;
-        let mut futures = futures_util::stream::FuturesUnordered::new();
-        let sem = Arc::new(Semaphore::new(concurrency));
-        let process = Arc::new(process);
 
         let dl_task = tokio::spawn(indexer_rabbitmq::dl_consumer::run(
             conn,
@@ -148,89 +192,36 @@ mod runtime {
             tokio::time::sleep,
         ));
 
-        loop {
-            enum Message {
-                Permit(Result<tokio::sync::OwnedSemaphorePermit, tokio::sync::AcquireError>),
-                JobDone(Result<Result<JobResult>, JoinError>),
-                Heartbeat,
-            }
+        let (stop_tx, _stop_rx) = broadcast::channel(1);
 
-            let heartbeat_interval = std::time::Duration::from_secs(5);
+        let mut q_tasks = (0..concurrency)
+            .map(|i| {
+                tokio::spawn(consume_one(
+                    i,
+                    consumer.clone(),
+                    process.clone(),
+                    stop_tx.subscribe(),
+                ))
+                .map(|r| match r {
+                    Ok(Ok(())) => warn!("AMQP server hung up!"),
+                    Ok(Err(e)) => error!("Fatal error in worker: {:?}", e),
+                    Err(e) => error!("Worker terminated unexpectedly: {:?}", e),
+                })
+            })
+            .collect::<futures_util::stream::FuturesUnordered<_>>();
 
-            let msg = tokio::select! {
-                p = sem.clone().acquire_owned() => Message::Permit(p),
-                Some(r) = futures.next() => Message::JobDone(r),
-                _ = tokio::time::sleep(heartbeat_interval) => Message::Heartbeat,
-            };
+        q_tasks.next().await; // Everything past this point is graceful failure
 
-            match msg {
-                Message::Permit(p) => {
-                    let mut consumer = consumer.clone();
-                    let process = Arc::clone(&process);
-
-                    futures.push(tokio::task::spawn(async move {
-                        if let Some((msg, acker)) = consumer
-                            .read()
-                            .await
-                            .context("Failed to read AMQP message")?
-                        {
-                            trace!("{:?}", msg);
-
-                            match process(msg).await {
-                                Ok(()) => acker
-                                    .ack(BasicAckOptions::default())
-                                    .await
-                                    .context("Failed to send ACK for delivery")?,
-                                Err(e) => {
-                                    warn!("Failed to process message: {:?}", e);
-
-                                    acker
-                                        .reject(BasicRejectOptions { requeue: false })
-                                        .await
-                                        .context("Failed to send NAK for delivery")?;
-                                },
-                            }
-
-                            std::mem::drop(p); // Hang on to the permit until here
-
-                            Ok(JobResult::Continue)
-                        } else {
-                            warn!("AMQP server hung up!");
-
-                            Ok(JobResult::Hangup)
-                        }
-                    }));
-                },
-                Message::JobDone(Ok(Ok(JobResult::Continue))) => (),
-                Message::JobDone(Ok(Ok(JobResult::Hangup))) => break,
-                Message::JobDone(Ok(Err(e))) => {
-                    error!("Fatal error encountered from worker: {:?}", e);
-                    break;
-                },
-                Message::JobDone(Err(e)) => error!("Failed to join worker: {:?}", e),
-                Message::Heartbeat => {
-                    debug!(
-                        "Heartbeat received (deadlock?) sem = {}, futures = {}",
-                        sem.available_permits(),
-                        futures.len(),
-                    );
-                },
-            }
-        }
-
-        sem.close();
+        stop_tx.send(()).unwrap();
         dl_task.abort();
 
-        if !futures.is_empty() {
+        if !q_tasks.is_empty() {
             info!("Waiting for additional jobs to finish...");
         }
 
-        while let Some(r) = futures.next().await {
-            r.map_err(Into::into)
-                .and_then(|r| r)
-                .map_err(|e| error!("Job cleanup failed: {:?}", e))
-                .ok();
-        }
+        while let Some(()) = q_tasks.next().await {}
+
+        std::mem::drop(stop_tx);
 
         dl_task
             .await
