@@ -106,11 +106,15 @@ pub fn list(
             attributes
                 .into_iter()
                 .fold(query, |acc, AttributeFilter { trait_type, values }| {
-                    acc.filter(
-                        attributes::trait_type
-                            .eq(trait_type)
-                            .and(attributes::value.eq(any(values))),
-                    )
+                    let sub = attributes::table
+                        .select(attributes::metadata_address)
+                        .filter(
+                            attributes::trait_type
+                                .eq(trait_type)
+                                .and(attributes::value.eq(any(values))),
+                        );
+
+                    acc.filter(metadatas::address.eq(any(sub)))
                 });
     }
 
