@@ -16,6 +16,17 @@ pub struct Consumer<Q> {
     _p: PhantomData<Q>,
 }
 
+impl<Q> Clone for Consumer<Q> {
+    fn clone(&self) -> Self {
+        let Self { consumer, .. } = self;
+
+        Self {
+            consumer: consumer.clone(),
+            ..*self
+        }
+    }
+}
+
 impl<Q: QueueType> Consumer<Q>
 where
     Q::Message: for<'a> serde::Deserialize<'a>,

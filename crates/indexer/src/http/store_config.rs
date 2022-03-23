@@ -59,16 +59,16 @@ struct SettingUri {
 pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Result<()> {
     let url = Url::parse(&uri_str).context("Couldn't parse store config URL")?;
 
-    let http_client = reqwest::Client::new();
-
     debug!(
-        "attempting to process storeconfig: {:?}, with uri: {:?}",
+        "Attempting to fetch store config: {:?}, with uri: {:?}",
         config_key, uri_str
     );
 
     // TODO: parse failure shouldn't be an error, this stuff will be unstructured
-    let json = http_client
+    let json = client
+        .http()
         .get(url)
+        .timeout(client.timeout())
         .send()
         .await
         .context("Metadata JSON request failed")?
