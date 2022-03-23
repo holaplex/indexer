@@ -1,6 +1,6 @@
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::http_indexer;
-use metaplex_indexer::http::Client;
+use metaplex_indexer::http::{Client, ClientArgs};
 
 #[derive(Debug, clap::Parser)]
 struct Args {
@@ -22,13 +22,8 @@ struct Args {
     /// the indexer.
     queue_suffix: Option<String>,
 
-    /// A valid base URL to use when fetching IPFS links
-    #[clap(long, env)]
-    ipfs_cdn: String,
-
-    /// A valid base URL to use when fetching Arweave links
-    #[clap(long, env)]
-    arweave_cdn: String,
+    #[clap(flatten)]
+    client: ClientArgs,
 }
 
 fn main() {
@@ -55,19 +50,11 @@ async fn run<E: Send + metaplex_indexer::http::Process + 'static>(
         sender,
         entity: _,
         queue_suffix,
-        ipfs_cdn,
-        arweave_cdn,
+        client,
     } = args;
 
     let conn = metaplex_indexer::amqp_connect(amqp_url).await?;
-    let client = Client::new_rc(
-        db,
-        ipfs_cdn.parse().context("Failed to parse IPFS CDN URL")?,
-        arweave_cdn
-            .parse()
-            .context("Failed to parse Arweave CDN URL")?,
-    )
-    .context("Failed to construct Client")?;
+    let client = Client::new_rc(db, client).context("Failed to construct Client")?;
 
     let queue_type = http_indexer::QueueType::<E>::new(&sender, queue_suffix.as_deref());
     let consumer = http_indexer::Consumer::new(&conn, queue_type.clone())
