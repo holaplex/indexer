@@ -85,7 +85,7 @@ async fn process_data(client: &Client, key: Pubkey, data: CandyMachineData) -> R
         candy_machine_address: Owned(bs58::encode(key).into_string()),
         uuid: Owned(data.uuid),
         price: data.price.try_into()?,
-        symbol: Owned(data.symbol),
+        symbol: Owned(data.symbol.trim_end_matches('\0').to_owned()),
         seller_fee_basis_points: data.seller_fee_basis_points.try_into()?,
         max_supply: data.max_supply.try_into()?,
         is_mutable: data.is_mutable,
@@ -249,7 +249,7 @@ pub(crate) async fn process_config_line(
     let row = CMConfigLine {
         address: Owned(bs58::encode(key).into_string()),
         name: Owned(config_line.name),
-        uri: Owned(config_line.uri),
+        uri: Owned(config_line.uri.trim_end_matches('\0').to_owned()),
     };
 
     client
