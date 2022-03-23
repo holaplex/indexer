@@ -6,7 +6,7 @@ use indexer_core::{
     },
     pubkeys::find_edition,
 };
-use mpl_token_metadata::state::Metadata as MetadataAccount;
+use metaplex_token_metadata::state::Metadata as MetadataAccount;
 
 use super::Client;
 use crate::prelude::*;
