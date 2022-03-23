@@ -1,10 +1,11 @@
 //! Support features for the HTTP indexer
 
 pub(self) mod client;
+pub(self) mod http_client_cache;
 mod metadata_json;
 mod store_config;
 
-pub use client::Client;
+pub use client::{Args as ClientArgs, Client};
 use indexer_rabbitmq::http_indexer::{Entity, MetadataJson, StoreConfig};
 
 use crate::prelude::*;

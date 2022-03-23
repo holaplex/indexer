@@ -14,6 +14,7 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
+pub extern crate ahash;
 pub extern crate chrono;
 pub extern crate clap;
 

@@ -53,7 +53,7 @@ mod runtime {
     #[allow(missing_copy_implementations)]
     #[derive(Debug)]
     pub struct Params {
-        concurrency: usize,
+        pub(crate) concurrency: usize,
     }
 
     /// Entrypoint for `metaplex-indexer` binaries
