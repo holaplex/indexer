@@ -1,4 +1,3 @@
-use chrono::offset::Local;
 use indexer_core::{
     db::{insert_into, models::TokenAccount as TokenAccountModel, tables::token_accounts, update},
     prelude::*,
@@ -30,7 +29,13 @@ pub async fn process(
         .db()
         .run(move |db| {
             token_accounts::table
-                .select(token_accounts::all_columns)
+                .select((
+                    token_accounts::address,
+                    token_accounts::mint_address,
+                    token_accounts::owner_address,
+                    token_accounts::amount,
+                    token_accounts::slot,
+                ))
                 .filter(token_accounts::address.eq(key.to_string()))
                 .load::<TokenAccountModel>(db)
         })
@@ -38,11 +43,10 @@ pub async fn process(
         .context("failed to load")?;
 
     let values = TokenAccountModel {
-        address: Owned(pubkey.clone()),
+        address: Owned(pubkey),
         amount,
         mint_address: Owned(token_account.mint.to_string()),
         owner_address: Owned(owner),
-        updated_at: Local::now().naive_utc(),
         slot: Some(slot.try_into()?),
     };
 
