@@ -1,7 +1,4 @@
-use std::{
-    fmt::{self, Debug, Display},
-    time::Duration,
-};
+use std::fmt::{self, Debug, Display};
 
 use cid::Cid;
 use indexer_core::{
@@ -112,19 +109,17 @@ enum MetadataJsonResult {
 }
 
 async fn fetch_json(
-    http_client: reqwest::Client,
+    client: &Client,
     meta_key: Pubkey,
     url: Result<Url>,
 ) -> Result<MetadataJsonResult> {
     let start_time = Local::now();
     let url = url.context("Failed to create asset URL")?;
 
-    // TODO: what's a good timeout?
-    let timeout = Duration::from_secs(10);
-
-    let bytes = http_client
+    let bytes = client
+        .http()
         .get(url.clone())
-        .timeout(timeout)
+        .timeout(client.timeout())
         .send()
         .await
         .context("Metadata JSON request failed")?
@@ -171,7 +166,6 @@ async fn try_locate_json(
     id: &AssetIdentifier,
     meta_key: Pubkey,
 ) -> Result<(MetadataJsonResult, Vec<u8>)> {
-    let http_client = reqwest::Client::new();
     let mut resp = None;
 
     for (url, fingerprint) in id
@@ -182,7 +176,7 @@ async fn try_locate_json(
     {
         let url_str = url.as_ref().map_or("???", Url::as_str).to_owned();
 
-        match fetch_json(http_client.clone(), meta_key, url).await {
+        match fetch_json(client, meta_key, url).await {
             Ok(j) => {
                 debug!("Using fetch from {:?} for metadata {}", url_str, meta_key);
                 resp = Some((j, fingerprint));
@@ -202,7 +196,7 @@ async fn try_locate_json(
 
         if TRY_LAST_RESORT {
             (
-                fetch_json(http_client, meta_key, Ok(url.clone()))
+                fetch_json(client, meta_key, Ok(url.clone()))
                     .await
                     .with_context(|| {
                         format!(

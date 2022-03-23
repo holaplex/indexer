@@ -4,7 +4,7 @@ pub(self) mod client;
 mod metadata_json;
 mod store_config;
 
-pub use client::Client;
+pub use client::{Args as ClientArgs, Client};
 use indexer_rabbitmq::http_indexer::{Entity, MetadataJson, StoreConfig};
 
 use crate::prelude::*;
