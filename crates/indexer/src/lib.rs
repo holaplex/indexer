@@ -153,7 +153,10 @@ mod runtime {
                 Err(e) => {
                     warn!("Could not gracefully join worker task: {:?}", e);
 
-                    Ok(())
+                    acker
+                        .reject(BasicRejectOptions { requeue: false })
+                        .await
+                        .context("Failed to send NAK for panicked delivery")
                 },
             }
         }
