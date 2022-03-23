@@ -33,7 +33,6 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
     match update.data.len() {
         COLLECTION_PDA_SIZE => process_collection_pda(client, update).await,
         CONFIG_LINE_SIZE => process_config_line(client, update).await,
-        CONFIG_ARRAY_START => process_cm(client, update).await,
-        _ => Ok(()),
+        _ => process_cm(client, update).await,
     }
 }
