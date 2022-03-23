@@ -98,7 +98,6 @@ pub fn list(
         .left_outer_join(
             listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)),
         )
-        .left_outer_join(attributes::table.on(metadatas::address.eq(attributes::metadata_address)))
         .into_boxed();
 
     if let Some(attributes) = attributes {
