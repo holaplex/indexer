@@ -513,6 +513,7 @@ table! {
         owner_address -> Varchar,
         amount -> Int8,
         updated_at -> Timestamp,
+        slot -> Nullable<Int8>,
     }
 }
 
