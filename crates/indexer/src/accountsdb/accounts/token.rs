@@ -74,8 +74,8 @@ pub async fn process(
                 .run(move |db| {
                     insert_into(token_accounts::table)
                         .values(&values)
-                        .on_conflict()
-                        .do_update(token_accounts::address)
+                        .on_conflict(token_accounts::address)
+                        .do_update()
                         .set(&values)
                         .execute(db)
                 })
