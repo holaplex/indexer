@@ -1,10 +1,12 @@
 use base64::display::Base64Display;
 use indexer_core::assets::{AssetIdentifier, ImageSize};
-use objects::{bid_receipt::BidReceipt, listing_receipt::ListingReceipt};
+use objects::{
+    bid_receipt::BidReceipt, listing_receipt::ListingReceipt, purchase_receipt::PurchaseReceipt,
+};
 use regex::Regex;
 use reqwest::Url;
 
-use super::{prelude::*, purchase_receipt::PurchaseReceipt};
+use super::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
