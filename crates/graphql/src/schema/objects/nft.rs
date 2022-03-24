@@ -148,13 +148,13 @@ impl Nft {
     #[graphql(arguments(width(
         description = "Image width possible values are:\n- 0 (Original size)\n- 100 (Tiny)\n- 400 (XSmall)\n- 600 (Small)\n- 800 (Medium)\n- 1400 (Large)\n\n Any other value will return the original image size.\n\n If no value is provided, it will return XSmall"
     ),))]
-    pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> String {
+    pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
         let width = ImageSize::from(width.unwrap_or(ImageSize::XSmall as i32));
         let cdn_count = ctx.shared.asset_proxy_count;
         let assets_cdn = &ctx.shared.asset_proxy_endpoint;
-        let asset = AssetIdentifier::new(&Url::parse(&self.image).unwrap());
+        let asset = AssetIdentifier::new(&Url::parse(&self.image).context("couldnt parse url")?);
 
-        if asset.arweave.is_some() && asset.ipfs.is_none() {
+        Ok(if asset.arweave.is_some() && asset.ipfs.is_none() {
             let cid =
                 Base64Display::with_config(&asset.arweave.unwrap().0, base64::URL_SAFE_NO_PAD)
                     .to_string();
@@ -176,8 +176,8 @@ impl Nft {
             };
             format!("{}ipfs/{}?width={}", assets_cdn, cid, width as i32)
         } else {
-            String::from(&self.image)
-        }
+            self.image.clone()
+        })
     }
 
     pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
