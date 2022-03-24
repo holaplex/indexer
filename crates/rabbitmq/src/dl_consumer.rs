@@ -9,11 +9,9 @@ use lapin::{
     types::{AMQPValue, FieldTable},
     Connection,
 };
+use log::{error, trace, warn};
 
-use crate::{
-    queue_type::{DLX_DEAD_KEY, DLX_LIVE_KEY},
-    QueueType, Result,
-};
+use crate::{queue_type::DLX_LIVE_KEY, QueueType, Result};
 
 /// Run the dead-letter consumer for a [`QueueType`]
 pub async fn run<Q: QueueType, S: std::future::Future<Output = ()>>(
@@ -26,8 +24,6 @@ pub async fn run<Q: QueueType, S: std::future::Future<Output = ()>>(
         let (mut consumer, inf) = ty.info().init_dl_consumer(&chan).await?;
 
         while let Some(del) = consumer.next().await {
-            const RETRIES_LEFT: &str = "x-retries-left";
-
             let del = del?;
 
             let Delivery {
@@ -38,51 +34,52 @@ pub async fn run<Q: QueueType, S: std::future::Future<Output = ()>>(
             } = del;
 
             let headers = properties.headers().as_ref().map(FieldTable::inner);
-            let retries_left = headers.and_then(|h| h.get(RETRIES_LEFT));
-
             let mut new_headers = headers.cloned().unwrap_or_else(BTreeMap::new);
-            let routing_key;
 
-            let retries_left =
-                if let Some(retries_left) = retries_left.and_then(AMQPValue::as_long_uint) {
-                    if let Some(retries_left) = retries_left.checked_sub(1) {
-                        routing_key = DLX_LIVE_KEY;
+            let retry_number: Option<_> = headers
+                .and_then(|h| h.get("x-death"))
+                .and_then(AMQPValue::as_array)
+                .map(|r| {
+                    r.as_slice()
+                        .iter()
+                        .map(|f| {
+                            f.as_field_table()
+                                .and_then(|t| t.inner().get("count"))
+                                .and_then(AMQPValue::as_long_long_int)
+                                .and_then(|i| i.try_into().ok())
+                                .unwrap_or(0_u64)
+                        })
+                        .sum()
+                });
 
-                        retries_left
+            match retry_number {
+                None | Some(0) => {
+                    error!("Got unexpected message in DLQ");
+                },
+                Some(r) if r < inf.max_tries() => {
+                    if let Some(delay) = inf.get_delay(r) {
+                        trace!("Retry message (retry {}, delay {}ms)", r, delay);
+
+                        new_headers.insert("x-delay".into(), AMQPValue::LongLongInt(delay));
+                        properties = properties.with_headers(new_headers.into());
+
+                        chan.basic_publish(
+                            inf.exchange(),
+                            DLX_LIVE_KEY,
+                            BasicPublishOptions::default(),
+                            &data,
+                            properties,
+                        )
+                        .await?;
                     } else {
-                        // We hit 0 retries left.  Bye-bye!
-                        acker.ack(BasicAckOptions::default()).await?;
-
-                        continue;
+                        warn!("Discarding DL delivery due to delay arithmetic error");
                     }
-                } else {
-                    // Missing required headers, requeue in DLX
-                    routing_key = DLX_DEAD_KEY;
-
-                    inf.max_tries()
-                };
-
-            new_headers.insert(RETRIES_LEFT.into(), AMQPValue::LongUInt(retries_left));
-
-            if let Some(delay) = inf.get_delay(retries_left) {
-                new_headers.insert("x-delay".into(), AMQPValue::LongUInt(delay));
-            } else {
-                log::warn!("Discarding DL delivery due to delay arithmetic error");
-                acker.ack(BasicAckOptions::default()).await?;
-
-                continue;
-            }
-
-            properties = properties.with_headers(new_headers.into());
-
-            chan.basic_publish(
-                inf.exchange(),
-                routing_key,
-                BasicPublishOptions::default(),
-                &data,
-                properties,
-            )
-            .await?;
+                },
+                Some(r) => {
+                    // We hit the retry limit.  Bye-bye!
+                    trace!("Dropping dead letter after {} deaths", r);
+                },
+            };
 
             acker.ack(BasicAckOptions::default()).await?;
         }

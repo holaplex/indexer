@@ -39,7 +39,7 @@ impl Binding {
 
 #[derive(Debug, Clone, Copy)]
 pub struct RetryProps {
-    pub max_tries: u32,
+    pub max_tries: u64,
     pub delay_hint: Duration,
 }
 
@@ -265,15 +265,13 @@ impl DlConsumerInfo {
         &self.exchange
     }
 
-    pub fn max_tries(&self) -> u32 {
+    pub fn max_tries(&self) -> u64 {
         self.retry.max_tries
     }
 
     /// Return the retry delay given the value of the retries-left header
-    pub fn get_delay(&self, retries_left: u32) -> Option<u32> {
-        let try_number = self.retry.max_tries.checked_sub(retries_left)?;
-
-        let multiplier = 2_u128.checked_pow(try_number)?;
+    pub fn get_delay(&self, retry_number: u64) -> Option<i64> {
+        let multiplier = 2_u128.checked_pow(retry_number.checked_sub(1)?.try_into().ok()?)?;
         let millis = self.retry.delay_hint.as_millis().checked_mul(multiplier)?;
 
         millis.try_into().ok()
