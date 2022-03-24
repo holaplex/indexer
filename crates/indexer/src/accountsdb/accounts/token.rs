@@ -50,7 +50,7 @@ pub async fn process(
         slot: Some(slot.try_into()?),
     };
 
-    let incoming_slot : i64 = slot.try_into()?; 
+    let incoming_slot: i64 = slot.try_into()?;
 
     if rows.len() == 1 {
         let token_account = rows.get(0).context("failed to get token_account!")?;
