@@ -40,7 +40,7 @@ pub async fn process(
                 .load::<TokenAccountModel>(db)
         })
         .await
-        .context("failed to load")?;
+        .context("failed to load token accounts!")?;
 
     let values = TokenAccountModel {
         address: Owned(pubkey),
@@ -50,11 +50,13 @@ pub async fn process(
         slot: Some(slot.try_into()?),
     };
 
-    if rows.len() == 1 {
-        let token_account = rows.get(0).context("err")?;
+    let incoming_slot : i64 = slot.try_into()?; 
 
-        if let Some(s) = token_account.slot {
-            if i64::try_from(slot)? > s {
+    if rows.len() == 1 {
+        let token_account = rows.get(0).context("failed to get token_account!")?;
+
+        if let Some(indexed_slot) = token_account.slot {
+            if incoming_slot > indexed_slot {
                 client
                     .db()
                     .run(move |db| {
