@@ -1,6 +1,8 @@
 use base64::display::Base64Display;
 use indexer_core::assets::{AssetIdentifier, ImageSize};
-use objects::{bid_receipt::BidReceipt, listing_receipt::ListingReceipt};
+use objects::{
+    bid_receipt::BidReceipt, listing_receipt::ListingReceipt, purchase_receipt::PurchaseReceipt,
+};
 use regex::Regex;
 use reqwest::Url;
 
@@ -208,6 +210,13 @@ impl Nft {
 
     pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<ListingReceipt>> {
         ctx.listing_receipts_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<PurchaseReceipt>> {
+        ctx.purchase_receipts_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
