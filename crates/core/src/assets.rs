@@ -7,10 +7,10 @@ use url::Url;
 pub struct ArTxid(pub [u8; 32]);
 
 /// Struct to hold tx ids
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct AssetIdentifier {
     /// ipfs cid
-    pub ipfs: Option<Cid>,
+    pub ipfs: Option<(Cid, String)>,
     /// Arweave tx id
     pub arweave: Option<ArTxid>,
 }
@@ -40,21 +40,26 @@ impl From<i32> for ImageSize {
 }
 
 impl AssetIdentifier {
-    fn visit_url(url: &Url, mut f: impl FnMut(&str)) {
+    fn visit_url(url: &Url, mut f: impl FnMut(&str, Option<usize>)) {
         Some(url.scheme())
             .into_iter()
             .chain(url.domain().into_iter().flat_map(|s| s.split('.')))
             .chain(Some(url.username()))
             .chain(url.password())
-            .chain(Some(url.path()))
-            .chain(url.path_segments().into_iter().flatten())
-            .chain(url.query())
-            .chain(url.fragment().into_iter().flat_map(|s| s.split('/')))
-            .for_each(&mut f);
+            .map(|s| (s, Some(0)))
+            .chain(Some((url.path(), None)))
+            .chain(
+                url.path_segments()
+                    .into_iter()
+                    .flat_map(|s| s.into_iter().enumerate().map(|(i, s)| (s, Some(i + 1)))),
+            )
+            .chain(url.query().map(|q| (q, Some(0))))
+            .chain(url.fragment().map(|f| (f, Some(0))))
+            .for_each(|(s, i)| f(s, i));
 
         url.query_pairs().for_each(|(k, v)| {
-            f(k.as_ref());
-            f(v.as_ref());
+            f(k.as_ref(), Some(0));
+            f(v.as_ref(), Some(0));
         });
     }
 
@@ -80,7 +85,9 @@ impl AssetIdentifier {
 
     fn advance_heuristic<T>(state: &mut Result<Option<T>, ()>, value: T) {
         match state {
+            // We found a match
             Ok(None) => *state = Ok(Some(value)),
+            // We found two matches, convert to error due to ambiguity
             Ok(Some(_)) => *state = Err(()),
             Err(()) => (),
         }
@@ -92,9 +99,17 @@ impl AssetIdentifier {
         let mut ipfs = Ok(None);
         let mut arweave = Ok(None);
 
-        Self::visit_url(url, |s| {
+        Self::visit_url(url, |s, i| {
             if let Some(c) = Self::try_ipfs(s) {
-                Self::advance_heuristic(&mut ipfs, c);
+                let path = i
+                    .and_then(|i| url.path_segments().map(|s| (i, s)))
+                    .map_or_else(String::new, |(i, s)| {
+                        s.skip(i)
+                            .flat_map(|s| Some("/").into_iter().chain(Some(s)))
+                            .collect()
+                    });
+
+                Self::advance_heuristic(&mut ipfs, (c, path));
             }
 
             if let Some(t) = Self::try_arweave(s) {

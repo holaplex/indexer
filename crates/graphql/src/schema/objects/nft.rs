@@ -3,7 +3,6 @@ use indexer_core::assets::{AssetIdentifier, ImageSize};
 use objects::{
     bid_receipt::BidReceipt, listing_receipt::ListingReceipt, purchase_receipt::PurchaseReceipt,
 };
-use regex::Regex;
 use reqwest::Url;
 
 use super::prelude::*;
@@ -148,42 +147,55 @@ impl Nft {
         &self.description
     }
 
-    #[graphql(arguments(width(
-        description = "Image width possible values are:\n- 0 (Original size)\n- 100 (Tiny)\n- 400 (XSmall)\n- 600 (Small)\n- 800 (Medium)\n- 1400 (Large)\n\n Any other value will return the original image size.\n\n If no value is provided, it will return XSmall"
-    ),))]
+    #[graphql(arguments(width(description = r"Image width possible values are:
+- 0 (Original size)
+- 100 (Tiny)
+- 400 (XSmall)
+- 600 (Small)
+- 800 (Medium)
+- 1400 (Large)
+
+Any other value will return the original image size.
+
+If no value is provided, it will return XSmall")))]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
+        fn get_asset_cdn(id: impl AsRef<[u8]>, shared: &SharedData) -> String {
+            let rem = md5::compute(id).to_vec()[0].rem_euclid(shared.asset_proxy_count);
+            let assets_cdn = &shared.asset_proxy_endpoint;
+
+            if rem == 0 {
+                assets_cdn.replace("[n]", "")
+            } else {
+                assets_cdn.replace("[n]", &rem.to_string())
+            }
+        }
+
         let width = ImageSize::from(width.unwrap_or(ImageSize::XSmall as i32));
-        let cdn_count = ctx.shared.asset_proxy_count;
-        let assets_cdn = &ctx.shared.asset_proxy_endpoint;
-        let asset = AssetIdentifier::new(&Url::parse(&self.image).context("couldnt parse url")?);
+        let id = AssetIdentifier::new(&Url::parse(&self.image).context("couldnt parse url")?);
 
-        let re = Regex::new(r"nftstorage\.link").unwrap();
+        Ok(match (id.arweave, id.ipfs) {
+            (Some(_), Some(_)) | (None, None) => self.image.clone(),
+            (Some(txid), None) => {
+                let txid = Base64Display::with_config(&txid.0, base64::URL_SAFE_NO_PAD).to_string();
 
-        Ok(if re.is_match(&self.image) {
-            self.image.clone()
-        } else if asset.arweave.is_some() && asset.ipfs.is_none() {
-            let cid =
-                Base64Display::with_config(&asset.arweave.unwrap().0, base64::URL_SAFE_NO_PAD)
-                    .to_string();
+                format!(
+                    "{}arweave/{}?width={}",
+                    get_asset_cdn(&txid, &ctx.shared),
+                    txid,
+                    width as i32
+                )
+            },
+            (None, Some((cid, path))) => {
+                let cid = cid.to_string();
 
-            let rem = md5::compute(&cid).to_vec()[0].rem_euclid(cdn_count);
-            let assets_cdn = if rem == 0 {
-                assets_cdn.replace("[n]", "")
-            } else {
-                assets_cdn.replace("[n]", &rem.to_string())
-            };
-            format!("{}arweave/{}?width={}", assets_cdn, cid, width as i32)
-        } else if asset.ipfs.is_some() && asset.arweave.is_none() {
-            let cid = asset.ipfs.unwrap().to_string();
-            let rem = md5::compute(&cid).to_vec()[0].rem_euclid(cdn_count);
-            let assets_cdn = if rem == 0 {
-                assets_cdn.replace("[n]", "")
-            } else {
-                assets_cdn.replace("[n]", &rem.to_string())
-            };
-            format!("{}ipfs/{}?width={}", assets_cdn, cid, width as i32)
-        } else {
-            self.image.clone()
+                format!(
+                    "{}ipfs/{}{}?width={}",
+                    get_asset_cdn(&cid, &ctx.shared),
+                    cid,
+                    path,
+                    width as i32
+                )
+            },
         })
     }
 

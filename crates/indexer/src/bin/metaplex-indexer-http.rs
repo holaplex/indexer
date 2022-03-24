@@ -53,6 +53,10 @@ async fn run<E: Send + metaplex_indexer::http::Process + 'static>(
         client,
     } = args;
 
+    if cfg!(debug_assertions) && queue_suffix.is_none() {
+        bail!("Debug builds must specify a RabbitMQ queue suffix!");
+    }
+
     let conn = metaplex_indexer::amqp_connect(amqp_url).await?;
     let client = Client::new_rc(db, client).context("Failed to construct Client")?;
 

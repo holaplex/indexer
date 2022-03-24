@@ -1,6 +1,5 @@
 use std::fmt::{self, Debug, Display};
 
-use cid::Cid;
 use indexer_core::{
     assets::AssetIdentifier,
     db::{
@@ -170,7 +169,8 @@ async fn try_locate_json(
 
     for (url, fingerprint) in id
         .ipfs
-        .map(|c| (client.ipfs_link(&c), c.to_bytes()))
+        .as_ref()
+        .map(|(c, p)| (client.ipfs_link(c, p), c.to_bytes()))
         .into_iter()
         .chain(id.arweave.map(|t| (client.arweave_link(&t), t.0.to_vec())))
     {
@@ -440,7 +440,7 @@ pub async fn process<'a>(
     let possible_fingerprints: Vec<_> = id
         .ipfs
         .iter()
-        .map(Cid::to_bytes)
+        .map(|(c, _)| c.to_bytes())
         .chain(id.arweave.map(|a| a.0.to_vec()))
         .collect();
     let addr = bs58::encode(meta_key).into_string();
