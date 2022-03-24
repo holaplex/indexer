@@ -95,6 +95,7 @@ pub struct Listing {
     pub cache_address: String,
     pub store_address: String,
     pub token_mint: Option<String>,
+    pub ends_at: Option<DateTime<Utc>>,
     pub ended: bool,
 }
 
@@ -116,19 +117,21 @@ impl Listing {
         ): ListingRow,
         now: NaiveDateTime,
     ) -> Result<Self> {
+        let (ends_at, ended) = indexer_core::util::get_end_info(
+            ends_at,
+            gap_time.map(|i| chrono::Duration::seconds(i.into())),
+            last_bid_time,
+            now,
+        )?;
+
         Ok(Self {
             address,
             ext_address,
             cache_address,
             store_address,
             token_mint,
-            ended: indexer_core::util::get_end_info(
-                ends_at,
-                gap_time.map(|i| chrono::Duration::seconds(i.into())),
-                last_bid_time,
-                now,
-            )?
-            .1,
+            ends_at: ends_at.map(|t| DateTime::from_utc(t, Utc)),
+            ended,
         })
     }
 }
@@ -149,6 +152,10 @@ impl Listing {
 
     pub fn store_address(&self) -> &str {
         &self.store_address
+    }
+
+    pub fn ends_at(&self) -> Option<DateTime<Utc>> {
+        self.ends_at
     }
 
     pub fn ended(&self) -> bool {
