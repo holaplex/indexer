@@ -1,6 +1,7 @@
 use base64::display::Base64Display;
 use indexer_core::assets::{AssetIdentifier, ImageSize};
 use objects::{bid_receipt::BidReceipt, listing_receipt::ListingReceipt};
+use regex::Regex;
 use reqwest::Url;
 
 use super::prelude::*;
@@ -154,7 +155,11 @@ impl Nft {
         let assets_cdn = &ctx.shared.asset_proxy_endpoint;
         let asset = AssetIdentifier::new(&Url::parse(&self.image).context("couldnt parse url")?);
 
-        Ok(if asset.arweave.is_some() && asset.ipfs.is_none() {
+        let re = Regex::new(r"nftstorage\.link").unwrap();
+
+        Ok(if re.is_match(&self.image) {
+            self.image.clone()
+        } else if asset.arweave.is_some() && asset.ipfs.is_none() {
             let cid =
                 Base64Display::with_config(&asset.arweave.unwrap().0, base64::URL_SAFE_NO_PAD)
                     .to_string();

@@ -34,9 +34,9 @@ pub struct Address {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Upload {
     pub url: String,
-    pub name: String,
+    pub name: Option<String>,
     #[serde(rename = "type")]
-    pub ty: String,
+    pub ty: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
