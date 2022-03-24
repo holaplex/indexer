@@ -168,9 +168,8 @@ pub struct TokenAccount<'a> {
     pub owner_address: Cow<'a, str>,
     /// The amount of the token, often 1
     pub amount: i64,
-    /// Solana slot number
-    /// The period of time for which each leader ingests transactions and produces a block.
-    pub slot: Option<i64>,
+    /// updated_at
+    pub updated_at: NaiveDateTime,
 }
 
 /// A row in the `metadatas` table
