@@ -192,7 +192,7 @@ async fn try_locate_json(
         r
     } else {
         // Set to true for fallback
-        const TRY_LAST_RESORT: bool = false;
+        const TRY_LAST_RESORT: bool = true;
 
         if TRY_LAST_RESORT {
             (
