@@ -52,38 +52,34 @@ pub async fn process(
 
     let incoming_slot: i64 = slot.try_into()?;
 
-    if rows.len() == 1 {
-        let token_account = rows.get(0).context("failed to get token_account!")?;
-
-        if let Some(indexed_slot) = token_account.slot {
-            if incoming_slot > indexed_slot {
-                client
-                    .db()
-                    .run(move |db| {
-                        update(
-                            token_accounts::table
-                                .filter(token_accounts::address.eq(values.clone().address)),
-                        )
-                        .set(&values)
-                        .execute(db)
-                    })
-                    .await
-                    .context("failed to update token account")?;
-            } else {
-                return Ok(());
-            }
-        }
-    } else {
-        client
-            .db()
-            .run(move |db| {
-                insert_into(token_accounts::table)
-                    .values(&values)
-                    .on_conflict_do_nothing()
+    match rows.get(0).and_then(|r| r.slot) {
+        Some(indexed_slot) if incoming_slot > indexed_slot => {
+            client
+                .db()
+                .run(move |db| {
+                    update(
+                        token_accounts::table
+                            .filter(token_accounts::address.eq(values.clone().address)),
+                    )
+                    .set(&values)
                     .execute(db)
-            })
-            .await
-            .context("failed to insert token account")?;
+                })
+                .await
+                .context("failed to update token account")?;
+        },
+        Some(_) => (),
+        None => {
+            client
+                .db()
+                .run(move |db| {
+                    insert_into(token_accounts::table)
+                        .values(&values)
+                        .on_conflict_do_nothing()
+                        .execute(db)
+                })
+                .await
+                .context("failed to insert token account")?;
+        },
     }
 
     Ok(())
