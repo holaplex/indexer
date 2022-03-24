@@ -4,7 +4,7 @@ use objects::{bid_receipt::BidReceipt, listing_receipt::ListingReceipt};
 use regex::Regex;
 use reqwest::Url;
 
-use super::prelude::*;
+use super::{prelude::*, purchase_receipt::PurchaseReceipt};
 
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
@@ -208,6 +208,13 @@ impl Nft {
 
     pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<ListingReceipt>> {
         ctx.listing_receipts_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<PurchaseReceipt>> {
+        ctx.purchase_receipts_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)

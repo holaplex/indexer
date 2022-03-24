@@ -9,6 +9,7 @@ pub mod store_creator;
 pub mod storefront;
 
 pub(self) mod batcher;
+pub mod purchase_receipt;
 
 pub(self) mod prelude {
     pub use async_trait::async_trait;

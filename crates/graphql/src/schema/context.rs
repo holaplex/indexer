@@ -4,6 +4,7 @@ use objects::{
     bid_receipt::BidReceipt,
     listing::{Bid, Listing},
     listing_receipt::ListingReceipt,
+    purchase_receipt::PurchaseReceipt,
     nft::{Nft, NftAttribute, NftCreator, NftOwner},
     stats::{MarketStats, MintStats},
     store_creator::StoreCreator,
@@ -11,7 +12,7 @@ use objects::{
 };
 use scalars::{markers::StoreConfig, PublicKey};
 
-use super::prelude::*;
+use super::{prelude::*};
 
 #[derive(Clone)]
 pub struct AppContext {
@@ -30,6 +31,7 @@ pub struct AppContext {
     pub nft_owner_loader: Loader<PublicKey<Nft>, Option<NftOwner>>,
     pub storefront_loader: Loader<PublicKey<Storefront>, Option<Storefront>>,
     pub listing_receipts_loader: Loader<PublicKey<Nft>, Vec<ListingReceipt>>,
+    pub purchase_receipts_loader: Loader<PublicKey<Nft>, Vec<PurchaseReceipt>>,
     pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
@@ -53,6 +55,7 @@ impl AppContext {
             nft_owner_loader: Loader::new(batcher.clone()),
             storefront_loader: Loader::new(batcher.clone()),
             listing_receipts_loader: Loader::new(batcher.clone()),
+            purchase_receipts_loader: Loader::new(batcher.clone()),
             bid_receipts_loader: Loader::new(batcher.clone()),
             store_creator_loader: Loader::new(batcher.clone()),
             collection_loader: Loader::new(batcher),
