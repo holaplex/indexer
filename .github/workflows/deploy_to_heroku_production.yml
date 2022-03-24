@@ -38,6 +38,15 @@ jobs:
           docker_options: '--target http-consumer'
           process_type: worker
 
+      - name: GraphQL server
+        uses: gonuit/heroku-docker-deploy@v1.3.3
+        with:
+          email: ${{ secrets.HEROKU_EMAIL }}
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: indexer-graphql
+          dockerfile_name: Dockerfile
+          docker_options: '--target graphql'
+
       - name: Storefronts Indexer
         uses: gonuit/heroku-docker-deploy@v1.3.3
         with:

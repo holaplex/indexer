@@ -32,6 +32,9 @@ struct Opts {
 
     #[clap(long, env)]
     asset_proxy_count: u8,
+
+    #[clap(long, env, default_value = "0")]
+    api_version: String,
 }
 
 fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
@@ -82,6 +85,7 @@ fn main() {
             twitter_bearer_token,
             asset_proxy_endpoint,
             asset_proxy_count,
+            api_version,
         } = Opts::parse();
 
         let (addr,) = server.into_parts();
@@ -101,10 +105,7 @@ fn main() {
 
         let version_extension = format!(
             "/v{}",
-            percent_encoding::utf8_percent_encode(
-                env!("CARGO_PKG_VERSION_MAJOR"),
-                percent_encoding::NON_ALPHANUMERIC,
-            )
+            percent_encoding::utf8_percent_encode(&api_version, percent_encoding::NON_ALPHANUMERIC,)
         );
 
         // Should look something like "/..."
