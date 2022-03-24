@@ -1,8 +1,8 @@
 use base64::display::Base64Display;
 use indexer_core::assets::{AssetIdentifier, ImageSize};
 use objects::{bid_receipt::BidReceipt, listing_receipt::ListingReceipt};
-use reqwest::Url;
 use regex::Regex;
+use reqwest::Url;
 
 use super::prelude::*;
 
@@ -157,8 +157,7 @@ impl Nft {
 
         let re = Regex::new(r"nftstorage\.link").unwrap();
 
-        Ok(
-        if re.is_match(&self.image) {
+        Ok(if re.is_match(&self.image) {
             self.image.clone()
         } else if asset.arweave.is_some() && asset.ipfs.is_none() {
             let cid =
