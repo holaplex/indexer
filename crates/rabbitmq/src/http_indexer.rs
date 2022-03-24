@@ -97,7 +97,7 @@ impl<E: Entity> QueueType<E> {
                 max_len_bytes: 100 * 1024 * 1024, // 100 MiB
                 auto_delete: id.is_some() || cfg!(debug_assertions),
                 retry: Some(RetryProps {
-                    max_tries: 10,
+                    max_tries: 8,
                     delay_hint: Duration::from_secs(2),
                 }),
             },
