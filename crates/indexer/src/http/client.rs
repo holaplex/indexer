@@ -86,8 +86,22 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if the CID provided is not URL safe.
-    pub fn ipfs_link(&self, cid: &Cid) -> Result<Url> {
-        self.ipfs_cdn.join(&cid.to_string()).map_err(Into::into)
+    pub fn ipfs_link(&self, cid: &Cid, path: &str) -> Result<Url> {
+        let mut ret = self.ipfs_cdn.clone();
+
+        {
+            let mut parts = ret
+                .path_segments_mut()
+                .map_err(|_| anyhow!("Invalid IPFS CDN URL"))?;
+
+            parts.push(&cid.to_string());
+
+            if !path.is_empty() {
+                parts.extend(path.split('/'));
+            }
+        }
+
+        Ok(ret)
     }
 
     /// Construct an Arweave link from a valid Arweave transaction ID

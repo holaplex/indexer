@@ -2945,7 +2945,6 @@ dependencies = [
  "md5",
  "metaplex-indexer-core",
  "percent-encoding",
- "regex",
  "reqwest",
  "serde",
  "serde_json",
