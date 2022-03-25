@@ -44,6 +44,20 @@ fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
     }
 }
 
+fn redirect_version(
+    route: &'static str,
+    version: &'static str,
+) -> impl Fn() -> HttpResponse + Clone {
+    move || {
+        HttpResponse::MovedPermanently()
+            .insert_header(("Location", version))
+            .body(format!(
+                "API route {} deprecated, please use {}",
+                route, version
+            ))
+    }
+}
+
 fn graphql(
     db_pool: Arc<Pool>,
     shared: Arc<SharedData>,
@@ -127,6 +141,9 @@ fn main() {
                         .service(
                             web::resource(version_extension)
                                 .route(web::post().to(graphql(db_pool.clone(), shared.clone()))),
+                        )
+                        .service(
+                            web::resource("/v0").to(redirect_version("/v0", version_extension)),
                         )
                         .service(
                             web::resource("/graphiql")
