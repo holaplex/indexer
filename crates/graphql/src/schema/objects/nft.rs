@@ -1,5 +1,5 @@
 use base64::display::Base64Display;
-use indexer_core::assets::{AssetIdentifier, ImageSize};
+use indexer_core::assets::{AssetHint, AssetIdentifier, ImageSize};
 use objects::{
     bid_receipt::BidReceipt, listing_receipt::ListingReceipt, purchase_receipt::PurchaseReceipt,
 };
@@ -159,42 +159,76 @@ Any other value will return the original image size.
 
 If no value is provided, it will return XSmall")))]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
-        fn get_asset_cdn(id: impl AsRef<[u8]>, shared: &SharedData) -> String {
-            let rem = md5::compute(id).to_vec()[0].rem_euclid(shared.asset_proxy_count);
+        fn format_cdn_url<'a>(
+            shared: &SharedData,
+            id: &AssetIdentifier,
+            hint: AssetHint,
+            path: impl IntoIterator<Item = &'a str>,
+            query: impl IntoIterator<Item = (&'a str, &'a str)>,
+        ) -> Url {
+            let rem = md5::compute(
+                id.fingerprint(Some(hint))
+                    .unwrap_or_else(|| unreachable!())
+                    .as_ref(),
+            )
+            .to_vec()[0]
+                .rem_euclid(shared.asset_proxy_count);
             let assets_cdn = &shared.asset_proxy_endpoint;
 
-            if rem == 0 {
-                assets_cdn.replace("[n]", "")
-            } else {
-                assets_cdn.replace("[n]", &rem.to_string())
-            }
+            let mut url = Url::parse(&assets_cdn.replace(
+                "[n]",
+                &if rem == 0 {
+                    String::new()
+                } else {
+                    rem.to_string()
+                },
+            ))
+            .unwrap_or_else(|_| unreachable!());
+
+            url.path_segments_mut()
+                .unwrap_or_else(|_| unreachable!())
+                .extend(path);
+            url.query_pairs_mut().extend_pairs(query);
+
+            url
         }
 
         let width = ImageSize::from(width.unwrap_or(ImageSize::XSmall as i32));
-        let id = AssetIdentifier::new(&Url::parse(&self.image).context("couldnt parse url")?);
+        let width_str = (width as i32).to_string();
+        let id =
+            AssetIdentifier::new(&Url::parse(&self.image).context("Couldn't parse asset URL")?);
 
-        Ok(match (id.arweave, id.ipfs) {
+        Ok(match (id.arweave, &id.ipfs) {
             (Some(_), Some(_)) | (None, None) => self.image.clone(),
             (Some(txid), None) => {
                 let txid = Base64Display::with_config(&txid.0, base64::URL_SAFE_NO_PAD).to_string();
 
-                format!(
-                    "{}arweave/{}?width={}",
-                    get_asset_cdn(&txid, &ctx.shared),
-                    txid,
-                    width as i32
+                format_cdn_url(
+                    &ctx.shared,
+                    &id,
+                    AssetHint::Arweave,
+                    ["arweave", &txid],
+                    Some(("width", &*width_str)),
                 )
+                .to_string()
             },
             (None, Some((cid, path))) => {
                 let cid = cid.to_string();
 
-                format!(
-                    "{}ipfs/{}{}?width={}",
-                    get_asset_cdn(&cid, &ctx.shared),
-                    cid,
-                    path,
-                    width as i32
+                format_cdn_url(
+                    &ctx.shared,
+                    &id,
+                    AssetHint::Ipfs,
+                    ["ipfs", &cid],
+                    Some(("width", &*width_str))
+                        .into_iter()
+                        .chain(if path.is_empty() {
+                            None
+                        } else {
+                            Some(("path", &**path))
+                        }),
                 )
+                .to_string()
             },
         })
     }
