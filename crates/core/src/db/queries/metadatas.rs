@@ -7,8 +7,8 @@ use crate::{
         any,
         models::Nft,
         tables::{
-            attributes, listing_receipts, metadata_creators, metadata_jsons, metadatas,
-            token_accounts, bid_receipts,
+            attributes, bid_receipts, listing_receipts, metadata_creators, metadata_jsons,
+            metadatas, token_accounts,
         },
         Connection,
     },
@@ -58,7 +58,12 @@ pub fn list(
         offset,
     }: ListQueryOptions,
 ) -> Result<Vec<Nft>> {
-    if creators.is_some() && attributes.is_none() && owners.is_none() && offerers.is_none() && listed.is_none() {
+    if creators.is_some()
+        && attributes.is_none()
+        && owners.is_none()
+        && offerers.is_none()
+        && listed.is_none()
+    {
         let query = metadatas::table
             .inner_join(
                 metadata_creators::table
@@ -101,9 +106,7 @@ pub fn list(
         .left_outer_join(
             listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)),
         )
-        .left_outer_join(
-            bid_receipts::table.on(metadatas::address.eq(bid_receipts::metadata)),
-        )
+        .left_outer_join(bid_receipts::table.on(metadatas::address.eq(bid_receipts::metadata)))
         .into_boxed();
 
     if let Some(attributes) = attributes {
