@@ -20,6 +20,8 @@ use crate::{
 
 #[derive(Debug)]
 struct Inner {
+    background_count: AtomicUsize,
+
     amqp: config::Amqp,
     startup_type: StartupType,
     producer: RwLock<Producer>,
@@ -35,6 +37,7 @@ impl Inner {
         let producer = Self::create_producer(&amqp, startup_type).await?;
 
         Ok(Self {
+            background_count: AtomicUsize::new(0),
             amqp,
             startup_type,
             producer: RwLock::new(producer),
@@ -66,7 +69,7 @@ impl Inner {
         Ok(RwLockWriteGuard::downgrade_to_upgradable(prod))
     }
 
-    async fn send(self: Arc<Self>, msg: Message) {
+    async fn send(self: Arc<Self>, msg: Message, backgrounded: bool) {
         #[inline]
         fn log_err<E: std::fmt::Debug>(counter: &'_ Counter) -> impl FnOnce(E) + '_ {
             |err| {
@@ -92,6 +95,10 @@ impl Inner {
         match prod.write(&msg).await.map_err(log_err(&metrics.errs)) {
             Ok(()) | Err(()) => (), // Type-level assertion that we consumed the error
         }
+
+        if backgrounded {
+            assert!(self.background_count.fetch_sub(1, Ordering::SeqCst) > 0);
+        }
     }
 }
 
@@ -100,7 +107,6 @@ pub struct Sender {
     inner: Arc<Inner>,
     executor: Arc<Executor<'static>>,
     _stop: channel::Sender<()>,
-    background_count: AtomicUsize,
     limit: usize,
 }
 
@@ -124,26 +130,23 @@ impl Sender {
             inner: Arc::new(Inner::new(amqp, startup_type, metrics).await?),
             executor,
             _stop: stop_tx,
-            background_count: AtomicUsize::new(0),
             limit: jobs.limit,
         })
     }
 
     pub async fn send(&self, msg: Message) {
+        let inner = Arc::clone(&self.inner);
         let new_count =
-            self.background_count
+            inner
+                .background_count
                 .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |c| {
                     if c < self.limit { Some(c + 1) } else { None }
                 });
 
-        let inner = Arc::clone(&self.inner);
-
         if new_count.is_ok() {
-            self.executor.spawn(inner.send(msg)).detach();
-
-            assert!(self.background_count.fetch_sub(1, Ordering::SeqCst) > 0);
+            self.executor.spawn(inner.send(msg, true)).detach();
         } else {
-            inner.send(msg).await;
+            inner.send(msg, false).await;
         }
     }
 }
