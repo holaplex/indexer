@@ -1,7 +1,8 @@
 use base64::display::Base64Display;
-use indexer_core::assets::{AssetIdentifier, ImageSize};
-use objects::{bid_receipt::BidReceipt, listing_receipt::ListingReceipt};
-use regex::Regex;
+use indexer_core::assets::{AssetHint, AssetIdentifier, ImageSize};
+use objects::{
+    bid_receipt::BidReceipt, listing_receipt::ListingReceipt, purchase_receipt::PurchaseReceipt,
+};
 use reqwest::Url;
 
 use super::prelude::*;
@@ -146,42 +147,89 @@ impl Nft {
         &self.description
     }
 
-    #[graphql(arguments(width(
-        description = "Image width possible values are:\n- 0 (Original size)\n- 100 (Tiny)\n- 400 (XSmall)\n- 600 (Small)\n- 800 (Medium)\n- 1400 (Large)\n\n Any other value will return the original image size.\n\n If no value is provided, it will return XSmall"
-    ),))]
+    #[graphql(arguments(width(description = r"Image width possible values are:
+- 0 (Original size)
+- 100 (Tiny)
+- 400 (XSmall)
+- 600 (Small)
+- 800 (Medium)
+- 1400 (Large)
+
+Any other value will return the original image size.
+
+If no value is provided, it will return XSmall")))]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
+        fn format_cdn_url<'a>(
+            shared: &SharedData,
+            id: &AssetIdentifier,
+            hint: AssetHint,
+            path: impl IntoIterator<Item = &'a str>,
+            query: impl IntoIterator<Item = (&'a str, &'a str)>,
+        ) -> Url {
+            let rem = md5::compute(
+                id.fingerprint(Some(hint))
+                    .unwrap_or_else(|| unreachable!())
+                    .as_ref(),
+            )
+            .to_vec()[0]
+                .rem_euclid(shared.asset_proxy_count);
+            let assets_cdn = &shared.asset_proxy_endpoint;
+
+            let mut url = Url::parse(&assets_cdn.replace(
+                "[n]",
+                &if rem == 0 {
+                    String::new()
+                } else {
+                    rem.to_string()
+                },
+            ))
+            .unwrap_or_else(|_| unreachable!());
+
+            url.path_segments_mut()
+                .unwrap_or_else(|_| unreachable!())
+                .extend(path);
+            url.query_pairs_mut().extend_pairs(query);
+
+            url
+        }
+
         let width = ImageSize::from(width.unwrap_or(ImageSize::XSmall as i32));
-        let cdn_count = ctx.shared.asset_proxy_count;
-        let assets_cdn = &ctx.shared.asset_proxy_endpoint;
-        let asset = AssetIdentifier::new(&Url::parse(&self.image).context("couldnt parse url")?);
+        let width_str = (width as i32).to_string();
+        let id =
+            AssetIdentifier::new(&Url::parse(&self.image).context("Couldn't parse asset URL")?);
 
-        let re = Regex::new(r"nftstorage\.link").unwrap();
+        Ok(match (id.arweave, &id.ipfs) {
+            (Some(_), Some(_)) | (None, None) => self.image.clone(),
+            (Some(txid), None) => {
+                let txid = Base64Display::with_config(&txid.0, base64::URL_SAFE_NO_PAD).to_string();
 
-        Ok(if re.is_match(&self.image) {
-            self.image.clone()
-        } else if asset.arweave.is_some() && asset.ipfs.is_none() {
-            let cid =
-                Base64Display::with_config(&asset.arweave.unwrap().0, base64::URL_SAFE_NO_PAD)
-                    .to_string();
+                format_cdn_url(
+                    &ctx.shared,
+                    &id,
+                    AssetHint::Arweave,
+                    ["arweave", &txid],
+                    Some(("width", &*width_str)),
+                )
+                .to_string()
+            },
+            (None, Some((cid, path))) => {
+                let cid = cid.to_string();
 
-            let rem = md5::compute(&cid).to_vec()[0].rem_euclid(cdn_count);
-            let assets_cdn = if rem == 0 {
-                assets_cdn.replace("[n]", "")
-            } else {
-                assets_cdn.replace("[n]", &rem.to_string())
-            };
-            format!("{}arweave/{}?width={}", assets_cdn, cid, width as i32)
-        } else if asset.ipfs.is_some() && asset.arweave.is_none() {
-            let cid = asset.ipfs.unwrap().to_string();
-            let rem = md5::compute(&cid).to_vec()[0].rem_euclid(cdn_count);
-            let assets_cdn = if rem == 0 {
-                assets_cdn.replace("[n]", "")
-            } else {
-                assets_cdn.replace("[n]", &rem.to_string())
-            };
-            format!("{}ipfs/{}?width={}", assets_cdn, cid, width as i32)
-        } else {
-            self.image.clone()
+                format_cdn_url(
+                    &ctx.shared,
+                    &id,
+                    AssetHint::Ipfs,
+                    ["ipfs", &cid],
+                    Some(("width", &*width_str))
+                        .into_iter()
+                        .chain(if path.is_empty() {
+                            None
+                        } else {
+                            Some(("path", &**path))
+                        }),
+                )
+                .to_string()
+            },
         })
     }
 
@@ -208,6 +256,13 @@ impl Nft {
 
     pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<ListingReceipt>> {
         ctx.listing_receipts_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<PurchaseReceipt>> {
+        ctx.purchase_receipts_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)

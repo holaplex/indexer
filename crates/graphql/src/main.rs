@@ -32,9 +32,6 @@ struct Opts {
 
     #[clap(long, env)]
     asset_proxy_count: u8,
-
-    #[clap(long, env, default_value = "0")]
-    api_version: String,
 }
 
 fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
@@ -44,6 +41,20 @@ fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
         HttpResponse::Ok()
             .content_type("text/html; charset=utf-8")
             .body(html)
+    }
+}
+
+fn redirect_version(
+    route: &'static str,
+    version: &'static str,
+) -> impl Fn() -> HttpResponse + Clone {
+    move || {
+        HttpResponse::MovedPermanently()
+            .insert_header(("Location", version))
+            .body(format!(
+                "API route {} deprecated, please use {}",
+                route, version
+            ))
     }
 }
 
@@ -85,7 +96,6 @@ fn main() {
             twitter_bearer_token,
             asset_proxy_endpoint,
             asset_proxy_count,
-            api_version,
         } = Opts::parse();
 
         let (addr,) = server.into_parts();
@@ -103,13 +113,10 @@ fn main() {
             db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
         let db_pool = Arc::new(db_pool);
 
-        let version_extension = format!(
-            "/v{}",
-            percent_encoding::utf8_percent_encode(&api_version, percent_encoding::NON_ALPHANUMERIC,)
-        );
+        let version_extension = "/v1";
 
         // Should look something like "/..."
-        let graphiql_uri = version_extension.clone();
+        let graphiql_uri = version_extension.to_owned();
         assert!(graphiql_uri.starts_with('/'));
 
         let schema = Arc::new(schema::create());
@@ -132,8 +139,11 @@ fn main() {
                                 .max_age(3600),
                         )
                         .service(
-                            web::resource(&version_extension)
+                            web::resource(version_extension)
                                 .route(web::post().to(graphql(db_pool.clone(), shared.clone()))),
+                        )
+                        .service(
+                            web::resource("/v0").to(redirect_version("/v0", version_extension)),
                         )
                         .service(
                             web::resource("/graphiql")

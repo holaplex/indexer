@@ -1,8 +1,7 @@
 use std::fmt::{self, Debug, Display};
 
-use cid::Cid;
 use indexer_core::{
-    assets::AssetIdentifier,
+    assets::{AssetHint, AssetIdentifier},
     db::{
         insert_into,
         models::{
@@ -168,13 +167,18 @@ async fn try_locate_json(
 ) -> Result<(MetadataJsonResult, Vec<u8>)> {
     let mut resp = None;
 
-    for (url, fingerprint) in id
+    for (url, hint) in id
         .ipfs
-        .map(|c| (client.ipfs_link(&c), c.to_bytes()))
-        .into_iter()
-        .chain(id.arweave.map(|t| (client.arweave_link(&t), t.0.to_vec())))
+        .iter()
+        .map(|(c, p)| (client.ipfs_link(c, p), AssetHint::Ipfs))
+        .chain(
+            id.arweave
+                .iter()
+                .map(|t| (client.arweave_link(t), AssetHint::Arweave)),
+        )
     {
         let url_str = url.as_ref().map_or("???", Url::as_str).to_owned();
+        let fingerprint = id.fingerprint(Some(hint)).unwrap_or_else(|| unreachable!());
 
         match fetch_json(client, meta_key, url).await {
             Ok(j) => {
@@ -188,8 +192,8 @@ async fn try_locate_json(
         }
     }
 
-    Ok(if let Some(r) = resp {
-        r
+    Ok(if let Some((res, fingerprint)) = resp {
+        (res, fingerprint.into_owned())
     } else {
         // Set to true for fallback
         const TRY_LAST_RESORT: bool = true;
@@ -209,7 +213,7 @@ async fn try_locate_json(
             )
         } else {
             bail!(
-                "Cached metadata fetch {:?} for {} failed (not tryiing last-resort)",
+                "Cached metadata fetch {:?} for {} failed (not trying last-resort)",
                 url.as_str(),
                 meta_key
             )
@@ -437,12 +441,7 @@ pub async fn process<'a>(
     let url = Url::parse(&uri_str).context("Couldn't parse metadata JSON URL")?;
     let id = AssetIdentifier::new(&url);
 
-    let possible_fingerprints: Vec<_> = id
-        .ipfs
-        .iter()
-        .map(Cid::to_bytes)
-        .chain(id.arweave.map(|a| a.0.to_vec()))
-        .collect();
+    let possible_fingerprints: Vec<_> = id.fingerprints().map(Cow::into_owned).collect();
     let addr = bs58::encode(meta_key).into_string();
 
     let is_present = client
