@@ -146,6 +146,7 @@ impl Sender {
         if new_count.is_ok() {
             self.executor.spawn(inner.send(msg, true)).detach();
         } else {
+            inner.metrics.fg_sends.log();
             inner.send(msg, false).await;
         }
     }
