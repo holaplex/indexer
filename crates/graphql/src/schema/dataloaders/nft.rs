@@ -62,6 +62,13 @@ impl TryBatchFn<PublicKey<Nft>, Option<NftOwner>> for Batcher {
         let rows: Vec<models::TokenAccount> = token_accounts::table
             .filter(token_accounts::mint_address.eq(any(mint_addresses)))
             .filter(token_accounts::amount.eq(1))
+            .select((
+                token_accounts::address,
+                token_accounts::mint_address,
+                token_accounts::owner_address,
+                token_accounts::amount,
+                token_accounts::slot,
+            ))
             .load(&conn)
             .context("Failed to load NFT owners")?;
 
