@@ -1,6 +1,6 @@
+use holaplex_indexer::geyser::Client;
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::{geyser, http_indexer};
-use metaplex_indexer::geyser::Client;
 
 #[derive(Debug, clap::Parser)]
 struct Args {
@@ -24,7 +24,7 @@ struct Args {
 }
 
 fn main() {
-    metaplex_indexer::run(
+    holaplex_indexer::run(
         |Args {
              amqp_url,
              network,
@@ -39,7 +39,7 @@ fn main() {
 
             let sender = queue_suffix.clone().unwrap_or_else(|| network.to_string());
 
-            let conn = metaplex_indexer::amqp_connect(amqp_url).await?;
+            let conn = holaplex_indexer::amqp_connect(amqp_url).await?;
             let client = Client::new_rc(
                 db,
                 &conn,
@@ -54,9 +54,9 @@ fn main() {
                 .await
                 .context("Failed to create queue consumer")?;
 
-            metaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
+            holaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
                 let client = client.clone();
-                async move { metaplex_indexer::geyser::process_message(m, &*client).await }
+                async move { holaplex_indexer::geyser::process_message(m, &*client).await }
             })
             .await
         },

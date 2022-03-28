@@ -1,14 +1,14 @@
 [package]
-name = "metaplex-indexer-rabbitmq-geyser"
+name = "holaplex-indexer-rabbitmq-geyser"
 version = "0.3.0"
 authors = [
   "ryans <ryans@holaplex.com>",
 ]
 edition = "2021"
-description = "Solana Geyser plugin adapter for metaplex-indexer RabbitMQ transport"
-documentation = "https://docs.rs/metaplex-indexer-rabbitmq-geyser"
+description = "Solana Geyser plugin adapter for holaplex-indexer RabbitMQ transport"
+documentation = "https://docs.rs/holaplex-indexer-rabbitmq-geyser"
 readme = "../../README.md"
-repository = "https://github.com/holaplex/metaplex-indexer"
+repository = "https://github.com/holaplex/indexer"
 license = "AGPL-3.0-or-later"
 keywords = ["solana", "metaplex", "holaplex", "web3", "rabbitmq"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
@@ -35,7 +35,7 @@ spl-token = "3.2.0"
 reqwest = "0.11.6"
 
 [dependencies.indexer-rabbitmq]
-package = "metaplex-indexer-rabbitmq"
+package = "holaplex-indexer-rabbitmq"
 version = "=0.1.0"
 path = "../rabbitmq"
 default_features = false

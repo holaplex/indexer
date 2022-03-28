@@ -61,7 +61,7 @@ mod runtime {
         concurrency: usize,
     }
 
-    /// Entrypoint for `metaplex-indexer` binaries
+    /// Entrypoint for `holaplex-indexer` binaries
     pub fn run<T: Debug + Args, F: Future<Output = Result<()>>>(
         f: impl FnOnce(T, Params, Pool) -> F,
     ) -> ! {

@@ -1,4 +1,4 @@
-//! RabbitMQ transport components for `metaplex-indexer`.
+//! RabbitMQ transport components for `holaplex-indexer`.
 
 #![deny(
     clippy::suspicious,

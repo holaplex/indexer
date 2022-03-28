@@ -1,5 +1,5 @@
 //! Queue configuration for Solana Geyser plugins intended to communicate
-//! with `metaplex-indexer`.
+//! with `holaplex-indexer`.
 
 use std::time::Duration;
 

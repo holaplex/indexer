@@ -1,4 +1,4 @@
 #!/bin/sh
 
-./bin/metaplex-indexer-geyser --network=mainnet --startup=all &
-./bin/metaplex-indexer-geyser --network=mainnet --startup=normal
+bin/holaplex-indexer-geyser --network=mainnet --startup=all &
+bin/holaplex-indexer-geyser --network=mainnet --startup=normal

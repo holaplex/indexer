@@ -2398,6 +2398,129 @@ dependencies = [
 ]
 
 [[package]]
+name = "holaplex-indexer"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang 0.20.1",
+ "anchor-lang 0.21.0",
+ "anchor-lang 0.22.1",
+ "async-trait",
+ "base64 0.13.0",
+ "cid",
+ "futures-util",
+ "graph_program",
+ "holaplex-indexer-core",
+ "holaplex-indexer-rabbitmq",
+ "metaplex",
+ "metaplex-auction",
+ "metaplex-token-metadata",
+ "metaplex-token-vault",
+ "mpl-auction-house",
+ "mpl-candy-machine",
+ "mpl-metaplex",
+ "num_cpus",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "solana-program",
+ "solana-sdk",
+ "spl-token",
+ "tokio",
+ "tokio-executor-trait",
+ "tokio-reactor-trait",
+]
+
+[[package]]
+name = "holaplex-indexer-b58"
+version = "0.0.0"
+dependencies = [
+ "bs58 0.4.0",
+ "clap",
+ "hex",
+]
+
+[[package]]
+name = "holaplex-indexer-core"
+version = "0.1.0"
+dependencies = [
+ "ahash",
+ "anyhow",
+ "base64 0.13.0",
+ "chrono",
+ "cid",
+ "clap",
+ "dashmap",
+ "diesel",
+ "diesel_full_text_search",
+ "diesel_migrations",
+ "dotenv",
+ "env_logger",
+ "log",
+ "rand 0.8.4",
+ "serde_json",
+ "solana-sdk",
+ "strum 0.24.0",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "holaplex-indexer-graphql"
+version = "0.1.0"
+dependencies = [
+ "actix-cors",
+ "actix-web",
+ "async-trait",
+ "base64 0.13.0",
+ "dataloader",
+ "holaplex-indexer-core",
+ "itertools",
+ "juniper",
+ "md5",
+ "percent-encoding",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "holaplex-indexer-rabbitmq"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "lapin",
+ "log",
+ "rmp-serde",
+ "serde",
+ "solana-sdk",
+ "strum 0.23.0",
+ "thiserror",
+]
+
+[[package]]
+name = "holaplex-indexer-rabbitmq-geyser"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "bs58 0.4.0",
+ "holaplex-indexer-rabbitmq",
+ "log",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "smol",
+ "smol-executor-trait",
+ "solana-geyser-plugin-interface",
+ "solana-logger",
+ "solana-metrics",
+ "solana-program",
+ "solana-sdk",
+ "spl-token",
+]
+
+[[package]]
 name = "http"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2842,129 +2965,6 @@ dependencies = [
  "solana-program",
  "spl-token",
  "thiserror",
-]
-
-[[package]]
-name = "metaplex-indexer"
-version = "0.1.0"
-dependencies = [
- "anchor-lang 0.20.1",
- "anchor-lang 0.21.0",
- "anchor-lang 0.22.1",
- "async-trait",
- "base64 0.13.0",
- "cid",
- "futures-util",
- "graph_program",
- "metaplex",
- "metaplex-auction",
- "metaplex-indexer-core",
- "metaplex-indexer-rabbitmq",
- "metaplex-token-metadata",
- "metaplex-token-vault",
- "mpl-auction-house",
- "mpl-candy-machine",
- "mpl-metaplex",
- "num_cpus",
- "reqwest",
- "serde",
- "serde_json",
- "solana-program",
- "solana-sdk",
- "spl-token",
- "tokio",
- "tokio-executor-trait",
- "tokio-reactor-trait",
-]
-
-[[package]]
-name = "metaplex-indexer-b58"
-version = "0.0.0"
-dependencies = [
- "bs58 0.4.0",
- "clap",
- "hex",
-]
-
-[[package]]
-name = "metaplex-indexer-core"
-version = "0.1.0"
-dependencies = [
- "ahash",
- "anyhow",
- "base64 0.13.0",
- "chrono",
- "cid",
- "clap",
- "dashmap",
- "diesel",
- "diesel_full_text_search",
- "diesel_migrations",
- "dotenv",
- "env_logger",
- "log",
- "rand 0.8.4",
- "serde_json",
- "solana-sdk",
- "strum 0.24.0",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "metaplex-indexer-graphql"
-version = "0.1.0"
-dependencies = [
- "actix-cors",
- "actix-web",
- "async-trait",
- "base64 0.13.0",
- "dataloader",
- "itertools",
- "juniper",
- "md5",
- "metaplex-indexer-core",
- "percent-encoding",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "metaplex-indexer-rabbitmq"
-version = "0.1.0"
-dependencies = [
- "futures-util",
- "lapin",
- "log",
- "rmp-serde",
- "serde",
- "solana-sdk",
- "strum 0.23.0",
- "thiserror",
-]
-
-[[package]]
-name = "metaplex-indexer-rabbitmq-geyser"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "bs58 0.4.0",
- "log",
- "metaplex-indexer-rabbitmq",
- "reqwest",
- "serde",
- "serde_json",
- "serde_with",
- "smol",
- "smol-executor-trait",
- "solana-geyser-plugin-interface",
- "solana-logger",
- "solana-metrics",
- "solana-program",
- "solana-sdk",
- "spl-token",
 ]
 
 [[package]]

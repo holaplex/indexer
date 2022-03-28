@@ -1,4 +1,4 @@
-//! GraphQL server to read from `metaplex-indexer`
+//! GraphQL server to read from `holaplex-indexer`
 
 #![deny(
     clippy::suspicious,

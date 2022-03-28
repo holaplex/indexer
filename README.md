@@ -51,6 +51,8 @@ the background:
 $ ./start-developing.sh
 ```
 
+# TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 ## Running `indexer`
 
 To run the indexer, simply enter the repository root and run:

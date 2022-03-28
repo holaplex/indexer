@@ -1,4 +1,4 @@
-//! Solana Geyser plugin adapter for the `metaplex-indexer` RabbitMQ
+//! Solana Geyser plugin adapter for the `holaplex-indexer` RabbitMQ
 //! transport
 
 #![deny(
