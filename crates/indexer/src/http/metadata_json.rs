@@ -450,7 +450,14 @@ pub async fn process<'a>(
     first_verified_creator: Option<Pubkey>,
     uri_str: String,
 ) -> Result<()> {
-    let url = Url::parse(&uri_str).context("Couldn't parse metadata JSON URL")?;
+    let url = match Url::parse(&uri_str) {
+        Ok(u) => u,
+        Err(e) => {
+            // Don't return an error because this happens A Lot.
+            debug!("Couldn't parse metadata URL: {:?}", e);
+            return Ok(());
+        },
+    };
     let id = AssetIdentifier::new(&url);
 
     let possible_fingerprints: Vec<_> = id.fingerprints().map(Cow::into_owned).collect();
