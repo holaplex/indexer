@@ -4,6 +4,7 @@ use super::prelude::*;
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct MintStats {
+    pub auction_house: String,
     pub mint: String,
     pub floor: Option<Volume>,
     pub average: Option<Volume>,
@@ -15,7 +16,7 @@ impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
 
     fn try_from(
         models::MintStats {
-            auction_house: _,
+            auction_house,
             mint,
             floor,
             average,
@@ -23,6 +24,7 @@ impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
         }: models::MintStats,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
+            auction_house: auction_house.into_owned(),
             mint: mint.into_owned(),
             floor: floor.map(TryInto::try_into).transpose()?,
             average: average.map(TryInto::try_into).transpose()?,

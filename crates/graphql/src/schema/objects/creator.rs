@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
-use indexer_core::prelude::*;
+use indexer_core::{db::queries::stats, prelude::*};
 use itertools::Itertools;
+use objects::{auction_house::AuctionHouse, stats::MintStats};
 use tables::{attributes, metadata_creators};
 
 use super::prelude::*;
+use crate::schema::scalars::PublicKey;
 
 #[derive(Debug, Clone)]
 pub struct Creator {
@@ -22,11 +24,56 @@ struct AttributeGroup {
     name: String,
     variants: Vec<AttributeVariant>,
 }
+#[derive(Debug, Clone)]
+struct CreatorCounts {
+    creator: Creator,
+}
+
+impl CreatorCounts {
+    #[must_use]
+    pub fn new(creator: Creator) -> Self {
+        Self { creator }
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl CreatorCounts {
+    fn creations(&self, context: &AppContext) -> FieldResult<i32> {
+        let conn = context.db_pool.get()?;
+
+        let count = metadata_creators::table
+            .filter(metadata_creators::creator_address.eq(&self.creator.address))
+            .filter(metadata_creators::verified.eq(true))
+            .count()
+            .get_result::<i64>(&conn)?;
+
+        Ok(count.try_into()?)
+    }
+}
 
 #[graphql_object(Context = AppContext)]
 impl Creator {
     fn address(&self) -> &str {
         &self.address
+    }
+
+    fn counts(&self) -> CreatorCounts {
+        CreatorCounts::new(self.clone())
+    }
+
+    #[graphql(arguments(auction_houses(description = "Auction house public keys")))]
+    pub async fn stats(
+        &self,
+        auction_houses: Vec<PublicKey<AuctionHouse>>,
+        ctx: &AppContext,
+    ) -> FieldResult<Vec<MintStats>> {
+        let conn = ctx.db_pool.get()?;
+        let rows = stats::collection(&conn, auction_houses, &self.address)?;
+
+        rows.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
