@@ -1,0 +1,1 @@
+drop index open_offers_idx;
