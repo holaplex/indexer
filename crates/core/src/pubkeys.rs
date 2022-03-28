@@ -17,10 +17,12 @@ mod ids {
     pubkeys!(auction_house, "hausS13jsjafwWwGqZTUQRmWyvyxn9EQpqMwV1PBBmk");
     pubkeys!(candy_machine, "cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ");
     pubkeys!(graph_program, "grphSXQnjAoPXSG5p1aJ7ZFw2A1akqP3pkXvjfbSJef");
+    pubkeys!(name_service, "namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX");
 }
 
 pub use ids::{
-    auction, auction_house, candy_machine, graph_program, metadata, metaplex, token, vault,
+    auction, auction_house, candy_machine, graph_program, metadata, metaplex, name_service, token,
+    vault,
 };
 
 /// Find the address of a store given its owner's address
