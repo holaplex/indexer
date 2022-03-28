@@ -71,10 +71,10 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         .timeout(client.timeout())
         .send()
         .await
-        .context("Metadata JSON request failed")?
+        .context("Store Config JSON request failed")?
         .json::<SettingUri>()
         .await
-        .context("Failed to parse metadata JSON")?;
+        .context("Failed to parse store config JSON")?;
 
     let addr = bs58::encode(config_key).into_string();
 
@@ -97,13 +97,22 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
 
     client
         .db()
-        .run(move |db| {
-            insert_into(store_config_jsons::table)
-                .values(&row)
-                .on_conflict(store_config_jsons::config_address)
-                .do_update()
-                .set(&row)
-                .execute(db)
+        .run({
+            let addr = addr.clone();
+
+            move |db| {
+                debug!(
+                    "Running the db for updating store config: {:?}, store config address: {:?}",
+                    &row, &addr
+                );
+
+                insert_into(store_config_jsons::table)
+                    .values(&row)
+                    .on_conflict(store_config_jsons::config_address)
+                    .do_update()
+                    .set(&row)
+                    .execute(db)
+            }
         })
         .await
         .context("failed to insert store config json")?;
@@ -111,28 +120,38 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
     if let Some(creators) = json.creators {
         client
             .db()
-            .run(move |db| {
-                creators.into_iter().try_for_each(|creator| {
-                    let row = StoreCreator {
-                        store_config_address: Owned(addr.clone()),
-                        creator_address: Owned(creator.address),
-                    };
+            .run({
+                let addr = addr.clone();
+                move |db| {
+                    debug!("Running the db update for store creators: {:?} , store config address: {:?}", &creators, &addr);
 
-                    insert_into(store_creators::table)
-                        .values(&row)
-                        .on_conflict((
-                            store_creators::store_config_address,
-                            store_creators::creator_address,
-                        ))
-                        .do_update()
-                        .set(&row)
-                        .execute(db)
-                        .map(|_| ())
-                })
+                    creators.into_iter().try_for_each(|creator| {
+                        let row = StoreCreator {
+                            store_config_address: Owned(addr.clone()),
+                            creator_address: Owned(creator.address),
+                        };
+
+                        insert_into(store_creators::table)
+                            .values(&row)
+                            .on_conflict((
+                                store_creators::store_config_address,
+                                store_creators::creator_address,
+                            ))
+                            .do_update()
+                            .set(&row)
+                            .execute(db)
+                            .map(|_| ())
+                    })
+                }
             })
             .await
             .context("failed to insert store creator")?;
     }
+
+    debug!(
+        "finished indexing store config, store config address: {:?}",
+        &addr
+    );
 
     Ok(())
 }
