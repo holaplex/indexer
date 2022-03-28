@@ -22,9 +22,9 @@ const MINT_QUERY: &str = r"
 select
     auction_house,
     mint,
-    min(listing_price) filter (where token_account_amount = 1 and listing_canceled_at is null and listing_purchase_receipt is null) as floor,
+    min(listing_price) filter (where token_account_amount = 1 and listing_canceled_at is null and listing_purchase_receipt is null)::bigint as floor,
     round(avg(purchase_price))::bigint as average,
-    sum(purchase_price) filter (where ($3 - purchased_at) < interval '24 hr') as volume_24hr
+    sum(purchase_price) filter (where ($2 - purchased_at) < interval '24 hr')::bigint as volume_24hr
 
 from (select lr.auction_house as auction_house,
         mc.creator_address as creator_address,
@@ -99,9 +99,9 @@ const COLLECTION_QUERY: &str = r"
 select
     auction_house,
     mint,
-    min(listing_price) filter (where token_account_amount = 1 and listing_canceled_at is null and listing_purchase_receipt is null) as floor,
+    min(listing_price) filter (where token_account_amount = 1 and listing_canceled_at is null and listing_purchase_receipt is null)::bigint as floor,
     round(avg(purchase_price))::bigint as average,
-    sum(purchase_price) filter (where ($3 - purchased_at) < interval '24 hr') as volume_24hr
+    sum(purchase_price) filter (where ($3 - purchased_at) < interval '24 hr')::bigint as volume_24hr
 
 from (
     select lr.auction_house as auction_house,

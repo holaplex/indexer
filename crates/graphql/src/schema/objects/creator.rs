@@ -47,7 +47,7 @@ impl CreatorCounts {
             .count()
             .get_result::<i64>(&conn)?;
 
-        Ok(i64::try_into(count)?)
+        Ok(count.try_into()?)
     }
 }
 
