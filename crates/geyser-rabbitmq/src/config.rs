@@ -30,7 +30,7 @@ pub struct Amqp {
     pub address: String,
 
     #[serde_as(as = "serde_with::DisplayFromStr")]
-    pub network: indexer_rabbitmq::accountsdb::Network,
+    pub network: indexer_rabbitmq::geyser::Network,
 }
 
 #[derive(Debug, Deserialize)]

@@ -20,10 +20,10 @@ COPY Cargo.toml Cargo.lock ./
 
 RUN cargo build --profile docker \
   --features " \
-    metaplex-indexer/accountsdb, \
+    metaplex-indexer/geyser, \
     metaplex-indexer/http \
   " \
-  --bin metaplex-indexer-accountsdb \
+  --bin metaplex-indexer-geyser \
   --bin metaplex-indexer-http \
   --bin metaplex-indexer-legacy-storefronts \
   --bin metaplex-indexer-graphql
@@ -49,10 +49,10 @@ COPY .env .env.prod ./
 
 CMD ["./startup.sh"]
 
-FROM base AS accountsdb-consumer
+FROM base AS geyser-consumer
 
-COPY --from=build metaplex-indexer/bin/metaplex-indexer-accountsdb bin/
-COPY --from=build metaplex-indexer/scripts/docker/accountsdb-consumer.sh startup.sh
+COPY --from=build metaplex-indexer/bin/metaplex-indexer-geyser bin/
+COPY --from=build metaplex-indexer/scripts/docker/geyser-consumer.sh startup.sh
 
 FROM base AS http-consumer
 

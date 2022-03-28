@@ -2,14 +2,14 @@
 
 
 ## Architecture
-As a message producer, the Holaplex Indexing Service leverages the [accountsdb-plugin-interface](https://github.com/solana-labs/solana/tree/master/accountsdb-plugin-interface) to send accounts data directly to a RabbitMQ instance. As a message consumer, the indexer consumes these account messages, deserializes them and inserts them into a PostgreSQL database. Each account needs its own processor, schema and model.
+As a message producer, the Holaplex Indexing Service leverages the [geyser-plugin-interface](https://github.com/solana-labs/solana/tree/master/geyser-plugin-interface) to send accounts data directly to a RabbitMQ instance. As a message consumer, the indexer consumes these account messages, deserializes them and inserts them into a PostgreSQL database. Each account needs its own processor, schema and model.
 
 This dataset is derived entirely from the messages produced by a validator. This supports a unidirectional dataflow. All data goes directly to the solana blockchain before it is saved in any off chain storage.
 
 ![](https://ipfs.cache.holaplex.com/bafkreiceois7frablbcdhiw4573m53rmhboadd5a2tkiw2mkle2el5udke)
 
 ### Components
-- AccountsDB plugin, responsible for sending data to our queue system
+- Solana Geyser plugin, responsible for sending data to our queue system
 - RabbitMQ Consumer, responsible for parsing messages and routing them to the proper processor
 - PostgreSQL database, saves the deserialized data
 - GrapqhQL Crate - serves the PostgreSQL data

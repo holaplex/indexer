@@ -15,9 +15,9 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [features]
 default = []
-accountsdb = [
+geyser = [
   "solana-program",
-  "indexer-rabbitmq/accountsdb",
+  "indexer-rabbitmq/geyser",
   "indexer-rabbitmq/http-indexer",
   "indexer-rabbitmq/producer",
 ]
@@ -30,8 +30,8 @@ http = [
 ]
 
 [[bin]]
-name = "metaplex-indexer-accountsdb"
-required-features = ["accountsdb"]
+name = "metaplex-indexer-geyser"
+required-features = ["geyser"]
 
 [[bin]]
 name = "metaplex-indexer-http"

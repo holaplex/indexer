@@ -1,4 +1,4 @@
-//! Queue configuration for Solana `accountsdb` plugins intended to communicate
+//! Queue configuration for Solana Geyser plugins intended to communicate
 //! with `metaplex-indexer`.
 
 use std::time::Duration;
@@ -31,7 +31,7 @@ pub struct AccountUpdate {
     pub is_startup: bool,
 }
 
-/// A message transmitted by an `accountsdb` plugin
+/// A message transmitted by a Geyser plugin
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Message {
     /// Indicates an account should be updated
@@ -47,7 +47,7 @@ pub enum Message {
     },
 }
 
-/// AMQP configuration for `accountsdb` plugins
+/// AMQP configuration for Geyser plugins
 #[derive(Debug, Clone)]
 pub struct QueueType {
     props: QueueProps,
@@ -78,7 +78,7 @@ pub enum StartupType {
 }
 
 impl StartupType {
-    /// Construct a [`StartupType`] from the accountsdb `startup` filter.
+    /// Construct a [`StartupType`] from the Geyser plugin `startup` filter.
     #[must_use]
     pub fn new(value: Option<bool>) -> Self {
         match value {
@@ -137,9 +137,9 @@ impl crate::QueueType for QueueType {
     }
 }
 
-/// The type of an `accountsdb` producer
+/// The type of a Geyser producer
 #[cfg(feature = "producer")]
 pub type Producer = crate::producer::Producer<QueueType>;
-/// The type of an `accountsdb` consumer
+/// The type of a Geyser consumer
 #[cfg(feature = "consumer")]
 pub type Consumer = crate::consumer::Consumer<QueueType>;

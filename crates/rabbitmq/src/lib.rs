@@ -36,12 +36,12 @@ pub enum Error {
 
 pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
-#[cfg(any(test, feature = "accountsdb"))]
-pub mod accountsdb;
 #[cfg(any(test, feature = "consumer"))]
 pub mod consumer;
 #[cfg(any(test, feature = "consumer"))]
 pub mod dl_consumer;
+#[cfg(any(test, feature = "geyser"))]
+pub mod geyser;
 #[cfg(any(test, feature = "http-indexer"))]
 pub mod http_indexer;
 #[cfg(any(test, feature = "producer"))]

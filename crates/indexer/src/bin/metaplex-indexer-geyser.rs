@@ -1,6 +1,6 @@
 use indexer_core::{clap, prelude::*};
-use indexer_rabbitmq::{accountsdb, http_indexer};
-use metaplex_indexer::accountsdb::Client;
+use indexer_rabbitmq::{geyser, http_indexer};
+use metaplex_indexer::geyser::Client;
 
 #[derive(Debug, clap::Parser)]
 struct Args {
@@ -10,11 +10,11 @@ struct Args {
 
     /// The network to listen to events for
     #[clap(long, env)]
-    network: accountsdb::Network,
+    network: geyser::Network,
 
     /// The startup type of events to listen for
-    #[clap(long, env, default_value_t = accountsdb::StartupType::Normal)]
-    startup: accountsdb::StartupType,
+    #[clap(long, env, default_value_t = geyser::StartupType::Normal)]
+    startup: geyser::StartupType,
 
     /// An optional suffix for the AMQP queue ID
     ///
@@ -49,14 +49,14 @@ fn main() {
             .await
             .context("Failed to construct Client")?;
 
-            let queue_type = accountsdb::QueueType::new(network, startup, queue_suffix.as_deref());
-            let consumer = accountsdb::Consumer::new(&conn, queue_type.clone())
+            let queue_type = geyser::QueueType::new(network, startup, queue_suffix.as_deref());
+            let consumer = geyser::Consumer::new(&conn, queue_type.clone())
                 .await
                 .context("Failed to create queue consumer")?;
 
             metaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
                 let client = client.clone();
-                async move { metaplex_indexer::accountsdb::process_message(m, &*client).await }
+                async move { metaplex_indexer::geyser::process_message(m, &*client).await }
             })
             .await
         },

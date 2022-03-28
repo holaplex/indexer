@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use indexer_rabbitmq::accountsdb::StartupType;
+use indexer_rabbitmq::geyser::StartupType;
 use solana_program::instruction::CompiledInstruction;
 
 use super::config::Accounts;

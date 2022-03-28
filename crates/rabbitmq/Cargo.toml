@@ -17,7 +17,7 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 default = ["consumer"]
 producer = []
 consumer = []
-accountsdb = ["solana-sdk", "strum"]
+geyser = ["solana-sdk", "strum"]
 http-indexer = []
 
 [dependencies]

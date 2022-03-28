@@ -1,12 +1,12 @@
 [package]
-name = "metaplex-indexer-rabbitmq-accountsdb"
-version = "0.1.0"
+name = "metaplex-indexer-rabbitmq-geyser"
+version = "0.3.0"
 authors = [
   "ryans <ryans@holaplex.com>",
 ]
 edition = "2021"
-description = "Solana AccountsDB adapter for metaplex-indexer RabbitMQ transport"
-documentation = "https://docs.rs/metaplex-indexer-rabbitmq-accountsdb"
+description = "Solana Geyser plugin adapter for metaplex-indexer RabbitMQ transport"
+documentation = "https://docs.rs/metaplex-indexer-rabbitmq-geyser"
 readme = "../../README.md"
 repository = "https://github.com/holaplex/metaplex-indexer"
 license = "AGPL-3.0-or-later"
@@ -26,7 +26,7 @@ serde_with = "1.11.0"
 smol = "1.2.5"
 smol-executor-trait = "2.1.0"
 
-solana-accountsdb-plugin-interface = "1.9.4"
+solana-geyser-plugin-interface = "1.9.13"
 solana-logger = "1.9.4"
 solana-program = "1.9.4"
 solana-sdk = "1.9.4"
@@ -39,4 +39,4 @@ package = "metaplex-indexer-rabbitmq"
 version = "=0.1.0"
 path = "../rabbitmq"
 default_features = false
-features = ["producer", "accountsdb"]
+features = ["producer", "geyser"]
