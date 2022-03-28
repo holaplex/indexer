@@ -38,6 +38,9 @@ pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
         Message::AccountUpdate(update) if update.owner == pubkeys::candy_machine() => {
             programs::candy_machine::process(client, update).await
         },
+        Message::AccountUpdate(update) if update.owner == pubkeys::name_service() => {
+            programs::name_service::process(client, update).await
+        },
         Message::AccountUpdate(_) | Message::InstructionNotify { .. } => Ok(()),
     }
 }
