@@ -77,14 +77,14 @@ impl Metrics {
 
     fn submit(&self) {
         solana_metrics::datapoint_info!(
-            "accountsdb_rabbitmq",
+            "geyser_rabbitmq",
             ("msgs_sent", self.sends.get(), i64),
             ("blocking_sends", self.fg_sends.get(), i64),
             ("evts_recvd", self.recvs.get(), i64),
         );
 
         solana_metrics::datapoint_error!(
-            "accountsdb_rabbitmq",
+            "geyser_rabbitmq",
             ("errors", self.errs.get(), i64),
             ("reconnects", self.reconnects.get(), i64),
         );

@@ -4,7 +4,7 @@ use std::sync::{
 };
 
 use indexer_rabbitmq::{
-    accountsdb::{Message, Producer, QueueType, StartupType},
+    geyser::{Message, Producer, QueueType, StartupType},
     lapin::{Connection, ConnectionProperties},
 };
 use smol::{

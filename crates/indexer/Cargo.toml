@@ -1,23 +1,23 @@
 [package]
-name = "metaplex-indexer"
+name = "holaplex-indexer"
 version = "0.1.0"
 authors = [
   "ryans <ryans@holaplex.com>",
 ]
 edition = "2021"
 description = "Indexer write worker for caching Metaplex data"
-documentation = "https://docs.rs/metaplex-indexer"
+documentation = "https://docs.rs/holaplex-indexer"
 readme = "../../README.md"
-repository = "https://github.com/holaplex/metaplex-indexer"
+repository = "https://github.com/holaplex/indexer"
 license = "AGPL-3.0-or-later"
 keywords = ["solana", "metaplex", "holaplex", "web3"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [features]
 default = []
-accountsdb = [
+geyser = [
   "solana-program",
-  "indexer-rabbitmq/accountsdb",
+  "indexer-rabbitmq/geyser",
   "indexer-rabbitmq/http-indexer",
   "indexer-rabbitmq/producer",
 ]
@@ -30,15 +30,15 @@ http = [
 ]
 
 [[bin]]
-name = "metaplex-indexer-accountsdb"
-required-features = ["accountsdb"]
+name = "holaplex-indexer-geyser"
+required-features = ["geyser"]
 
 [[bin]]
-name = "metaplex-indexer-http"
+name = "holaplex-indexer-http"
 required-features = ["http"]
 
 [[bin]]
-name = "metaplex-indexer-legacy-storefronts"
+name = "holaplex-indexer-legacy-storefronts"
 required-features = ["http"]
 
 [dependencies]
@@ -80,11 +80,11 @@ rev = "709a8768a7f71df2aba48cf9862835877a036e08"
 
 # Workspace dependencies
 [dependencies.indexer-core]
-package = "metaplex-indexer-core"
+package = "holaplex-indexer-core"
 version = "=0.1.0"
 path = "../core"
 
 [dependencies.indexer-rabbitmq]
-package = "metaplex-indexer-rabbitmq"
+package = "holaplex-indexer-rabbitmq"
 version = "=0.1.0"
 path = "../rabbitmq"

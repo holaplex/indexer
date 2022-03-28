@@ -1,6 +1,6 @@
 use std::{collections::HashSet, env, sync::Arc};
 
-use indexer_rabbitmq::accountsdb::{AccountUpdate, Message};
+use indexer_rabbitmq::geyser::{AccountUpdate, Message};
 use solana_program::{
     instruction::CompiledInstruction, message::SanitizedMessage, program_pack::Pack,
 };
@@ -17,7 +17,7 @@ use serde::Deserialize;
 use crate::{
     config::Config,
     interface::{
-        AccountsDbPlugin, AccountsDbPluginError, ReplicaAccountInfo, ReplicaAccountInfoVersions,
+        GeyserPlugin, GeyserPluginError, ReplicaAccountInfo, ReplicaAccountInfoVersions,
         ReplicaTransactionInfoVersions, Result,
     },
     metrics::{Counter, Metrics},
@@ -29,16 +29,16 @@ use crate::{
 #[inline]
 fn custom_err<'a, E: Into<Box<dyn std::error::Error + Send + Sync + 'static>>>(
     counter: &'a Counter,
-) -> impl FnOnce(E) -> AccountsDbPluginError + 'a {
+) -> impl FnOnce(E) -> GeyserPluginError + 'a {
     |e| {
         counter.log();
-        AccountsDbPluginError::Custom(e.into())
+        GeyserPluginError::Custom(e.into())
     }
 }
 
 /// An instance of the plugin
 #[derive(Debug, Default)]
-pub struct AccountsDbPluginRabbitMq {
+pub struct GeyserPluginRabbitMq {
     producer: Option<Sender>,
     acct_sel: Option<AccountSelector>,
     ins_sel: Option<InstructionSelector>,
@@ -56,7 +56,7 @@ struct TokenList {
     tokens: Vec<TokenItem>,
 }
 
-impl AccountsDbPluginRabbitMq {
+impl GeyserPluginRabbitMq {
     const TOKEN_REG_URL: &'static str = "https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/solana.tokenlist.json";
 
     fn load_token_reg() -> StdResult<HashSet<Pubkey>, anyhow::Error> {
@@ -71,9 +71,9 @@ impl AccountsDbPluginRabbitMq {
     }
 }
 
-impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
+impl GeyserPlugin for GeyserPluginRabbitMq {
     fn name(&self) -> &'static str {
-        "AccountsDbPluginRabbitMq"
+        "GeyserPluginRabbitMq"
     }
 
     fn on_load(&mut self, cfg: &str) -> Result<()> {
@@ -123,11 +123,11 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
         #[inline]
         fn uninit<'a>(
             counter: impl Into<Option<&'a Counter>> + 'a,
-        ) -> impl FnOnce() -> AccountsDbPluginError + 'a {
+        ) -> impl FnOnce() -> GeyserPluginError + 'a {
             || {
                 counter.into().map(Counter::log);
 
-                AccountsDbPluginError::AccountsUpdateError {
+                GeyserPluginError::AccountsUpdateError {
                     msg: "RabbitMQ plugin not initialized yet!".into(),
                 }
             }
@@ -213,13 +213,11 @@ impl AccountsDbPlugin for AccountsDbPluginRabbitMq {
         #[inline]
         fn uninit<'a>(
             counter: impl Into<Option<&'a Counter>> + 'a,
-        ) -> impl FnOnce() -> AccountsDbPluginError + 'a {
+        ) -> impl FnOnce() -> GeyserPluginError + 'a {
             || {
                 counter.into().map(Counter::log);
 
-                AccountsDbPluginError::Custom(
-                    anyhow!("RabbitMQ plugin not initialized yet!").into(),
-                )
+                GeyserPluginError::Custom(anyhow!("RabbitMQ plugin not initialized yet!").into())
             }
         }
 

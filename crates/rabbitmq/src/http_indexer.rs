@@ -1,5 +1,5 @@
 //! Queue configuration for the HTTP-driven indexer to receive requests from
-//! the `accountsdb` consumer.
+//! the Geyser consumer.
 
 use std::{marker::PhantomData, time::Duration};
 
