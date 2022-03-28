@@ -164,8 +164,11 @@ async fn try_locate_json(
     url: &Url,
     id: &AssetIdentifier,
     meta_key: Pubkey,
-) -> Result<(MetadataJsonResult, Vec<u8>)> {
-    let mut resp = None;
+) -> Result<Option<(MetadataJsonResult, Vec<u8>)>> {
+    // Set to true for fallback
+    const TRY_LAST_RESORT: bool = true;
+
+    let mut resp = Ok(None);
 
     for (url, hint) in id
         .ipfs
@@ -183,41 +186,50 @@ async fn try_locate_json(
         match fetch_json(client, meta_key, url).await {
             Ok(j) => {
                 debug!("Using fetch from {:?} for metadata {}", url_str, meta_key);
-                resp = Some((j, fingerprint));
+                resp = Ok(Some((j, fingerprint)));
+                break;
             },
-            Err(e) => warn!(
-                "Metadata fetch {:?} for {} failed: {:?}",
-                url_str, meta_key, e
-            ),
+            Err(e) => {
+                warn!(
+                    "Metadata fetch {:?} for {} failed: {:?}",
+                    url_str, meta_key, e
+                );
+
+                resp = Err(());
+            },
         }
     }
 
-    Ok(if let Some((res, fingerprint)) = resp {
-        (res, fingerprint.into_owned())
-    } else {
-        // Set to true for fallback
-        const TRY_LAST_RESORT: bool = true;
+    Ok(match resp {
+        Ok(Some((res, fingerprint))) => Some((res, fingerprint.into_owned())),
+        Ok(None) => {
+            debug!(
+                "Not fetching unparseable url {:?} for {}",
+                url.as_str(),
+                meta_key
+            );
 
-        if TRY_LAST_RESORT {
-            (
-                fetch_json(client, meta_key, Ok(url.clone()))
-                    .await
-                    .with_context(|| {
-                        format!(
-                            "Last-resort metadata fetch {:?} for {} failed",
-                            url.as_str(),
-                            meta_key,
-                        )
-                    })?,
-                vec![],
-            )
-        } else {
+            None
+        },
+        Err(()) if TRY_LAST_RESORT => Some((
+            fetch_json(client, meta_key, Ok(url.clone()))
+                .await
+                .with_context(|| {
+                    format!(
+                        "Last-resort metadata fetch {:?} for {} failed",
+                        url.as_str(),
+                        meta_key,
+                    )
+                })?,
+            vec![],
+        )),
+        Err(()) => {
             bail!(
                 "Cached metadata fetch {:?} for {} failed (not trying last-resort)",
                 url.as_str(),
                 meta_key
             )
-        }
+        },
     })
 }
 
@@ -483,12 +495,16 @@ pub async fn process<'a>(
 
     debug!("{:?} -> {:?}", url.as_str(), id);
 
-    let (json, fingerprint) = try_locate_json(client, &url, &id, meta_key).await?;
-
-    match json {
-        MetadataJsonResult::Full(f) => {
-            process_full(client, addr, first_verified_creator, f, fingerprint).await
-        },
-        MetadataJsonResult::Minimal(m) => process_minimal(client, addr, m, fingerprint).await,
+    if let Some((json, fingerprint)) = try_locate_json(client, &url, &id, meta_key).await? {
+        match json {
+            MetadataJsonResult::Full(f) => {
+                process_full(client, addr, first_verified_creator, f, fingerprint).await?;
+            },
+            MetadataJsonResult::Minimal(m) => {
+                process_minimal(client, addr, m, fingerprint).await?;
+            },
+        }
     }
+
+    Ok(())
 }
