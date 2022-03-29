@@ -43,7 +43,7 @@ pub async fn process(
                 .map(|a| a.into_bigint_and_exponent().0.to_i64().unwrap());
 
             match res {
-                Some(total_amount) if total_amount == 1 => {
+                Some(total_amount) if total_amount > 0 => {
                     client
                         .db()
                         .run(move |db| {
