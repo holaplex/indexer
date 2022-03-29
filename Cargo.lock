@@ -2908,6 +2908,7 @@ dependencies = [
  "actix-web",
  "async-graphql",
  "async-graphql-actix-web",
+ "futures",
  "geyser-config-migration",
  "sea-orm",
 ]

@@ -19,6 +19,7 @@ actix-cors = "0.6.0-beta.10"
 actix-web = "4.0.0-rc.2"
 async-graphql = "3.0.36"
 async-graphql-actix-web = "3.0.30"
+futures = "0.3.21"
 
 [dependencies.sea-orm]
 version = "0.7.1"
