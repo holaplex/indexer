@@ -21,7 +21,7 @@ struct Args {
     /// List of programs to ignore on starup
     /// e.g. [metadata, auction_house]
     /// metadata,auction_house
-    #[clap(long, env)]
+    #[clap(long, env, use_delimiter(true))]
     ignore_on_startup: Option<Vec<String>>,
 
     /// An optional suffix for the AMQP queue ID
@@ -72,6 +72,7 @@ fn main() {
 
             holaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
                 let client = client.clone();
+                let ignore_on_startup = ignore_on_startup.clone();
 
                 async move {
                     holaplex_indexer::geyser::process_message(m, &*client, ignore_on_startup).await
