@@ -1,2 +1,2 @@
-drop trigger zero_out_last_token_account_if_one on token_accounts;
-drop function set_amount_zero_for_last_token_acc();
+drop trigger set_amount_to_zero on token_accounts;
+drop function zero_out_all_token_accounts();
