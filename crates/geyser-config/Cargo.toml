@@ -1,0 +1,33 @@
+[package]
+name = "holaplex-indexer-geyser-config"
+version = "0.1.0"
+authors = [
+  "ryans <ryans@holaplex.com>",
+]
+edition = "2021"
+description = "Config provider for the holaplex-indexer Geyser plugin"
+documentation = "https://docs.rs/holaplex-indexer-geyser-config"
+readme = "../../README.md"
+repository = "https://github.com/holaplex/indexer"
+license = "AGPL-3.0-or-later"
+keywords = ["solana", "geyser", "web3", "holaplex", "graphql"]
+categories = ["cryptography::cryptocurrencies", "web-programming"]
+
+[dependencies]
+actix = "0.13.0"
+actix-cors = "0.6.0-beta.10"
+actix-web = "4.0.0-rc.2"
+async-graphql = "3.0.36"
+async-graphql-actix-web = "3.0.30"
+
+[dependencies.sea-orm]
+version = "0.7.1"
+features = [
+  "sqlx-sqlite",
+  "runtime-actix-rustls",
+  "macros",
+]
+
+[dependencies.migration]
+package = "geyser-config-migration"
+path = "../geyser-config-migration"

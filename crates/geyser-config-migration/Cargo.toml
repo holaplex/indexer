@@ -1,0 +1,11 @@
+[package]
+name = "geyser-config-migration"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "migration"
+
+[dependencies]
+sea-schema = { version = "0.7.1", default-features = false, features = ["migration", "debug-print"] }
