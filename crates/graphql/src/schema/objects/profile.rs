@@ -65,7 +65,7 @@ pub struct TwitterUserProfileResponse {
 #[graphql_object(Context = AppContext)]
 impl Profile {
     fn wallet_address(&self, ctx: &AppContext) -> FieldResult<Option<String>> {
-        let db_conn = ctx.db_pool.get()?;
+        let db_conn = ctx.shared.db.get()?;
         let result: Vec<models::TwitterHandle> = twitter_handle_name_services::table
             .select(twitter_handle_name_services::all_columns)
             .limit(1)

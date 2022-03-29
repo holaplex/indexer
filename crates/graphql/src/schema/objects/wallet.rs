@@ -38,7 +38,7 @@ impl WalletNftCount {
 #[graphql_object(Context = AppContext)]
 impl WalletNftCount {
     fn owned(&self, context: &AppContext) -> FieldResult<i32> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
 
         let count = queries::nft_count::owned(&conn, &self.wallet, self.creators.as_deref())?;
 
@@ -51,7 +51,7 @@ impl WalletNftCount {
         context: &AppContext,
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
     ) -> FieldResult<i32> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
 
         let count = queries::nft_count::offered(
             &conn,
@@ -69,7 +69,7 @@ impl WalletNftCount {
         context: &AppContext,
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
     ) -> FieldResult<i32> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
 
         let count = queries::nft_count::wallet_listed(
             &conn,
@@ -89,7 +89,8 @@ impl Wallet {
     }
 
     pub fn bids(&self, ctx: &AppContext) -> FieldResult<Vec<Bid>> {
-        let db_conn = ctx.db_pool.get()?;
+        let db_conn = ctx.shared.db.get()?;
+
         let rows: Vec<models::Bid> = bids::table
             .select(bids::all_columns)
             .filter(bids::bidder_address.eq(&self.address))
@@ -138,7 +139,7 @@ pub struct ConnectionCounts {
 #[graphql_object(Context = AppContext)]
 impl ConnectionCounts {
     pub fn from_count(&self, ctx: &AppContext) -> FieldResult<i32> {
-        let db_conn = ctx.db_pool.get()?;
+        let db_conn = ctx.shared.db.get()?;
 
         let count: i64 = graph_connections::table
             .filter(graph_connections::from_account.eq(&self.address))
@@ -150,7 +151,7 @@ impl ConnectionCounts {
     }
 
     pub fn to_count(&self, ctx: &AppContext) -> FieldResult<i32> {
-        let db_conn = ctx.db_pool.get()?;
+        let db_conn = ctx.shared.db.get()?;
 
         let count: i64 = graph_connections::table
             .filter(graph_connections::to_account.eq(&self.address))
