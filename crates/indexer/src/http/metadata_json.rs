@@ -1,8 +1,7 @@
 use std::fmt::{self, Debug, Display};
 
-use cid::Cid;
 use indexer_core::{
-    assets::AssetIdentifier,
+    assets::{AssetHint, AssetIdentifier},
     db::{
         insert_into,
         models::{
@@ -165,55 +164,72 @@ async fn try_locate_json(
     url: &Url,
     id: &AssetIdentifier,
     meta_key: Pubkey,
-) -> Result<(MetadataJsonResult, Vec<u8>)> {
-    let mut resp = None;
+) -> Result<Option<(MetadataJsonResult, Vec<u8>)>> {
+    // Set to true for fallback
+    const TRY_LAST_RESORT: bool = true;
 
-    for (url, fingerprint) in id
+    let mut resp = Ok(None);
+
+    for (url, hint) in id
         .ipfs
-        .map(|c| (client.ipfs_link(&c), c.to_bytes()))
-        .into_iter()
-        .chain(id.arweave.map(|t| (client.arweave_link(&t), t.0.to_vec())))
+        .iter()
+        .map(|(c, p)| (client.ipfs_link(c, p), AssetHint::Ipfs))
+        .chain(
+            id.arweave
+                .iter()
+                .map(|t| (client.arweave_link(t), AssetHint::Arweave)),
+        )
     {
         let url_str = url.as_ref().map_or("???", Url::as_str).to_owned();
+        let fingerprint = id.fingerprint(Some(hint)).unwrap_or_else(|| unreachable!());
 
         match fetch_json(client, meta_key, url).await {
             Ok(j) => {
                 debug!("Using fetch from {:?} for metadata {}", url_str, meta_key);
-                resp = Some((j, fingerprint));
+                resp = Ok(Some((j, fingerprint)));
+                break;
             },
-            Err(e) => warn!(
-                "Metadata fetch {:?} for {} failed: {:?}",
-                url_str, meta_key, e
-            ),
+            Err(e) => {
+                warn!(
+                    "Metadata fetch {:?} for {} failed: {:?}",
+                    url_str, meta_key, e
+                );
+
+                resp = Err(());
+            },
         }
     }
 
-    Ok(if let Some(r) = resp {
-        r
-    } else {
-        // Set to true for fallback
-        const TRY_LAST_RESORT: bool = true;
+    Ok(match resp {
+        Ok(Some((res, fingerprint))) => Some((res, fingerprint.into_owned())),
+        Ok(None) => {
+            debug!(
+                "Not fetching unparseable url {:?} for {}",
+                url.as_str(),
+                meta_key
+            );
 
-        if TRY_LAST_RESORT {
-            (
-                fetch_json(client, meta_key, Ok(url.clone()))
-                    .await
-                    .with_context(|| {
-                        format!(
-                            "Last-resort metadata fetch {:?} for {} failed",
-                            url.as_str(),
-                            meta_key,
-                        )
-                    })?,
-                vec![],
-            )
-        } else {
+            None
+        },
+        Err(()) if TRY_LAST_RESORT => Some((
+            fetch_json(client, meta_key, Ok(url.clone()))
+                .await
+                .with_context(|| {
+                    format!(
+                        "Last-resort metadata fetch {:?} for {} failed",
+                        url.as_str(),
+                        meta_key,
+                    )
+                })?,
+            vec![],
+        )),
+        Err(()) => {
             bail!(
-                "Cached metadata fetch {:?} for {} failed (not tryiing last-resort)",
+                "Cached metadata fetch {:?} for {} failed (not trying last-resort)",
                 url.as_str(),
                 meta_key
             )
-        }
+        },
     })
 }
 
@@ -434,15 +450,17 @@ pub async fn process<'a>(
     first_verified_creator: Option<Pubkey>,
     uri_str: String,
 ) -> Result<()> {
-    let url = Url::parse(&uri_str).context("Couldn't parse metadata JSON URL")?;
+    let url = match Url::parse(&uri_str) {
+        Ok(u) => u,
+        Err(e) => {
+            // Don't return an error because this happens A Lot.
+            debug!("Couldn't parse metadata URL: {:?}", e);
+            return Ok(());
+        },
+    };
     let id = AssetIdentifier::new(&url);
 
-    let possible_fingerprints: Vec<_> = id
-        .ipfs
-        .iter()
-        .map(Cid::to_bytes)
-        .chain(id.arweave.map(|a| a.0.to_vec()))
-        .collect();
+    let possible_fingerprints: Vec<_> = id.fingerprints().map(Cow::into_owned).collect();
     let addr = bs58::encode(meta_key).into_string();
 
     let is_present = client
@@ -484,12 +502,16 @@ pub async fn process<'a>(
 
     debug!("{:?} -> {:?}", url.as_str(), id);
 
-    let (json, fingerprint) = try_locate_json(client, &url, &id, meta_key).await?;
-
-    match json {
-        MetadataJsonResult::Full(f) => {
-            process_full(client, addr, first_verified_creator, f, fingerprint).await
-        },
-        MetadataJsonResult::Minimal(m) => process_minimal(client, addr, m, fingerprint).await,
+    if let Some((json, fingerprint)) = try_locate_json(client, &url, &id, meta_key).await? {
+        match json {
+            MetadataJsonResult::Full(f) => {
+                process_full(client, addr, first_verified_creator, f, fingerprint).await?;
+            },
+            MetadataJsonResult::Minimal(m) => {
+                process_minimal(client, addr, m, fingerprint).await?;
+            },
+        }
     }
+
+    Ok(())
 }

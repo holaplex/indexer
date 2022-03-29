@@ -1,0 +1,1 @@
+drop table twitter_handle_name_services;

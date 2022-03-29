@@ -1,3 +1,3 @@
 #!/bin/sh
 
-bin/metaplex-indexer-legacy-storefronts
+bin/holaplex-indexer-legacy-storefronts

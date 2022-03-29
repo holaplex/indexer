@@ -18,14 +18,14 @@ jobs:
             ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
             ${{ runner.os }}-cargo
 
-      - name: AccountsDB consumer
+      - name: Geyser consumer
         uses: gonuit/heroku-docker-deploy@v1.3.3
         with:
           email: ${{ secrets.HEROKU_EMAIL }}
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
           heroku_app_name: accounts-db-consumer-staging
           dockerfile_name: Dockerfile
-          docker_options: '--target accountsdb-consumer'
+          docker_options: '--target geyser-consumer'
           process_type: worker
 
       - name: HTTP consumer

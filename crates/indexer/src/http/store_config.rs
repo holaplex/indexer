@@ -34,9 +34,9 @@ pub struct Address {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Upload {
     pub url: String,
-    pub name: String,
+    pub name: Option<String>,
     #[serde(rename = "type")]
-    pub ty: String,
+    pub ty: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -71,10 +71,10 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         .timeout(client.timeout())
         .send()
         .await
-        .context("Metadata JSON request failed")?
+        .context("Store config JSON request failed")?
         .json::<SettingUri>()
         .await
-        .context("Failed to parse metadata JSON")?;
+        .context("Failed to parse store config JSON")?;
 
     let addr = bs58::encode(config_key).into_string();
 

@@ -15,7 +15,7 @@ use super::schema::{
     files, graph_connections, listing_metadatas, listing_receipts, master_editions,
     metadata_collections, metadata_creators, metadata_jsons, metadatas, purchase_receipts,
     store_config_jsons, store_configs, store_creators, storefronts, stores, token_accounts,
-    whitelisted_creators,
+    twitter_handle_name_services, whitelisted_creators,
 };
 use crate::db::custom_types::{EndSettingType, WhitelistMintMode};
 
@@ -168,8 +168,9 @@ pub struct TokenAccount<'a> {
     pub owner_address: Cow<'a, str>,
     /// The amount of the token, often 1
     pub amount: i64,
-    /// updated_at
-    pub updated_at: NaiveDateTime,
+    /// Solana slot number
+    /// The period of time for which each leader ingests transactions and produces a block.
+    pub slot: Option<i64>,
 }
 
 /// A row in the `metadatas` table
@@ -831,4 +832,19 @@ pub struct MarketStats<'a> {
     /// Number of NFTs in this marketplace
     #[sql_type = "Nullable<Int8>"]
     pub nfts: Option<i64>,
+}
+
+/// A row in the `twitter_handle_name_services` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "twitter_handle_name_services"]
+pub struct TwitterHandle<'a> {
+    /// NameService account address
+    pub address: Cow<'a, str>,
+    /// Wallet address of twitter handle owner
+    pub wallet_address: Cow<'a, str>,
+    /// Twitter handle
+    pub twitter_handle: Cow<'a, str>,
+    /// Solana slot number
+    pub slot: i64,
 }

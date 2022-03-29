@@ -1,5 +1,5 @@
 [package]
-name = "metaplex-indexer-b58"
+name = "holaplex-indexer-b58"
 version = "0.0.0"
 authors = [
   "ryans <ryans@holaplex.com>",
@@ -8,7 +8,7 @@ edition = "2021"
 description = "Development tool for handling base58 on the command line"
 documentation = "http://example.com/"
 readme = "../../README.md"
-repository = "https://github.com/holaplex/metaplex-indexer"
+repository = "https://github.com/holaplex/indexer"
 license = "AGPL-3.0-or-later"
 keywords = ["base58"]
 categories = ["command-line-utilities"]

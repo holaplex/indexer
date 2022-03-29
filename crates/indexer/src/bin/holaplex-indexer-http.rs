@@ -1,6 +1,6 @@
+use holaplex_indexer::http::{Client, ClientArgs};
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::http_indexer;
-use metaplex_indexer::http::{Client, ClientArgs};
 
 #[derive(Debug, clap::Parser)]
 struct Args {
@@ -27,7 +27,7 @@ struct Args {
 }
 
 fn main() {
-    metaplex_indexer::run(|args: Args, params, db| async move {
+    holaplex_indexer::run(|args: Args, params, db| async move {
         use http_indexer::{EntityId, MetadataJson, StoreConfig};
 
         // Note: each match arm will increase the compiled size of this
@@ -40,10 +40,10 @@ fn main() {
     });
 }
 
-async fn run<E: Send + metaplex_indexer::http::Process + 'static>(
+async fn run<E: Send + holaplex_indexer::http::Process + 'static>(
     args: Args,
-    params: metaplex_indexer::Params,
-    db: metaplex_indexer::db::Pool,
+    params: holaplex_indexer::Params,
+    db: holaplex_indexer::db::Pool,
 ) -> Result<()> {
     let Args {
         amqp_url,
@@ -53,7 +53,11 @@ async fn run<E: Send + metaplex_indexer::http::Process + 'static>(
         client,
     } = args;
 
-    let conn = metaplex_indexer::amqp_connect(amqp_url).await?;
+    if cfg!(debug_assertions) && queue_suffix.is_none() {
+        bail!("Debug builds must specify a RabbitMQ queue suffix!");
+    }
+
+    let conn = holaplex_indexer::amqp_connect(amqp_url).await?;
     let client = Client::new_rc(db, client).context("Failed to construct Client")?;
 
     let queue_type = http_indexer::QueueType::<E>::new(&sender, queue_suffix.as_deref());
@@ -61,7 +65,7 @@ async fn run<E: Send + metaplex_indexer::http::Process + 'static>(
         .await
         .context("Failed to create queue consumer")?;
 
-    metaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
+    holaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
         let client = client.clone();
         async move { m.process(&client).await }
     })

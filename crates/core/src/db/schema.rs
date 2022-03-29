@@ -513,6 +513,20 @@ table! {
         owner_address -> Varchar,
         amount -> Int8,
         updated_at -> Timestamp,
+        slot -> Nullable<Int8>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+
+    twitter_handle_name_services (address) {
+        address -> Varchar,
+        wallet_address -> Varchar,
+        twitter_handle -> Text,
+        slot -> Int8,
     }
 }
 
@@ -564,5 +578,6 @@ allow_tables_to_appear_in_same_query!(
     storefronts,
     stores,
     token_accounts,
+    twitter_handle_name_services,
     whitelisted_creators,
 );

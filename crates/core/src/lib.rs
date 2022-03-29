@@ -1,4 +1,4 @@
-//! Core components for `metaplex-indexer` and `metaplex-indexer-rpc`.
+//! Core components for the `holaplex-indexer` family of crates.
 
 #![deny(
     clippy::suspicious,
@@ -7,6 +7,7 @@
     missing_copy_implementations
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
+#![feature(iter_intersperse)]
 
 // TODO: #[macro_use] is somewhat deprecated, but diesel still relies on it
 #[macro_use]
@@ -16,6 +17,7 @@ extern crate diesel_migrations;
 
 pub extern crate chrono;
 pub extern crate clap;
+pub extern crate url;
 
 pub mod assets;
 pub mod db;
