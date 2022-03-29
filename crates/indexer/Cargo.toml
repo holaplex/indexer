@@ -50,6 +50,8 @@ tokio = { version = "1.13.0", features = ["macros", "rt", "rt-multi-thread", "sy
 tokio-executor-trait = "2.1.0"
 tokio-reactor-trait = "1.1.0"
 borsh = "0.9.3"
+bigdecimal = "0.1.2"
+num-bigint = "0.2.0"
 
 # Solana & Metaplex
 anchor-lang = "~0.20.1"
