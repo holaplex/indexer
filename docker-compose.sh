@@ -16,5 +16,8 @@ done
 export DATABASE_NAME
 export DATABASE_PASSWD
 export DATABASE_URL
+export CONFIG_DATABASE_NAME
+export CONFIG_DATABASE_PASSWD
+export CONFIG_DATABASE_URL
 
 docker-compose "$@"

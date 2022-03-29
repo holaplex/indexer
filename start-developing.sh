@@ -16,8 +16,27 @@ done
 export DATABASE_NAME
 export DATABASE_PASSWD
 export DATABASE_URL
+export CONFIG_DATABASE_NAME
 
-docker-compose up -d db
+docker-compose up -d
+
+function isready() {
+  PGPASSWORD="$DATABASE_PASSWD" pg_isready \
+    -d "$DATABASE_NAME" -h localhost -p 5337 -U postgres -t 10 \
+    || return 1
+
+  return 0
+}
+
+echo "Waiting for Postgres to come online..."
+
+for i in {0..10}; do
+  sleep 3
+  isready || continue
+  break
+done
+
+isready
 
 if ! command -v diesel >/dev/null; then
   echo $'Diesel CLI is missing - install it with:\n  cargo install diesel_cli --no-default-features --features postgres' >&2

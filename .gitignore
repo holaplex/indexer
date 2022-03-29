@@ -1,3 +1,4 @@
 /target
+geyser-config.sqlite3
 .env.local
 .DS_Store
