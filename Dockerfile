@@ -1,5 +1,5 @@
 FROM rust:1.58.1-slim-bullseye AS build
-WORKDIR /metaplex-indexer
+WORKDIR /build
 
 RUN apt-get update -y && \
   apt-get install -y \
@@ -20,20 +20,20 @@ COPY Cargo.toml Cargo.lock ./
 
 RUN cargo build --profile docker \
   --features " \
-    metaplex-indexer/accountsdb, \
-    metaplex-indexer/http \
+    holaplex-indexer/geyser, \
+    holaplex-indexer/http \
   " \
-  --bin metaplex-indexer-accountsdb \
-  --bin metaplex-indexer-http \
-  --bin metaplex-indexer-legacy-storefronts \
-  --bin metaplex-indexer-graphql
+  --bin holaplex-indexer-geyser \
+  --bin holaplex-indexer-http \
+  --bin holaplex-indexer-legacy-storefronts \
+  --bin holaplex-indexer-graphql
 
 COPY scripts scripts
 
 RUN scripts/strip-bins.sh target/docker bin
 
 FROM debian:bullseye-slim AS base
-WORKDIR /metaplex-indexer
+WORKDIR /holaplex-indexer
 
 RUN apt-get update -y && \
   apt-get install -y \
@@ -49,22 +49,22 @@ COPY .env .env.prod ./
 
 CMD ["./startup.sh"]
 
-FROM base AS accountsdb-consumer
+FROM base AS geyser-consumer
 
-COPY --from=build metaplex-indexer/bin/metaplex-indexer-accountsdb bin/
-COPY --from=build metaplex-indexer/scripts/docker/accountsdb-consumer.sh startup.sh
+COPY --from=build build/bin/holaplex-indexer-geyser bin/
+COPY --from=build build/scripts/docker/geyser-consumer.sh startup.sh
 
 FROM base AS http-consumer
 
-COPY --from=build metaplex-indexer/bin/metaplex-indexer-http bin/
-COPY --from=build metaplex-indexer/scripts/docker/http-consumer.sh startup.sh
+COPY --from=build build/bin/holaplex-indexer-http bin/
+COPY --from=build build/scripts/docker/http-consumer.sh startup.sh
 
 FROM base AS legacy-storefronts
 
-COPY --from=build metaplex-indexer/bin/metaplex-indexer-legacy-storefronts bin/
-COPY --from=build metaplex-indexer/scripts/docker/legacy-storefronts.sh startup.sh
+COPY --from=build build/bin/holaplex-indexer-legacy-storefronts bin/
+COPY --from=build build/scripts/docker/legacy-storefronts.sh startup.sh
 
 FROM base AS graphql
 
-COPY --from=build metaplex-indexer/bin/metaplex-indexer-graphql bin/
-COPY --from=build metaplex-indexer/scripts/docker/graphql.sh startup.sh
+COPY --from=build build/bin/holaplex-indexer-graphql bin/
+COPY --from=build build/scripts/docker/graphql.sh startup.sh

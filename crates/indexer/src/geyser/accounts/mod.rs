@@ -7,6 +7,7 @@ pub mod edition;
 pub mod graph;
 pub mod metadata;
 pub mod mpl_store;
+pub mod name_service;
 pub mod receipt;
 pub mod token;
 

@@ -1,4 +1,4 @@
-//! Core components for `metaplex-indexer` and `metaplex-indexer-rpc`.
+//! Core components for the `holaplex-indexer` family of crates.
 
 #![deny(
     clippy::suspicious,

@@ -8,9 +8,9 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
-#[cfg(any(test, feature = "accountsdb"))]
-pub mod accountsdb;
 pub mod db;
+#[cfg(any(test, feature = "geyser"))]
+pub mod geyser;
 #[cfg(any(test, feature = "http"))]
 pub mod http;
 #[cfg(any(test, feature = "http"))]
@@ -61,7 +61,7 @@ mod runtime {
         concurrency: usize,
     }
 
-    /// Entrypoint for `metaplex-indexer` binaries
+    /// Entrypoint for `holaplex-indexer` binaries
     pub fn run<T: Debug + Args, F: Future<Output = Result<()>>>(
         f: impl FnOnce(T, Params, Pool) -> F,
     ) -> ! {

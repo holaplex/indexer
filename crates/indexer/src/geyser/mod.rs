@@ -1,4 +1,4 @@
-//! Support features for the `accountsdb` indexer
+//! Support features for the Geyser indexer
 
 mod accounts;
 mod client;
@@ -6,12 +6,12 @@ mod programs;
 
 pub use client::Client;
 use indexer_core::pubkeys;
-pub(self) use indexer_rabbitmq::accountsdb::AccountUpdate;
-use indexer_rabbitmq::accountsdb::Message;
+pub(self) use indexer_rabbitmq::geyser::AccountUpdate;
+use indexer_rabbitmq::geyser::Message;
 
 use crate::prelude::*;
 
-/// Process a message from an accountsdb RabbitMQ queue
+/// Process a message from a Geyser RabbitMQ queue
 ///
 /// # Errors
 /// This function fails if an error occurs processing the message body.
@@ -37,6 +37,9 @@ pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
         },
         Message::AccountUpdate(update) if update.owner == pubkeys::candy_machine() => {
             programs::candy_machine::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::name_service() => {
+            programs::name_service::process(client, update).await
         },
         Message::AccountUpdate(_) | Message::InstructionNotify { .. } => Ok(()),
     }

@@ -2,7 +2,7 @@ version: '3.8'
 services:
   db:
     image: postgres:14.1
-    container_name: metaplex_indexer.dev_db
+    container_name: holaplex_indexer.dev_db
     command: ["postgres", "-c", "log_statement=all"]
     environment:
       POSTGRES_DB: ${DATABASE_NAME}
@@ -15,4 +15,4 @@ services:
 volumes:
   db_data:
     driver: local
-    name: metaplex_indexer.dev_db_data
+    name: holaplex_indexer.dev_db_data
