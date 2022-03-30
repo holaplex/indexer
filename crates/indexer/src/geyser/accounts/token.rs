@@ -47,7 +47,7 @@ pub async fn process(
                     client
                         .db()
                         .run(move |db| {
-                            let addr = mint_address.clone();
+                            let addr = mint_address;
                             update(
                                 token_accounts::table.filter(token_accounts::mint_address.eq(addr)),
                             )
@@ -57,8 +57,7 @@ pub async fn process(
                         .await
                         .context("failed to set amount=0 for token_accounts!")?;
                 },
-                Some(_) => (),
-                None => (),
+                Some(_) | None => (),
             }
         },
         0 => (),
