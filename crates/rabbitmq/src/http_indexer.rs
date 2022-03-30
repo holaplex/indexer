@@ -99,6 +99,7 @@ impl<E: Entity> QueueType<E> {
                 retry: Some(RetryProps {
                     max_tries: 8,
                     delay_hint: Duration::from_secs(2),
+                    max_delay: Duration::from_secs(6 * 60),
                 }),
             },
             _p: PhantomData::default(),

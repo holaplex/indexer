@@ -1,6 +1,6 @@
 //! Handler for an AMQP dead-letter consumer configured from a [`QueueType`]
 
-use std::{collections::BTreeMap, time::Duration};
+use std::time::Duration;
 
 use futures_util::StreamExt;
 use lapin::{
@@ -34,8 +34,8 @@ pub async fn run<Q: QueueType, S: std::future::Future<Output = ()>>(
             } = del;
 
             let headers = properties.headers().as_ref().map(FieldTable::inner);
-            let mut new_headers = headers.cloned().unwrap_or_else(BTreeMap::new);
 
+            // TODO
             let retry_number: Option<_> = headers
                 .and_then(|h| h.get("x-death"))
                 .and_then(AMQPValue::as_array)
@@ -60,8 +60,7 @@ pub async fn run<Q: QueueType, S: std::future::Future<Output = ()>>(
                     if let Some(delay) = inf.get_delay(r) {
                         trace!("Retry message (retry {}, delay {}ms)", r, delay);
 
-                        new_headers.insert("x-delay".into(), AMQPValue::LongLongInt(delay));
-                        properties = properties.with_headers(new_headers.into());
+                        properties = properties.with_expiration(delay.to_string().into());
 
                         chan.basic_publish(
                             inf.exchange(),

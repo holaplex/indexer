@@ -10,7 +10,7 @@ use lapin::{
     BasicProperties, Channel, Consumer, ExchangeKind,
 };
 
-use crate::Result;
+use crate::{Error, Result};
 
 /// A trait representing an AMQP queue with a specific message type and AMQP
 /// configuration.
@@ -41,6 +41,7 @@ impl Binding {
 pub struct RetryProps {
     pub max_tries: u64,
     pub delay_hint: Duration,
+    pub max_delay: Duration,
 }
 
 #[derive(Debug, Clone)]
@@ -66,6 +67,7 @@ impl<'a> From<&'a QueueProps> for QueueInfo<'a> {
 
 pub const DLX_DEAD_KEY: &str = "dead";
 pub const DLX_LIVE_KEY: &str = "live";
+pub const DLX_TRIAGE_KEY: &str = "triage";
 
 impl<'a> QueueInfo<'a> {
     fn dl_exchange(self) -> String {
@@ -74,6 +76,10 @@ impl<'a> QueueInfo<'a> {
 
     fn dl_queue(self) -> String {
         format!("dlq.{}", self.0.queue)
+    }
+
+    fn dl_triage_queue(self) -> String {
+        format!("triage.dlq.{}", self.0.queue)
     }
 
     async fn exchange_declare(self, chan: &Channel) -> Result<()> {
@@ -106,7 +112,7 @@ impl<'a> QueueInfo<'a> {
 
         queue_fields.insert(
             "x-dead-letter-routing-key".into(),
-            AMQPValue::LongString(DLX_DEAD_KEY.into()),
+            AMQPValue::LongString(DLX_TRIAGE_KEY.into()),
         );
 
         chan.queue_declare(
@@ -122,20 +128,29 @@ impl<'a> QueueInfo<'a> {
         Ok(())
     }
 
-    /// Returns (`dl_exchange`, `dl_queue`)
-    async fn dl_exchange_declare(self, chan: &Channel) -> Result<(String, String)> {
+    /// Returns (`dl_exchange`, `dl_queue`, `dl_triage_queue`)
+    async fn dl_exchange_declare(self, chan: &Channel) -> Result<(String, String, String)> {
         let mut exchg_fields = FieldTable::default();
+
+        exchg_fields.insert(
+            "x-message-ttl".into(),
+            AMQPValue::LongLongInt(
+                self.0
+                    .retry
+                    .as_ref()
+                    .ok_or(Error::InvalidQueueType("Missing retry info"))?
+                    .max_delay
+                    .as_millis()
+                    .try_into()
+                    .map_err(|_| Error::InvalidQueueType("Max delay overflowed i64"))?,
+            ),
+        );
 
         let exchg = self.dl_exchange();
 
-        exchg_fields.insert(
-            "x-delayed-type".into(),
-            AMQPValue::LongString("direct".into()),
-        );
-
         chan.exchange_declare(
             exchg.as_ref(),
-            ExchangeKind::Custom("x-delayed-message".into()),
+            ExchangeKind::Direct,
             ExchangeDeclareOptions {
                 durable: true,
                 ..ExchangeDeclareOptions::default()
@@ -144,7 +159,7 @@ impl<'a> QueueInfo<'a> {
         )
         .await?;
 
-        Ok((exchg, self.dl_queue()))
+        Ok((exchg, self.dl_queue(), self.dl_triage_queue()))
     }
 
     pub(crate) async fn init_producer(self, chan: &Channel) -> Result<()> {
@@ -196,32 +211,75 @@ impl<'a> QueueInfo<'a> {
         self,
         chan: &Channel,
     ) -> Result<(Consumer, DlConsumerInfo)> {
-        let (exchange, queue) = self.dl_exchange_declare(chan).await?;
+        let (exchange, queue, triage_queue) = self.dl_exchange_declare(chan).await?;
 
-        let mut queue_fields = FieldTable::default();
-        queue_fields.insert(
-            "x-max-length-bytes".into(),
-            AMQPValue::LongLongInt(self.0.max_len_bytes),
-        );
+        {
+            let mut queue_fields = FieldTable::default();
 
-        chan.queue_declare(
-            queue.as_ref(),
-            QueueDeclareOptions {
-                auto_delete: self.0.auto_delete,
-                ..QueueDeclareOptions::default()
-            },
-            queue_fields,
-        )
-        .await?;
+            queue_fields.insert(
+                "x-max-length-bytes".into(),
+                AMQPValue::LongLongInt(self.0.max_len_bytes),
+            );
 
-        chan.queue_bind(
-            queue.as_ref(),
-            exchange.as_ref(),
-            DLX_DEAD_KEY,
-            QueueBindOptions::default(),
-            FieldTable::default(),
-        )
-        .await?;
+            queue_fields.insert(
+                "x-dead-letter-exchange".into(),
+                AMQPValue::LongString(exchange.clone().into()),
+            );
+
+            queue_fields.insert(
+                "x-dead-letter-routing-key".into(),
+                AMQPValue::LongString(DLX_LIVE_KEY.into()),
+            );
+
+            chan.queue_declare(
+                queue.as_ref(),
+                QueueDeclareOptions {
+                    auto_delete: self.0.auto_delete,
+                    ..QueueDeclareOptions::default()
+                },
+                queue_fields,
+            )
+            .await?;
+
+            chan.queue_bind(
+                queue.as_ref(),
+                exchange.as_ref(),
+                DLX_DEAD_KEY,
+                QueueBindOptions::default(),
+                FieldTable::default(),
+            )
+            .await?;
+        }
+
+        {
+            let mut queue_fields = FieldTable::default();
+            queue_fields.insert(
+                "x-max-length-bytes".into(),
+                // Top out length at 100 MiB
+                AMQPValue::LongLongInt(self.0.max_len_bytes.min(100 * 1024 * 1024)),
+            );
+
+            // TODO: add a true DL queue
+
+            chan.queue_declare(
+                triage_queue.as_ref(),
+                QueueDeclareOptions {
+                    auto_delete: self.0.auto_delete,
+                    ..QueueDeclareOptions::default()
+                },
+                queue_fields,
+            )
+            .await?;
+
+            chan.queue_bind(
+                triage_queue.as_ref(),
+                exchange.as_ref(),
+                DLX_TRIAGE_KEY,
+                QueueBindOptions::default(),
+                FieldTable::default(),
+            )
+            .await?;
+        }
 
         self.queue_declare(chan).await?;
         chan.queue_bind(
@@ -269,8 +327,8 @@ impl DlConsumerInfo {
         self.retry.max_tries
     }
 
-    /// Return the retry delay given the value of the retries-left header
-    pub fn get_delay(&self, retry_number: u64) -> Option<i64> {
+    /// Return the retry delay given the retry number
+    pub fn get_delay(&self, retry_number: u64) -> Option<u64> {
         let multiplier = 2_u128.checked_pow(retry_number.checked_sub(1)?.try_into().ok()?)?;
         let millis = self.retry.delay_hint.as_millis().checked_mul(multiplier)?;
 
