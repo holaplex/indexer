@@ -86,6 +86,35 @@ pub struct NftOwner {
     pub address: String,
 }
 
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct NftActivity {
+    pub price: i32,
+    pub seller: String,
+    pub buyer: String,
+    pub created_at: DateTime<Utc>,
+    pub activity_type: String,
+}
+
+impl<'a> From<models::NftActivity> for NftActivity {
+    fn from(
+        models::NftActivity {
+            price,
+            seller,
+            buyer,
+            created_at,
+            activity_type,
+        }: models::NftActivity,
+    ) -> Self {
+        Self {
+            price: price.try_into().unwrap(),
+            seller,
+            buyer,
+            created_at: DateTime::from_utc(created_at, Utc),
+            activity_type,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Nft {
     pub address: String,
@@ -250,6 +279,13 @@ If no value is provided, it will return XSmall")))]
     pub async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>> {
         ctx.nft_owner_loader
             .load(self.mint_address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
+        ctx.nft_activities_loader
+            .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }

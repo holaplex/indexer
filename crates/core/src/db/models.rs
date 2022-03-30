@@ -5,7 +5,7 @@
 use std::borrow::Cow;
 
 use chrono::NaiveDateTime;
-use diesel::sql_types::{Bool, Int4, Int8, Nullable, Text, VarChar};
+use diesel::sql_types::{Bool, Int4, Int8, Nullable, Text, Timestamp, VarChar};
 
 use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
@@ -261,6 +261,30 @@ pub struct Nft {
     /// Metadata Image url
     #[sql_type = "Nullable<Text>"]
     pub image: Option<String>,
+}
+
+/// Join of `listing_receipts` and `purchase_receipts` for an NFTActivity
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct NftActivity {
+    /// The price of listing or purchase
+    #[sql_type = "Int4"]
+    pub price: i64,
+
+    /// The address of seller
+    #[sql_type = "VarChar"]
+    pub seller: String,
+
+    /// The address of buyer
+    #[sql_type = "VarChar"]
+    pub buyer: String,
+
+    /// Listing/Purchase created time
+    #[sql_type = "Timestamp"]
+    pub created_at: NaiveDateTime,
+
+    /// Listing/Purchase created time
+    #[sql_type = "VarChar"]
+    pub activity_type: String,
 }
 
 /// Join of `metadatas` `metadata_jsons` `store_creators` for an collection preview
