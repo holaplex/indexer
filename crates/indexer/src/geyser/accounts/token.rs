@@ -20,6 +20,10 @@ pub async fn process(
         .try_into()
         .context("Token amount was too big to store")?;
 
+    if amount > 1 {
+        return Ok(());
+    }
+
     let owner = token_account.owner.to_string();
     let mint_address = token_account.mint.to_string();
 
