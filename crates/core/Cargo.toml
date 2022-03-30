@@ -31,7 +31,7 @@ ahash = "0.7.6"
 dashmap = "4.0.2"
 
 # ORM
-diesel = { version = "1.4.8", features = ["postgres", "r2d2", "uuidv07", "chrono", "serde_json"] }
+diesel = { version = "1.4.8", features = ["postgres", "r2d2", "uuidv07", "chrono", "serde_json", "numeric"] }
 diesel_migrations = "1.4.0"
 diesel_full_text_search = { version = "1.0.1", git = "https://github.com/diesel-rs/diesel_full_text_search", rev = "886fe85" }
 

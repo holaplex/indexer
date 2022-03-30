@@ -1,5 +1,8 @@
+use bigdecimal::ToPrimitive;
 use indexer_core::{
-    db::{insert_into, models::TokenAccount as TokenAccountModel, tables::token_accounts, update},
+    db::{
+        insert_into, models::TokenAccount as TokenAccountModel, sum, tables::token_accounts, update,
+    },
     prelude::*,
 };
 use spl_token::state::Account as TokenAccount;
@@ -19,10 +22,46 @@ pub async fn process(
         .amount
         .try_into()
         .context("Token amount was too big to store")?;
-    let owner = token_account.owner.to_string();
 
-    if amount > 1 {
-        return Ok(());
+    let owner = token_account.owner.to_string();
+    let mint_address = token_account.mint.to_string();
+
+    match amount {
+        1 => {
+            let addr = mint_address.clone();
+
+            let res: Option<i64> = client
+                .db()
+                .run(move |db| {
+                    token_accounts::table
+                        .filter(token_accounts::mint_address.eq(addr))
+                        .select(sum(token_accounts::amount))
+                        .first::<Option<bigdecimal::BigDecimal>>(db)
+                })
+                .await
+                .context("failed to load SUM(token amount)")?
+                .map(|a| a.into_bigint_and_exponent().0.to_i64().unwrap());
+
+            match res {
+                Some(total_amount) if total_amount > 0 => {
+                    client
+                        .db()
+                        .run(move |db| {
+                            let addr = mint_address;
+                            update(
+                                token_accounts::table.filter(token_accounts::mint_address.eq(addr)),
+                            )
+                            .set(token_accounts::amount.eq(0))
+                            .execute(db)
+                        })
+                        .await
+                        .context("failed to set amount=0 for token_accounts!")?;
+                },
+                Some(_) | None => (),
+            }
+        },
+        0 => (),
+        _ => return Ok(()),
     }
 
     let rows = client
