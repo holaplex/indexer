@@ -16,9 +16,7 @@ use std::env;
 
 pub use diesel::{
     backend::Backend,
-    debug_query,
-    dsl::sum,
-    insert_into,
+    debug_query, insert_into,
     pg::{upsert::excluded, Pg},
     query_dsl,
     result::Error,
