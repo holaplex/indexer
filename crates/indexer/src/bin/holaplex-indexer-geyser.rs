@@ -1,6 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
-use holaplex_indexer::geyser::Client;
+use holaplex_indexer::geyser::{Client, IgnoreType};
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::{geyser, http_indexer};
 
@@ -18,11 +18,12 @@ struct Args {
     #[clap(long, env, default_value_t = geyser::StartupType::Normal)]
     startup: geyser::StartupType,
 
-    /// List of programs to ignore on starup
-    /// e.g. [metadata, auction_house]
-    /// metadata,auction_house
+    /// List of topics or programs to ignore on startup
+    ///
+    /// For example, `metadata,candy-machine` will ignore the Metaplex metadata
+    /// and candy machine programs.
     #[clap(long, env, use_delimiter(true))]
-    ignore_on_startup: Option<Vec<String>>,
+    ignore_on_startup: Option<Vec<IgnoreType>>,
 
     /// An optional suffix for the AMQP queue ID
     ///
@@ -65,8 +66,8 @@ fn main() {
 
             let ignore_on_startup = Arc::new(
                 ignore_on_startup
-                    .unwrap_or_else(Vec::new)
                     .into_iter()
+                    .flatten()
                     .collect::<HashSet<_>>(),
             );
 

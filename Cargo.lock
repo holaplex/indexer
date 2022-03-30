@@ -2426,6 +2426,7 @@ dependencies = [
  "solana-program",
  "solana-sdk",
  "spl-token",
+ "strum 0.24.0",
  "tokio",
  "tokio-executor-trait",
  "tokio-reactor-trait",
