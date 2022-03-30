@@ -1,4 +1,4 @@
-use std::{env, panic::AssertUnwindSafe, sync::Arc};
+use std::{panic::AssertUnwindSafe, sync::Arc};
 
 use indexer_core::prelude::*;
 use indexer_rabbitmq::http_indexer;
