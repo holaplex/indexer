@@ -3,6 +3,7 @@ use std::{sync::Arc, time::Duration};
 use cid::Cid;
 use indexer_core::{assets::ArTxid, clap};
 use reqwest::Url;
+use tokio::sync::Mutex;
 
 use crate::{db::Pool, prelude::*};
 
@@ -27,7 +28,7 @@ pub struct Args {
 #[derive(Debug)]
 pub struct Client {
     db: Pool,
-    http: reqwest::Client,
+    http: Mutex<(u8, reqwest::Client)>,
     ipfs_cdn: Url,
     arweave_cdn: Url,
     timeout: Duration,
@@ -56,7 +57,7 @@ impl Client {
 
         Ok(Arc::new(Self {
             db,
-            http: reqwest::Client::new(),
+            http: Mutex::new((0, reqwest::Client::new())),
             ipfs_cdn,
             arweave_cdn,
             timeout: Duration::from_secs_f64(timeout),
@@ -76,10 +77,41 @@ impl Client {
     }
 
     /// Acquire an HTTP client
+    ///
+    /// # Errors
+    /// This function does not generate errors, it simply passes any errors
+    /// raised by the given closure through to the function return.
     #[inline]
-    #[must_use]
-    pub fn http(&self) -> reqwest::Client {
-        self.http.clone()
+    pub async fn http<F: std::future::Future<Output = reqwest::Result<T>>, T>(
+        &self,
+        f: impl FnOnce(reqwest::Client) -> F,
+    ) -> reqwest::Result<T> {
+        let (hint, http) = self.http.lock().await.clone();
+
+        match f(http).await {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                if e.is_connect()
+                    || !(e.is_redirect()
+                        || e.is_status()
+                        || e.is_timeout()
+                        || e.is_body()
+                        || e.is_decode())
+                {
+                    // Something may have happened, close the connection pool
+                    let (ref mut hint2, ref mut http) = *self.http.lock().await;
+
+                    if *hint2 == hint {
+                        warn!("Connection error detected, rotating HTTP client");
+
+                        *hint2 = hint2.wrapping_add(1);
+                        *http = reqwest::Client::new();
+                    }
+                }
+
+                Err(e)
+            },
+        }
     }
 
     /// Construct an IPFS link from an IPFS CID

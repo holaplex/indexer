@@ -116,13 +116,17 @@ async fn fetch_json(
     let url = url.context("Failed to create asset URL")?;
 
     let bytes = client
-        .http()
-        .get(url.clone())
-        .timeout(client.timeout())
-        .send()
-        .await
-        .context("Metadata JSON request failed")?
-        .bytes()
+        .http(|h| {
+            let url = url.clone();
+            async move {
+                h.get(url)
+                    .timeout(client.timeout())
+                    .send()
+                    .await?
+                    .bytes()
+                    .await
+            }
+        })
         .await
         .context("Failed to download metadata JSON")?;
 
