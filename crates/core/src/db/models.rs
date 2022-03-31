@@ -263,7 +263,7 @@ pub struct Nft {
     pub image: Option<String>,
 }
 
-/// Union of `listing_receipts` and `purchase_receipts` for an NFTActivity
+/// Union of `listing_receipts` and `purchase_receipts` for an `NFTActivity`
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct NftActivity {
     /// The address of the activity
