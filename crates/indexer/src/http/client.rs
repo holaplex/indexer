@@ -55,12 +55,14 @@ impl Client {
         ensure!(!ipfs_cdn.cannot_be_a_base(), "Invalid IPFS CDN URL");
         ensure!(!arweave_cdn.cannot_be_a_base(), "Invalid Arweave CDN URL");
 
+        let timeout = Duration::from_secs_f64(timeout);
+
         Ok(Arc::new(Self {
             db,
-            http: Mutex::new((0, reqwest::Client::new())),
+            http: Mutex::new((0, Self::build_client(timeout)?)),
             ipfs_cdn,
             arweave_cdn,
-            timeout: Duration::from_secs_f64(timeout),
+            timeout,
         }))
     }
 
@@ -70,10 +72,17 @@ impl Client {
         &self.db
     }
 
-    /// Timeout hint for indexer HTTP requests
-    #[must_use]
-    pub fn timeout(&self) -> Duration {
-        self.timeout
+    fn build_client(timeout: Duration) -> Result<reqwest::Client> {
+        reqwest::ClientBuilder::new()
+            .timeout(timeout)
+            .pool_idle_timeout(
+                timeout
+                    .checked_mul(2)
+                    .ok_or_else(|| anyhow!("Arithmetic error setting pool idle timeout"))?,
+            )
+            .pool_max_idle_per_host(4)
+            .build()
+            .context("Failed to build HTTP client")
     }
 
     /// Acquire an HTTP client
@@ -85,7 +94,7 @@ impl Client {
     pub async fn http<F: std::future::Future<Output = reqwest::Result<T>>, T>(
         &self,
         f: impl FnOnce(reqwest::Client) -> F,
-    ) -> reqwest::Result<T> {
+    ) -> Result<T> {
         let (hint, http) = self.http.lock().await.clone();
 
         match f(http).await {
@@ -104,12 +113,17 @@ impl Client {
                     if *hint2 == hint {
                         warn!("Connection error detected, rotating HTTP client");
 
-                        *hint2 = hint2.wrapping_add(1);
-                        *http = reqwest::Client::new();
+                        match Self::build_client(self.timeout) {
+                            Ok(client) => {
+                                *hint2 = hint2.wrapping_add(1);
+                                *http = client;
+                            },
+                            Err(e) => error!("Failed to rotate HTTP client: {:?}", e),
+                        }
                     }
                 }
 
-                Err(e)
+                Err(e).context("HTTP request failed")
             },
         }
     }

@@ -118,14 +118,7 @@ async fn fetch_json(
     let bytes = client
         .http(|h| {
             let url = url.clone();
-            async move {
-                h.get(url)
-                    .timeout(client.timeout())
-                    .send()
-                    .await?
-                    .bytes()
-                    .await
-            }
+            async move { h.get(url).send().await?.bytes().await }
         })
         .await
         .context("Failed to download metadata JSON")?;

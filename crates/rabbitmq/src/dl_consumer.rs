@@ -17,7 +17,8 @@ use crate::{
 };
 
 enum RetryAction {
-    Drop,
+    DropUnexpected,
+    DropMaxlen,
     Retry(u64),
     RedeliverLive,
 }
@@ -70,9 +71,8 @@ fn parse_x_death(
                 queue_deaths += 1;
             },
             DeathReason::Expired if queue == dl_queue => dlq_deaths += 1,
-            _ => {
-                return RetryAction::Drop;
-            },
+            DeathReason::Maxlen => return RetryAction::DropMaxlen,
+            _ => return RetryAction::DropUnexpected,
         }
     }
 
@@ -100,8 +100,14 @@ async fn try_consume<Q: QueueType>(conn: &Connection, ty: &Q) -> Result<()> {
         let headers = properties.headers().as_ref().map(FieldTable::inner);
 
         match parse_x_death(headers, inf.queue(), inf.dl_queue()) {
-            RetryAction::Drop | RetryAction::Retry(0) => {
-                error!("Got unexpected message in DLQ");
+            RetryAction::DropUnexpected => {
+                warn!("Dropping unexpected message in triage queue");
+            },
+            RetryAction::DropMaxlen => {
+                debug!("Dropping message due to maxlen death");
+            },
+            RetryAction::Retry(0) => {
+                error!("Got 0-death message in triage queue");
             },
             RetryAction::Retry(r) if r < inf.max_tries() => {
                 if let Some(delay) = inf.get_delay(r) {
