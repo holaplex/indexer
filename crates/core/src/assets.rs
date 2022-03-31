@@ -6,7 +6,7 @@ use cid::Cid;
 use url::Url;
 
 /// An Arweave transaction ID
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ArTxid(pub [u8; 32]);
 
 /// Struct to hold tx ids
@@ -132,11 +132,13 @@ impl AssetIdentifier {
         })
     }
 
-    fn advance_heuristic<T>(state: &mut Result<Option<T>, ()>, value: T) {
+    fn advance_heuristic<T: Eq>(state: &mut Result<Option<T>, ()>, value: T) {
         match state {
             // We found a match
             Ok(None) => *state = Ok(Some(value)),
-            // We found two matches, convert to error due to ambiguity
+            // We found two identical matches, no change is necessary
+            Ok(Some(v)) if *v == value => (),
+            // We found two differing matches, convert to error due to ambiguity
             Ok(Some(_)) => *state = Err(()),
             Err(()) => (),
         }
