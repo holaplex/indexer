@@ -1,15 +1,16 @@
 use base64::display::Base64Display;
 use indexer_core::{
     assets::{AssetHint, AssetIdentifier, ImageSize},
-    db::models,
+    db::queries,
 };
 use objects::{
-    bid_receipt::BidReceipt, listing_receipt::ListingReceipt, profile::TwitterProfile,
-    purchase_receipt::PurchaseReceipt,
+    auction_house::AuctionHouse, bid_receipt::BidReceipt, listing_receipt::ListingReceipt,
+    profile::TwitterProfile, purchase_receipt::PurchaseReceipt,
 };
 use reqwest::Url;
 
 use super::prelude::*;
+use crate::schema::scalars::PublicKey;
 
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
@@ -284,9 +285,8 @@ If no value is provided, it will return XSmall")))]
                 id.fingerprint(Some(hint))
                     .unwrap_or_else(|| unreachable!())
                     .as_ref(),
-            )
-            .to_vec()[0]
-                .rem_euclid(shared.asset_proxy_count);
+            )[0]
+            .rem_euclid(shared.asset_proxy_count);
             let assets_cdn = &shared.asset_proxy_endpoint;
 
             let mut url = Url::parse(&assets_cdn.replace(
@@ -394,5 +394,45 @@ If no value is provided, it will return XSmall")))]
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct NftCount {
+    creators: Vec<PublicKey<NftCreator>>,
+}
+
+impl NftCount {
+    #[must_use]
+    pub fn new(creators: Vec<PublicKey<NftCreator>>) -> Self {
+        Self { creators }
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl NftCount {
+    fn total(&self, context: &AppContext) -> FieldResult<i32> {
+        let conn = context.db_pool.get()?;
+        let creators: Vec<String> = self.creators.clone().into_iter().map(Into::into).collect();
+        let count = queries::nft_count::total(&conn, creators)?;
+        Ok(count.try_into()?)
+    }
+
+    #[graphql(arguments(auction_houses(description = "a list of auction house public keys")))]
+    fn listed(
+        &self,
+        context: &AppContext,
+        auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
+    ) -> FieldResult<i32> {
+        let conn = context.db_pool.get()?;
+        let creators: Vec<String> = self
+            .creators
+            .clone()
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<_>>();
+        let auction_houses = auction_houses.map(|a| a.into_iter().map(Into::into).collect());
+        let count = queries::nft_count::listed(&conn, creators, auction_houses)?;
+        Ok(count.try_into()?)
     }
 }

@@ -1,0 +1,1 @@
+drop index buyer_bid_receipts_idx;
