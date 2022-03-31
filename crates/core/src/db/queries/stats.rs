@@ -22,28 +22,20 @@ const MINT_QUERY: &str = r"
 select
     auction_house,
     mint,
-    min(listing_price) filter (where token_account_amount = 1 and listing_canceled_at is null and listing_purchase_receipt is null)::bigint as floor,
+    min(listing_price) filter (where listing_canceled_at is null and listing_purchase_receipt is null)::bigint as floor,
     round(avg(purchase_price))::bigint as average,
     sum(purchase_price) filter (where ($2 - purchased_at) < interval '24 hr')::bigint as volume_24hr
 
 from (select lr.auction_house as auction_house,
-        mc.creator_address as creator_address,
         lr.price as listing_price, pr.price as purchase_price,
         pr.created_at as purchased_at,
         lr.created_at as listed_at,
         lr.purchase_receipt as listing_purchase_receipt,
         lr.canceled_at as listing_canceled_at,
-        ta.amount as token_account_amount,
         ah.treasury_mint as mint
 from listing_receipts lr
     inner join auction_houses ah
         on (lr.auction_house = ah.address)
-    inner join metadatas md
-        on (lr.metadata = md.address)
-    inner join metadata_creators mc
-        on (md.address = mc.metadata_address)
-    inner join token_accounts ta
-        on (md.mint_address = ta.mint_address)
     left join purchase_receipts pr
         on (lr.purchase_receipt = pr.address)
 
@@ -99,7 +91,7 @@ const COLLECTION_QUERY: &str = r"
 select
     auction_house,
     mint,
-    min(listing_price) filter (where token_account_amount = 1 and listing_canceled_at is null and listing_purchase_receipt is null)::bigint as floor,
+    min(listing_price) filter (where listing_canceled_at is null and listing_purchase_receipt is null)::bigint as floor,
     round(avg(purchase_price))::bigint as average,
     sum(purchase_price) filter (where ($3 - purchased_at) < interval '24 hr')::bigint as volume_24hr
 
@@ -111,7 +103,6 @@ from (
         lr.created_at as listed_at,
         lr.purchase_receipt as listing_purchase_receipt,
         lr.canceled_at as listing_canceled_at,
-        ta.amount as token_account_amount,
         ah.treasury_mint as mint
 from listing_receipts lr
     inner join auction_houses ah
@@ -120,8 +111,6 @@ from listing_receipts lr
         on (lr.metadata = md.address)
     inner join metadata_creators mc
         on (md.address = mc.metadata_address)
-    inner join token_accounts ta
-        on (md.mint_address = ta.mint_address)
     left join purchase_receipts pr
         on (lr.purchase_receipt = pr.address)
 

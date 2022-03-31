@@ -1,4 +1,6 @@
-use holaplex_indexer::geyser::Client;
+use std::{collections::HashSet, sync::Arc};
+
+use holaplex_indexer::geyser::{Client, IgnoreType};
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::{geyser, http_indexer};
 
@@ -16,6 +18,13 @@ struct Args {
     #[clap(long, env, default_value_t = geyser::StartupType::Normal)]
     startup: geyser::StartupType,
 
+    /// List of topics or programs to ignore on startup
+    ///
+    /// For example, `metadata,candy-machine` will ignore the Metaplex metadata
+    /// and candy machine programs.
+    #[clap(long, env, use_delimiter(true))]
+    ignore_on_startup: Option<Vec<IgnoreType>>,
+
     /// An optional suffix for the AMQP queue ID
     ///
     /// For debug builds a value must be provided here to avoid interfering with
@@ -29,6 +38,7 @@ fn main() {
              amqp_url,
              network,
              startup,
+             ignore_on_startup,
              queue_suffix,
          },
          params,
@@ -54,9 +64,20 @@ fn main() {
                 .await
                 .context("Failed to create queue consumer")?;
 
+            let ignore_on_startup = Arc::new(
+                ignore_on_startup
+                    .into_iter()
+                    .flatten()
+                    .collect::<HashSet<_>>(),
+            );
+
             holaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
                 let client = client.clone();
-                async move { holaplex_indexer::geyser::process_message(m, &*client).await }
+                let ignore_on_startup = ignore_on_startup.clone();
+
+                async move {
+                    holaplex_indexer::geyser::process_message(m, &*client, ignore_on_startup).await
+                }
             })
             .await
         },

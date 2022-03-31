@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use indexer_core::db::{
-    insert_into,
+    delete, insert_into,
     models::{StoreConfigJson, StoreCreator},
     tables::{store_config_jsons, store_creators},
 };
@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use super::Client;
 use crate::prelude::*;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Creator {
     pub address: String,
 }
@@ -112,22 +112,40 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         client
             .db()
             .run(move |db| {
-                creators.into_iter().try_for_each(|creator| {
-                    let row = StoreCreator {
-                        store_config_address: Owned(addr.clone()),
-                        creator_address: Owned(creator.address),
-                    };
+                let remove_creators = store_creators::table
+                    .filter(store_creators::store_config_address.eq(addr.clone()))
+                    .select(store_creators::creator_address)
+                    .get_results::<String>(db)
+                    .unwrap_or_else(|_| Vec::new())
+                    .into_iter()
+                    .filter(|address| !creators.clone().into_iter().any(|c| &c.address == address))
+                    .collect::<Vec<_>>();
 
-                    insert_into(store_creators::table)
-                        .values(&row)
-                        .on_conflict((
-                            store_creators::store_config_address,
-                            store_creators::creator_address,
-                        ))
-                        .do_update()
-                        .set(&row)
-                        .execute(db)
-                        .map(|_| ())
+                db.build_transaction().read_write().run(|| {
+                    delete(
+                        store_creators::table
+                            .filter(store_creators::creator_address.eq(any(remove_creators)))
+                            .filter(store_creators::store_config_address.eq(addr.clone())),
+                    )
+                    .execute(db)?;
+
+                    creators.into_iter().try_for_each(|creator| {
+                        let row = StoreCreator {
+                            store_config_address: Owned(addr.clone()),
+                            creator_address: Owned(creator.address),
+                        };
+
+                        insert_into(store_creators::table)
+                            .values(&row)
+                            .on_conflict((
+                                store_creators::store_config_address,
+                                store_creators::creator_address,
+                            ))
+                            .do_update()
+                            .set(&row)
+                            .execute(db)
+                            .map(|_| ())
+                    })
                 })
             })
             .await

@@ -1,4 +1,4 @@
-use std::{env, panic::AssertUnwindSafe, sync::Arc};
+use std::{panic::AssertUnwindSafe, sync::Arc};
 
 use indexer_core::prelude::*;
 use indexer_rabbitmq::http_indexer;
@@ -26,8 +26,7 @@ impl Client {
     /// Construct a new client, wrapped in an `Arc`.
     ///
     /// # Errors
-    /// This function fails if no `SOLANA_ENDPOINT` environment variable can be
-    /// located or if AMQP producers cannot be created for the given queue
+    /// This function fails if AMQP producers cannot be created for the given queue
     /// types.
     pub async fn new_rc(
         db: Pool,
@@ -35,9 +34,6 @@ impl Client {
         meta_queue: http_indexer::QueueType<http_indexer::MetadataJson>,
         store_cfg_queue: http_indexer::QueueType<http_indexer::StoreConfig>,
     ) -> Result<Arc<Self>> {
-        let endpoint = env::var("SOLANA_ENDPOINT").context("Couldn't get Solana endpoint")?;
-        info!("Connecting to endpoint: {:?}", endpoint);
-
         Ok(Arc::new(Self {
             db: AssertUnwindSafe(db),
             http: HttpProducers {
