@@ -274,6 +274,10 @@ pub struct NftActivity {
     #[sql_type = "VarChar"]
     pub metadata: String,
 
+    /// The auction house activity generated from
+    #[sql_type = "VarChar"]
+    pub auction_house: String,
+
     /// The price of listing or purchase
     #[sql_type = "Int8"]
     pub price: i64,

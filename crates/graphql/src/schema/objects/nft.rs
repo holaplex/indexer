@@ -93,6 +93,7 @@ pub struct NftOwner {
 pub struct NftActivity {
     pub address: String,
     pub metadata: String,
+    pub auction_house: String,
     pub price: scalars::Lamports,
     pub created_at: DateTime<Utc>,
     pub wallets: Vec<String>,
@@ -106,6 +107,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
         models::NftActivity {
             address,
             metadata,
+            auction_house,
             price,
             created_at,
             wallets,
@@ -115,6 +117,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
         Ok(Self {
             address,
             metadata,
+            auction_house,
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
             wallets,

@@ -177,10 +177,10 @@ pub fn list(
 }
 
 const ACTIVITES_QUERY: &str = r"
-    SELECT address, metadata, price, created_at, array[seller::text] as wallets, 'listing' as activity_type
+    SELECT address, metadata, auction_house, price, auction_house, created_at, array[seller::text] as wallets, 'listing' as activity_type
         FROM listing_receipts WHERE metadata = ANY($1)
     UNION
-    SELECT address, metadata, price, created_at, array[seller::text, buyer::text] as wallets, 'purchase' as activity_type
+    SELECT address, metadata, auction_house, price, auction_house, created_at, array[seller::text, buyer::text] as wallets, 'purchase' as activity_type
         FROM purchase_receipts WHERE metadata = ANY($1)
     ORDER BY created_at DESC;
  -- $1: addresses::text[]";
