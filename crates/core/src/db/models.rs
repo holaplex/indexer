@@ -5,7 +5,7 @@
 use std::borrow::Cow;
 
 use chrono::NaiveDateTime;
-use diesel::sql_types::{Bool, Int4, Int8, Nullable, Text, Timestamp, VarChar};
+use diesel::sql_types::{Array, Bool, Int4, Int8, Nullable, Text, Timestamp, VarChar};
 
 use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
@@ -263,27 +263,31 @@ pub struct Nft {
     pub image: Option<String>,
 }
 
-/// Join of `listing_receipts` and `purchase_receipts` for an NFTActivity
+/// Union of `listing_receipts` and `purchase_receipts` for an NFTActivity
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct NftActivity {
+    /// The address of the activity
+    #[sql_type = "VarChar"]
+    pub address: String,
+
+    /// The metadata associated of the activity
+    #[sql_type = "VarChar"]
+    pub metadata: String,
+
     /// The price of listing or purchase
-    #[sql_type = "Int4"]
+    #[sql_type = "Int8"]
     pub price: i64,
-
-    /// The address of seller
-    #[sql_type = "VarChar"]
-    pub seller: String,
-
-    /// The address of buyer
-    #[sql_type = "VarChar"]
-    pub buyer: String,
 
     /// Listing/Purchase created time
     #[sql_type = "Timestamp"]
     pub created_at: NaiveDateTime,
 
+    /// The wallet address asociated to the activity [seller, buyer]
+    #[sql_type = "Array<VarChar>"]
+    pub wallets: Vec<String>,
+
     /// Listing/Purchase created time
-    #[sql_type = "VarChar"]
+    #[sql_type = "Text"]
     pub activity_type: String,
 }
 

@@ -1,11 +1,16 @@
 //! Query utilities for looking up  metadatas
 
-use diesel::prelude::*;
+use diesel::{
+    pg::Pg,
+    prelude::*,
+    serialize::ToSql,
+    sql_types::{Array, Text},
+};
 
 use crate::{
     db::{
         any,
-        models::Nft,
+        models::{Nft, NftActivity},
         tables::{
             attributes, bid_receipts, listing_receipts, metadata_creators, metadata_jsons,
             metadatas, token_accounts,
@@ -169,4 +174,27 @@ pub fn list(
         .context("failed to load nft(s)")?;
 
     Ok(rows)
+}
+
+const ACTIVITES_QUERY: &str = r"
+    SELECT address, metadata, price, created_at, array[seller::text] as wallets, 'listing' as activity_type
+        FROM listing_receipts WHERE metadata = ANY($1)
+    UNION
+    SELECT address, metadata, price, created_at, array[seller::text, buyer::text] as wallets, 'purchase'
+        FROM purchase_receipts WHERE metadata = ANY($1)
+    ORDER BY created_at DESC;
+ -- $1: addresses::text[]";
+
+/// Load listing and sales activity for nfts
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
+pub fn activities(
+    conn: &Connection,
+    addresses: impl ToSql<Array<Text>, Pg>,
+) -> Result<Vec<NftActivity>> {
+    diesel::sql_query(ACTIVITES_QUERY)
+        .bind(addresses)
+        .load(conn)
+        .context("Failed to load nft(s) activities")
 }

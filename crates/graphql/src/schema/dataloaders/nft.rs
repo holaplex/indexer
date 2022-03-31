@@ -1,7 +1,4 @@
-use indexer_core::db::{
-    sql_query,
-    sql_types::{Array, Text},
-};
+use indexer_core::db::queries;
 use objects::{
     listing_receipt::ListingReceipt,
     nft::{Nft, NftActivity, NftAttribute, NftCreator, NftOwner},
@@ -146,60 +143,11 @@ impl TryBatchFn<PublicKey<Nft>, Vec<NftActivity>> for Batcher {
     ) -> TryBatchMap<PublicKey<Nft>, Vec<NftActivity>> {
         let conn = self.db()?;
 
-        // let rows: Vec<models::NftActivity> = listing_receipts::table
-        //     .inner_join(purchase_receipts::table.on(listing_receipts::purchase_receipt.eq(purchase_receipts::address)))
-        //     .select((
-        //         listing_receipts::price,
-        //         listing_receipts::seller,
-        //         purchase_receipts::buyer,
-        //         listing_receipts::purchase_receipt,
-        //         listing_receipts::created_at,
-        //         purchase_receipts::created_at,
-        //         // type purchase_receipt is null
-        //     ))
-        //     .filter(listing_receipts::metadata.eq(any(addresses)))
-        //     .order(listing_receipts::created_at.desc())
-        //     .load(&conn)
-        //     .context("Failed to load nft activities")?;
-
-        let rows: Vec<models::NftActivity> = sql_query(
-            "SELECT listing_receipts.price, listing_receipts.seller, listing_receipts.buyer, listing_receipts.purchase_receipt, listing_receipts.created_at, listing_receipts.updated_at, listing_receipts.metadata, purchase_receipts.buyer, purchase_receipts.created_at
-            CASE
-            WHEN purchase_receipts.created_at <> null THEN purchase_receipts.created_at
-            ELSE listing_receipts.created_at
-            END AS created_at,
-            CASE
-            WHEN listing_receipts.purchase_receipt <> null THEN 'sold'
-            ELSE 'listed'
-            END AS activity_type
-            FROM listing_receipts
-            INNER JOIN purchase_receipts ON listing_receipts.purchase_receipt = purchase_receipts.address
-            WHERE listing_receipts.metadata = ANY($1)
-            ORDER BY created_at;",
-    ).bind::<Array<Text>, _>(addresses)
-        .load(&conn)
-        .context("Failed to load nft activities.")?;
+        let rows = queries::metadatas::activities(&conn, addresses)?;
 
         Ok(rows
             .into_iter()
-            .map(
-                |models::NftActivity {
-                     price,
-                     seller,
-                     buyer,
-                     created_at,
-                     activity_type,
-                 }| {
-                    (models::NftActivity {
-                        price,
-                        seller,
-                        buyer,
-                        created_at,
-                        activity_type,
-                    }
-                    .try_into(),)
-                },
-            )
+            .map(|activity| (activity.metadata.clone(), activity.try_into()))
             .batch(addresses))
     }
 }

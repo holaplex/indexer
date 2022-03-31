@@ -1,5 +1,8 @@
 use base64::display::Base64Display;
-use indexer_core::assets::{AssetHint, AssetIdentifier, ImageSize};
+use indexer_core::{
+    assets::{AssetHint, AssetIdentifier, ImageSize},
+    db::models,
+};
 use objects::{
     bid_receipt::BidReceipt, listing_receipt::ListingReceipt, purchase_receipt::PurchaseReceipt,
 };
@@ -88,30 +91,35 @@ pub struct NftOwner {
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct NftActivity {
-    pub price: i32,
-    pub seller: String,
-    pub buyer: String,
+    pub address: String,
+    pub metadata: String,
+    pub price: scalars::Lamports,
     pub created_at: DateTime<Utc>,
+    pub wallets: Vec<String>,
     pub activity_type: String,
 }
 
-impl<'a> From<models::NftActivity> for NftActivity {
-    fn from(
+impl TryFrom<models::NftActivity> for NftActivity {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
         models::NftActivity {
+            address,
+            metadata,
             price,
-            seller,
-            buyer,
             created_at,
+            wallets,
             activity_type,
         }: models::NftActivity,
-    ) -> Self {
-        Self {
-            price: price.try_into().unwrap(),
-            seller,
-            buyer,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            address,
+            metadata,
+            price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
+            wallets,
             activity_type,
-        }
+        })
     }
 }
 
