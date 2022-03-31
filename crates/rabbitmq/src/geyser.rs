@@ -122,6 +122,7 @@ impl QueueType {
                 retry: Some(RetryProps {
                     max_tries: 3,
                     delay_hint: Duration::from_millis(500),
+                    max_delay: Duration::from_secs(10 * 60),
                 }),
             },
         }
