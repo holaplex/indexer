@@ -228,7 +228,7 @@ impl<'a> QueueInfo<'a> {
 
             queue_fields.insert(
                 "x-dead-letter-routing-key".into(),
-                AMQPValue::LongString(DLX_LIVE_KEY.into()),
+                AMQPValue::LongString(DLX_TRIAGE_KEY.into()),
             );
 
             chan.queue_declare(
@@ -296,8 +296,8 @@ impl<'a> QueueInfo<'a> {
 
         let consumer = chan
             .basic_consume(
-                queue.as_ref(),
-                queue.as_ref(),
+                triage_queue.as_ref(),
+                triage_queue.as_ref(),
                 BasicConsumeOptions::default(),
                 FieldTable::default(),
             )
@@ -308,19 +308,34 @@ impl<'a> QueueInfo<'a> {
             .retry
             .ok_or(crate::Error::InvalidQueueType("Missing retry properties"))?;
 
-        Ok((consumer, DlConsumerInfo { exchange, retry }))
+        Ok((consumer, DlConsumerInfo {
+            exchange,
+            retry,
+            queue: self.0.queue.clone(),
+            dl_queue: queue,
+        }))
     }
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct DlConsumerInfo {
     exchange: String,
+    queue: String,
+    dl_queue: String,
     retry: RetryProps,
 }
 
 impl DlConsumerInfo {
     pub fn exchange(&self) -> &str {
         &self.exchange
+    }
+
+    pub fn queue(&self) -> &str {
+        &self.queue
+    }
+
+    pub fn dl_queue(&self) -> &str {
+        &self.dl_queue
     }
 
     pub fn max_tries(&self) -> u64 {
