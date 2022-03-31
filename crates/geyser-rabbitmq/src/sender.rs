@@ -69,7 +69,7 @@ impl Inner {
         Ok(RwLockWriteGuard::downgrade_to_upgradable(prod))
     }
 
-    async fn send(self: Arc<Self>, msg: Message, backgrounded: bool) {
+    async fn send_internal(&self, msg: Message) {
         #[inline]
         fn log_err<E: std::fmt::Debug>(counter: &'_ Counter) -> impl FnOnce(E) + '_ {
             |err| {
@@ -95,6 +95,10 @@ impl Inner {
         match prod.write(&msg).await.map_err(log_err(&metrics.errs)) {
             Ok(()) | Err(()) => (), // Type-level assertion that we consumed the error
         }
+    }
+
+    async fn send(self: Arc<Self>, msg: Message, backgrounded: bool) {
+        self.send_internal(msg).await;
 
         if backgrounded {
             assert!(self.background_count.fetch_sub(1, Ordering::SeqCst) > 0);
