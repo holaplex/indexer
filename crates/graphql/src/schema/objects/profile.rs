@@ -2,12 +2,40 @@ use serde::Deserialize;
 
 use super::prelude::*;
 
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct TwitterProfile {
+    pub handle: String,
+    pub profile_image_url: String,
+    pub banner_image_url: String,
+    pub description: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct Profile {
     pub handle: String,
     pub profile_image_url_lowres: String,
     pub profile_image_url_highres: String,
     pub banner_image_url: String,
+}
+
+impl TryFrom<TwitterUserProfileResponse> for TwitterProfile {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        TwitterUserProfileResponse {
+            screen_name,
+            description,
+            profile_image_url_https,
+            profile_banner_url,
+        }: TwitterUserProfileResponse,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            handle: screen_name,
+            profile_image_url: profile_image_url_https,
+            banner_image_url: profile_banner_url,
+            description,
+        })
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -23,6 +51,14 @@ pub struct TwitterProfilePicture {
 #[derive(Debug, Deserialize)]
 pub struct TwitterShowResponse {
     pub screen_name: String,
+    pub profile_image_url_https: String,
+    pub profile_banner_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TwitterUserProfileResponse {
+    pub screen_name: String,
+    pub description: String,
     pub profile_image_url_https: String,
     pub profile_banner_url: String,
 }

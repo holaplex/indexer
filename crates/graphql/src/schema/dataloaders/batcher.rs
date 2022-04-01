@@ -10,6 +10,12 @@ pub enum Error {
     ModelConvert(#[from] Arc<indexer_core::error::Error>),
 }
 
+impl Error {
+    pub fn into_batcher_err(e: impl Into<indexer_core::error::Error>) -> Self {
+        e.into().into()
+    }
+}
+
 impl From<indexer_core::error::Error> for Error {
     fn from(e: indexer_core::error::Error) -> Self {
         Self::ModelConvert(Arc::new(e))
@@ -107,16 +113,22 @@ pub trait TryBatchFn<K, V> {
 }
 
 #[derive(Clone)]
-pub struct Batcher(Arc<Pool>);
+pub struct Batcher {
+    db: Arc<Pool>,
+    pub twitter_bearer_token: String,
+}
 
 impl Batcher {
     #[must_use]
-    pub fn new(pool: Arc<Pool>) -> Self {
-        Self(pool)
+    pub fn new(db: Arc<Pool>, twitter_bearer_token: String) -> Self {
+        Self {
+            db,
+            twitter_bearer_token,
+        }
     }
 
     pub fn db(&self) -> Result<indexer_core::db::PooledConnection, Error> {
-        self.0.get().map_err(|_| Error::ConnectionFailed)
+        self.db.get().map_err(|_| Error::ConnectionFailed)
     }
 }
 

@@ -6,6 +6,7 @@ pub mod nft;
 pub mod stats;
 pub mod store_creator;
 pub mod storefront;
+pub mod wallet;
 
 pub(self) mod batcher;
 
