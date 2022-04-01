@@ -2905,12 +2905,12 @@ name = "holaplex-indexer-geyser-config"
 version = "0.1.0"
 dependencies = [
  "actix 0.13.0",
- "actix-cors",
  "actix-web",
  "async-graphql",
  "async-graphql-actix-web",
  "futures",
  "geyser-config-migration",
+ "holaplex-indexer-core",
  "sea-orm",
 ]
 
