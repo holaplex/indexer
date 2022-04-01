@@ -13,12 +13,15 @@ license = "AGPL-3.0-or-later"
 keywords = ["solana", "metaplex", "holaplex", "web3", "rabbitmq"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
+build = "build.rs"
+
 [lib]
 crate_type = ["cdylib", "rlib"]
 
 [dependencies]
 anyhow = "1.0.52"
 bs58 = "0.4.0"
+hostname = "0.3.1"
 log = "0.4.14"
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = "1.0.75"

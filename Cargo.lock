@@ -2451,6 +2451,7 @@ dependencies = [
  "graph_program",
  "holaplex-indexer-core",
  "holaplex-indexer-rabbitmq",
+ "hostname",
  "locked-voter",
  "metaplex",
  "metaplex-auction",
@@ -2550,6 +2551,7 @@ dependencies = [
  "anyhow",
  "bs58 0.4.0",
  "holaplex-indexer-rabbitmq",
+ "hostname",
  "log",
  "reqwest",
  "serde",
@@ -2563,6 +2565,17 @@ dependencies = [
  "solana-program",
  "solana-sdk",
  "spl-token",
+]
+
+[[package]]
+name = "hostname"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c731c3e10504cc8ed35cfe2f1db4c9274c3d35fa486e3b31df46f068ef3e867"
+dependencies = [
+ "libc",
+ "match_cfg",
+ "winapi",
 ]
 
 [[package]]
@@ -2949,6 +2962,12 @@ dependencies = [
  "cfg-if 1.0.0",
  "value-bag",
 ]
+
+[[package]]
+name = "match_cfg"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffbee8634e0d45d258acb448e7eaab3fce7a0a467395d4d9f228e3c1f01fb2e4"
 
 [[package]]
 name = "matches"

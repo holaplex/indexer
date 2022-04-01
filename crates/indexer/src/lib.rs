@@ -101,10 +101,24 @@ mod runtime {
     ///
     /// # Errors
     /// This function fails if a connection cannot be established
-    pub async fn amqp_connect(addr: impl AsRef<str>) -> Result<lapin::Connection> {
+    pub async fn amqp_connect(
+        addr: impl AsRef<str>,
+        name: &'static str,
+    ) -> Result<lapin::Connection> {
         lapin::Connection::connect(
             addr.as_ref(),
             lapin::ConnectionProperties::default()
+                .with_connection_name(
+                    format!(
+                        "{}@{}",
+                        name,
+                        hostname::get()
+                            .context("Failed to get system hostname")?
+                            .into_string()
+                            .map_err(|_| anyhow!("Failed to parse system hostname"))?,
+                    )
+                    .into(),
+                )
                 .with_executor(tokio_executor_trait::Tokio::current())
                 .with_reactor(tokio_reactor_trait::Tokio),
         )
