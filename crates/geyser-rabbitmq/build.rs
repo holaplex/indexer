@@ -1,6 +1,9 @@
 use std::{
     env,
     fmt::Display,
+    fs::File,
+    io::prelude::*,
+    path::Path,
     process::{Command, Output},
     str,
 };
@@ -28,6 +31,45 @@ fn run(c: &mut Command, name: impl Display) -> Output {
     output
 }
 
+fn check_schema(expected: String, path: impl AsRef<Path>) {
+    const PATH: &str = "src/config/config-schema.graphql";
+
+    let mut s = String::new();
+
+    File::open(PATH)
+        .and_then(|mut f| f.read_to_string(&mut s))
+        .map_err(|e| format!("{:?}", e))
+        .and_then(|_| {
+            if s == expected {
+                Ok(())
+            } else {
+                Err("Mismatch in config SDL definitions".into())
+            }
+        })
+        .map_err(|s| {
+            format!(
+                "Failed checking schema {}: {} - consult {} for a correct definition",
+                PATH,
+                s,
+                path.as_ref().display()
+            )
+        })
+        .unwrap();
+}
+
+// TODO: at the moment graphql_client doesn't support reading files from $OUT_DIR
+fn write_schema() {
+    let dir = env::var("OUT_DIR").unwrap();
+    let path = Path::new(&dir).join("config-schema.graphql");
+    let mut f = File::create(&path).unwrap();
+
+    let sdl = geyser_config::schema::build(geyser_config::schema::SchemaData {}).sdl();
+
+    f.write_all(sdl.as_bytes()).unwrap();
+
+    check_schema(sdl, &path);
+}
+
 fn main() {
     for var in &["HOST", "TARGET", "PROFILE"] {
         println!(
@@ -38,7 +80,7 @@ fn main() {
     }
 
     println!(
-        "cargo:rustc-env=META_BUILD_FEATURES=ptr{},{},{}",
+        "cargo:rustc-env=META_BUILD_PLATFORM=ptr{},{},{}",
         env::var("CARGO_CFG_TARGET_POINTER_WIDTH").unwrap(),
         env::var("CARGO_CFG_TARGET_ENDIAN").unwrap(),
         env::var("CARGO_CFG_TARGET_FEATURE").unwrap(),
@@ -89,7 +131,7 @@ fn main() {
             .split('\n')
             .map(|f| f.trim())
             .filter(|f| f.len() > 2)
-            .map(|f| &f[2..])
+            .map(|f| f[2..].trim())
         {
             println!("cargo:rerun-if-changed={}/{}", toplevel, file);
         }
@@ -141,4 +183,6 @@ fn main() {
         "cargo:rustc-env=META_RUSTC_VERSION={}",
         str::from_utf8(&ver.stdout).unwrap().trim()
     );
+
+    write_schema();
 }

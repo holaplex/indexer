@@ -3,6 +3,7 @@ use std::sync::{
     Arc,
 };
 
+use geyser_config::models::config;
 use indexer_rabbitmq::{
     geyser::{Message, Producer, QueueType, StartupType},
     lapin::{Connection, ConnectionProperties},
@@ -13,10 +14,7 @@ use smol::{
     Executor,
 };
 
-use crate::{
-    config,
-    metrics::{Counter, Metrics},
-};
+use crate::metrics::{Counter, Metrics};
 
 #[derive(Debug)]
 struct Inner {

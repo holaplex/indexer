@@ -1,0 +1,14 @@
+type Mutation {
+	test: Int!
+}
+type Query {
+	test: Int!
+}
+type Subscription {
+	test: Int!
+}
+schema {
+	query: Query
+	mutation: Mutation
+	subscription: Subscription
+}

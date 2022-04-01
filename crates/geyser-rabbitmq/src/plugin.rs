@@ -15,7 +15,7 @@ mod ids {
 use serde::Deserialize;
 
 use crate::{
-    config::Config,
+    config::Boot,
     interface::{
         GeyserPlugin, GeyserPluginError, ReplicaAccountInfo, ReplicaAccountInfoVersions,
         ReplicaTransactionInfoVersions, Result,
@@ -81,56 +81,61 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
 
         let metrics = Metrics::new_rc();
 
-        let info = {
-            let ver = env!("CARGO_PKG_VERSION");
-            let git = option_env!("META_GIT_HEAD");
-            let rem = option_env!("META_GIT_REMOTE");
+        let Boot { name, config_url } = Boot::read(cfg).map_err(custom_err(&metrics.errs))?;
 
-            let rustc_ver = env!("META_RUSTC_VERSION");
-            let host = env!("META_BUILD_HOST");
-            let target = env!("META_BUILD_TARGET");
-            let profile = env!("META_BUILD_PROFILE");
-            let features = env!("META_BUILD_FEATURES");
+        // let hello = Hello {
+        //     pkg_version: env!("CARGO_PKG_VERSION").into(),
+        //     git_head: option_env!("META_GIT_HEAD").map(Into::into),
+        //     git_remote: option_env!("META_GIT_REMOTE").map(Into::into),
 
-            let host = hostname::get()
-                .map_err(custom_err(&metrics.errs))?
-                .into_string()
-                .map_err(|_| anyhow!("Failed to parse system hostname"))
-                .map_err(custom_err(&metrics.errs))?;
-        };
+        //     rustc_version: env!("META_RUSTC_VERSION").into(),
+        //     build_host: env!("META_BUILD_HOST").into(),
+        //     build_target: env!("META_BUILD_TARGET").into(),
+        //     build_profile: env!("META_BUILD_PROFILE").into(),
+        //     build_platform: env!("META_BUILD_PLATFORM").into(),
 
-        let (amqp, jobs, metrics_conf, acct, ins) = Config::read(cfg)
-            .and_then(Config::into_parts)
-            .map_err(custom_err(&metrics.errs))?;
+        //     host: hostname::get()
+        //         .map_err(custom_err(&metrics.errs))?
+        //         .into_string()
+        //         .map_err(|_| anyhow!("Failed to parse system hostname"))
+        //         .map_err(custom_err(&metrics.errs))?,
+        //     name,
+        // };
 
-        let startup_type = acct.startup();
+        todo!()
 
-        if let Some(config) = metrics_conf.config {
-            const VAR: &str = "SOLANA_METRICS_CONFIG";
+        // let (amqp, jobs, metrics_conf, acct, ins) = Config::read(cfg)
+        //     .and_then(Config::into_parts)
+        //     .map_err(custom_err(&metrics.errs))?;
 
-            if env::var_os(VAR).is_some() {
-                warn!("Overriding existing value for {}", VAR);
-            }
+        // let startup_type = acct.startup();
 
-            env::set_var(VAR, config);
-        }
+        // if let Some(config) = metrics_conf.config {
+        //     const VAR: &str = "SOLANA_METRICS_CONFIG";
 
-        self.acct_sel = Some(acct);
-        self.ins_sel = Some(ins);
+        //     if env::var_os(VAR).is_some() {
+        //         warn!("Overriding existing value for {}", VAR);
+        //     }
 
-        self.token_addresses = Self::load_token_reg().map_err(custom_err(&metrics.errs))?;
+        //     env::set_var(VAR, config);
+        // }
 
-        self.metrics = Some(Arc::clone(&metrics));
+        // self.acct_sel = Some(acct);
+        // self.ins_sel = Some(ins);
 
-        smol::block_on(async {
-            self.producer = Some(
-                Sender::new(amqp, &jobs, startup_type, Arc::clone(&metrics))
-                    .await
-                    .map_err(custom_err(&metrics.errs))?,
-            );
+        // self.token_addresses = Self::load_token_reg().map_err(custom_err(&metrics.errs))?;
 
-            Ok(())
-        })
+        // self.metrics = Some(Arc::clone(&metrics));
+
+        // smol::block_on(async {
+        //     self.producer = Some(
+        //         Sender::new(amqp, &jobs, startup_type, Arc::clone(&metrics))
+        //             .await
+        //             .map_err(custom_err(&metrics.errs))?,
+        //     );
+
+        //     Ok(())
+        // })
     }
 
     fn update_account(

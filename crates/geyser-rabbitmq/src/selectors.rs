@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
+use geyser_config::models::config::Accounts;
 use indexer_rabbitmq::geyser::StartupType;
 use solana_program::instruction::CompiledInstruction;
 
-use super::config::Accounts;
 use crate::{interface::ReplicaAccountInfo, prelude::*};
 
 #[derive(Debug)]

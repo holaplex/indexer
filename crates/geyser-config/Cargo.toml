@@ -33,12 +33,21 @@ actix-web = { version = "4.0.0-rc.2", optional = true }
 async-graphql = "3.0.36"
 async-graphql-actix-web = { version = "3.0.30", optional = true }
 futures = "0.3.21"
+serde = { version = "1.0.136", features = ["derive"] }
+serde_with = "1.12.0"
 
 [dependencies.indexer-core]
 package = "holaplex-indexer-core"
 version = "=0.1.0"
 path = "../core"
 default-features = false
+
+[dependencies.indexer-rabbitmq]
+package = "holaplex-indexer-rabbitmq"
+version = "=0.1.0"
+path = "../rabbitmq"
+default-features = false
+features = ["geyser"]
 
 [dependencies.sea-orm]
 version = "0.7.1"
