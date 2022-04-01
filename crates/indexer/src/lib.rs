@@ -9,11 +9,11 @@
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
 pub mod db;
-#[cfg(any(test, feature = "geyser"))]
+#[cfg(feature = "geyser")]
 pub mod geyser;
-#[cfg(any(test, feature = "http"))]
+#[cfg(feature = "http")]
 pub mod http;
-#[cfg(any(test, feature = "http"))]
+#[cfg(feature = "http")]
 pub mod legacy_storefronts;
 pub(crate) mod util;
 
