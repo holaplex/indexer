@@ -28,21 +28,31 @@ function isready() {
   return 0
 }
 
-echo "Waiting for Postgres to come online..."
+if ! isready; then
+  echo "Waiting for Postgres to come online..."
 
-for i in {0..10}; do
-  sleep 3
-  isready || continue
-  break
-done
+  for i in {0..10}; do
+    sleep 3
+    isready || continue
+    break
+  done
 
-isready
+  isready
+fi
 
 if ! command -v diesel >/dev/null; then
   echo $'Diesel CLI is missing - install it with:\n  cargo install diesel_cli --no-default-features --features postgres' >&2
   exit 1
 fi
 
-cd crates/core
-diesel setup
+(cd crates/core && diesel setup)
+
+if ! command -v sea >/dev/null; then
+  echo $'SeaORM CLI is missing - install it with:\n  cargo install sea-orm-cli' >&2
+  exit 1
+fi
+
+touch "${CONFIG_DATABASE_URL#sqlite://}"
+
+DATABASE_URL="$CONFIG_DATABASE_URL" sea migrate up -d crates/geyser-config-migration
 

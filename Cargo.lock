@@ -2657,6 +2657,7 @@ dependencies = [
 name = "geyser-config-migration"
 version = "0.1.0"
 dependencies = [
+ "sea-orm",
  "sea-schema",
 ]
 
@@ -4773,10 +4774,12 @@ dependencies = [
  "async-trait",
  "clap 2.34.0",
  "dotenv",
+ "futures",
  "log",
  "sea-orm",
  "sea-query 0.22.0",
  "sea-schema-derive",
+ "sqlx",
  "tracing",
  "tracing-subscriber",
 ]

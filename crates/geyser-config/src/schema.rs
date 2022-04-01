@@ -23,7 +23,7 @@ impl Mutation {
 #[async_graphql::Subscription]
 impl Subscription {
     async fn test(&self) -> impl futures::stream::Stream<Item = i32> {
-        futures::stream::once(async { 2 })
+        futures::stream::once(async { 3 })
     }
 }
 

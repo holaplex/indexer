@@ -7,5 +7,21 @@ publish = false
 [lib]
 name = "migration"
 
-[dependencies]
-sea-schema = { version = "0.7.1", default-features = false, features = ["migration", "debug-print"] }
+[dependencies.sea-schema]
+version = "0.7.1"
+default-features = false
+features = [
+  "sqlx-sqlite",
+  "runtime-actix-rustls",
+  "migration",
+  "debug-print"
+]
+
+# Force feature unification to enable the sqlite driver.
+# Took a lot of blood, sweat, and cargo introspection to figure this one out.
+[dependencies.sea-orm]
+version = "0.7.1"
+features = [
+  "sqlx-sqlite",
+]
+
