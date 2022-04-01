@@ -60,7 +60,7 @@ fn main() {
             .context("Failed to construct Client")?;
 
             let queue_type = geyser::QueueType::new(network, startup, queue_suffix.as_deref());
-            let consumer = geyser::Consumer::new(&conn, queue_type.clone())
+            let consumer = geyser::Consumer::new(&conn, queue_type.clone(), "geyser-consumer")
                 .await
                 .context("Failed to create queue consumer")?;
 
