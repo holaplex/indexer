@@ -1,6 +1,7 @@
+use indexer_core::db::queries;
 use objects::{
     listing_receipt::ListingReceipt,
-    nft::{Nft, NftAttribute, NftCreator, NftOwner},
+    nft::{Nft, NftActivity, NftAttribute, NftCreator, NftOwner},
     purchase_receipt::PurchaseReceipt,
 };
 use scalars::PublicKey;
@@ -77,6 +78,7 @@ impl TryBatchFn<PublicKey<Nft>, Option<NftOwner>> for Batcher {
             .map(|t| {
                 (t.mint_address.into_owned(), NftOwner {
                     address: t.owner_address.into_owned(),
+                    associated_token_account_address: t.address.into_owned(),
                 })
             })
             .batch(mint_addresses))
@@ -130,6 +132,23 @@ impl TryBatchFn<PublicKey<Nft>, Vec<ListingReceipt>> for Batcher {
         Ok(rows
             .into_iter()
             .map(|listing| (listing.metadata.clone(), listing.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<Nft>, Vec<NftActivity>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Nft>],
+    ) -> TryBatchMap<PublicKey<Nft>, Vec<NftActivity>> {
+        let conn = self.db()?;
+
+        let rows = queries::metadatas::activities(&conn, addresses)?;
+
+        Ok(rows
+            .into_iter()
+            .map(|activity| (activity.metadata.clone(), activity.try_into()))
             .batch(addresses))
     }
 }

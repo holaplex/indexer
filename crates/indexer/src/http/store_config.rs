@@ -66,15 +66,9 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
 
     // TODO: parse failure shouldn't be an error, this stuff will be unstructured
     let json = client
-        .http()
-        .get(url)
-        .timeout(client.timeout())
-        .send()
+        .http(|h| async move { h.get(url).send().await?.json::<SettingUri>().await })
         .await
-        .context("Store config JSON request failed")?
-        .json::<SettingUri>()
-        .await
-        .context("Failed to parse store config JSON")?;
+        .context("Store config JSON request failed")?;
 
     let addr = bs58::encode(config_key).into_string();
 

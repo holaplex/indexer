@@ -1,5 +1,8 @@
 use base64::display::Base64Display;
-use indexer_core::assets::{AssetHint, AssetIdentifier, ImageSize};
+use indexer_core::{
+    assets::{AssetHint, AssetIdentifier, ImageSize},
+    db::models,
+};
 use objects::{
     bid_receipt::BidReceipt, listing_receipt::ListingReceipt, purchase_receipt::PurchaseReceipt,
 };
@@ -84,6 +87,44 @@ impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct NftOwner {
     pub address: String,
+    pub associated_token_account_address: String,
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct NftActivity {
+    pub address: String,
+    pub metadata: String,
+    pub auction_house: String,
+    pub price: scalars::Lamports,
+    pub created_at: DateTime<Utc>,
+    pub wallets: Vec<String>,
+    pub activity_type: String,
+}
+
+impl TryFrom<models::NftActivity> for NftActivity {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::NftActivity {
+            address,
+            metadata,
+            auction_house,
+            price,
+            created_at,
+            wallets,
+            activity_type,
+        }: models::NftActivity,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            address,
+            metadata,
+            auction_house,
+            price: price.try_into()?,
+            created_at: DateTime::from_utc(created_at, Utc),
+            wallets,
+            activity_type,
+        })
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -250,6 +291,13 @@ If no value is provided, it will return XSmall")))]
     pub async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>> {
         ctx.nft_owner_loader
             .load(self.mint_address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
+        ctx.nft_activities_loader
+            .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }

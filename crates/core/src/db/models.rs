@@ -5,7 +5,7 @@
 use std::borrow::Cow;
 
 use chrono::NaiveDateTime;
-use diesel::sql_types::{Bool, Int4, Int8, Nullable, Text, VarChar};
+use diesel::sql_types::{Array, Bool, Int4, Int8, Nullable, Text, Timestamp, VarChar};
 
 use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
@@ -261,6 +261,38 @@ pub struct Nft {
     /// Metadata Image url
     #[sql_type = "Nullable<Text>"]
     pub image: Option<String>,
+}
+
+/// Union of `listing_receipts` and `purchase_receipts` for an `NFTActivity`
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct NftActivity {
+    /// The address of the activity
+    #[sql_type = "VarChar"]
+    pub address: String,
+
+    /// The metadata associated of the activity
+    #[sql_type = "VarChar"]
+    pub metadata: String,
+
+    /// The auction house activity generated from
+    #[sql_type = "VarChar"]
+    pub auction_house: String,
+
+    /// The price of listing or purchase
+    #[sql_type = "Int8"]
+    pub price: i64,
+
+    /// Listing/Purchase created time
+    #[sql_type = "Timestamp"]
+    pub created_at: NaiveDateTime,
+
+    /// The wallet address asociated to the activity [seller, buyer]
+    #[sql_type = "Array<VarChar>"]
+    pub wallets: Vec<String>,
+
+    /// Listing/Purchase created time
+    #[sql_type = "Text"]
+    pub activity_type: String,
 }
 
 /// Join of `metadatas` `metadata_jsons` `store_creators` for an collection preview
