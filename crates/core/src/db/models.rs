@@ -13,11 +13,11 @@ use super::schema::{
     candy_machine_datas, candy_machine_end_settings, candy_machine_gate_keeper_configs,
     candy_machine_hidden_settings, candy_machine_whitelist_mint_settings, candy_machines, editions,
     files, graph_connections, listing_metadatas, listing_receipts, master_editions,
-    metadata_collections, metadata_creators, metadata_jsons, metadatas, purchase_receipts,
-    store_config_jsons, store_configs, store_creators, storefronts, stores, token_accounts,
-    twitter_handle_name_services, whitelisted_creators,
+    metadata_collection_keys, metadata_collections, metadata_creators, metadata_jsons, metadatas,
+    purchase_receipts, store_config_jsons, store_configs, store_creators, storefronts, stores,
+    token_accounts, twitter_handle_name_services, whitelisted_creators,
 };
-use crate::db::custom_types::{EndSettingType, WhitelistMintMode};
+use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
 
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
@@ -200,6 +200,8 @@ pub struct Metadata<'a> {
     pub edition_nonce: Option<i32>,
     /// edition pda derived from account
     pub edition_pda: Cow<'a, str>,
+    /// Type of NFT token
+    pub token_standard: Option<TokenStandardEnum>,
 }
 
 /// A row in the `storefronts` table
@@ -879,4 +881,17 @@ pub struct TwitterHandle<'a> {
     pub twitter_handle: Cow<'a, str>,
     /// Solana slot number
     pub slot: i64,
+}
+
+/// A row in the `metadata_collection_keys` table
+/// Each collection is an NFT
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct MetadataCollectionKey<'a> {
+    /// Metadata address
+    pub metadata_address: Cow<'a, str>,
+    /// Collection Address
+    pub collection_address: Cow<'a, str>,
+    /// Whether the collection is verified or not.
+    pub verified: bool,
 }

@@ -59,6 +59,7 @@ anchor-lang-v0-21-0 = { package = "anchor-lang", version = "0.21.0" }
 metaplex = { version="0.0.1", features = ["no-entrypoint"] }
 metaplex-auction = { version="0.0.1", features = ["no-entrypoint"] }
 metaplex-token-metadata = { version="0.0.1", features = ["no-entrypoint"] }
+mpl-token-metadata = { version="1.2.4", features = ["no-entrypoint"] }
 metaplex-token-vault = { version="0.0.1", features = ["no-entrypoint"] }
 mpl-auction-house = { version="1.1.0", features = ["no-entrypoint"] }
 mpl-candy-machine = { version="~3.1.1", features = ["no-entrypoint"] }
