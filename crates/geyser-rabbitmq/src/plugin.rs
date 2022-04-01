@@ -78,7 +78,26 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
 
     fn on_load(&mut self, cfg: &str) -> Result<()> {
         solana_logger::setup_with_default("info");
+
         let metrics = Metrics::new_rc();
+
+        let info = {
+            let ver = env!("CARGO_PKG_VERSION");
+            let git = option_env!("META_GIT_HEAD");
+            let rem = option_env!("META_GIT_REMOTE");
+
+            let rustc_ver = env!("META_RUSTC_VERSION");
+            let host = env!("META_BUILD_HOST");
+            let target = env!("META_BUILD_TARGET");
+            let profile = env!("META_BUILD_PROFILE");
+            let features = env!("META_BUILD_FEATURES");
+
+            let host = hostname::get()
+                .map_err(custom_err(&metrics.errs))?
+                .into_string()
+                .map_err(|_| anyhow!("Failed to parse system hostname"))
+                .map_err(custom_err(&metrics.errs))?;
+        };
 
         let (amqp, jobs, metrics_conf, acct, ins) = Config::read(cfg)
             .and_then(Config::into_parts)

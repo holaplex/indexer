@@ -51,7 +51,9 @@ impl Inner {
     ) -> Result<Producer, indexer_rabbitmq::Error> {
         let conn = Connection::connect(
             &amqp.address,
-            ConnectionProperties::default().with_executor(smol_executor_trait::Smol),
+            ConnectionProperties::default()
+                .with_connection_name(amqp.name.as_str().into())
+                .with_executor(smol_executor_trait::Smol),
         )
         .await?;
 
