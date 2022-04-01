@@ -87,6 +87,7 @@ impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct NftOwner {
     pub address: String,
+    pub associated_token_account_address: String,
 }
 
 #[derive(Debug, Clone, GraphQLObject)]

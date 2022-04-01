@@ -78,6 +78,7 @@ impl TryBatchFn<PublicKey<Nft>, Option<NftOwner>> for Batcher {
             .map(|t| {
                 (t.mint_address.into_owned(), NftOwner {
                     address: t.owner_address.into_owned(),
+                    associated_token_account_address: t.address.into_owned(),
                 })
             })
             .batch(mint_addresses))
