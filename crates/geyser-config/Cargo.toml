@@ -38,6 +38,7 @@ futures = "0.3.21"
 package = "holaplex-indexer-core"
 version = "=0.1.0"
 path = "../core"
+default-features = false
 
 [dependencies.sea-orm]
 version = "0.7.1"
