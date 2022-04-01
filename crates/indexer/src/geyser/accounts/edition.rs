@@ -3,7 +3,7 @@ use indexer_core::db::{
     models::{Edition, MasterEdition},
     tables::{editions, master_editions},
 };
-use metaplex_token_metadata::state::{
+use mpl_token_metadata::state::{
     Edition as EditionAccount, MasterEdition as MasterEditionTrait,
     MasterEditionV2 as MasterEditionV2Account,
 };
