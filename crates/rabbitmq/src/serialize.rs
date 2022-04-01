@@ -1,9 +1,13 @@
-use std::io::{Read, Write};
+#[cfg(feature = "consumer")]
+use std::io::Read;
+#[cfg(feature = "producer")]
+use std::io::Write;
 
 /// Serialize a message into a [`Write`] stream
 ///
 /// # Errors
 /// This function fails if an I/O error occurs or a wire format error occurs.
+#[cfg(feature = "producer")]
 pub fn serialize<M: serde::Serialize>(
     w: impl Write,
     msg: &M,
@@ -19,6 +23,7 @@ pub fn serialize<M: serde::Serialize>(
 ///
 /// # Errors
 /// This function fails if an I/O error occurs or a wire format error occurs.
+#[cfg(feature = "consumer")]
 pub fn deserialize<M: for<'a> serde::Deserialize<'a>>(
     r: impl Read,
 ) -> Result<M, rmp_serde::decode::Error> {

@@ -2956,6 +2956,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "bs58 0.4.0",
+ "holaplex-indexer-geyser-config",
  "holaplex-indexer-rabbitmq",
  "hostname",
  "log",

@@ -41,5 +41,11 @@ reqwest = "0.11.6"
 package = "holaplex-indexer-rabbitmq"
 version = "=0.1.0"
 path = "../rabbitmq"
-default_features = false
+default-features = false
 features = ["producer", "geyser"]
+
+[dependencies.geyser-config]
+package = "holaplex-indexer-geyser-config"
+version = "=0.1.0"
+path = "../geyser-config"
+default-features = false
