@@ -2943,6 +2943,7 @@ dependencies = [
  "futures-util",
  "lapin",
  "log",
+ "rand 0.8.5",
  "rmp-serde",
  "serde",
  "solana-sdk",

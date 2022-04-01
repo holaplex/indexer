@@ -10,6 +10,7 @@ use {
         types::AMQPValue,
         Consumer,
     },
+    rand::prelude::*,
 };
 #[cfg(any(feature = "producer", feature = "consumer"))]
 use {
@@ -196,7 +197,11 @@ impl<'a> QueueInfo<'a> {
         Ok((exchg, self.dl_queue(), self.dl_triage_queue()))
     }
 
-    pub(crate) async fn init_consumer(self, chan: &Channel) -> Result<Consumer> {
+    pub(crate) async fn init_consumer(
+        self,
+        chan: &Channel,
+        tag: impl AsRef<str>,
+    ) -> Result<Consumer> {
         self.dl_exchange_declare(chan).await?;
         self.exchange_declare(chan).await?;
         self.queue_declare(chan).await?;
@@ -215,7 +220,7 @@ impl<'a> QueueInfo<'a> {
 
         chan.basic_consume(
             self.0.queue.as_ref(),
-            self.0.queue.as_ref(),
+            &format!("{}-{:04x}", tag.as_ref(), rand::thread_rng().gen::<u16>()),
             BasicConsumeOptions::default(),
             FieldTable::default(),
         )
@@ -313,7 +318,7 @@ impl<'a> QueueInfo<'a> {
         let consumer = chan
             .basic_consume(
                 triage_queue.as_ref(),
-                triage_queue.as_ref(),
+                &format!("dl-consumer-{:04x}", rand::thread_rng().gen::<u16>()),
                 BasicConsumeOptions::default(),
                 FieldTable::default(),
             )
