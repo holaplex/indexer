@@ -13,9 +13,6 @@ use super::Client;
 use crate::prelude::*;
 
 pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount) -> Result<()> {
-    if meta.collection.is_some() {
-        dbg!("{:?}", &meta);
-    }
     let addr = bs58::encode(key).into_string();
     let (edition_pda_key, _bump) = find_edition(meta.mint);
     let row = Metadata {
