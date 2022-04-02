@@ -10,5 +10,6 @@ pub mod mpl_store;
 pub mod name_service;
 pub mod receipt;
 pub mod token;
+pub mod token_manager;
 
 pub(self) use super::Client;

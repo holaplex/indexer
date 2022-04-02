@@ -555,6 +555,42 @@ table! {
     }
 }
 
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+
+    token_managers (address) {
+        address -> Varchar,
+        version -> Int2,
+        bump -> Int2,
+        count -> Int8,
+        num_invalidators -> Int2,
+        issuer -> Varchar,
+        mint -> Varchar,
+        amount -> Int8,
+        kind -> Int2,
+        state -> Int2,
+        state_changed_at -> Int8,
+        invalidation_type -> Int2,
+        recipient_token_account -> Varchar,
+        receipt_mint -> Nullable<Varchar>,
+        claim_approver -> Nullable<Varchar>,
+        transfer_authority -> Nullable<Varchar>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+
+    token_manager_invalidators (token_manager_address, invalidator) {
+        token_manager_address -> Varchar,
+        invalidator -> Varchar,
+    }
+}
+
 allow_tables_to_appear_in_same_query!(
     attributes,
     auction_caches,
@@ -594,4 +630,5 @@ allow_tables_to_appear_in_same_query!(
     token_accounts,
     twitter_handle_name_services,
     whitelisted_creators,
+    token_managers,
 );

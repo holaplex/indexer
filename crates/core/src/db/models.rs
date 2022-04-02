@@ -15,7 +15,8 @@ use super::schema::{
     files, graph_connections, listing_metadatas, listing_receipts, master_editions,
     metadata_collection_keys, metadata_collections, metadata_creators, metadata_jsons, metadatas,
     purchase_receipts, store_config_jsons, store_configs, store_creators, storefronts, stores,
-    token_accounts, twitter_handle_name_services, whitelisted_creators,
+    token_accounts, token_manager_invalidators, token_managers, twitter_handle_name_services,
+    whitelisted_creators,
 };
 use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
 
@@ -894,4 +895,54 @@ pub struct MetadataCollectionKey<'a> {
     pub collection_address: Cow<'a, str>,
     /// Whether the collection is verified or not.
     pub verified: bool,
+}
+
+/// A row in the `token_managers` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "token_managers"]
+pub struct TokenManager<'a> {
+    /// Address of the token_manager
+    pub address: Cow<'a, str>,
+    /// Version of the token_manager
+    pub version: i16,
+    /// Bump seed of the token_manager
+    pub bump: i16,
+    /// Count for the given mint to identify this token_manager
+    pub count: i64,
+    /// Max number of invalidators this token_manager can hold
+    pub num_invalidators: i16,
+    /// Issuer of this token_manager
+    pub issuer: Cow<'a, str>,
+    /// The mint that this token_manager holder
+    pub mint: Cow<'a, str>,
+    /// How many of the given mint in this token_manager
+    pub amount: i64,
+    /// Kind of this token_manager
+    pub kind: i16,
+    /// Current state of the token_manager
+    pub state: i16,
+    /// Timestamp in seconds for last state change
+    pub state_changed_at: i64,
+    /// What happens upon invalidation
+    pub invalidation_type: i16,
+    /// Current token_account holding this managed token
+    pub recipient_token_account: Cow<'a, str>,
+    /// Optional receipt claimed from the token_manager representing the rightful owner
+    pub receipt_mint: Option<Cow<'a, str>>,
+    /// Option authority that can approve claiming the token
+    pub claim_approver: Option<Cow<'a, str>>,
+    /// Optional authority that can approve transfers (defaults to self)
+    pub transfer_authority: Option<Cow<'a, str>>,
+}
+
+/// A row in the `token_manager_invalidators` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "token_manager_invalidators"]
+pub struct TokenManagerInvalidator<'a> {
+    /// Address of the token_manager
+    pub token_manager_address: Cow<'a, str>,
+    /// Address of an active invalidator for this token_manager
+    pub invalidator: Cow<'a, str>,
 }

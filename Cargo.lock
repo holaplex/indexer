@@ -762,6 +762,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "anchor-spl"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcdf03d76450451f6c587098fa0d9775dc7eabf9173c89bd1bb17dd72b49e748"
+dependencies = [
+ "anchor-lang 0.22.1",
+ "solana-program",
+ "spl-associated-token-account",
+ "spl-token",
+]
+
+[[package]]
 name = "anchor-syn"
 version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1400,6 +1412,20 @@ name = "cache-padded"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
+
+[[package]]
+name = "cardinal-token-manager"
+version = "0.2.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcea63d80fe3c52b2a03cbe98c9a0d4c5a9c513f0a18778c6df33b0b70734e22"
+dependencies = [
+ "anchor-lang 0.22.1",
+ "anchor-spl 0.22.1",
+ "mpl-token-metadata",
+ "solana-program",
+ "spl-associated-token-account",
+ "spl-token",
+]
 
 [[package]]
 name = "cbc"
@@ -2421,6 +2447,7 @@ dependencies = [
  "async-trait",
  "base64 0.13.0",
  "borsh",
+ "cardinal-token-manager",
  "cid",
  "futures-util",
  "graph_program",

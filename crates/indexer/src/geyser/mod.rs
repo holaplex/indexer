@@ -70,6 +70,9 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         Message::AccountUpdate(update) if update.owner == pubkeys::name_service() => {
             programs::name_service::process(client, update).await
         },
+        Message::AccountUpdate(update) if update.owner == pubkeys::token_manager() => {
+            programs::token_manager::process(client, update).await
+        },
         Message::AccountUpdate(update) => {
             debug!(
                 "Unhandled account update for program {}",
