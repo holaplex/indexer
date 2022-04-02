@@ -5,7 +5,9 @@ pub mod graph;
 pub mod metadata;
 pub mod metaplex;
 pub mod name_service;
+pub mod time_invalidator;
 pub mod token;
 pub mod token_manager;
+pub mod use_invalidator;
 
 pub(self) use super::{accounts, AccountUpdate, Client};

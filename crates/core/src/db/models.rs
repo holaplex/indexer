@@ -15,8 +15,8 @@ use super::schema::{
     files, graph_connections, listing_metadatas, listing_receipts, master_editions,
     metadata_collection_keys, metadata_collections, metadata_creators, metadata_jsons, metadatas,
     purchase_receipts, store_config_jsons, store_configs, store_creators, storefronts, stores,
-    token_accounts, token_manager_invalidators, token_managers, twitter_handle_name_services,
-    whitelisted_creators,
+    time_invalidators, token_accounts, token_manager_invalidators, token_managers,
+    twitter_handle_name_services, use_invalidators, whitelisted_creators,
 };
 use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
 
@@ -923,7 +923,7 @@ pub struct TokenManager<'a> {
     /// Current state of the token_manager
     pub state: i16,
     /// Timestamp in seconds for last state change
-    pub state_changed_at: i64,
+    pub state_changed_at: NaiveDateTime,
     /// What happens upon invalidation
     pub invalidation_type: i16,
     /// Current token_account holding this managed token
@@ -945,4 +945,58 @@ pub struct TokenManagerInvalidator<'a> {
     pub token_manager_address: Cow<'a, str>,
     /// Address of an active invalidator for this token_manager
     pub invalidator: Cow<'a, str>,
+}
+
+/// A row in the `token_manager_invalidators` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "time_invalidators"]
+pub struct TimeInvalidator<'a> {
+    /// Address of the time_invalidator
+    pub address: Cow<'a, str>,
+    /// Bump seed of the time_invalidator
+    pub bump: i16,
+    /// Address of the token_manager
+    pub token_manager_address: Cow<'a, str>,
+    /// Optional expiration which this time invalidator will expire
+    pub expiration: Option<NaiveDateTime>,
+    /// Duration after claim
+    pub duration_seconds: Option<i64>,
+    /// Amount the pay for extension
+    pub extension_payment_amount: Option<i64>,
+    /// Duration received after extension
+    pub extension_duration_seconds: Option<i64>,
+    /// Mint that extension is denominated in
+    pub extension_payment_mint: Option<Cow<'a, str>>,
+    /// Optional max this can ever be extended until
+    pub max_expiration: Option<NaiveDateTime>,
+    /// Whether extension can be in partial increments
+    pub disable_partial_extension: Option<bool>,
+}
+
+/// A row in the `token_manager_invalidators` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "use_invalidators"]
+pub struct UseInvalidator<'a> {
+    /// Address of the use_invalidator
+    pub address: Cow<'a, str>,
+    /// Bump seed of the use_invalidator
+    pub bump: i16,
+    /// Address of the token_manager
+    pub token_manager_address: Cow<'a, str>,
+    /// Optional expiration which this time invalidator will expire
+    pub usages: i64,
+    /// Address that can increment usages
+    pub use_authority: Option<Cow<'a, str>>,
+    /// Total usages
+    pub total_usages: Option<i64>,
+    /// Amount the pay for extension
+    pub extension_payment_amount: Option<i64>,
+    /// Mint that extension is denominated in
+    pub extension_payment_mint: Option<Cow<'a, str>>,
+    /// Number of usages received after extension
+    pub extension_usages: Option<i64>,
+    /// Optional max this can ever be extended until
+    pub max_usages: Option<i64>,
 }

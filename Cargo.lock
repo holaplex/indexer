@@ -1414,6 +1414,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 
 [[package]]
+name = "cardinal-time-invalidator"
+version = "0.2.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "52de3531f1446b7b0eebce6e6c088fa684de84d6a4451e96472e7d23c2e22b60"
+dependencies = [
+ "anchor-lang 0.22.1",
+ "anchor-spl 0.22.1",
+ "cardinal-token-manager",
+ "solana-program",
+ "spl-associated-token-account",
+ "spl-token",
+]
+
+[[package]]
 name = "cardinal-token-manager"
 version = "0.2.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1422,6 +1436,20 @@ dependencies = [
  "anchor-lang 0.22.1",
  "anchor-spl 0.22.1",
  "mpl-token-metadata",
+ "solana-program",
+ "spl-associated-token-account",
+ "spl-token",
+]
+
+[[package]]
+name = "cardinal-use-invalidator"
+version = "0.2.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "210ad988386e73c5e0780882d9bc83b8bf6efb0885e31afcedf43282f4089379"
+dependencies = [
+ "anchor-lang 0.22.1",
+ "anchor-spl 0.22.1",
+ "cardinal-token-manager",
  "solana-program",
  "spl-associated-token-account",
  "spl-token",
@@ -2447,7 +2475,9 @@ dependencies = [
  "async-trait",
  "base64 0.13.0",
  "borsh",
+ "cardinal-time-invalidator",
  "cardinal-token-manager",
+ "cardinal-use-invalidator",
  "cid",
  "futures-util",
  "graph_program",

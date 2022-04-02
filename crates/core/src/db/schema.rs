@@ -571,7 +571,7 @@ table! {
         amount -> Int8,
         kind -> Int2,
         state -> Int2,
-        state_changed_at -> Int8,
+        state_changed_at -> Nullable<Timestamp>,
         invalidation_type -> Int2,
         recipient_token_account -> Varchar,
         receipt_mint -> Nullable<Varchar>,
@@ -588,6 +588,44 @@ table! {
     token_manager_invalidators (token_manager_address, invalidator) {
         token_manager_address -> Varchar,
         invalidator -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+
+    time_invalidators (address) {
+        address -> Varchar,
+        bump -> Int2,
+        token_manager_address -> Varchar,
+        expiration -> Nullable<Timestamp>,
+        duration_seconds -> Nullable<Int8>,
+        extension_payment_amount -> Nullable<Int8>,
+        extension_duration_seconds -> Nullable<Int8>,
+        extension_payment_mint -> Nullable<Varchar>,
+        max_expiration -> Nullable<Timestamp>,
+        disable_partial_extension -> Nullable<Bool>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+
+    use_invalidators (address) {
+        address -> Varchar,
+        bump -> Int2,
+        token_manager_address -> Varchar,
+        use_authority -> Nullable<Varchar>,
+        usages -> Int8,
+        total_usages -> Int8,
+        extension_payment_amount -> Int8,
+        extension_payment_mint -> Varchar,
+        extension_usages -> Int8,
+        max_usages -> Nullable<Int8>,
     }
 }
 
@@ -631,4 +669,5 @@ allow_tables_to_appear_in_same_query!(
     twitter_handle_name_services,
     whitelisted_creators,
     token_managers,
+    time_invalidators,
 );
