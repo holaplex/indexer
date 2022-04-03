@@ -68,9 +68,9 @@ fn parse_x_death(
             DeathReason::Rejected | DeathReason::Expired | DeathReason::DeliveryLimit
                 if queue == live_queue =>
             {
-                queue_deaths += 1;
+                queue_deaths += count;
             },
-            DeathReason::Expired if queue == dl_queue => dlq_deaths += 1,
+            DeathReason::Expired if queue == dl_queue => dlq_deaths += count,
             DeathReason::Maxlen => return RetryAction::DropMaxlen,
             _ => return RetryAction::DropUnexpected,
         }
