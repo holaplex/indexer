@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-indexer
+  namespace: argocd
+spec:
+  project: dev-indexer
+  source:
+    repoURL: https://github.com/holaplex/indexer.git
+    targetRevision: dev
+    path: k8s/dev/app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev-indexer
