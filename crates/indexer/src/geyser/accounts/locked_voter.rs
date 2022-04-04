@@ -1,4 +1,4 @@
-//! Tribecca Locked-Voter program accounts indexing
+//! Tribeca Locked-Voter program accounts indexing
 use indexer_core::{
     db::{
         insert_into,

@@ -1,4 +1,4 @@
-//! Tribecca Simple-Voter program accounts indexing
+//! Tribeca Simple-Voter program accounts indexing
 use indexer_core::{
     db::{
         insert_into,

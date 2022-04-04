@@ -1,4 +1,4 @@
-//! Tribecca Govern program accounts indexing
+//! Tribeca Govern program accounts indexing
 use indexer_core::{
     db::{
         insert_into,

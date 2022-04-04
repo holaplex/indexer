@@ -899,7 +899,7 @@ pub struct MetadataCollectionKey<'a> {
     pub verified: bool,
 }
 
-/// `Tribecca` Simple-Voter program account
+/// `Tribeca` Simple-Voter program account
 /// A row in the `electorates` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -918,7 +918,7 @@ pub struct Electorate<'a> {
     pub proposal_threshold: i64,
 }
 
-/// `Tribecca` Simple-Voter program account
+/// `Tribeca` Simple-Voter program account
 /// A row in the `token_records` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -939,7 +939,7 @@ pub struct TokenRecord<'a> {
     pub unfinalized_votes: i64,
 }
 
-/// `Tribecca` Locked-Voter program account
+/// `Tribeca` Locked-Voter program account
 /// A row in the `lockers` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -976,7 +976,7 @@ pub struct LockerParam<'a> {
     pub proposal_activation_min_votes: i64,
 }
 
-/// `Tribecca` Locked-Voter program account
+/// `Tribeca` Locked-Voter program account
 /// A row in the `locker_whitelist_entries` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -994,7 +994,7 @@ pub struct LockerWhitelistEntry<'a> {
     pub owner: Cow<'a, str>,
 }
 
-/// `Tribecca` Locked-Voter program account
+/// `Tribeca` Locked-Voter program account
 /// A row in the `escrows` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -1021,7 +1021,7 @@ pub struct Escrow<'a> {
     pub vote_delegate: Cow<'a, str>,
 }
 
-/// `Tribecca` Govern program account
+/// `Tribeca` Govern program account
 /// A row in the `governors` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -1061,7 +1061,7 @@ pub struct GovernanceParameter<'a> {
     pub timelock_delay_seconds: i64,
 }
 
-/// `Tribecca` Govern program account
+/// `Tribeca` Govern program account
 /// A row in the `proposals` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -1130,7 +1130,7 @@ pub struct ProposalAccountMeta<'a> {
     pub is_writable: bool,
 }
 
-/// `Tribecca` Govern program account
+/// `Tribeca` Govern program account
 /// A row in the `proposal_metas` table
 /// Metadata about a proposal.
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -1146,7 +1146,7 @@ pub struct ProposalMeta<'a> {
     pub description_link: Cow<'a, str>,
 }
 
-/// `Tribecca` Govern program account
+/// `Tribeca` Govern program account
 /// A row in the `votes` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
