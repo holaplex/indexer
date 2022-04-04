@@ -6,5 +6,8 @@ pub mod metadata;
 pub mod metaplex;
 pub mod name_service;
 pub mod token;
+pub mod tribeca_govern;
+pub mod tribeca_locked_voter;
+pub mod tribeca_simple_voter;
 
 pub(self) use super::{accounts, AccountUpdate, Client};

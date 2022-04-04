@@ -1,0 +1,13 @@
+drop table electorates;
+drop table token_records;
+drop table lockers;
+drop table locker_params;
+drop table locker_whitelist_entries;
+drop table escrows;
+drop table governors;
+drop table governance_parameters;
+drop table proposals;
+drop table proposal_instructions;
+drop table proposal_account_metas;
+drop table proposal_metas;
+drop table votes;

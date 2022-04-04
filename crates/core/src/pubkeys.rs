@@ -18,11 +18,23 @@ mod ids {
     pubkeys!(candy_machine, "cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ");
     pubkeys!(graph_program, "grphSXQnjAoPXSG5p1aJ7ZFw2A1akqP3pkXvjfbSJef");
     pubkeys!(name_service, "namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX");
+    pubkeys!(
+        tribeca_simple_voter,
+        "Tok6iuA69RLN1QrpXgQKnDgE1YYbLzQsZGSoz75fQdz"
+    );
+    pubkeys!(
+        tribeca_locked_voter,
+        "LocktDzaV1W2Bm9DeZeiyz4J9zs4fRqNiYqQyracRXw"
+    );
+    pubkeys!(
+        tribeca_govern,
+        "Govz1VyoyLD5BL6CSCxUJLVLsQHRwjfFj1prNsdNg5Jw"
+    );
 }
 
 pub use ids::{
     auction, auction_house, candy_machine, graph_program, metadata, metaplex, name_service, token,
-    vault,
+    tribeca_govern, tribeca_locked_voter, tribeca_simple_voter, vault,
 };
 
 /// Find the address of a store given its owner's address
