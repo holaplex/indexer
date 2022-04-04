@@ -332,6 +332,7 @@ table! {
 
     ins_buffer_bundle_ins_keys (instruction_buffer_address, pubkey) {
         instruction_buffer_address -> Varchar,
+        program_id -> Varchar,
         pubkey -> Varchar,
         is_signer -> Bool,
         is_writable -> Bool,
@@ -754,9 +755,10 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
-    sub_account_infos (smart_wallet, subaccount_type, index) {
-        smart_wallet -> Varchar,
-        subaccount_type -> Int2,
+    sub_account_infos (address) {
+        address -> Varchar,
+        smart_wallet -> Nullable<Varchar>,
+        subaccount_type -> Nullable<Int2>,
         index -> Int8,
     }
 }

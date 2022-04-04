@@ -4,9 +4,9 @@ use tribeca_govern::{Governor, Proposal, ProposalMeta, Vote};
 use super::{accounts::govern, AccountUpdate, Client};
 use crate::prelude::*;
 
-const GOVERNOR_SIZE: usize = 32 + 1 + 8 + 32 + 32 + GOVERNANCE_PARAMS_SIZE;
+const GOVERNOR_SIZE: usize = 8 + 32 + 1 + 8 + 32 + 32 + GOVERNANCE_PARAMS_SIZE;
 const GOVERNANCE_PARAMS_SIZE: usize = 8 + 8 + 8 + 8;
-const VOTE_SIZE: usize = 32 + 32 + 1 + 1 + 8;
+const VOTE_SIZE: usize = 8 + 32 + 32 + 1 + 1 + 8;
 const MIN_PROPOSAL_SIZE: usize =
     32 + 8 + 1 + 32 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 32 + 32 + 32 + 1 + 1 + 1;
 

@@ -224,10 +224,10 @@ create table tx_instruction_keys (
 );
 
 create table sub_account_infos (
+    address                         varchar(48)             primary key,
     smart_wallet varchar(48),
     subaccount_type smallint,
-    index bigint not null,
-    primary key (smart_wallet, subaccount_type, index)
+    index bigint not null
 );
 
 create table instruction_buffers (
@@ -254,6 +254,7 @@ create table ins_buffer_bundle_instructions (
 
 create table ins_buffer_bundle_ins_keys (
     instruction_buffer_address varchar(48),
+    program_id varchar(48) not null,
     pubkey varchar(48),
     is_signer bool not null,
     is_writable bool not null,

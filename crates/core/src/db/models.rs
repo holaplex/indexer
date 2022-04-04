@@ -1127,9 +1127,9 @@ pub struct Vote<'a> {
     pub weight: i64,
 }
 
+/// A row in the `smart_wallets` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
-
 pub struct SmartWallet<'a> {
     pub address: Cow<'a, str>,
     pub base: Cow<'a, str>,
@@ -1157,6 +1157,7 @@ pub struct Transaction<'a> {
     pub index: i64,
     pub bump: i16,
     pub proposer: Cow<'a, str>,
+    pub signers: Vec<bool>,
     pub owner_set_seqno: i64,
     pub eta: i64,
     pub executor: Cow<'a, str>,
@@ -1186,6 +1187,7 @@ pub struct TXInstructionKey<'a> {
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct SubAccountInfo<'a> {
+    pub address: Cow<'a, str>,
     pub smart_wallet: Cow<'a, str>,
     pub subaccount_type: i16,
     pub index: i64,
@@ -1222,6 +1224,7 @@ pub struct InsBuffferBundleInstruction<'a> {
 #[diesel(treat_none_as_null = true)]
 pub struct InsBufferBundleInsKey<'a> {
     pub instruction_buffer_address: Cow<'a, str>,
+    pub program_id: Cow<'a, str>,
     pub pubkey: Cow<'a, str>,
     pub is_signer: bool,
     pub is_writable: bool,
