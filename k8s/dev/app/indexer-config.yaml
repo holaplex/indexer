@@ -6,7 +6,7 @@ data:
   SOLANA_ENDPOINT: https://holaplex.rpcpool.com/
   IPFS_CDN: https://ipfs.cache.holaplex.com
   PGSSLMODE: require
-  RUST_LOG: debug
+  RUST_LOG: info
   ARWEAVE_CDN: https://arweave.cache.holaplex.com
   ARWEAVE_URL: https://arweave.net
   ASSET_PROXY_COUNT: "5"

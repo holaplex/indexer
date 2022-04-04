@@ -38,13 +38,10 @@ spec:
               name: twitter-creds
               key: TWITTER_BEARER_TOKEN
               optional: false
-        - name: LOG_LEVEL
-          value: debug
-        command: ["/bin/bash","-c"]
-        args: ["export $(cat .env | xargs)  && RUST_LOG=$LOG_LEVEL ./bin/holaplex-indexer-graphql"]
+        command: ["./bin/holaplex-indexer-graphql"]
         volumeMounts:
         - name: indexer-config
-          mountPath: .env
+          mountPath: .env.local
         securityContext:
           allowPrivilegeEscalation: false
         imagePullPolicy: IfNotPresent
