@@ -1,7 +1,7 @@
 
 This deployment expects to have a few secrets created:
  - `postgres-creds` with the read and write database URLs.
- - `amqp-creds` with RabbitMQ Endpoint (amqp_URL)
+ - `amqp-creds` with RabbitMQ Endpoint (AMQP_URL)
  - `twitter-creds` with Twitter bearer token
 
 Deploy those using the commands below before proceeding with the application deployment.
