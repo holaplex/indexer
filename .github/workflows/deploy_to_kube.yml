@@ -1,8 +1,8 @@
-name: Heroku (staging)
+name: Kubernetes deployment (dev)
 
 on:
   push:
-    branches: [ dev, actions-kube-poc ]
+    branches: [ dev ]
 
 jobs:
   build:
@@ -80,21 +80,21 @@ jobs:
           echo "::set-output name=image::$image_tag"
 
       - name: Update deployments image versions (dev)
-        if: github.ref == 'refs/heads/dev'
         run: |
             git_hash=$(git rev-parse --short "$GITHUB_SHA")
             app=geyser-consumer
-            deployment_file="./k8s/dev/app/$app.yaml"
+            deployment_path="./k8s/${GITHUB_REF##*/}/app"
+            deployment_file="$deployment_path/$app.yaml"
             version=$(cat $deployment_file | grep -i image\: | awk {'print $2'} | cut -d: -f2)
             echo "Updating ${app} deployment with new image tag"
             sed -i "s/$version/$app-${GITHUB_REF##*/}-$git_hash/" $deployment_file
             app=http-consumer
-            deployment_file="./k8s/dev/app/$app.yaml"
+            deployment_file="$deployment_path/$app.yaml"
             version=$(cat $deployment_file | grep -i image\: | awk {'print $2'} | cut -d: -f2)
             echo "Updating ${app} deployment with new image tag"
             sed -i "s/$version/$app-${GITHUB_REF##*/}-$git_hash/" $deployment_file
             app=graphql
-            deployment_file="./k8s/dev/app/$app.yaml"
+            deployment_file="$deployment_path/$app.yaml"
             version=$(cat $deployment_file | grep -i image\: | awk {'print $2'} | cut -d: -f2)
             echo "Updating ${app} deployment with new image tag"
             sed -i "s/$version/$app-${GITHUB_REF##*/}-$git_hash/" $deployment_file
