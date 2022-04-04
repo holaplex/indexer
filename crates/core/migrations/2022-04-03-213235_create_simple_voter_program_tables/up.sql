@@ -1,38 +1,3 @@
--- Tribeca  simple_voter program accounts tables
-create table electorates (
-    address                         varchar(48)             primary key,
-    bump                            smallint                not null,
-    base                            varchar(48)             not null,
-    governor                        varchar(48)             not null,
-    gov_token_mint                  varchar(48)             not null,
-    proposal_threshold              bigint                  not null
-);
-
-create index if not exists electorates_base_idx on 
-electorates using hash (base);
-
-create index if not exists electorates_governer_idx on 
-electorates using hash (governor);
-
-create table token_records (
-    address                         varchar(48)             primary key,
-    bump                            smallint                not null,
-    authority                       varchar(48)             not null,
-    electorate                      varchar(48)             not null,
-    token_vault_key                 varchar(48)             not null,
-    balance                         bigint                  not null,
-    unfinalized_votes               bigint                  not null 
-);
-
-create index if not exists token_records_authority_idx on 
-token_records using hash (authority);
-
-create index if not exists token_records_electorate_idx on 
-token_records using hash (electorate);
-
-create index if not exists token_records_token_vault_idx on 
-token_records using hash (token_vault_key);
-
 -- Tribeca locked_voter program accounts tables
 create table lockers (
     address                         varchar(48)             primary key,
@@ -201,3 +166,96 @@ votes using hash (proposal);
 
 create index if not exists votes_voter_idx on 
 votes using hash (voter);
+
+-- Goki Smart wallet program accounts tables
+
+create table smart_wallets (
+    address varchar(48) primary key,
+    base varchar(48)             not null,
+    bump smallint not null,
+    threshold bigint not null,
+    minimum_delay bigint not null,
+    grace_period bigint not null,
+    owner_set_seqno bigint not null,
+    num_transactions bigint not null
+);
+
+create table smart_wallet_owners (
+    smart_wallet_address varchar(48),
+    owner_address varchar(48),
+    index bigint not null,
+    primary key (smart_wallet_address, owner_address)
+);
+
+create table transactions (
+    address varchar(48)             primary key,
+    smart_wallet varchar(48)             not null,
+    index bigint not null,
+    bump smallint not null,
+    proposer varchar(48) not null,
+    signers bool[] not null,
+    owner_set_seqno bigint not null,
+    eta bigint not null,
+    executor varchar(48) not null,
+    executed_at bigint not null
+);
+
+-- create table transaction_signers (
+--     transaction_address varchar(48),
+--     is_signer bool not null,
+--     index bigint not null,
+--     primary key (transaction_address, is_signer, index)
+-- );
+
+create table tx_instructions (
+    transaction_address varchar(48) not null,
+    program_id varchar(48) not null,
+    data bytea not null,
+    primary key (transaction_address, program_id)
+);
+
+create table tx_instruction_keys (
+    transaction_address varchar(48) not null,
+    program_id varchar(48) not null,
+    pubkey varchar(48) not null,
+    is_signer bool not null,
+    is_writable bool not null,
+    primary key (transaction_address, program_id, pubkey)
+);
+
+create table sub_account_infos (
+    smart_wallet varchar(48),
+    subaccount_type smallint,
+    index bigint not null,
+    primary key (smart_wallet, subaccount_type, index)
+);
+
+create table instruction_buffers (
+    address varchar(48) primary key,
+    owner_set_seqno bigint not null,
+    eta bigint not null,
+    authority varchar(48) not null,
+    executor varchar(48)             not null,
+    smart_wallet varchar(48)             not null
+);
+
+create table ins_buffer_bundles (
+    instruction_buffer_address varchar(48) primary key,
+    is_executed bool not null
+);
+
+create table ins_buffer_bundle_instructions (
+    instruction_buffer_address varchar(48),
+    program_id                      varchar(48)             not null,
+    data bytea not null,
+    primary key (instruction_buffer_address, program_id)
+
+);
+
+create table ins_buffer_bundle_ins_keys (
+    instruction_buffer_address varchar(48),
+    pubkey varchar(48),
+    is_signer bool not null,
+    is_writable bool not null,
+    primary key (instruction_buffer_address, pubkey)
+);

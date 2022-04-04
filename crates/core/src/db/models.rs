@@ -12,13 +12,15 @@ use super::schema::{
     bids, candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators,
     candy_machine_datas, candy_machine_end_settings, candy_machine_gate_keeper_configs,
     candy_machine_hidden_settings, candy_machine_whitelist_mint_settings, candy_machines, editions,
-    electorates, escrows, files, governance_parameters, governors, graph_connections,
-    listing_metadatas, listing_receipts, locker_params, locker_whitelist_entries, lockers,
-    master_editions, metadata_collection_keys, metadata_collections, metadata_creators,
-    metadata_jsons, metadatas, proposal_account_metas, proposal_instructions, proposal_metas,
-    proposals, purchase_receipts, store_config_jsons, store_configs, store_creators, storefronts,
-    stores, token_accounts, token_records, twitter_handle_name_services, votes,
-    whitelisted_creators,
+    escrows, files, governance_parameters, governors, graph_connections,
+    ins_buffer_bundle_ins_keys, ins_buffer_bundle_instructions, ins_buffer_bundles,
+    instruction_buffers, listing_metadatas, listing_receipts, locker_params,
+    locker_whitelist_entries, lockers, master_editions, metadata_collection_keys,
+    metadata_collections, metadata_creators, metadata_jsons, metadatas, proposal_account_metas,
+    proposal_instructions, proposal_metas, proposals, purchase_receipts, smart_wallet_owners,
+    smart_wallets, store_config_jsons, store_configs, store_creators, storefronts, stores,
+    sub_account_infos, token_accounts, transactions, twitter_handle_name_services,
+    tx_instruction_keys, tx_instructions, votes, whitelisted_creators,
 };
 use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
 
@@ -899,46 +901,6 @@ pub struct MetadataCollectionKey<'a> {
     pub verified: bool,
 }
 
-/// `Tribeca` Simple-Voter program account
-/// A row in the `electorates` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
-#[diesel(treat_none_as_null = true)]
-pub struct Electorate<'a> {
-    /// `Electorate` account pubkey
-    pub address: Cow<'a, str>,
-    /// Bump
-    pub bump: i16,
-    /// Base account address
-    pub base: Cow<'a, str>,
-    /// Governor account address
-    pub governor: Cow<'a, str>,
-    /// Mint of the token
-    pub gov_token_mint: Cow<'a, str>,
-    /// The number of votes required in order for a voter to activate a proposal
-    pub proposal_threshold: i64,
-}
-
-/// `Tribeca` Simple-Voter program account
-/// A row in the `token_records` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
-#[diesel(treat_none_as_null = true)]
-pub struct TokenRecord<'a> {
-    /// `TokenRecord` account pubkey
-    pub address: Cow<'a, str>,
-    /// Bump seed
-    pub bump: i16,
-    /// Authority account address
-    pub authority: Cow<'a, str>,
-    /// Electorate account address
-    pub electorate: Cow<'a, str>,
-    /// Token vault account address
-    pub token_vault_key: Cow<'a, str>,
-    /// Amount of tokens
-    pub balance: i64,
-    /// amount of unfinalized votes
-    pub unfinalized_votes: i64,
-}
-
 /// `Tribeca` Locked-Voter program account
 /// A row in the `lockers` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -1163,4 +1125,104 @@ pub struct Vote<'a> {
     pub side: i16,
     /// The number of votes this vote holds.
     pub weight: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+
+pub struct SmartWallet<'a> {
+    pub address: Cow<'a, str>,
+    pub base: Cow<'a, str>,
+    pub bump: i16,
+    pub threshold: i64,
+    pub minimum_delay: i64,
+    pub grace_period: i64,
+    pub owner_set_seqno: i64,
+    pub num_transactions: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct SmartWalletOwner<'a> {
+    pub smart_wallet_address: Cow<'a, str>,
+    pub owner_address: Cow<'a, str>,
+    pub index: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Transaction<'a> {
+    pub address: Cow<'a, str>,
+    pub smart_wallet: Cow<'a, str>,
+    pub index: i64,
+    pub bump: i16,
+    pub proposer: Cow<'a, str>,
+    pub owner_set_seqno: i64,
+    pub eta: i64,
+    pub executor: Cow<'a, str>,
+    pub executed_at: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "tx_instructions"]
+pub struct TXInstruction<'a> {
+    pub transaction_address: Cow<'a, str>,
+    pub program_id: Cow<'a, str>,
+    pub data: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "tx_instruction_keys"]
+pub struct TXInstructionKey<'a> {
+    pub transaction_address: Cow<'a, str>,
+    pub program_id: Cow<'a, str>,
+    pub pubkey: Cow<'a, str>,
+    pub is_signer: bool,
+    pub is_writable: bool,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct SubAccountInfo<'a> {
+    pub smart_wallet: Cow<'a, str>,
+    pub subaccount_type: i16,
+    pub index: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct InstructionBuffer<'a> {
+    pub address: Cow<'a, str>,
+    pub owner_set_seqno: i64,
+    pub eta: i64,
+    pub authority: Cow<'a, str>,
+    pub executor: Cow<'a, str>,
+    pub smart_wallet: Cow<'a, str>,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct InsBufferBundle<'a> {
+    pub instruction_buffer_address: Cow<'a, str>,
+    pub is_executed: bool,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "ins_buffer_bundle_instructions"]
+pub struct InsBuffferBundleInstruction<'a> {
+    pub instruction_buffer_address: Cow<'a, str>,
+    pub program_id: Cow<'a, str>,
+    pub data: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct InsBufferBundleInsKey<'a> {
+    pub instruction_buffer_address: Cow<'a, str>,
+    pub pubkey: Cow<'a, str>,
+    pub is_signer: bool,
+    pub is_writable: bool,
 }

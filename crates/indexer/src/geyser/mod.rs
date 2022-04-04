@@ -70,8 +70,8 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         Message::AccountUpdate(update) if update.owner == pubkeys::name_service() => {
             programs::name_service::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::tribeca_simple_voter() => {
-            programs::tribeca_simple_voter::process(client, update).await
+        Message::AccountUpdate(update) if update.owner == pubkeys::goki_smart_wallet() => {
+            programs::goki_smart_wallet::process(client, update).await
         },
         Message::AccountUpdate(update) if update.owner == pubkeys::tribeca_locked_voter() => {
             programs::tribeca_locked_voter::process(client, update).await

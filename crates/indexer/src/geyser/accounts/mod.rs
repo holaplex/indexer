@@ -11,7 +11,7 @@ pub mod metadata;
 pub mod mpl_store;
 pub mod name_service;
 pub mod receipt;
-pub mod simple_voter;
+pub mod smart_wallet;
 pub mod token;
 
 pub(self) use super::Client;

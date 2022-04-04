@@ -2306,7 +2306,7 @@ dependencies = [
  "anchor-lang 0.22.1",
  "anchor-spl 0.22.1",
  "num-traits",
- "smart-wallet",
+ "smart-wallet 0.9.0",
  "vipers",
 ]
 
@@ -2465,7 +2465,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "simple-voter",
+ "smart-wallet 0.10.1",
  "solana-program",
  "solana-sdk",
  "spl-token",
@@ -4275,19 +4275,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f054c6c1a6e95179d6f23ed974060dcefb2d9388bb7256900badad682c499de4"
 
 [[package]]
-name = "simple-voter"
-version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ece551198c0bb48e138737559006cefebb829801be78b38843760dceabf2aa69"
-dependencies = [
- "anchor-lang 0.22.1",
- "anchor-spl 0.22.1",
- "govern",
- "smart-wallet",
- "vipers",
-]
-
-[[package]]
 name = "slab"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4304,6 +4291,16 @@ name = "smart-wallet"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81e9125fb2087c042eb853947f07c0e4668129e4dcd66f5ebc95ee24ba4eebbf"
+dependencies = [
+ "anchor-lang 0.22.1",
+ "vipers",
+]
+
+[[package]]
+name = "smart-wallet"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb99e2e590d5251687feca8e54149a5286628b72d1959f6c72ac6bd5528acbb3"
 dependencies = [
  "anchor-lang 0.22.1",
  "vipers",
