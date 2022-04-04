@@ -1,7 +1,7 @@
 //! Tribeca Simple-Voter program accounts indexing
 use goki_smart_wallet::{
-    InstructionBuffer, SmartWallet, SubaccountInfo, SubaccountType, TXAccountMeta, TXInstruction,
-    Transaction,
+    InstructionBuffer, InstructionBundle, SmartWallet, SubaccountInfo, SubaccountType,
+    TXAccountMeta, TXInstruction, Transaction,
 };
 use indexer_core::{
     db::{
@@ -244,7 +244,15 @@ pub(crate) async fn process_instruction_buffer(
         .await
         .context("failed to insert instruction buffer")?;
 
-    for bundle in ib.bundles {
+    process_ins_buffer_bundles(client, ib_addr, ib.bundles).await
+}
+
+async fn process_ins_buffer_bundles(
+    client: &Client,
+    ib_addr: Pubkey,
+    bundles: Vec<InstructionBundle>,
+) -> Result<()> {
+    for bundle in bundles {
         let b = InsBufferBundle {
             instruction_buffer_address: Owned(ib_addr.to_string()),
             is_executed: bundle.is_executed,
@@ -262,59 +270,73 @@ pub(crate) async fn process_instruction_buffer(
             })
             .await
             .context("failed to insert instruction buffer bundle")?;
-
-        for ins in bundle.instructions {
-            let bundle_ins = InsBuffferBundleInstruction {
-                instruction_buffer_address: Owned(ib_addr.to_string()),
-                program_id: Owned(ins.program_id.to_string()),
-                data: ins.data,
-            };
-            client
-                .db()
-                .run(move |db| {
-                    insert_into(ins_buffer_bundle_instructions::table)
-                        .values(&bundle_ins)
-                        .on_conflict((
-                            ins_buffer_bundle_instructions::instruction_buffer_address,
-                            ins_buffer_bundle_instructions::program_id,
-                        ))
-                        .do_update()
-                        .set(&bundle_ins)
-                        .execute(db)
-                })
-                .await
-                .context("failed to insert instruction buffer bundle instruction")?;
-
-            for key in ins.keys {
-                let k = InsBufferBundleInsKey {
-                    instruction_buffer_address: Owned(ib_addr.to_string()),
-                    program_id: Owned(ins.program_id.to_string()),
-                    pubkey: Owned(key.pubkey.to_string()),
-                    is_signer: key.is_signer,
-                    is_writable: key.is_writable,
-                };
-
-                client
-                    .db()
-                    .run(move |db| {
-                        insert_into(ins_buffer_bundle_ins_keys::table)
-                            .values(&k)
-                            .on_conflict((
-                                ins_buffer_bundle_ins_keys::instruction_buffer_address,
-                                ins_buffer_bundle_ins_keys::program_id,
-                                ins_buffer_bundle_ins_keys::pubkey,
-                            ))
-                            .do_update()
-                            .set(&k)
-                            .execute(db)
-                    })
-                    .await
-                    .context(
-                        "failed to insert instruction buffer bundle instruction account metadata",
-                    )?;
-            }
-        }
+        process_ins_buffer_bundle_instructions(client, ib_addr, bundle.instructions).await?;
     }
 
+    Ok(())
+}
+
+async fn process_ins_buffer_bundle_instructions(
+    client: &Client,
+    ib_addr: Pubkey,
+    bundle_instructions: Vec<TXInstruction>,
+) -> Result<()> {
+    for ins in bundle_instructions {
+        let bundle_ins = InsBuffferBundleInstruction {
+            instruction_buffer_address: Owned(ib_addr.to_string()),
+            program_id: Owned(ins.program_id.to_string()),
+            data: ins.data,
+        };
+        client
+            .db()
+            .run(move |db| {
+                insert_into(ins_buffer_bundle_instructions::table)
+                    .values(&bundle_ins)
+                    .on_conflict((
+                        ins_buffer_bundle_instructions::instruction_buffer_address,
+                        ins_buffer_bundle_instructions::program_id,
+                    ))
+                    .do_update()
+                    .set(&bundle_ins)
+                    .execute(db)
+            })
+            .await
+            .context("failed to insert instruction buffer bundle instruction")?;
+        process_ins_buffer_bundle_ins_keys(client, ib_addr, ins.program_id, ins.keys).await?;
+    }
+    Ok(())
+}
+async fn process_ins_buffer_bundle_ins_keys(
+    client: &Client,
+    ib_addr: Pubkey,
+    program_id: Pubkey,
+    keys: Vec<TXAccountMeta>,
+) -> Result<()> {
+    for key in keys {
+        let k = InsBufferBundleInsKey {
+            instruction_buffer_address: Owned(ib_addr.to_string()),
+            program_id: Owned(program_id.to_string()),
+            pubkey: Owned(key.pubkey.to_string()),
+            is_signer: key.is_signer,
+            is_writable: key.is_writable,
+        };
+
+        client
+            .db()
+            .run(move |db| {
+                insert_into(ins_buffer_bundle_ins_keys::table)
+                    .values(&k)
+                    .on_conflict((
+                        ins_buffer_bundle_ins_keys::instruction_buffer_address,
+                        ins_buffer_bundle_ins_keys::program_id,
+                        ins_buffer_bundle_ins_keys::pubkey,
+                    ))
+                    .do_update()
+                    .set(&k)
+                    .execute(db)
+            })
+            .await
+            .context("failed to insert instruction buffer bundle instruction account metadata")?;
+    }
     Ok(())
 }

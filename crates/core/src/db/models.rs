@@ -1131,101 +1131,165 @@ pub struct Vote<'a> {
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct SmartWallet<'a> {
+    /// Smart Wallet account pubkey
     pub address: Cow<'a, str>,
+    /// Base used to derive.
     pub base: Cow<'a, str>,
+    /// Bump seed for deriving PDA seeds.
     pub bump: i16,
+    /// Minimum number of owner approvals needed to sign a [Transaction].
     pub threshold: i64,
+    /// Minimum delay between approval and execution, in seconds.
     pub minimum_delay: i64,
+    /// Time after the ETA until a [Transaction] expires.
     pub grace_period: i64,
+    ///Sequence of the ownership set.
     pub owner_set_seqno: i64,
+    /// Total number of [Transaction]s on this [SmartWallet].
     pub num_transactions: i64,
 }
 
+/// A row in the `smart_wallet_owners` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct SmartWalletOwner<'a> {
+    /// Smart Wallet account pubkey
     pub smart_wallet_address: Cow<'a, str>,
+    /// Owners of the [SmartWallet].
     pub owner_address: Cow<'a, str>,
+    /// Position of owner in vec<Owners Pubkey>
     pub index: i64,
 }
 
+/// A row in the `transactions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct Transaction<'a> {
+    /// Transaction account pubkey
     pub address: Cow<'a, str>,
+    /// The [SmartWallet] account this transaction belongs to.
     pub smart_wallet: Cow<'a, str>,
+    /// The auto-incremented integer index of the transaction.
+    /// All transactions on the [SmartWallet] can be looked up via this index,
+    /// allowing for easier browsing of a wallet's historical transactions.
     pub index: i64,
+    /// Bump seed.
     pub bump: i16,
+    /// The proposer of the [Transaction].
     pub proposer: Cow<'a, str>,
+    /// `signers[index]` is true iff `[SmartWallet]::owners[index]` signed the transaction.
     pub signers: Vec<bool>,
+    /// Owner set sequence number.
     pub owner_set_seqno: i64,
+    /// Estimated time the [Transaction] will be executed.
     pub eta: i64,
+    /// The account that executed the [Transaction].
     pub executor: Cow<'a, str>,
+    /// When the transaction was executed. -1 if not executed.
     pub executed_at: i64,
 }
 
+/// A row in the `tx_instructions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "tx_instructions"]
 pub struct TXInstruction<'a> {
+    /// Transaction account pubkey
     pub transaction_address: Cow<'a, str>,
+    /// Pubkey of the instruction processor that executes this instruction
     pub program_id: Cow<'a, str>,
+    /// Opaque data passed to the instruction processor
     pub data: Vec<u8>,
 }
 
+/// A row in the `tx_instruction_keys` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "tx_instruction_keys"]
 pub struct TXInstructionKey<'a> {
+    /// Transaction account pubkey
     pub transaction_address: Cow<'a, str>,
+    /// Pubkey of the instruction processor that executes this instruction
     pub program_id: Cow<'a, str>,
+    /// An account's public key
     pub pubkey: Cow<'a, str>,
+    /// True if an Instruction requires a Transaction signature matching `pubkey`.
     pub is_signer: bool,
+    /// True if the `pubkey` can be loaded as a read-write account.
     pub is_writable: bool,
 }
 
+/// A row in the `subaccount_infos` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct SubAccountInfo<'a> {
+    /// SubAccountInfo account pubkey
     pub address: Cow<'a, str>,
+    /// Smart wallet of the sub-account.
     pub smart_wallet: Cow<'a, str>,
+    /// Type of sub-account.
+    /// 0 -> Requires the normal multisig approval process.
+    /// 1 ->Any owner may sign an instruction  as this address.
     pub subaccount_type: i16,
+    /// Index of the sub-account.
     pub index: i64,
 }
 
+/// A row in the `instruction_buffers` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct InstructionBuffer<'a> {
+    /// InstructionBuffer account pubkey
     pub address: Cow<'a, str>,
+    /// Sequence of the ownership set.
     pub owner_set_seqno: i64,
+    /// - If set to [crate::NO_ETA], the instructions in each [InstructionBuffer::bundles] may be executed at any time.
+    /// - Otherwise, instructions may be executed at any point after the ETA has elapsed.
     pub eta: i64,
+    /// Authority of the buffer.
     pub authority: Cow<'a, str>,
+    /// Role that can execute instructions off the buffer.
     pub executor: Cow<'a, str>,
+    /// Smart wallet the buffer belongs to.
     pub smart_wallet: Cow<'a, str>,
 }
 
+/// A row in the `ins_buffer_bundles` table
+/// Vector of instructions.
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct InsBufferBundle<'a> {
+    /// InstructionBuffer account pubkey
     pub instruction_buffer_address: Cow<'a, str>,
+    /// Execution counter on the [InstructionBundle].
     pub is_executed: bool,
 }
 
+/// A row in the `ins_buffer_bundle_instructions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "ins_buffer_bundle_instructions"]
 pub struct InsBuffferBundleInstruction<'a> {
+    /// InstructionBuffer account pubkey
     pub instruction_buffer_address: Cow<'a, str>,
+    /// Pubkey of the instruction processor that executes this instruction
     pub program_id: Cow<'a, str>,
+    /// Opaque data passed to the instruction processor
     pub data: Vec<u8>,
 }
 
+/// A row in the `ins_buffer_bundle_ins_keys` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct InsBufferBundleInsKey<'a> {
+    /// InstructionBuffer account pubkey
     pub instruction_buffer_address: Cow<'a, str>,
+    /// Pubkey of the instruction processor that executes the instruction
     pub program_id: Cow<'a, str>,
+    /// An account's public key
     pub pubkey: Cow<'a, str>,
+    /// True if an Instruction requires a Transaction signature matching `pubkey`.
     pub is_signer: bool,
+    /// True if the `pubkey` can be loaded as a read-write account.
     pub is_writable: bool,
 }
