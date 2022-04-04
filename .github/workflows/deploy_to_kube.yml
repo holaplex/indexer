@@ -2,11 +2,12 @@ name: Heroku (staging)
 
 on:
   push:
-    branches: [ actions-kube-poc ]
+    branches: [ dev, actions-kube-poc ]
 
 jobs:
   build:
     name: Building and Pushing Image
+    if: ${{ !contains(github.event.head_commit.message, '#k8s') }}
     runs-on: ubuntu-20.04
 
     steps:
@@ -41,8 +42,9 @@ jobs:
 
         run: |
           git_hash=$(git rev-parse --short "$GITHUB_SHA")
-          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:geyserconsumer-${GITHUB_REF##*/}-$git_hash"
-          docker build -t $image_tag --target geyser-consumer .
+          app=geyser-consumer
+          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:$app-${GITHUB_REF##*/}-$git_hash"
+          docker build -t $image_tag --target $app .
           echo "Pushing image to ECR..."
           docker push $image_tag
           echo "::set-output name=image::$image_tag"
@@ -55,8 +57,9 @@ jobs:
 
         run: |
           git_hash=$(git rev-parse --short "$GITHUB_SHA")
-          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:httpconsumer-${GITHUB_REF##*/}-$git_hash"
-          docker build -t $image_tag --target http-consumer .
+          app=http-consumer
+          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:$app-${GITHUB_REF##*/}-$git_hash"
+          docker build -t $image_tag --target $app .
           echo "Pushing image to ECR..."
           docker push $image_tag
           echo "::set-output name=image::$image_tag"
@@ -69,8 +72,9 @@ jobs:
 
         run: |
           git_hash=$(git rev-parse --short "$GITHUB_SHA")
-          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:graphql-${GITHUB_REF##*/}-$git_hash"
-          docker build -t $image_tag --target graphql .
+          app=graphql
+          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:$app-${GITHUB_REF##*/}-$git_hash"
+          docker build -t $image_tag --target $app .
           echo "Pushing image to ECR..."
           docker push $image_tag
           echo "::set-output name=image::$image_tag"
@@ -79,15 +83,20 @@ jobs:
         if: github.ref == 'refs/heads/dev'
         run: |
             git_hash=$(git rev-parse --short "$GITHUB_SHA")
-            deployment_file="./k8s/dev/app/indexer-deploy.yaml"
-            app=geyserconsumer
-            version=$(cat $deployment_file | grep -i image | grep -i $app | awk {'print $2'} | head -n1 | cut -d: -f2)
+            app=geyser-consumer
+            deployment_file="./k8s/dev/app/$app.yaml"
+            version=$(cat $deployment_file | grep -i image\: | awk {'print $2'} | cut -d: -f2)
+            echo "Updating ${app} deployment with new image tag"
             sed -i "s/$version/$app-${GITHUB_REF##*/}-$git_hash/" $deployment_file
-            app=httpconsumer
-            version=$(cat $deployment_file | grep -i image | grep -i $app | awk {'print $2'} | head -n1 | cut -d: -f2)
+            app=http-consumer
+            deployment_file="./k8s/dev/app/$app.yaml"
+            version=$(cat $deployment_file | grep -i image\: | awk {'print $2'} | cut -d: -f2)
+            echo "Updating ${app} deployment with new image tag"
             sed -i "s/$version/$app-${GITHUB_REF##*/}-$git_hash/" $deployment_file
             app=graphql
-            version=$(cat $deployment_file | grep -i image | grep -i $app | awk {'print $2'} | head -n1 | cut -d: -f2)
+            deployment_file="./k8s/dev/app/$app.yaml"
+            version=$(cat $deployment_file | grep -i image\: | awk {'print $2'} | cut -d: -f2)
+            echo "Updating ${app} deployment with new image tag"
             sed -i "s/$version/$app-${GITHUB_REF##*/}-$git_hash/" $deployment_file
 
       - name: Commit and push changes
