@@ -1,6 +1,10 @@
 use metaplex_token_metadata::{
+    state::{Key as MetaplexKey, Metadata as MetaplexMetadata},
+    utils::try_from_slice_checked as metaplex_try_from_slice_checked,
+};
+use mpl_token_metadata::{
     state::{
-        Edition, Key, MasterEditionV1, MasterEditionV2, Metadata, MAX_EDITION_LEN,
+        Creator, Data, Edition, Key, MasterEditionV1, MasterEditionV2, Metadata, MAX_EDITION_LEN,
         MAX_MASTER_EDITION_LEN, MAX_METADATA_LEN,
     },
     utils::try_from_slice_checked,
@@ -18,10 +22,44 @@ const MASTER_EDITION_V1: u8 = Key::MasterEditionV1 as u8;
 const MASTER_EDITION_V2: u8 = Key::MasterEditionV2 as u8;
 
 async fn process_metadata(client: &Client, update: AccountUpdate) -> Result<()> {
-    let meta: Metadata = try_from_slice_checked(&update.data, Key::MetadataV1, MAX_METADATA_LEN)
-        .context("Failed to parse metadata")?;
+    // Deserializing using mpl_token_metadata crate
+    if let Ok(metadata) = try_from_slice_checked(&update.data, Key::MetadataV1, MAX_METADATA_LEN) {
+        return metadata::process(client, update.key, metadata).await;
+    }
 
-    metadata::process(client, update.key, meta).await
+    // Deserializing using metaplex_token_metadata and changing the metaplex Metadata to mpl Metadata
+    let m: MetaplexMetadata =
+        metaplex_try_from_slice_checked(&update.data, MetaplexKey::MetadataV1, MAX_METADATA_LEN)
+            .context("failed to deserialize metadata!")?;
+
+    let metaplex_metadata = Metadata {
+        key: Key::MetadataV1,
+        update_authority: m.update_authority,
+        mint: m.mint,
+        data: Data {
+            name: m.data.name,
+            symbol: m.data.symbol,
+            uri: m.data.uri,
+            seller_fee_basis_points: m.data.seller_fee_basis_points,
+            creators: m.data.creators.map(|o| {
+                o.into_iter()
+                    .map(|c| Creator {
+                        address: c.address,
+                        verified: c.verified,
+                        share: c.share,
+                    })
+                    .collect()
+            }),
+        },
+        primary_sale_happened: m.primary_sale_happened,
+        is_mutable: m.is_mutable,
+        edition_nonce: m.edition_nonce,
+        token_standard: None,
+        collection: None,
+        uses: None,
+    };
+
+    metadata::process(client, update.key, metaplex_metadata).await
 }
 
 async fn process_edition(client: &Client, update: AccountUpdate) -> Result<()> {

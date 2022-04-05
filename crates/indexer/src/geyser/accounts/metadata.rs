@@ -1,12 +1,13 @@
 use indexer_core::{
     db::{
+        custom_types::TokenStandardEnum,
         insert_into,
-        models::{Metadata, MetadataCreator},
-        tables::{metadata_creators, metadatas},
+        models::{Metadata, MetadataCollectionKey, MetadataCreator},
+        tables::{metadata_collection_keys, metadata_creators, metadatas},
     },
     pubkeys::find_edition,
 };
-use metaplex_token_metadata::state::Metadata as MetadataAccount;
+use mpl_token_metadata::state::{Collection, Metadata as MetadataAccount, TokenStandard};
 
 use super::Client;
 use crate::prelude::*;
@@ -26,6 +27,12 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
         is_mutable: meta.is_mutable,
         edition_nonce: meta.edition_nonce.map(Into::into),
         edition_pda: Owned(bs58::encode(edition_pda_key).into_string()),
+        token_standard: meta.token_standard.map(|ts| match ts {
+            TokenStandard::NonFungible => TokenStandardEnum::NonFungible,
+            TokenStandard::FungibleAsset => TokenStandardEnum::FungibleAsset,
+            TokenStandard::Fungible => TokenStandardEnum::Fungible,
+            TokenStandard::NonFungibleEdition => TokenStandardEnum::NonFungibleEdition,
+        }),
     };
     let first_verified_creator: Option<Pubkey> = meta
         .data
@@ -84,6 +91,40 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
             .await
             .context("Failed to insert metadata creator")?;
     }
+
+    if meta.collection.is_some() {
+        index_metadata_collection_key(client, addr, meta.collection.context("err!")?).await?;
+    }
+
+    Ok(())
+}
+
+async fn index_metadata_collection_key(
+    client: &Client,
+    addr: String,
+    collection: Collection,
+) -> Result<()> {
+    let row = MetadataCollectionKey {
+        metadata_address: Owned(addr),
+        collection_address: Owned(collection.key.to_string()),
+        verified: collection.verified,
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(metadata_collection_keys::table)
+                .values(&row)
+                .on_conflict((
+                    metadata_collection_keys::metadata_address,
+                    metadata_collection_keys::collection_address,
+                ))
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
+        .context("Failed to insert into metadata_collection_keys")?;
 
     Ok(())
 }

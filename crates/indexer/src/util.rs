@@ -1,11 +1,11 @@
 //! Miscellaneous utility functions.
 #![allow(dead_code)]
 
-use metaplex_token_metadata::state::{MasterEditionV1, MasterEditionV2};
+use mpl_token_metadata::state::{MasterEditionV1, MasterEditionV2};
 #[cfg(feature = "solana-program")]
 use {
     indexer_core::prelude::*,
-    metaplex_token_metadata::state::Key,
+    mpl_token_metadata::state::Key,
     solana_program::{account_info::AccountInfo, entrypoint::ProgramResult},
     solana_sdk::{account::Account, pubkey::Pubkey},
 };
@@ -98,7 +98,7 @@ impl MasterEdition {
 }
 
 #[cfg(feature = "solana-program")]
-impl metaplex_token_metadata::state::MasterEdition for MasterEdition {
+impl mpl_token_metadata::state::MasterEdition for MasterEdition {
     fn key(&self) -> Key {
         match self {
             Self::V1(m) => m.key(),

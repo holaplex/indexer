@@ -80,3 +80,46 @@ impl FromSql<Mode, Pg> for WhitelistMintMode {
         }
     }
 }
+
+#[derive(SqlType, Debug, Clone, Copy)]
+#[postgres(type_name = "token_standard")]
+/// Represents database `token_standard` type
+pub struct TokenStandard;
+
+#[derive(Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy)]
+#[sql_type = "TokenStandard"]
+/// `TokenStandard` enum in `Metadata` struct
+pub enum TokenStandardEnum {
+    /// This is a master edition
+    NonFungible,
+    /// A token with metadata that can also have attributes, sometimes called Semi Fungible
+    FungibleAsset,
+    /// A token with simple metadata
+    Fungible,
+    /// This is a limited edition
+    NonFungibleEdition,
+}
+
+impl ToSql<TokenStandard, Pg> for TokenStandardEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        match *self {
+            TokenStandardEnum::NonFungible => out.write_all(b"NonFungible")?,
+            TokenStandardEnum::FungibleAsset => out.write_all(b"FungibleAsset")?,
+            TokenStandardEnum::Fungible => out.write_all(b"Fungible")?,
+            TokenStandardEnum::NonFungibleEdition => out.write_all(b"NonFungibleEdition")?,
+        }
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<TokenStandard, Pg> for TokenStandardEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        match not_none!(bytes) {
+            b"NonFungible" => Ok(TokenStandardEnum::NonFungible),
+            b"FungibleAsset" => Ok(TokenStandardEnum::FungibleAsset),
+            b"Fungible" => Ok(TokenStandardEnum::Fungible),
+            b"NonFungibleEdition" => Ok(TokenStandardEnum::NonFungibleEdition),
+            _ => Err("invalid enum entry".into()),
+        }
+    }
+}

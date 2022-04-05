@@ -12,12 +12,17 @@ use super::schema::{
     bids, candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators,
     candy_machine_datas, candy_machine_end_settings, candy_machine_gate_keeper_configs,
     candy_machine_hidden_settings, candy_machine_whitelist_mint_settings, candy_machines, editions,
-    files, graph_connections, listing_metadatas, listing_receipts, master_editions,
-    metadata_collections, metadata_creators, metadata_jsons, metadatas, purchase_receipts,
-    store_config_jsons, store_configs, store_creators, storefronts, stores, token_accounts,
-    twitter_handle_name_services, whitelisted_creators,
+    escrows, files, governance_parameters, governors, graph_connections,
+    ins_buffer_bundle_ins_keys, ins_buffer_bundle_instructions, ins_buffer_bundles,
+    instruction_buffers, listing_metadatas, listing_receipts, locker_params,
+    locker_whitelist_entries, lockers, master_editions, metadata_collection_keys,
+    metadata_collections, metadata_creators, metadata_jsons, metadatas, proposal_account_metas,
+    proposal_instructions, proposal_metas, proposals, purchase_receipts, smart_wallet_owners,
+    smart_wallets, store_config_jsons, store_configs, store_creators, storefronts, stores,
+    sub_account_infos, token_accounts, transactions, twitter_handle_name_services,
+    tx_instruction_keys, tx_instructions, votes, whitelisted_creators,
 };
-use crate::db::custom_types::{EndSettingType, WhitelistMintMode};
+use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
 
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
@@ -200,6 +205,8 @@ pub struct Metadata<'a> {
     pub edition_nonce: Option<i32>,
     /// edition pda derived from account
     pub edition_pda: Cow<'a, str>,
+    /// Type of NFT token
+    pub token_standard: Option<TokenStandardEnum>,
 }
 
 /// A row in the `storefronts` table
@@ -879,4 +886,410 @@ pub struct TwitterHandle<'a> {
     pub twitter_handle: Cow<'a, str>,
     /// Solana slot number
     pub slot: i64,
+}
+
+/// A row in the `metadata_collection_keys` table
+/// Each collection is an NFT
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct MetadataCollectionKey<'a> {
+    /// Metadata address
+    pub metadata_address: Cow<'a, str>,
+    /// Collection Address
+    pub collection_address: Cow<'a, str>,
+    /// Whether the collection is verified or not.
+    pub verified: bool,
+}
+
+/// `Tribeca` Locked-Voter program account
+/// A row in the `lockers` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Locker<'a> {
+    /// `Locker` account pubkey
+    pub address: Cow<'a, str>,
+    /// Base account used to generate signer seeds.
+    pub base: Cow<'a, str>,
+    /// Bump seed
+    pub bump: i16,
+    /// Mint of the token that must be locked in the [Locker].
+    pub token_mint: Cow<'a, str>,
+    /// Total number of tokens locked in [Escrow]s.
+    pub locked_supply: i64,
+    /// Governor associated with the [Locker].
+    pub governor: Cow<'a, str>,
+}
+
+/// A row in the `locker_params` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct LockerParam<'a> {
+    /// `Locker` account pubkey
+    pub locker_address: Cow<'a, str>,
+    /// Whether or not the locking whitelist system is enabled.
+    pub whitelist_enabled: bool,
+    /// The weight of a maximum vote lock relative to the total number of tokens locked.
+    pub max_stake_vote_multiplier: i16,
+    /// Minimum staking duration.
+    pub min_stake_duration: i64,
+    /// Maximum staking duration.
+    pub max_stake_duration: i64,
+    /// Minimum number of votes required to activate a proposal.
+    pub proposal_activation_min_votes: i64,
+}
+
+/// `Tribeca` Locked-Voter program account
+/// A row in the `locker_whitelist_entries` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "locker_whitelist_entries"]
+pub struct LockerWhitelistEntry<'a> {
+    /// `LockerWhitelistEntry` account pubkey
+    pub address: Cow<'a, str>,
+    /// Bump seed.
+    pub bump: i16,
+    /// [Locker] this whitelist entry belongs to.
+    pub locker: Cow<'a, str>,
+    /// Key of the program_id allowed to call the `lock` CPI.
+    pub program_id: Cow<'a, str>,
+    /// The account authorized to be the [Escrow::owner] with this CPI.
+    pub owner: Cow<'a, str>,
+}
+
+/// `Tribeca` Locked-Voter program account
+/// A row in the `escrows` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Escrow<'a> {
+    /// `Escrow` account pubkey
+    pub address: Cow<'a, str>,
+    /// The [Locker] that this [Escrow] is part of.
+    pub locker: Cow<'a, str>,
+    /// The key of the account that is authorized to stake into/withdraw from this [Escrow].
+    pub owner: Cow<'a, str>,
+    /// Bump seed.
+    pub bump: i16,
+    /// The token account holding the escrow tokens.
+    pub tokens: Cow<'a, str>,
+    /// Amount of tokens staked.
+    pub amount: i64,
+    /// When the [Escrow::owner] started their escrow.
+    pub escrow_started_at: i64,
+    /// When the escrow unlocks; i.e. the [Escrow::owner] is scheduled to be allowed to withdraw their tokens.
+    pub escrow_ends_at: i64,
+
+    /// Account that is authorized to vote on behalf of this [Escrow].
+    /// Defaults to the [Escrow::owner].
+    pub vote_delegate: Cow<'a, str>,
+}
+
+/// `Tribeca` Govern program account
+/// A row in the `governors` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Governor<'a> {
+    /// `Governor` account pubkey
+    pub address: Cow<'a, str>,
+    /// Base.
+    pub base: Cow<'a, str>,
+    /// Bump seed
+    pub bump: i16,
+    /// The total number of Proposals
+    pub proposal_count: i64,
+
+    /// The voting body associated with the Governor.
+    /// This account is responsible for handling vote proceedings, such as:
+    /// - activating proposals
+    /// - setting the number of votes per voter
+    pub electorate: Cow<'a, str>,
+    /// The public key of the [smart_wallet::SmartWallet] account.
+    /// This smart wallet executes proposals.
+    pub smart_wallet: Cow<'a, str>,
+}
+
+/// A row in the `governor_parameters` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct GovernanceParameter<'a> {
+    /// `Governor` account pubkey
+    pub governor_address: Cow<'a, str>,
+    /// The delay before voting on a proposal may take place, once proposed, in seconds
+    pub voting_delay: i64,
+    /// The duration of voting on a proposal, in seconds
+    pub voting_period: i64,
+    /// The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
+    pub quorum_votes: i64,
+    /// The timelock delay of the DAO's created proposals.
+    pub timelock_delay_seconds: i64,
+}
+
+/// `Tribeca` Govern program account
+/// A row in the `proposals` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Proposal<'a> {
+    /// Proposal account pubkey
+    pub address: Cow<'a, str>,
+    /// The public key of the governor.
+    pub governor: Cow<'a, str>,
+    /// The unique ID of the proposal, auto-incremented.
+    pub index: i64,
+    /// Bump seed
+    pub bump: i16,
+    /// The public key of the proposer.
+    pub proposer: Cow<'a, str>,
+    /// The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
+    pub quorum_votes: i64,
+    /// Current number of votes in favor of this proposal
+    pub for_votes: i64,
+    /// Current number of votes in opposition to this proposal
+    pub against_votes: i64,
+    /// Current number of votes for abstaining for this proposal
+    pub abstain_votes: i64,
+    /// The timestamp when the proposal was canceled.
+    pub canceled_at: i64,
+    /// The timestamp when the proposal was created.
+    pub created_at: i64,
+    /// The timestamp in which the proposal was activated.
+    /// This is when voting begins.
+    pub activated_at: i64,
+    /// The timestamp when voting ends.
+    /// This only applies to active proposals.
+    pub voting_ends_at: i64,
+    /// The timestamp in which the proposal was queued, i.e.
+    /// approved for execution on the Smart Wallet.
+    pub queued_at: i64,
+    /// If the transaction was queued, this is the associated Goki Smart Wallet transaction.
+    pub queued_transaction: Cow<'a, str>,
+}
+
+/// A row in the `proposal_instructions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct ProposalInstruction<'a> {
+    /// public key of the proposal to which the instruction is associated
+    pub proposal_address: Cow<'a, str>,
+    /// Pubkey of the instruction processor that executes this instruction
+    pub program_id: Cow<'a, str>,
+    /// Opaque data passed to the instruction processor
+    pub data: Vec<u8>,
+}
+
+/// A row in the `proposal_account_metas` table
+/// Account metadata used to define Instructions
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct ProposalAccountMeta<'a> {
+    /// Pubkey of the proposal to which the account metadata is associated
+    pub proposal_address: Cow<'a, str>,
+    /// Pubkey of the program id which executes the instruction to which the account metadata is associated
+    pub program_id: Cow<'a, str>,
+    /// Pubkey of the instruction processor that executes the instruction to which the account metadata is associated
+    pub pubkey: Cow<'a, str>,
+    /// True if an Instruction requires a Transaction signature matching `pubkey`.
+    pub is_signer: bool,
+    /// True if the `pubkey` can be loaded as a read-write account.
+    pub is_writable: bool,
+}
+
+/// `Tribeca` Govern program account
+/// A row in the `proposal_metas` table
+/// Metadata about a proposal.
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct ProposalMeta<'a> {
+    /// `ProposalMeta` account pubkey
+    pub address: Cow<'a, str>,
+    /// Pubkey of the proposal to which metadata is associated
+    pub proposal: Cow<'a, str>,
+    /// Title of the proposal.
+    pub title: Cow<'a, str>,
+    /// Link to a description of the proposal.
+    pub description_link: Cow<'a, str>,
+}
+
+/// `Tribeca` Govern program account
+/// A row in the `votes` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Vote<'a> {
+    /// `Vote` account pubkey
+    pub address: Cow<'a, str>,
+    /// Pubkey of the proposal being voted on.
+    pub proposal: Cow<'a, str>,
+    /// Pubkey of the voter
+    pub voter: Cow<'a, str>,
+    /// Bump seed
+    pub bump: i16,
+    /// The side of the vote taken.
+    pub side: i16,
+    /// The number of votes this vote holds.
+    pub weight: i64,
+}
+
+/// A row in the `smart_wallets` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct SmartWallet<'a> {
+    /// Smart Wallet account pubkey
+    pub address: Cow<'a, str>,
+    /// Base used to derive.
+    pub base: Cow<'a, str>,
+    /// Bump seed for deriving PDA seeds.
+    pub bump: i16,
+    /// Minimum number of owner approvals needed to sign a [Transaction].
+    pub threshold: i64,
+    /// Minimum delay between approval and execution, in seconds.
+    pub minimum_delay: i64,
+    /// Time after the ETA until a [Transaction] expires.
+    pub grace_period: i64,
+    ///Sequence of the ownership set.
+    pub owner_set_seqno: i64,
+    /// Total number of [Transaction]s on this [SmartWallet].
+    pub num_transactions: i64,
+}
+
+/// A row in the `smart_wallet_owners` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct SmartWalletOwner<'a> {
+    /// Smart Wallet account pubkey
+    pub smart_wallet_address: Cow<'a, str>,
+    /// Owners of the [SmartWallet].
+    pub owner_address: Cow<'a, str>,
+    /// Position of owner in vec<Owners Pubkey>
+    pub index: i64,
+}
+
+/// A row in the `transactions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Transaction<'a> {
+    /// Transaction account pubkey
+    pub address: Cow<'a, str>,
+    /// The [SmartWallet] account this transaction belongs to.
+    pub smart_wallet: Cow<'a, str>,
+    /// The auto-incremented integer index of the transaction.
+    /// All transactions on the [SmartWallet] can be looked up via this index,
+    /// allowing for easier browsing of a wallet's historical transactions.
+    pub index: i64,
+    /// Bump seed.
+    pub bump: i16,
+    /// The proposer of the [Transaction].
+    pub proposer: Cow<'a, str>,
+    /// `signers[index]` is true iff `[SmartWallet]::owners[index]` signed the transaction.
+    pub signers: Vec<bool>,
+    /// Owner set sequence number.
+    pub owner_set_seqno: i64,
+    /// Estimated time the [Transaction] will be executed.
+    pub eta: i64,
+    /// The account that executed the [Transaction].
+    pub executor: Cow<'a, str>,
+    /// When the transaction was executed. -1 if not executed.
+    pub executed_at: i64,
+}
+
+/// A row in the `tx_instructions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "tx_instructions"]
+pub struct TXInstruction<'a> {
+    /// Transaction account pubkey
+    pub transaction_address: Cow<'a, str>,
+    /// Pubkey of the instruction processor that executes this instruction
+    pub program_id: Cow<'a, str>,
+    /// Opaque data passed to the instruction processor
+    pub data: Vec<u8>,
+}
+
+/// A row in the `tx_instruction_keys` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "tx_instruction_keys"]
+pub struct TXInstructionKey<'a> {
+    /// Transaction account pubkey
+    pub transaction_address: Cow<'a, str>,
+    /// Pubkey of the instruction processor that executes this instruction
+    pub program_id: Cow<'a, str>,
+    /// An account's public key
+    pub pubkey: Cow<'a, str>,
+    /// True if an Instruction requires a Transaction signature matching `pubkey`.
+    pub is_signer: bool,
+    /// True if the `pubkey` can be loaded as a read-write account.
+    pub is_writable: bool,
+}
+
+/// A row in the `subaccount_infos` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct SubAccountInfo<'a> {
+    /// SubAccountInfo account pubkey
+    pub address: Cow<'a, str>,
+    /// Smart wallet of the sub-account.
+    pub smart_wallet: Cow<'a, str>,
+    /// Type of sub-account.
+    /// 0 -> Requires the normal multisig approval process.
+    /// 1 ->Any owner may sign an instruction  as this address.
+    pub subaccount_type: i16,
+    /// Index of the sub-account.
+    pub index: i64,
+}
+
+/// A row in the `instruction_buffers` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct InstructionBuffer<'a> {
+    /// InstructionBuffer account pubkey
+    pub address: Cow<'a, str>,
+    /// Sequence of the ownership set.
+    pub owner_set_seqno: i64,
+    /// - If set to [crate::NO_ETA], the instructions in each [InstructionBuffer::bundles] may be executed at any time.
+    /// - Otherwise, instructions may be executed at any point after the ETA has elapsed.
+    pub eta: i64,
+    /// Authority of the buffer.
+    pub authority: Cow<'a, str>,
+    /// Role that can execute instructions off the buffer.
+    pub executor: Cow<'a, str>,
+    /// Smart wallet the buffer belongs to.
+    pub smart_wallet: Cow<'a, str>,
+}
+
+/// A row in the `ins_buffer_bundles` table
+/// Vector of instructions.
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct InsBufferBundle<'a> {
+    /// InstructionBuffer account pubkey
+    pub instruction_buffer_address: Cow<'a, str>,
+    /// Execution counter on the [InstructionBundle].
+    pub is_executed: bool,
+}
+
+/// A row in the `ins_buffer_bundle_instructions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "ins_buffer_bundle_instructions"]
+pub struct InsBuffferBundleInstruction<'a> {
+    /// InstructionBuffer account pubkey
+    pub instruction_buffer_address: Cow<'a, str>,
+    /// Pubkey of the instruction processor that executes this instruction
+    pub program_id: Cow<'a, str>,
+    /// Opaque data passed to the instruction processor
+    pub data: Vec<u8>,
+}
+
+/// A row in the `ins_buffer_bundle_ins_keys` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct InsBufferBundleInsKey<'a> {
+    /// InstructionBuffer account pubkey
+    pub instruction_buffer_address: Cow<'a, str>,
+    /// Pubkey of the instruction processor that executes the instruction
+    pub program_id: Cow<'a, str>,
+    /// An account's public key
+    pub pubkey: Cow<'a, str>,
+    /// True if an Instruction requires a Transaction signature matching `pubkey`.
+    pub is_signer: bool,
+    /// True if the `pubkey` can be loaded as a read-write account.
+    pub is_writable: bool,
 }

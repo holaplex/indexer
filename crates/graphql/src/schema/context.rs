@@ -1,10 +1,11 @@
-use dataloaders::{Batcher, Loader};
+use dataloaders::{Batcher, Loader, TwitterBatcher};
 use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
     listing::{Bid, Listing},
     listing_receipt::ListingReceipt,
     nft::{Nft, NftActivity, NftAttribute, NftCreator, NftOwner},
+    profile::TwitterProfile,
     purchase_receipt::PurchaseReceipt,
     stats::{MarketStats, MintStats},
     store_creator::StoreCreator,
@@ -36,6 +37,7 @@ pub struct AppContext {
     pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
+    pub twitter_profile_loader: Loader<String, Option<TwitterProfile>, TwitterBatcher>,
 }
 
 impl juniper::Context for AppContext {}
@@ -43,6 +45,7 @@ impl juniper::Context for AppContext {}
 impl AppContext {
     pub(crate) fn new(db_pool: Arc<Pool>, shared: Arc<SharedData>) -> AppContext {
         let batcher = Batcher::new(db_pool.clone());
+        let twitter_batcher = TwitterBatcher::new(shared.twitter_bearer_token.clone());
 
         Self {
             auction_house_loader: Loader::new(batcher.clone()),
@@ -61,6 +64,7 @@ impl AppContext {
             bid_receipts_loader: Loader::new(batcher.clone()),
             store_creator_loader: Loader::new(batcher.clone()),
             collection_loader: Loader::new(batcher),
+            twitter_profile_loader: Loader::new(twitter_batcher),
             db_pool,
             shared,
         }

@@ -1,7 +1,7 @@
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     attributes (id) {
         metadata_address -> Varchar,
@@ -15,7 +15,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     auction_caches (address) {
         address -> Varchar,
@@ -31,7 +31,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     auction_datas (address) {
         address -> Varchar,
@@ -50,7 +50,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     auction_datas_ext (address) {
         address -> Varchar,
@@ -63,7 +63,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     auction_houses (address) {
         address -> Varchar,
@@ -86,7 +86,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     bid_receipts (address) {
         address -> Varchar,
@@ -109,7 +109,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     bids (listing_address, bidder_address) {
         listing_address -> Varchar,
@@ -123,7 +123,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     candy_machine_collection_pdas (address) {
         address -> Varchar,
@@ -135,7 +135,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     candy_machine_config_lines (address) {
         address -> Varchar,
@@ -147,7 +147,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     candy_machine_creators (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -160,7 +160,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     candy_machine_datas (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -179,7 +179,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     candy_machine_end_settings (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -191,7 +191,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     candy_machine_gate_keeper_configs (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -203,7 +203,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     candy_machine_hidden_settings (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -216,7 +216,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     candy_machine_whitelist_mint_settings (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -230,7 +230,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     candy_machines (address) {
         address -> Varchar,
@@ -244,7 +244,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     editions (address) {
         address -> Varchar,
@@ -256,7 +256,25 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    escrows (address) {
+        address -> Varchar,
+        locker -> Varchar,
+        owner -> Varchar,
+        bump -> Int2,
+        tokens -> Varchar,
+        amount -> Int8,
+        escrow_started_at -> Int8,
+        escrow_ends_at -> Int8,
+        vote_delegate -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     files (id) {
         metadata_address -> Varchar,
@@ -269,7 +287,36 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    governance_parameters (governor_address) {
+        governor_address -> Varchar,
+        voting_delay -> Int8,
+        voting_period -> Int8,
+        quorum_votes -> Int8,
+        timelock_delay_seconds -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    governors (address) {
+        address -> Varchar,
+        base -> Varchar,
+        bump -> Int2,
+        proposal_count -> Int8,
+        electorate -> Varchar,
+        smart_wallet -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     graph_connections (address) {
         address -> Varchar,
@@ -281,7 +328,59 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    ins_buffer_bundle_ins_keys (instruction_buffer_address, program_id, pubkey) {
+        instruction_buffer_address -> Varchar,
+        program_id -> Varchar,
+        pubkey -> Varchar,
+        is_signer -> Bool,
+        is_writable -> Bool,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    ins_buffer_bundle_instructions (instruction_buffer_address, program_id) {
+        instruction_buffer_address -> Varchar,
+        program_id -> Varchar,
+        data -> Bytea,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    ins_buffer_bundles (instruction_buffer_address) {
+        instruction_buffer_address -> Varchar,
+        is_executed -> Bool,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    instruction_buffers (address) {
+        address -> Varchar,
+        owner_set_seqno -> Int8,
+        eta -> Int8,
+        authority -> Varchar,
+        executor -> Varchar,
+        smart_wallet -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     listing_denylist (listing_address) {
         listing_address -> Varchar,
@@ -292,7 +391,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     listing_metadatas (listing_address, metadata_address) {
         listing_address -> Varchar,
@@ -304,7 +403,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     listing_receipts (address) {
         address -> Varchar,
@@ -326,7 +425,51 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    locker_params (locker_address) {
+        locker_address -> Varchar,
+        whitelist_enabled -> Bool,
+        max_stake_vote_multiplier -> Int2,
+        min_stake_duration -> Int8,
+        max_stake_duration -> Int8,
+        proposal_activation_min_votes -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    locker_whitelist_entries (address) {
+        address -> Varchar,
+        bump -> Int2,
+        locker -> Varchar,
+        program_id -> Varchar,
+        owner -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    lockers (address) {
+        address -> Varchar,
+        base -> Varchar,
+        bump -> Int2,
+        token_mint -> Varchar,
+        locked_supply -> Int8,
+        governor -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     master_editions (address) {
         address -> Varchar,
@@ -338,7 +481,19 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    metadata_collection_keys (metadata_address, collection_address) {
+        metadata_address -> Varchar,
+        collection_address -> Varchar,
+        verified -> Bool,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     metadata_collections (id) {
         metadata_address -> Varchar,
@@ -351,7 +506,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     metadata_creators (metadata_address, creator_address) {
         metadata_address -> Varchar,
@@ -365,7 +520,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     metadata_jsons (metadata_address) {
         metadata_address -> Varchar,
@@ -384,7 +539,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     metadatas (address) {
         address -> Varchar,
@@ -398,13 +553,77 @@ table! {
         is_mutable -> Bool,
         edition_nonce -> Nullable<Int4>,
         edition_pda -> Varchar,
+        token_standard -> Nullable<Token_standard>,
     }
 }
 
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    proposal_account_metas (proposal_address, program_id, pubkey) {
+        proposal_address -> Varchar,
+        program_id -> Varchar,
+        pubkey -> Varchar,
+        is_signer -> Bool,
+        is_writable -> Bool,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    proposal_instructions (proposal_address, program_id) {
+        proposal_address -> Varchar,
+        program_id -> Varchar,
+        data -> Bytea,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    proposal_metas (address) {
+        address -> Varchar,
+        proposal -> Varchar,
+        title -> Text,
+        description_link -> Text,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    proposals (address) {
+        address -> Varchar,
+        governor -> Varchar,
+        index -> Int8,
+        bump -> Int2,
+        proposer -> Varchar,
+        quorum_votes -> Int8,
+        for_votes -> Int8,
+        against_votes -> Int8,
+        abstain_votes -> Int8,
+        canceled_at -> Int8,
+        created_at -> Int8,
+        activated_at -> Int8,
+        voting_ends_at -> Int8,
+        queued_at -> Int8,
+        queued_transaction -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     purchase_receipts (address) {
         address -> Varchar,
@@ -423,7 +642,36 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    smart_wallet_owners (smart_wallet_address, owner_address) {
+        smart_wallet_address -> Varchar,
+        owner_address -> Varchar,
+        index -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    smart_wallets (address) {
+        address -> Varchar,
+        base -> Varchar,
+        bump -> Int2,
+        threshold -> Int8,
+        minimum_delay -> Int8,
+        grace_period -> Int8,
+        owner_set_seqno -> Int8,
+        num_transactions -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     store_config_jsons (config_address) {
         config_address -> Varchar,
@@ -441,7 +689,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     store_configs (address) {
         address -> Varchar,
@@ -452,7 +700,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     store_creators (store_config_address, creator_address) {
         store_config_address -> Varchar,
@@ -463,7 +711,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     store_denylist (owner_address) {
         owner_address -> Varchar,
@@ -474,7 +722,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     storefronts (address) {
         owner_address -> Varchar,
@@ -493,7 +741,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     stores (address) {
         address -> Varchar,
@@ -505,7 +753,20 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    sub_account_infos (address) {
+        address -> Varchar,
+        smart_wallet -> Varchar,
+        subaccount_type -> Int2,
+        index -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     token_accounts (address) {
         address -> Varchar,
@@ -520,7 +781,26 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    transactions (address) {
+        address -> Varchar,
+        smart_wallet -> Varchar,
+        index -> Int8,
+        bump -> Int2,
+        proposer -> Varchar,
+        signers -> Array<Bool>,
+        owner_set_seqno -> Int8,
+        eta -> Int8,
+        executor -> Varchar,
+        executed_at -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     twitter_handle_name_services (address) {
         address -> Varchar,
@@ -533,7 +813,48 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    tx_instruction_keys (transaction_address, program_id, pubkey) {
+        transaction_address -> Varchar,
+        program_id -> Varchar,
+        pubkey -> Varchar,
+        is_signer -> Bool,
+        is_writable -> Bool,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    tx_instructions (transaction_address, program_id) {
+        transaction_address -> Varchar,
+        program_id -> Varchar,
+        data -> Bytea,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    votes (address) {
+        address -> Varchar,
+        proposal -> Varchar,
+        voter -> Varchar,
+        bump -> Int2,
+        side -> Int2,
+        weight -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
     whitelisted_creators (address) {
         address -> Varchar,
@@ -560,24 +881,46 @@ allow_tables_to_appear_in_same_query!(
     candy_machine_whitelist_mint_settings,
     candy_machines,
     editions,
+    escrows,
     files,
+    governance_parameters,
+    governors,
     graph_connections,
+    ins_buffer_bundle_ins_keys,
+    ins_buffer_bundle_instructions,
+    ins_buffer_bundles,
+    instruction_buffers,
     listing_denylist,
     listing_metadatas,
     listing_receipts,
+    locker_params,
+    locker_whitelist_entries,
+    lockers,
     master_editions,
+    metadata_collection_keys,
     metadata_collections,
     metadata_creators,
     metadata_jsons,
     metadatas,
+    proposal_account_metas,
+    proposal_instructions,
+    proposal_metas,
+    proposals,
     purchase_receipts,
+    smart_wallet_owners,
+    smart_wallets,
     store_config_jsons,
     store_configs,
     store_creators,
     store_denylist,
     storefronts,
     stores,
+    sub_account_infos,
     token_accounts,
+    transactions,
     twitter_handle_name_services,
+    tx_instruction_keys,
+    tx_instructions,
+    votes,
     whitelisted_creators,
 );
