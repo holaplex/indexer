@@ -1002,7 +1002,7 @@ pub struct Governor<'a> {
     /// - activating proposals
     /// - setting the number of votes per voter
     pub electorate: Cow<'a, str>,
-    /// The public key of the [smart_wallet::SmartWallet] account.
+    /// The public key of the `smart_wallet::SmartWallet` account.
     /// This smart wallet executes proposals.
     pub smart_wallet: Cow<'a, str>,
 }
@@ -1243,7 +1243,7 @@ pub struct InstructionBuffer<'a> {
     pub address: Cow<'a, str>,
     /// Sequence of the ownership set.
     pub owner_set_seqno: i64,
-    /// - If set to [crate::NO_ETA], the instructions in each [InstructionBuffer::bundles] may be executed at any time.
+    /// - If set to `NO_ETA`, the instructions in each `InstructionBuffer::bundles` may be executed at any time.
     /// - Otherwise, instructions may be executed at any point after the ETA has elapsed.
     pub eta: i64,
     /// Authority of the buffer.
@@ -1261,7 +1261,7 @@ pub struct InstructionBuffer<'a> {
 pub struct InsBufferBundle<'a> {
     /// InstructionBuffer account pubkey
     pub instruction_buffer_address: Cow<'a, str>,
-    /// Execution counter on the [InstructionBundle].
+    /// Execution counter on the `InstructionBundle`.
     pub is_executed: bool,
 }
 
