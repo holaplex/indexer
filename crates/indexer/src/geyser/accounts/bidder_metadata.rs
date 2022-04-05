@@ -1,4 +1,7 @@
-use indexer_core::db::{insert_into, models::Bid, tables::bids};
+use indexer_core::{
+    db::{insert_into, models::Bid, tables::bids},
+    util,
+};
 use metaplex_auction::processor::BidderMetadata as BidderMetadataAccount;
 
 use super::Client;
@@ -20,7 +23,7 @@ pub(crate) async fn process(
     let values = Bid {
         listing_address: Owned(bs58::encode(auction_pubkey).into_string()),
         bidder_address: Owned(bs58::encode(bidder_pubkey).into_string()),
-        last_bid_time: NaiveDateTime::from_timestamp(last_bid_timestamp, 0),
+        last_bid_time: util::unix_timestamp(last_bid_timestamp)?,
         last_bid_amount: last_bid
             .try_into()
             .context("Last bid amount was too high to store")?,

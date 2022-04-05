@@ -8,6 +8,7 @@ use indexer_core::{
         tables::{bid_receipts, listing_receipts, purchase_receipts},
     },
     prelude::*,
+    util,
 };
 use mpl_auction_house::receipt::{BidReceipt, ListingReceipt, PurchaseReceipt};
 
@@ -33,10 +34,8 @@ pub(crate) async fn process_listing_receipt(
         token_size: listing.token_size.try_into()?,
         bump: listing.bump.into(),
         trade_state_bump: listing.trade_state_bump.into(),
-        created_at: NaiveDateTime::from_timestamp(listing.created_at, 0),
-        canceled_at: listing
-            .canceled_at
-            .map(|t| NaiveDateTime::from_timestamp(t, 0)),
+        created_at: util::unix_timestamp(listing.created_at)?,
+        canceled_at: listing.canceled_at.map(util::unix_timestamp).transpose()?,
     };
 
     client
@@ -70,7 +69,7 @@ pub(crate) async fn process_purchase_receipt(
         token_size: purchase.token_size.try_into()?,
         price: purchase.price.try_into()?,
         bump: purchase.bump.into(),
-        created_at: NaiveDateTime::from_timestamp(purchase.created_at, 0),
+        created_at: util::unix_timestamp(purchase.created_at)?,
     };
 
     client
@@ -111,10 +110,11 @@ pub(crate) async fn process_bid_receipt(
         token_size: bid_receipt.token_size.try_into()?,
         bump: bid_receipt.bump.into(),
         trade_state_bump: bid_receipt.trade_state_bump.into(),
-        created_at: NaiveDateTime::from_timestamp(bid_receipt.created_at, 0),
+        created_at: util::unix_timestamp(bid_receipt.created_at)?,
         canceled_at: bid_receipt
             .canceled_at
-            .map(|t| NaiveDateTime::from_timestamp(t, 0)),
+            .map(util::unix_timestamp)
+            .transpose()?,
     };
 
     client
