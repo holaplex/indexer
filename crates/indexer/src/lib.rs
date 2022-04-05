@@ -134,33 +134,45 @@ mod runtime {
     where
         Q::Message: Debug + Send + for<'a> serde::Deserialize<'a>,
     {
+        enum StopType {
+            Hangup,
+            Stopped,
+        }
+
         async fn consume_one<Q: QueueType, F: Future<Output = Result<()>>>(
             worker_id: usize,
             mut consumer: Consumer<Q>,
             process: impl Fn(Q::Message) -> F,
             mut stop_rx: broadcast::Receiver<()>,
-        ) -> Result<()>
+        ) -> Result<StopType>
         where
             Q::Message: Debug + for<'de> serde::Deserialize<'de>,
         {
             // Ideally T would be ! but ! is unstable.
-            fn handle_stop<T>(r: Result<(), RecvError>) -> Result<Option<T>> {
+            enum Delivery<T> {
+                Message(Option<(T, lapin::acker::Acker)>),
+                Stop,
+            }
+
+            fn handle_stop<T>(r: Result<(), RecvError>) -> Result<Delivery<T>> {
                 match r {
-                    Ok(()) | Err(RecvError::Closed) => Ok(None),
+                    Ok(()) | Err(RecvError::Closed) => Ok(Delivery::Stop),
                     Err(e) => Err(e).context("Error receiving stop signal"),
                 }
             }
 
             loop {
-                let val = tokio::select! {
-                    r = consumer.read() => r.context("Failed to read AMQP message")?,
+                let del = tokio::select! {
+                    r = consumer.read() => {
+                        Delivery::Message(r.context("Failed to read AMQP message")?)
+                    },
                     r = stop_rx.recv() => handle_stop(r)?,
                 };
 
-                let (msg, acker) = if let Some(del) = val {
-                    del
-                } else {
-                    break;
+                let (msg, acker) = match del {
+                    Delivery::Message(Some(d)) => d,
+                    Delivery::Message(None) => break Ok(StopType::Hangup),
+                    Delivery::Stop => break Ok(StopType::Stopped),
                 };
 
                 trace!("Worker {}: {:?}", worker_id, msg);
@@ -180,8 +192,6 @@ mod runtime {
                     },
                 }
             }
-
-            Ok(())
         }
 
         let Params { concurrency } = *params;
@@ -203,7 +213,8 @@ mod runtime {
                     stop_tx.subscribe(),
                 ))
                 .map(|r| match r {
-                    Ok(Ok(())) => warn!("AMQP server hung up!"),
+                    Ok(Ok(StopType::Hangup)) => warn!("AMQP server hung up!"),
+                    Ok(Ok(StopType::Stopped)) => (),
                     Ok(Err(e)) => error!("Fatal error in worker: {:?}", e),
                     Err(e) => error!("Worker terminated unexpectedly: {:?}", e),
                 })
