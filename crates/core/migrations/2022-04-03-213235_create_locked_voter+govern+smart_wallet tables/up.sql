@@ -200,13 +200,6 @@ create table transactions (
     executed_at bigint not null
 );
 
--- create table transaction_signers (
---     transaction_address varchar(48),
---     is_signer bool not null,
---     index bigint not null,
---     primary key (transaction_address, is_signer, index)
--- );
-
 create table tx_instructions (
     transaction_address varchar(48) not null,
     program_id varchar(48) not null,

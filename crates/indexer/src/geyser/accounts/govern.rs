@@ -93,7 +93,7 @@ pub(crate) async fn process_vote(client: &Client, key: Pubkey, v: Vote) -> Resul
         .run(move |db| {
             insert_into(votes::table)
                 .values(&row)
-                .on_conflict((votes::proposal, votes::voter))
+                .on_conflict(votes::address)
                 .do_update()
                 .set(&row)
                 .execute(db)
@@ -117,7 +117,7 @@ pub(crate) async fn process_meta(client: &Client, key: Pubkey, meta: ProposalMet
         .run(move |db| {
             insert_into(proposal_metas::table)
                 .values(&row)
-                .on_conflict(proposal_metas::proposal)
+                .on_conflict(proposal_metas::address)
                 .do_update()
                 .set(&row)
                 .execute(db)
