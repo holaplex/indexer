@@ -1,4 +1,4 @@
-//! Tribeca Simple-Voter program accounts indexing
+//! Smart Wallet program accounts indexing
 use goki_smart_wallet::{
     InstructionBuffer, InstructionBundle, SmartWallet, SubaccountInfo, SubaccountType,
     TXAccountMeta, TXInstruction, Transaction,

@@ -116,9 +116,10 @@ create index if not exists proposals_queued_transaction_idx on
 proposals using hash (queued_transaction);
 
 create table proposal_instructions (
-    proposal_address                varchar(48)             primary key,
-    program_id                      varchar(48)             not null,
-    data                            bytea                   not null
+    proposal_address                varchar(48),
+    program_id                      varchar(48),
+    data                            bytea                   not null,
+    primary key (proposal_address, program_id)
 );
 
 create index if not exists proposal_instructions_program_id_idx on 
@@ -170,86 +171,137 @@ votes using hash (voter);
 -- Goki Smart wallet program accounts tables
 
 create table smart_wallets (
-    address varchar(48) primary key,
-    base varchar(48)             not null,
-    bump smallint not null,
-    threshold bigint not null,
-    minimum_delay bigint not null,
-    grace_period bigint not null,
-    owner_set_seqno bigint not null,
-    num_transactions bigint not null
+    address                         varchar(48)             primary key,
+    base                            varchar(48)             not null,
+    bump                            smallint                not null,
+    threshold                       bigint                  not null,
+    minimum_delay                   bigint                  not null,
+    grace_period                    bigint                  not null,
+    owner_set_seqno                 bigint                  not null,
+    num_transactions                bigint                  not null
 );
 
+create index if not exists smart_wallets_base_idx on 
+smart_wallets using hash (base);
+
 create table smart_wallet_owners (
-    smart_wallet_address varchar(48),
-    owner_address varchar(48),
-    index bigint not null,
+    smart_wallet_address            varchar(48),
+    owner_address                   varchar(48),
+    index                           bigint                  not null,
     primary key (smart_wallet_address, owner_address)
 );
 
 create table transactions (
-    address varchar(48)             primary key,
-    smart_wallet varchar(48)             not null,
-    index bigint not null,
-    bump smallint not null,
-    proposer varchar(48) not null,
-    signers bool[] not null,
-    owner_set_seqno bigint not null,
-    eta bigint not null,
-    executor varchar(48) not null,
-    executed_at bigint not null
+    address                         varchar(48)             primary key,
+    smart_wallet                    varchar(48)             not null,
+    index                           bigint                  not null,
+    bump                            smallint                not null,
+    proposer                        varchar(48)             not null,
+    signers                         bool[]                  not null,
+    owner_set_seqno                 bigint                  not null,
+    eta                             bigint                  not null,
+    executor                        varchar(48)             not null,
+    executed_at                     bigint                  not null
 );
 
+create index if not exists transactions_smart_wallet_idx on 
+transactions using hash (smart_wallet);
+
+create index if not exists transactions_proposer_idx on 
+transactions using hash (proposer);
+
+create index if not exists transactions_executor_idx on 
+transactions using hash (executor);
+
 create table tx_instructions (
-    transaction_address varchar(48) not null,
-    program_id varchar(48) not null,
-    data bytea not null,
+    transaction_address             varchar(48)             not null,
+    program_id                      varchar(48)             not null,
+    data                            bytea                   not null,
     primary key (transaction_address, program_id)
 );
 
+create index if not exists tx_instructions_program_id_idx on 
+tx_instructions using hash (program_id);
+
 create table tx_instruction_keys (
-    transaction_address varchar(48) not null,
-    program_id varchar(48) not null,
-    pubkey varchar(48) not null,
-    is_signer bool not null,
-    is_writable bool not null,
+    transaction_address             varchar(48)             not null,
+    program_id                      varchar(48)             not null,
+    pubkey                          varchar(48)             not null,
+    is_signer                       bool                    not null,
+    is_writable                     bool                    not null,
     primary key (transaction_address, program_id, pubkey)
 );
 
+create index if not exists tx_instruction_keys_transaction_address_idx on 
+tx_instruction_keys using hash (transaction_address);
+
+create index if not exists tx_instruction_keys_program_id_idx on 
+tx_instruction_keys using hash (program_id);
+
+create index if not exists tx_instruction_keys_pubkey_idx on 
+tx_instruction_keys using hash (pubkey);
+
 create table sub_account_infos (
     address                         varchar(48)             primary key,
-    smart_wallet varchar(48),
-    subaccount_type smallint,
-    index bigint not null
+    smart_wallet                    varchar(48)             not null,
+    subaccount_type                 smallint                not null,
+    index                           bigint                  not null
 );
+
+create index if not exists sub_account_infos_smart_wallet_idx on 
+sub_account_infos using hash (smart_wallet);
 
 create table instruction_buffers (
-    address varchar(48) primary key,
-    owner_set_seqno bigint not null,
-    eta bigint not null,
-    authority varchar(48) not null,
-    executor varchar(48)             not null,
-    smart_wallet varchar(48)             not null
+    address                         varchar(48)             primary key,
+    owner_set_seqno                 bigint                  not null,
+    eta                             bigint                  not null,
+    authority                       varchar(48)             not null,
+    executor                        varchar(48)             not null,
+    smart_wallet                    varchar(48)             not null
 );
 
+create index if not exists instruction_buffers_authority_idx on 
+instruction_buffers using hash (authority);
+
+create index if not exists instruction_executor_authority_idx on 
+instruction_buffers using hash (executor);
+
+create index if not exists instruction_smart_wallet_authority_idx on 
+instruction_buffers using hash (smart_wallet);
+
 create table ins_buffer_bundles (
-    instruction_buffer_address varchar(48) primary key,
-    is_executed bool not null
+    instruction_buffer_address      varchar(48)             primary key,
+    is_executed                     bool                    not null
 );
 
 create table ins_buffer_bundle_instructions (
-    instruction_buffer_address varchar(48),
-    program_id                      varchar(48)             not null,
-    data bytea not null,
+    instruction_buffer_address      varchar(48),
+    program_id                      varchar(48),
+    data                            bytea                   not null,
     primary key (instruction_buffer_address, program_id)
 
 );
 
+create index if not exists ins_buffer_bundle_instructions_ibr_idx on 
+ins_buffer_bundle_instructions using hash (instruction_buffer_address);
+
+create index if not exists ins_buffer_bundle_instructions_id_idx on 
+ins_buffer_bundle_instructions using hash (program_id);
+
 create table ins_buffer_bundle_ins_keys (
-    instruction_buffer_address varchar(48),
-    program_id varchar(48) not null,
-    pubkey varchar(48),
-    is_signer bool not null,
-    is_writable bool not null,
-    primary key (instruction_buffer_address, pubkey)
+    instruction_buffer_address      varchar(48),
+    program_id                      varchar(48),
+    pubkey                          varchar(48),
+    is_signer                       bool                    not null,
+    is_writable                     bool                    not null,
+    primary key (instruction_buffer_address, program_id, pubkey)
 );
+
+create index if not exists ins_buffer_bundle_ins_keys_idx on 
+ins_buffer_bundle_ins_keys using hash (instruction_buffer_address);
+
+create index if not exists ins_buffer_bundle_ins_program_id_idx on 
+ins_buffer_bundle_ins_keys using hash (program_id);
+
+create index if not exists ins_buffer_bundle_ins_pubkey_idx on 
+ins_buffer_bundle_ins_keys using hash (pubkey);

@@ -22,7 +22,7 @@ async fn process_vote(client: &Client, update: AccountUpdate) -> Result<()> {
     govern::process_vote(client, update.key, vote).await
 }
 
-async fn process_proposal_and_meta(client: &Client, update: AccountUpdate) -> Result<()> {
+async fn process_proposal_or_meta(client: &Client, update: AccountUpdate) -> Result<()> {
     if let Ok(proposal) = Proposal::try_deserialize_unchecked(&mut update.data.as_slice()) {
         govern::process_proposal(client, update.key, proposal).await?;
     } else {
@@ -39,6 +39,6 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
     match update.data.len() {
         GOVERNOR_SIZE => process_governor(client, update).await,
         VOTE_SIZE => process_vote(client, update).await,
-        _ => process_proposal_and_meta(client, update).await,
+        _ => process_proposal_or_meta(client, update).await,
     }
 }
