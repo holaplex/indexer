@@ -18,8 +18,10 @@ pub(self) mod prelude {
     #[allow(unused_imports)]
     pub(super) use super::{
         super::prelude::*,
-        batcher::{BatchIter, BatchMap, BatchResult, Batcher, TryBatchFn, TryBatchMap},
+        batcher::{
+            BatchIter, BatchMap, BatchResult, Batcher, TryBatchFn, TryBatchMap, TwitterBatcher,
+        },
     };
 }
 
-pub use batcher::{BatchResult, Batcher, Error, Loader};
+pub use batcher::{BatchResult, Batcher, Error, Loader, TwitterBatcher};

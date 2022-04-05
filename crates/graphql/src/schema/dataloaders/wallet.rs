@@ -7,13 +7,13 @@ use super::{batcher::Error, prelude::*};
 const TWITTER_SCREEN_NAME_CHUNKS: usize = 100;
 
 #[async_trait]
-impl TryBatchFn<String, Option<TwitterProfile>> for Batcher {
+impl TryBatchFn<String, Option<TwitterProfile>> for TwitterBatcher {
     async fn load(
         &mut self,
         screen_names: &[String],
     ) -> TryBatchMap<String, Option<TwitterProfile>> {
         let http_client = reqwest::Client::new();
-        let twitter_bearer_token = &self.twitter_bearer_token;
+        let twitter_bearer_token = self.bearer();
 
         let chunked_screen_names = screen_names.chunks(TWITTER_SCREEN_NAME_CHUNKS);
 
@@ -27,14 +27,14 @@ impl TryBatchFn<String, Option<TwitterProfile>> for Batcher {
                     http_client
                         .post("https://api.twitter.com/1.1/users/lookup.json")
                         .header("Accept", "application/json")
-                        .form(&[("screen_name",&screen_names.join(", ") )])
+                        .form(&[("screen_name", &screen_names.join(", "))])
                         .bearer_auth(twitter_bearer_token)
                         .send()
                         .await
-                        .map_err(Error::into_batcher_err)?
+                        .map_err(Error::model_convert)?
                         .json::<Vec<TwitterUserProfileResponse>>()
                         .await
-                        .map_err(Error::into_batcher_err)
+                        .map_err(Error::model_convert)
                 }
             })
             .collect::<Vec<_>>();

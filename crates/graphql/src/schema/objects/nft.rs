@@ -76,12 +76,12 @@ impl NftCreator {
         &self.metadata_address
     }
 
-    pub fn share(&self) -> &i32 {
-        &self.share
+    pub fn share(&self) -> i32 {
+        self.share
     }
 
-    pub fn verified(&self) -> &bool {
-        &self.verified
+    pub fn verified(&self) -> bool {
+        self.verified
     }
 
     pub fn position(&self) -> Option<i32> {

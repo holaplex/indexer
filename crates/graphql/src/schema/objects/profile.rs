@@ -18,23 +18,21 @@ pub struct Profile {
     pub banner_image_url: String,
 }
 
-impl TryFrom<TwitterUserProfileResponse> for TwitterProfile {
-    type Error = std::num::TryFromIntError;
-
-    fn try_from(
+impl From<TwitterUserProfileResponse> for TwitterProfile {
+    fn from(
         TwitterUserProfileResponse {
             screen_name,
             description,
             profile_image_url_https,
             profile_banner_url,
         }: TwitterUserProfileResponse,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             handle: screen_name,
             profile_image_url: profile_image_url_https,
             banner_image_url: profile_banner_url,
             description,
-        })
+        }
     }
 }
 
