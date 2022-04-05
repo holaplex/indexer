@@ -2490,6 +2490,7 @@ dependencies = [
  "async-trait",
  "base64 0.13.0",
  "dataloader",
+ "futures-util",
  "holaplex-indexer-core",
  "itertools",
  "juniper",

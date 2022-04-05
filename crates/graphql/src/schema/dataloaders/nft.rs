@@ -7,6 +7,7 @@ use objects::{
 use scalars::PublicKey;
 use tables::{
     attributes, listing_receipts, metadata_creators, metadatas, purchase_receipts, token_accounts,
+    twitter_handle_name_services,
 };
 
 use super::prelude::*;
@@ -39,15 +40,22 @@ impl TryBatchFn<PublicKey<Nft>, Vec<NftCreator>> for Batcher {
     ) -> TryBatchMap<PublicKey<Nft>, Vec<NftCreator>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::MetadataCreator> = metadata_creators::table
+        let rows: Vec<(Option<String>, models::MetadataCreator)> = metadata_creators::table
+            .left_join(twitter_handle_name_services::table.on(
+                twitter_handle_name_services::wallet_address.eq(metadata_creators::creator_address),
+            ))
             .filter(metadata_creators::metadata_address.eq(any(addresses)))
             .order(metadata_creators::position.asc())
+            .select((
+                twitter_handle_name_services::twitter_handle.nullable(),
+                (metadata_creators::all_columns),
+            ))
             .load(&conn)
             .context("Failed to load NFT creators")?;
 
         Ok(rows
             .into_iter()
-            .map(|c| (c.metadata_address.clone(), c.try_into()))
+            .map(|c| (c.1.metadata_address.clone(), c.try_into()))
             .batch(addresses))
     }
 }
@@ -60,25 +68,33 @@ impl TryBatchFn<PublicKey<Nft>, Option<NftOwner>> for Batcher {
     ) -> TryBatchMap<PublicKey<Nft>, Option<NftOwner>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::TokenAccount> = token_accounts::table
-            .filter(token_accounts::mint_address.eq(any(mint_addresses)))
-            .filter(token_accounts::amount.eq(1))
-            .select((
-                token_accounts::address,
-                token_accounts::mint_address,
-                token_accounts::owner_address,
-                token_accounts::amount,
-                token_accounts::slot,
-            ))
-            .load(&conn)
-            .context("Failed to load NFT owners")?;
+        let rows: Vec<(Option<String>, models::TokenAccount)> =
+            token_accounts::table
+                .left_join(twitter_handle_name_services::table.on(
+                    twitter_handle_name_services::wallet_address.eq(token_accounts::owner_address),
+                ))
+                .filter(token_accounts::mint_address.eq(any(mint_addresses)))
+                .filter(token_accounts::amount.eq(1))
+                .select((
+                    twitter_handle_name_services::twitter_handle.nullable(),
+                    (
+                        token_accounts::address,
+                        token_accounts::mint_address,
+                        token_accounts::owner_address,
+                        token_accounts::amount,
+                        token_accounts::slot,
+                    ),
+                ))
+                .load(&conn)
+                .context("Failed to load NFT owners")?;
 
         Ok(rows
             .into_iter()
-            .map(|t| {
+            .map(|(h, t)| {
                 (t.mint_address.into_owned(), NftOwner {
                     address: t.owner_address.into_owned(),
                     associated_token_account_address: t.address.into_owned(),
+                    twitter_handle: h,
                 })
             })
             .batch(mint_addresses))

@@ -10,6 +10,14 @@ pub enum Error {
     ModelConvert(#[from] Arc<indexer_core::error::Error>),
 }
 
+impl Error {
+    /// Construct a [`ModelConvert`](Self::ModelConvert) error from the given
+    /// error.
+    pub fn model_convert(e: impl Into<indexer_core::error::Error>) -> Self {
+        e.into().into()
+    }
+}
+
 impl From<indexer_core::error::Error> for Error {
     fn from(e: indexer_core::error::Error) -> Self {
         Self::ModelConvert(Arc::new(e))
@@ -19,7 +27,7 @@ impl From<indexer_core::error::Error> for Error {
 pub type BatchResult<T> = Result<T, Error>;
 pub type BatchMap<K, V> = HashMap<K, BatchResult<V>>;
 pub type TryBatchMap<K, V> = BatchResult<BatchMap<K, V>>;
-pub type Loader<K, V> = dataloader::non_cached::Loader<K, BatchResult<V>, Batcher>;
+pub type Loader<K, V, B = Batcher> = dataloader::non_cached::Loader<K, BatchResult<V>, B>;
 
 /// Helper trait for wrapping a value in [`Result`] if necessary
 pub trait ResultLike<T, E> {
@@ -109,6 +117,11 @@ pub trait TryBatchFn<K, V> {
 #[derive(Clone)]
 pub struct Batcher(Arc<Pool>);
 
+#[derive(Clone)]
+pub struct TwitterBatcher {
+    bearer: String,
+}
+
 impl Batcher {
     #[must_use]
     pub fn new(pool: Arc<Pool>) -> Self {
@@ -120,10 +133,34 @@ impl Batcher {
     }
 }
 
+impl TwitterBatcher {
+    #[must_use]
+    pub fn new(bearer: String) -> Self {
+        Self { bearer }
+    }
+
+    pub fn bearer(&self) -> &str {
+        &self.bearer
+    }
+}
+
 #[async_trait]
 impl<K: Clone + Eq + Hash + Sync, V> BatchFn<K, BatchResult<V>> for Batcher
 where
     Batcher: TryBatchFn<K, V>,
+{
+    async fn load(&mut self, keys: &[K]) -> BatchMap<K, V> {
+        match TryBatchFn::load(self, keys).await {
+            Ok(m) => m,
+            Err(e) => keys.iter().cloned().map(|k| (k, Err(e.clone()))).collect(),
+        }
+    }
+}
+
+#[async_trait]
+impl<K: Clone + Eq + Hash + Sync, V> BatchFn<K, BatchResult<V>> for TwitterBatcher
+where
+    TwitterBatcher: TryBatchFn<K, V>,
 {
     async fn load(&mut self, keys: &[K]) -> BatchMap<K, V> {
         match TryBatchFn::load(self, keys).await {

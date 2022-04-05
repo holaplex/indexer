@@ -4,7 +4,8 @@ use indexer_core::{
     db::models,
 };
 use objects::{
-    bid_receipt::BidReceipt, listing_receipt::ListingReceipt, purchase_receipt::PurchaseReceipt,
+    bid_receipt::BidReceipt, listing_receipt::ListingReceipt, profile::TwitterProfile,
+    purchase_receipt::PurchaseReceipt,
 };
 use reqwest::Url;
 
@@ -55,24 +56,70 @@ impl<'a> TryFrom<models::MetadataAttribute<'a>> for NftAttribute {
     }
 }
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 pub struct NftCreator {
     pub address: String,
     pub metadata_address: String,
     pub share: i32,
     pub verified: bool,
     pub position: Option<i32>,
+    pub twitter_handle: Option<String>,
 }
 
-impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
+#[graphql_object(Context = AppContext)]
+impl NftCreator {
+    pub fn address(&self) -> &str {
+        &self.address
+    }
+
+    pub fn metadata_address(&self) -> &str {
+        &self.metadata_address
+    }
+
+    pub fn share(&self) -> i32 {
+        self.share
+    }
+
+    pub fn verified(&self) -> bool {
+        self.verified
+    }
+
+    pub fn position(&self) -> Option<i32> {
+        self.position
+    }
+
+    pub fn twitter_handle(&self) -> Option<&str> {
+        self.twitter_handle.as_deref()
+    }
+
+    pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
+        let twitter_handle = self.twitter_handle.clone();
+
+        if twitter_handle.is_none() {
+            return Ok(None);
+        }
+
+        let twitter_handle = twitter_handle.unwrap();
+
+        ctx.twitter_profile_loader
+            .load(twitter_handle)
+            .await
+            .map_err(Into::into)
+    }
+}
+
+impl<'a> From<(Option<String>, models::MetadataCreator<'a>)> for NftCreator {
     fn from(
-        models::MetadataCreator {
-            creator_address,
-            metadata_address,
-            share,
-            verified,
-            position,
-        }: models::MetadataCreator,
+        (
+            twitter_handle,
+            models::MetadataCreator {
+                creator_address,
+                metadata_address,
+                share,
+                verified,
+                position,
+            },
+        ): (Option<String>, models::MetadataCreator),
     ) -> Self {
         Self {
             address: creator_address.into_owned(),
@@ -80,14 +127,46 @@ impl<'a> From<models::MetadataCreator<'a>> for NftCreator {
             share,
             verified,
             position,
+            twitter_handle,
         }
     }
 }
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 pub struct NftOwner {
     pub address: String,
     pub associated_token_account_address: String,
+    pub twitter_handle: Option<String>,
+}
+
+#[graphql_object(Context = AppContext)]
+impl NftOwner {
+    pub fn address(&self) -> &str {
+        &self.address
+    }
+
+    pub fn associated_token_account_address(&self) -> &str {
+        &self.associated_token_account_address
+    }
+
+    pub fn twitter_handle(&self) -> Option<&str> {
+        self.twitter_handle.as_deref()
+    }
+
+    pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
+        let twitter_handle = self.twitter_handle.clone();
+
+        if twitter_handle.is_none() {
+            return Ok(None);
+        }
+
+        let twitter_handle = twitter_handle.unwrap();
+
+        ctx.twitter_profile_loader
+            .load(twitter_handle)
+            .await
+            .map_err(Into::into)
+    }
 }
 
 #[derive(Debug, Clone, GraphQLObject)]
