@@ -900,6 +900,18 @@ pub struct TwitterEnrichedGraphConnection {
     pub to_twitter_handle: Option<String>,
 }
 
+/// A row in a `charts` query, representing requested price data on a particualar date
+#[derive(Debug, Clone, Copy, QueryableByName)]
+pub struct PricePoint {
+    /// The requested price on a date
+    #[sql_type = "Nullable<Int8>"]
+    pub price: Option<i64>,
+
+    /// The date for which the price was requested
+    #[sql_type = "Timestamp"]
+    pub date: NaiveDateTime,
+}
+
 /// A row in a `metadatas::count_by_marketplace` query, representing stats for
 /// a single marketplace
 #[derive(Debug, Clone, QueryableByName)]
