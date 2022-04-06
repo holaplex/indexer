@@ -77,6 +77,9 @@ pub fn list(
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
+            .left_outer_join(
+                listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)),
+            )
             .filter(metadata_creators::creator_address.eq(any(creators.unwrap_or_else(Vec::new))))
             .filter(metadata_creators::verified.eq(true))
             .select((
@@ -89,7 +92,9 @@ pub fn list(
                 metadata_jsons::image,
             ))
             .distinct()
-            .order(metadatas::address.asc())
+            .order((listing_receipts::price.desc(), metadatas::name.asc()))
+            .filter(listing_receipts::purchase_receipt.is_null())
+            .filter(listing_receipts::canceled_at.is_null())
             .limit(limit)
             .offset(offset);
 
