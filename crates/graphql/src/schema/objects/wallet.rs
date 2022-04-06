@@ -1,4 +1,4 @@
-use objects::listing::Bid;
+use objects::{listing::Bid, profile::TwitterProfile};
 use tables::bids;
 
 use super::prelude::*;
@@ -6,6 +6,16 @@ use super::prelude::*;
 #[derive(Debug, Clone)]
 pub struct Wallet {
     pub address: String,
+    pub twitter_handle: Option<String>,
+}
+
+impl Wallet {
+    pub fn new(address: String, twitter_handle: Option<String>) -> Self {
+        Self {
+            address,
+            twitter_handle,
+        }
+    }
 }
 
 #[graphql_object(Context = AppContext)]
@@ -27,6 +37,21 @@ impl Wallet {
         rows.into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
+        let twitter_handle = self.twitter_handle.clone();
+
+        if twitter_handle.is_none() {
+            return Ok(None);
+        }
+
+        let twitter_handle = twitter_handle.unwrap();
+
+        ctx.twitter_profile_loader
+            .load(twitter_handle)
+            .await
             .map_err(Into::into)
     }
 }

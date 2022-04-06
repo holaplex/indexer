@@ -3,6 +3,7 @@ use objects::{
     auction_house::AuctionHouse,
     creator::Creator,
     denylist::Denylist,
+    graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
     nft::Nft,
@@ -75,12 +76,57 @@ impl QueryRoot {
         )))
     }
 
+    fn connections(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Connections from a list of wallets")] from: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
+        #[graphql(description = "Connections to a list of wallets")] to: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
+        #[graphql(description = "Query limit")] limit: i32,
+        #[graphql(description = "Query offset")] offset: i32,
+    ) -> FieldResult<Vec<GraphConnection>> {
+        if from.is_none() && to.is_none() {
+            return Err(FieldError::new(
+                "No filter provided! Please provide at least one of the filters",
+                graphql_value!({ "Filters": "from: Vec<PublicKey>, to: Vec<PublicKey>" }),
+            ));
+        }
+        let conn = context.db_pool.get().context("failed to connect to db")?;
+        let from: Vec<String> = from
+            .unwrap_or_else(Vec::new)
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        let to: Vec<String> = to
+            .unwrap_or_else(Vec::new)
+            .into_iter()
+            .map(Into::into)
+            .collect();
+
+        let rows = queries::graph_connection::list(&conn, from, to, limit, offset)?;
+
+        rows.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
     fn creator(
         &self,
-        _context: &AppContext,
+        context: &AppContext,
         #[graphql(description = "Address of creator")] address: String,
-    ) -> Creator {
-        Creator { address }
+    ) -> FieldResult<Creator> {
+        let conn = context.db_pool.get().context("failed to connect to db")?;
+
+        let twitter_handle = queries::twitter_handle_name_service::get(&conn, address.clone())?;
+
+        Ok(Creator {
+            address,
+            twitter_handle,
+        })
     }
 
     fn nfts(
@@ -123,10 +169,14 @@ impl QueryRoot {
 
     fn wallet(
         &self,
-        _context: &AppContext,
-        #[graphql(description = "Address of NFT")] address: String,
-    ) -> Option<Wallet> {
-        Some(Wallet { address })
+        context: &AppContext,
+        #[graphql(description = "Address of the wallet")] address: String,
+    ) -> FieldResult<Wallet> {
+        let conn = context.db_pool.get()?;
+
+        let twitter_handle = queries::twitter_handle_name_service::get(&conn, address.clone())?;
+
+        Ok(Wallet::new(address, twitter_handle))
     }
 
     fn listings(&self, context: &AppContext) -> FieldResult<Vec<Listing>> {

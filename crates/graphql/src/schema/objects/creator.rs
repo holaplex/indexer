@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use indexer_core::{db::queries::stats, prelude::*};
 use itertools::Itertools;
-use objects::{auction_house::AuctionHouse, stats::MintStats};
+use objects::{auction_house::AuctionHouse, profile::TwitterProfile, stats::MintStats};
 use tables::{attributes, metadata_creators};
 
 use super::prelude::*;
@@ -11,6 +11,7 @@ use crate::schema::scalars::PublicKey;
 #[derive(Debug, Clone)]
 pub struct Creator {
     pub address: String,
+    pub twitter_handle: Option<String>,
 }
 
 #[derive(Debug, Clone, GraphQLObject, PartialEq, Eq, PartialOrd, Ord)]
@@ -126,5 +127,20 @@ impl Creator {
             })
             .sorted()
             .collect::<Vec<_>>())
+    }
+
+    pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
+        let twitter_handle = self.twitter_handle.clone();
+
+        if twitter_handle.is_none() {
+            return Ok(None);
+        }
+
+        let twitter_handle = twitter_handle.unwrap();
+
+        ctx.twitter_profile_loader
+            .load(twitter_handle)
+            .await
+            .map_err(Into::into)
     }
 }
