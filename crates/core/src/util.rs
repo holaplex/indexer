@@ -3,7 +3,7 @@
 use chrono::{Duration, NaiveDateTime};
 
 use crate::error::prelude::*;
-///
+
 /// Format a [`chrono::Duration`] in HH:MM:SS.FFF format
 #[must_use]
 pub fn duration_hhmmssfff(duration: chrono::Duration) -> String {
@@ -26,6 +26,16 @@ pub fn duration_hhmmssfff(duration: chrono::Duration) -> String {
     .unwrap();
 
     out
+}
+
+/// Convert a UNIX timestamp in seconds into a UTC [`NaiveDateTime`].
+///
+/// # Errors
+/// This function returns an error if the conversion would result in a numerical
+/// overflow.
+pub fn unix_timestamp(utc: i64) -> Result<NaiveDateTime> {
+    NaiveDateTime::from_timestamp_opt(utc, 0)
+        .ok_or_else(|| anyhow!("Timestamp was too big to store"))
 }
 
 /// Returns a tuple of `(ends_at, ended)`

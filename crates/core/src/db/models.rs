@@ -860,6 +860,26 @@ pub struct MintStats<'a> {
     pub volume_24hr: Option<i64>,
 }
 
+/// A join of `graph_connections` and `twitter_handle_name_services` for connections that include twitter handle of wallets
+#[derive(Debug, Clone, QueryableByName)]
+pub struct TwitterEnrichedGraphConnection {
+    /// The address of the connection
+    #[sql_type = "VarChar"]
+    pub connection_address: String,
+    /// The from_account of the connection
+    #[sql_type = "VarChar"]
+    pub from_account: String,
+    /// The to_account of the connection
+    #[sql_type = "VarChar"]
+    pub to_account: String,
+    /// The twitter handle of the from_account
+    #[sql_type = "Nullable<Text>"]
+    pub from_twitter_handle: Option<String>,
+    /// The twitter handle of the to_account
+    #[sql_type = "Nullable<Text>"]
+    pub to_twitter_handle: Option<String>,
+}
+
 /// A row in a `metadatas::count_by_marketplace` query, representing stats for
 /// a single marketplace
 #[derive(Debug, Clone, QueryableByName)]
@@ -1002,7 +1022,7 @@ pub struct Governor<'a> {
     /// - activating proposals
     /// - setting the number of votes per voter
     pub electorate: Cow<'a, str>,
-    /// The public key of the [smart_wallet::SmartWallet] account.
+    /// The public key of the `smart_wallet::SmartWallet` account.
     /// This smart wallet executes proposals.
     pub smart_wallet: Cow<'a, str>,
 }
@@ -1243,7 +1263,7 @@ pub struct InstructionBuffer<'a> {
     pub address: Cow<'a, str>,
     /// Sequence of the ownership set.
     pub owner_set_seqno: i64,
-    /// - If set to [crate::NO_ETA], the instructions in each [InstructionBuffer::bundles] may be executed at any time.
+    /// - If set to `NO_ETA`, the instructions in each `InstructionBuffer::bundles` may be executed at any time.
     /// - Otherwise, instructions may be executed at any point after the ETA has elapsed.
     pub eta: i64,
     /// Authority of the buffer.
@@ -1261,7 +1281,7 @@ pub struct InstructionBuffer<'a> {
 pub struct InsBufferBundle<'a> {
     /// InstructionBuffer account pubkey
     pub instruction_buffer_address: Cow<'a, str>,
-    /// Execution counter on the [InstructionBundle].
+    /// Execution counter on the `InstructionBundle`.
     pub is_executed: bool,
 }
 

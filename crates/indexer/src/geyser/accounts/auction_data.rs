@@ -6,6 +6,7 @@ use indexer_core::{
         tables::{auction_datas, auction_datas_ext},
     },
     prelude::*,
+    util,
 };
 use metaplex_auction::processor::{
     AuctionData as AuctionDataAccount, AuctionDataExtended, BidState, PriceFloor,
@@ -57,7 +58,8 @@ pub(crate) async fn process(
         //       roughly the same thing with the solana UnixTimestamp struct.
         end_auction_gap: auction
             .end_auction_gap
-            .map(|g| NaiveDateTime::from_timestamp(g, 0)),
+            .map(util::unix_timestamp)
+            .transpose()?,
         price_floor: match auction.price_floor {
             PriceFloor::None(_) => None,
             PriceFloor::MinimumPrice(p) => Some(
@@ -131,15 +133,11 @@ fn get_end_info(
     auction: &AuctionDataAccount,
     now: NaiveDateTime,
 ) -> Result<(Option<NaiveDateTime>, bool, Option<NaiveDateTime>)> {
-    let ends_at = auction
-        .ended_at
-        .map(|t| NaiveDateTime::from_timestamp(t, 0));
+    let ends_at = auction.ended_at.map(util::unix_timestamp).transpose()?;
 
     let gap_time = auction.end_auction_gap.map(Duration::seconds);
 
-    let last_bid_time = auction
-        .last_bid
-        .map(|l| NaiveDateTime::from_timestamp(l, 0));
+    let last_bid_time = auction.last_bid.map(util::unix_timestamp).transpose()?;
 
     let (ends_at, ended) = indexer_core::util::get_end_info(ends_at, gap_time, last_bid_time, now)?;
 

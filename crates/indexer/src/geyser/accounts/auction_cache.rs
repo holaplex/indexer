@@ -5,6 +5,7 @@ use indexer_core::{
         tables::{auction_caches, listing_metadatas},
     },
     pubkeys::find_auction_data_extended,
+    util,
 };
 use metaplex::state::AuctionCache as AuctionCacheAccount;
 
@@ -31,7 +32,7 @@ pub(crate) async fn process(
     let values = AuctionCache {
         address: Owned(bs58::encode(cache_key).into_string()),
         store_address: Owned(bs58::encode(store).into_string()),
-        timestamp: NaiveDateTime::from_timestamp(timestamp, 0),
+        timestamp: util::unix_timestamp(timestamp)?,
         auction_data: Owned(bs58::encode(auction).into_string()),
         auction_ext: Owned(bs58::encode(auction_ext).into_string()),
         vault: Owned(bs58::encode(vault).into_string()),
