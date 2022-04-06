@@ -1,7 +1,7 @@
 use cardinal_token_manager::state::TokenManager as TokenManagerAccount;
 use indexer_core::{
     db::{
-        insert_into,
+        delete, insert_into,
         models::{TokenManager, TokenManagerInvalidator},
         tables::{token_manager_invalidators, token_managers},
     },
@@ -42,6 +42,8 @@ pub(crate) async fn process(
             bs58::encode(token_manager.recipient_token_account).into_string(),
         )),
     };
+    debug!("Processing token manager {:?}", row);
+
     client
         .db()
         .run(move |db| {
@@ -74,8 +76,19 @@ async fn process_invalidators(
             token_manager_address: Owned(bs58::encode(token_manager_address).into_string()),
             invalidator: Owned(invalidator),
         };
+        client
+            .db()
+            .run(move |db| {
+                delete(token_manager_invalidators::table)
+                    .filter(
+                        token_manager_invalidators::token_manager_address
+                            .eq(bs58::encode(token_manager_address).into_string()),
+                    )
+                    .execute(db)
+            })
+            .await
+            .context("failed to delete existing invalidators")?;
 
-        // TODO remove all other invalidator
         client
             .db()
             .run(move |db| {

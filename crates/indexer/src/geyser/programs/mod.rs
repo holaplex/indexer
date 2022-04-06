@@ -9,5 +9,6 @@ pub mod time_invalidator;
 pub mod token;
 pub mod token_manager;
 pub mod use_invalidator;
+pub mod paid_claim_approver;
 
 pub(self) use super::{accounts, AccountUpdate, Client};

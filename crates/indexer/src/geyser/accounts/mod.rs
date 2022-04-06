@@ -8,6 +8,7 @@ pub mod graph;
 pub mod metadata;
 pub mod mpl_store;
 pub mod name_service;
+pub mod paid_claim_approver;
 pub mod receipt;
 pub mod time_invalidator;
 pub mod token;

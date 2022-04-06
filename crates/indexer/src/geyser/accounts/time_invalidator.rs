@@ -39,6 +39,7 @@ pub(crate) async fn process(
             .map(TryFrom::try_from)
             .transpose()?,
     };
+    debug!("Time invalidator {:?}", row);
     client
         .db()
         .run(move |db| {

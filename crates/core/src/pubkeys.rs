@@ -27,6 +27,10 @@ mod ids {
         use_invalidator,
         "useZ65tbyvWpdYCLDJaegGK34Lnsi8S3jZdwx8122qp"
     );
+    pubkeys!(
+        paid_claim_approver,
+        "pcaBwhJ1YHp7UDA7HASpQsRUmUNwzgYaLQto2kSj1fR"
+    );
 }
 
 pub use ids::{

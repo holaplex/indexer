@@ -1,4 +1,3 @@
--- Your SQL goes here
 create table token_managers (
     address                 varchar(48)     primary key,
     version                 smallint        not null,
@@ -62,3 +61,15 @@ create table use_invalidators (
 
 create index if not exists use_invalidators_token_manager_idx
 on use_invalidators (token_manager_address);
+
+create table paid_claim_approvers (
+    address                     varchar(48)     primary key,
+    bump                        smallint        not null,
+    token_manager_address       varchar(48)     not null,
+    payment_amount              bigint          not null,
+    payment_mint                varchar(48)     not null,
+    collector                   varchar(48)     not null
+);
+
+create index if not exists paid_claim_approver_token_manager_idx
+on paid_claim_approvers (token_manager_address);

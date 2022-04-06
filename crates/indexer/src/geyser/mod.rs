@@ -38,38 +38,38 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         |ty, update: &AccountUpdate| !(update.is_startup && ignore_on_startup.contains(&ty));
 
     match msg {
-        Message::AccountUpdate(update)
-            if update.owner == pubkeys::metadata()
-                && check_ignore(IgnoreType::Metadata, &update) =>
-        {
-            programs::metadata::process(client, update).await
-        },
-        Message::AccountUpdate(update) if update.owner == pubkeys::auction() => {
-            programs::auction::process(client, update).await
-        },
-        Message::AccountUpdate(update) if update.owner == pubkeys::metaplex() => {
-            programs::metaplex::process(client, update).await
-        },
-        Message::AccountUpdate(update) if update.owner == pubkeys::auction_house() => {
-            programs::auction_house::process(client, update).await
-        },
-        Message::AccountUpdate(update)
-            if update.owner == pubkeys::token() && check_ignore(IgnoreType::Tokens, &update) =>
-        {
-            programs::token::process(client, update).await
-        },
-        Message::AccountUpdate(update) if update.owner == pubkeys::graph_program() => {
-            programs::graph::process(client, update).await
-        },
-        Message::AccountUpdate(update)
-            if update.owner == pubkeys::candy_machine()
-                && check_ignore(IgnoreType::CandyMachine, &update) =>
-        {
-            programs::candy_machine::process(client, update).await
-        },
-        Message::AccountUpdate(update) if update.owner == pubkeys::name_service() => {
-            programs::name_service::process(client, update).await
-        },
+        // Message::AccountUpdate(update)
+        //     if update.owner == pubkeys::metadata()
+        //         && check_ignore(IgnoreType::Metadata, &update) =>
+        // {
+        //     programs::metadata::process(client, update).await
+        // },
+        // Message::AccountUpdate(update) if update.owner == pubkeys::auction() => {
+        //     programs::auction::process(client, update).await
+        // },
+        // Message::AccountUpdate(update) if update.owner == pubkeys::metaplex() => {
+        //     programs::metaplex::process(client, update).await
+        // },
+        // Message::AccountUpdate(update) if update.owner == pubkeys::auction_house() => {
+        //     programs::auction_house::process(client, update).await
+        // },
+        // Message::AccountUpdate(update)
+        //     if update.owner == pubkeys::token() && check_ignore(IgnoreType::Tokens, &update) =>
+        // {
+        //     programs::token::process(client, update).await
+        // },
+        // Message::AccountUpdate(update) if update.owner == pubkeys::graph_program() => {
+        //     programs::graph::process(client, update).await
+        // },
+        // Message::AccountUpdate(update)
+        //     if update.owner == pubkeys::candy_machine()
+        //         && check_ignore(IgnoreType::CandyMachine, &update) =>
+        // {
+        //     programs::candy_machine::process(client, update).await
+        // },
+        // Message::AccountUpdate(update) if update.owner == pubkeys::name_service() => {
+        //     programs::name_service::process(client, update).await
+        // },
         Message::AccountUpdate(update) if update.owner == pubkeys::token_manager() => {
             programs::token_manager::process(client, update).await
         },
@@ -79,11 +79,14 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         Message::AccountUpdate(update) if update.owner == pubkeys::use_invalidator() => {
             programs::use_invalidator::process(client, update).await
         },
+        Message::AccountUpdate(update) if update.owner == pubkeys::use_invalidator() => {
+            programs::paid_claim_approver::process(client, update).await
+        },
         Message::AccountUpdate(update) => {
-            debug!(
-                "Unhandled account update for program {}",
-                bs58::encode(update.owner).into_string()
-            );
+            // debug!(
+            //     "Unhandled account update for program {}",
+            //     bs58::encode(update.owner).into_string()
+            // );
             Ok(())
         },
         Message::InstructionNotify { .. } => Ok(()),

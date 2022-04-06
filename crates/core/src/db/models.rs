@@ -14,9 +14,9 @@ use super::schema::{
     candy_machine_hidden_settings, candy_machine_whitelist_mint_settings, candy_machines, editions,
     files, graph_connections, listing_metadatas, listing_receipts, master_editions,
     metadata_collection_keys, metadata_collections, metadata_creators, metadata_jsons, metadatas,
-    purchase_receipts, store_config_jsons, store_configs, store_creators, storefronts, stores,
-    time_invalidators, token_accounts, token_manager_invalidators, token_managers,
-    twitter_handle_name_services, use_invalidators, whitelisted_creators,
+    paid_claim_approvers, purchase_receipts, store_config_jsons, store_configs, store_creators,
+    storefronts, stores, time_invalidators, token_accounts, token_manager_invalidators,
+    token_managers, twitter_handle_name_services, use_invalidators, whitelisted_creators,
 };
 use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
 
@@ -999,4 +999,23 @@ pub struct UseInvalidator<'a> {
     pub extension_usages: Option<i64>,
     /// Optional max this can ever be extended until
     pub max_usages: Option<i64>,
+}
+
+/// A row in the `token_manager_invalidators` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "paid_claim_approvers"]
+pub struct PaidClaimApprover<'a> {
+    /// Address of the use_invalidator
+    pub address: Cow<'a, str>,
+    /// Bump seed of the use_invalidator
+    pub bump: i16,
+    /// Address of the token_manager
+    pub token_manager_address: Cow<'a, str>,
+    /// Amount the pay for extension
+    pub payment_amount: i64,
+    /// Mint that extension is denominated in
+    pub payment_mint: Cow<'a, str>,
+    /// Address that can collect rent
+    pub collector: Cow<'a, str>,
 }

@@ -585,9 +585,26 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode};
 
+    paid_claim_approvers (address) {
+        program -> Varchar,
+        address -> Varchar,
+        bump -> Int2,
+        token_manager_address -> Varchar,
+        payment_amount -> Int8,
+        payment_mint -> Varchar,
+        collector -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+
     token_manager_invalidators (token_manager_address, invalidator) {
         token_manager_address -> Varchar,
         invalidator -> Varchar,
+        program -> Varchar,
     }
 }
 
@@ -597,6 +614,7 @@ table! {
     use crate::db::custom_types::{SettingType as Settingtype, Mode};
 
     time_invalidators (address) {
+        program -> Varchar,
         address -> Varchar,
         bump -> Int2,
         token_manager_address -> Varchar,
@@ -616,6 +634,7 @@ table! {
     use crate::db::custom_types::{SettingType as Settingtype, Mode};
 
     use_invalidators (address) {
+        program -> Varchar,
         address -> Varchar,
         bump -> Int2,
         token_manager_address -> Varchar,
