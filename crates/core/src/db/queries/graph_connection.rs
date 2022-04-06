@@ -24,7 +24,7 @@ SELECT gc.address AS connection_address, from_account, to_account, fth.twitter_h
  -- $1: from::text[]
  -- $2: to::text[]
  -- $3: limit::integer
- -- $4: limit::integer
+ -- $4: offset::integer
  ";
 
 /// Return connections based on from and to filters with limits and offset
