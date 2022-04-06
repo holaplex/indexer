@@ -3,10 +3,10 @@ use indexer_core::db::queries::charts;
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
-pub struct MintCharts {
+pub struct MintChart {
     pub auction_house: String,
-    pub start_date: NaiveDateTime,
-    pub end_date: NaiveDateTime,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, GraphQLObject)]
@@ -29,11 +29,11 @@ impl<'a> TryFrom<models::PricePoint> for PricePoint {
 }
 
 #[graphql_object(Context = AppContext)]
-impl MintCharts {
+impl MintChart {
     pub fn floor_price(&self, ctx: &AppContext) -> FieldResult<Vec<PricePoint>> {
         let conn = ctx.db_pool.get()?;
         let rows =
-            charts::floor_prices(&conn, &self.auction_house, self.start_date, self.end_date)?;
+            charts::floor_prices(&conn, &self.auction_house, self.start_date.naive_utc(), self.end_date.naive_utc())?;
 
         rows.into_iter()
             .map(TryInto::try_into)
@@ -44,7 +44,7 @@ impl MintCharts {
     pub fn average_price(&self, ctx: &AppContext) -> FieldResult<Vec<PricePoint>> {
         let conn = ctx.db_pool.get()?;
         let rows =
-            charts::average_prices(&conn, &self.auction_house, self.start_date, self.end_date)?;
+            charts::average_prices(&conn, &self.auction_house, self.start_date.naive_utc(), self.end_date.naive_utc())?;
 
         rows.into_iter()
             .map(TryInto::try_into)

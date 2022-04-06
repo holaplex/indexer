@@ -1,6 +1,6 @@
 use objects::stats::MintStats;
 
-use super::{charts::MintCharts, prelude::*};
+use super::{chart::MintChart, prelude::*};
 
 #[derive(Debug, Clone)]
 /// A Metaplex auction house
@@ -75,12 +75,12 @@ impl AuctionHouse {
         start_date(description = "Start date for which we want to get the average price"),
         end_date(description = "End date for which we want to get the average price")
     ))]
-    pub async fn charts(&self, context: &AppContext) -> FieldResult<Option<MintCharts>> {
-        MintCharts {
+    pub async fn charts(&self, _context: &AppContext, start_date: DateTime<Utc>, end_date: DateTime<Utc>) -> FieldResult<MintChart> {
+        Ok(MintChart {
             auction_house: self.address.clone(),
             start_date,
             end_date,
-        }
+        })
     }
 
     pub fn address(&self) -> &str {
