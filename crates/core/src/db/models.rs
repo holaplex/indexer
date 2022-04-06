@@ -860,6 +860,26 @@ pub struct MintStats<'a> {
     pub volume_24hr: Option<i64>,
 }
 
+/// A join of `graph_connections` and `twitter_handle_name_services` for connections that include twitter handle of wallets
+#[derive(Debug, Clone, QueryableByName)]
+pub struct TwitterEnrichedGraphConnection {
+    /// The address of the connection
+    #[sql_type = "VarChar"]
+    pub connection_address: String,
+    /// The from_account of the connection
+    #[sql_type = "VarChar"]
+    pub from_account: String,
+    /// The to_account of the connection
+    #[sql_type = "VarChar"]
+    pub to_account: String,
+    /// The twitter handle of the from_account
+    #[sql_type = "Nullable<Text>"]
+    pub from_twitter_handle: Option<String>,
+    /// The twitter handle of the to_account
+    #[sql_type = "Nullable<Text>"]
+    pub to_twitter_handle: Option<String>,
+}
+
 /// A row in a `metadatas::count_by_marketplace` query, representing stats for
 /// a single marketplace
 #[derive(Debug, Clone, QueryableByName)]
