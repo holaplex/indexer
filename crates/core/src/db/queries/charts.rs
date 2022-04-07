@@ -29,9 +29,10 @@ from listing_receipts lr
     left join purchase_receipts pr
         on (lr.purchase_receipt = pr.address)
 
-where lr.auction_house = ANY($1) && lr.created_at >= $2 && lr.created_at <= $3
+where lr.auction_house = ANY($1) and lr.created_at >= $2 and lr.created_at <= $3
 ) as auction_house_stats
-group by auction_house, mint;
+group by 1
+order by 1 asc;
  -- $1: auction house addresses::text[]
  -- $2: start date::timestamp
  -- $3: end date::timestamp";
@@ -51,7 +52,7 @@ pub fn floor_prices(
         .bind::<Timestamp, _>(start_date)
         .bind::<Timestamp, _>(end_date)
         .load(conn)
-        .context("Failed to load mint stats")
+        .context("Failed to load floor price chart")
 }
 
 const AVERAGE_PRICES_QUERY: &str = r"
@@ -72,9 +73,10 @@ from listing_receipts lr
     left join purchase_receipts pr
         on (lr.purchase_receipt = pr.address)
 
-where lr.auction_house = ANY($1) && lr.created_at >= $2 && lr.created_at <= $3
+where lr.auction_house = ANY($1) and lr.created_at >= $2 and lr.created_at <= $3
 ) as auction_house_stats
-group by auction_house, mint;
+group by 1
+order by 1 asc;
  -- $1: auction house addresses::text[]
  -- $2: start date::timestamp
  -- $3: end date::timestamp";
@@ -94,5 +96,5 @@ pub fn average_prices(
         .bind::<Timestamp, _>(start_date)
         .bind::<Timestamp, _>(end_date)
         .load(conn)
-        .context("Failed to load mint stats")
+        .context("Failed to load average price chart")
 }
