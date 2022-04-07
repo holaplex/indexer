@@ -8,7 +8,6 @@ table! {
         value -> Nullable<Text>,
         trait_type -> Nullable<Text>,
         id -> Uuid,
-        first_verified_creator -> Nullable<Varchar>,
     }
 }
 
