@@ -1,6 +1,6 @@
 use cardinal_use_invalidator::state::UseInvalidator as UseInvalidatorAccount;
 use indexer_core::{
-    db::{insert_into, models::UseInvalidator, tables::use_invalidators},
+    db::{insert_into, models::CardinalUseInvalidator, tables::cardinal_use_invalidators},
     prelude::*,
 };
 
@@ -12,7 +12,7 @@ pub(crate) async fn process(
     key: Pubkey,
     use_invalidator: UseInvalidatorAccount,
 ) -> Result<()> {
-    let row = UseInvalidator {
+    let row = CardinalUseInvalidator {
         address: Owned(bs58::encode(key).into_string()),
         bump: use_invalidator.bump.try_into()?,
         token_manager_address: Owned(bs58::encode(use_invalidator.token_manager).into_string()),
@@ -43,9 +43,9 @@ pub(crate) async fn process(
     client
         .db()
         .run(move |db| {
-            insert_into(use_invalidators::table)
+            insert_into(cardinal_use_invalidators::table)
                 .values(&row)
-                .on_conflict(use_invalidators::address)
+                .on_conflict(cardinal_use_invalidators::address)
                 .do_update()
                 .set(&row)
                 .execute(db)

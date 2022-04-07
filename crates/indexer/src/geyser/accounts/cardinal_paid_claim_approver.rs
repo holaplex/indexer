@@ -1,6 +1,6 @@
 use cardinal_paid_claim_approver::state::PaidClaimApprover as PaidClaimApproverAccount;
 use indexer_core::{
-    db::{insert_into, models::PaidClaimApprover, tables::paid_claim_approvers},
+    db::{insert_into, models::CardinalPaidClaimApprover, tables::cardinal_paid_claim_approvers},
     prelude::*,
 };
 
@@ -12,7 +12,7 @@ pub(crate) async fn process(
     key: Pubkey,
     paid_claim_approver: PaidClaimApproverAccount,
 ) -> Result<()> {
-    let row = PaidClaimApprover {
+    let row = CardinalPaidClaimApprover {
         address: Owned(bs58::encode(key).into_string()),
         bump: paid_claim_approver.bump.try_into()?,
         token_manager_address: Owned(bs58::encode(paid_claim_approver.token_manager).into_string()),
@@ -20,12 +20,13 @@ pub(crate) async fn process(
         payment_mint: Owned(bs58::encode(paid_claim_approver.payment_mint).into_string()),
         collector: Owned(bs58::encode(paid_claim_approver.collector).into_string()),
     };
+    debug!("Paid Claim Approver {:?}", row);
     client
         .db()
         .run(move |db| {
-            insert_into(paid_claim_approvers::table)
+            insert_into(cardinal_paid_claim_approvers::table)
                 .values(&row)
-                .on_conflict(paid_claim_approvers::address)
+                .on_conflict(cardinal_paid_claim_approvers::address)
                 .do_update()
                 .set(&row)
                 .execute(db)

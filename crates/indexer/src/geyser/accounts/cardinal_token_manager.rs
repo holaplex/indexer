@@ -2,8 +2,14 @@ use cardinal_token_manager::state::TokenManager as TokenManagerAccount;
 use indexer_core::{
     db::{
         delete, insert_into,
-        models::{TokenManager, TokenManagerInvalidator},
-        tables::{token_manager_invalidators, token_managers},
+        models::{
+            CardinalTokenManager, CardinalTokenManagerInvalidator, CardinalTokenManagerQuery,
+        },
+        tables::{
+            cardinal_paid_claim_approvers, cardinal_time_invalidators,
+            cardinal_token_manager_invalidators, cardinal_token_managers,
+            cardinal_use_invalidators,
+        },
     },
     prelude::*,
 };
@@ -16,7 +22,52 @@ pub(crate) async fn process(
     key: Pubkey,
     token_manager: TokenManagerAccount,
 ) -> Result<()> {
-    let row = TokenManager {
+    let current_token_manager: Vec<CardinalTokenManagerQuery> = client
+        .db()
+        .run(move |db| {
+            cardinal_token_managers::table
+                .filter(cardinal_token_managers::address.eq(bs58::encode(key).into_string()))
+                .left_outer_join(
+                    cardinal_paid_claim_approvers::table.on(
+                        cardinal_token_managers::claim_approver
+                            .nullable()
+                            .eq(cardinal_paid_claim_approvers::address.nullable()),
+                    ),
+                )
+                .left_outer_join(
+                    cardinal_token_manager_invalidators::table.on(cardinal_token_managers::address
+                        .eq(cardinal_token_manager_invalidators::token_manager_address)),
+                )
+                .left_outer_join(
+                    cardinal_time_invalidators::table.on(
+                        cardinal_time_invalidators::token_manager_address
+                            .eq(cardinal_token_manager_invalidators::token_manager_address)
+                            .and(
+                                cardinal_time_invalidators::address
+                                    .eq(cardinal_token_manager_invalidators::invalidator),
+                            ),
+                    ),
+                )
+                .left_outer_join(
+                    cardinal_use_invalidators::table.on(
+                        cardinal_use_invalidators::token_manager_address
+                            .eq(cardinal_token_manager_invalidators::token_manager_address)
+                            .and(
+                                cardinal_use_invalidators::address
+                                    .eq(cardinal_token_manager_invalidators::invalidator),
+                            ),
+                    ),
+                )
+                .select((
+                    cardinal_token_managers::address,
+                    cardinal_paid_claim_approvers::payment_mint.nullable(),
+                ))
+                .load(db)
+        })
+        .await
+        .context("Failed to find TokenManager")?;
+
+    let row = CardinalTokenManager {
         address: Owned(bs58::encode(key).into_string()),
         version: token_manager.version.try_into()?,
         bump: token_manager.bump.try_into()?,
@@ -47,9 +98,9 @@ pub(crate) async fn process(
     client
         .db()
         .run(move |db| {
-            insert_into(token_managers::table)
+            insert_into(cardinal_token_managers::table)
                 .values(&row)
-                .on_conflict(token_managers::address)
+                .on_conflict(cardinal_token_managers::address)
                 .do_update()
                 .set(&row)
                 .execute(db)
@@ -72,16 +123,16 @@ async fn process_invalidators(
     invalidators: Vec<String>,
 ) -> Result<()> {
     for invalidator in invalidators {
-        let row = TokenManagerInvalidator {
+        let row = CardinalTokenManagerInvalidator {
             token_manager_address: Owned(bs58::encode(token_manager_address).into_string()),
             invalidator: Owned(invalidator),
         };
         client
             .db()
             .run(move |db| {
-                delete(token_manager_invalidators::table)
+                delete(cardinal_token_manager_invalidators::table)
                     .filter(
-                        token_manager_invalidators::token_manager_address
+                        cardinal_token_manager_invalidators::token_manager_address
                             .eq(bs58::encode(token_manager_address).into_string()),
                     )
                     .execute(db)
@@ -92,11 +143,11 @@ async fn process_invalidators(
         client
             .db()
             .run(move |db| {
-                insert_into(token_manager_invalidators::table)
+                insert_into(cardinal_token_manager_invalidators::table)
                     .values(&row)
                     .on_conflict((
-                        token_manager_invalidators::token_manager_address,
-                        token_manager_invalidators::invalidator,
+                        cardinal_token_manager_invalidators::token_manager_address,
+                        cardinal_token_manager_invalidators::invalidator,
                     ))
                     .do_update()
                     .set(&row)

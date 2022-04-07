@@ -70,17 +70,19 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         // Message::AccountUpdate(update) if update.owner == pubkeys::name_service() => {
         //     programs::name_service::process(client, update).await
         // },
-        Message::AccountUpdate(update) if update.owner == pubkeys::token_manager() => {
-            programs::token_manager::process(client, update).await
+        Message::AccountUpdate(update) if update.owner == pubkeys::cardinal_token_manager() => {
+            programs::cardinal_token_manager::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::time_invalidator() => {
-            programs::time_invalidator::process(client, update).await
+        Message::AccountUpdate(update) if update.owner == pubkeys::cardinal_time_invalidator() => {
+            programs::cardinal_time_invalidator::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::use_invalidator() => {
-            programs::use_invalidator::process(client, update).await
+        Message::AccountUpdate(update) if update.owner == pubkeys::cardinal_use_invalidator() => {
+            programs::cardinal_use_invalidator::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::use_invalidator() => {
-            programs::paid_claim_approver::process(client, update).await
+        Message::AccountUpdate(update)
+            if update.owner == pubkeys::cardinal_paid_claim_approver() =>
+        {
+            programs::cardinal_paid_claim_approver::process(client, update).await
         },
         Message::AccountUpdate(update) => {
             // debug!(

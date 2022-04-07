@@ -11,12 +11,13 @@ use super::schema::{
     attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
     bids, candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators,
     candy_machine_datas, candy_machine_end_settings, candy_machine_gate_keeper_configs,
-    candy_machine_hidden_settings, candy_machine_whitelist_mint_settings, candy_machines, editions,
-    files, graph_connections, listing_metadatas, listing_receipts, master_editions,
-    metadata_collection_keys, metadata_collections, metadata_creators, metadata_jsons, metadatas,
-    paid_claim_approvers, purchase_receipts, store_config_jsons, store_configs, store_creators,
-    storefronts, stores, time_invalidators, token_accounts, token_manager_invalidators,
-    token_managers, twitter_handle_name_services, use_invalidators, whitelisted_creators,
+    candy_machine_hidden_settings, candy_machine_whitelist_mint_settings, candy_machines,
+    cardinal_paid_claim_approvers, cardinal_time_invalidators, cardinal_token_manager_invalidators,
+    cardinal_token_managers, cardinal_use_invalidators, editions, files, graph_connections,
+    listing_metadatas, listing_receipts, master_editions, metadata_collection_keys,
+    metadata_collections, metadata_creators, metadata_jsons, metadatas, purchase_receipts,
+    store_config_jsons, store_configs, store_creators, storefronts, stores, token_accounts,
+    twitter_handle_name_services, whitelisted_creators,
 };
 use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
 
@@ -897,11 +898,25 @@ pub struct MetadataCollectionKey<'a> {
     pub verified: bool,
 }
 
+/// Join of `metadatas` `metadata_jsons` `store_creators` for an collection preview
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct CardinalTokenManagerQuery {
+    #[sql_type = "Text"]
+    pub address: String,
+
+    // #[sql_type = "Text"]
+    // pub token_manager_address: String,
+    #[sql_type = "Nullable<Text>"]
+    pub payment_mint: Option<String>,
+    /* #[sql_type = "Timestamp"]
+     * pub state_changed_at: NaiveDateTime, */
+}
+
 /// A row in the `token_managers` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
-#[table_name = "token_managers"]
-pub struct TokenManager<'a> {
+#[table_name = "cardinal_token_managers"]
+pub struct CardinalTokenManager<'a> {
     /// Address of the token_manager
     pub address: Cow<'a, str>,
     /// Version of the token_manager
@@ -939,8 +954,8 @@ pub struct TokenManager<'a> {
 /// A row in the `token_manager_invalidators` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
-#[table_name = "token_manager_invalidators"]
-pub struct TokenManagerInvalidator<'a> {
+#[table_name = "cardinal_token_manager_invalidators"]
+pub struct CardinalTokenManagerInvalidator<'a> {
     /// Address of the token_manager
     pub token_manager_address: Cow<'a, str>,
     /// Address of an active invalidator for this token_manager
@@ -950,8 +965,8 @@ pub struct TokenManagerInvalidator<'a> {
 /// A row in the `token_manager_invalidators` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
-#[table_name = "time_invalidators"]
-pub struct TimeInvalidator<'a> {
+#[table_name = "cardinal_time_invalidators"]
+pub struct CardinalTimeInvalidator<'a> {
     /// Address of the time_invalidator
     pub address: Cow<'a, str>,
     /// Bump seed of the time_invalidator
@@ -977,8 +992,8 @@ pub struct TimeInvalidator<'a> {
 /// A row in the `token_manager_invalidators` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
-#[table_name = "use_invalidators"]
-pub struct UseInvalidator<'a> {
+#[table_name = "cardinal_use_invalidators"]
+pub struct CardinalUseInvalidator<'a> {
     /// Address of the use_invalidator
     pub address: Cow<'a, str>,
     /// Bump seed of the use_invalidator
@@ -1004,8 +1019,8 @@ pub struct UseInvalidator<'a> {
 /// A row in the `token_manager_invalidators` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
-#[table_name = "paid_claim_approvers"]
-pub struct PaidClaimApprover<'a> {
+#[table_name = "cardinal_paid_claim_approvers"]
+pub struct CardinalPaidClaimApprover<'a> {
     /// Address of the use_invalidator
     pub address: Cow<'a, str>,
     /// Bump seed of the use_invalidator

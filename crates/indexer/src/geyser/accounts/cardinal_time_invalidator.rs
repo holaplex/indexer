@@ -1,6 +1,6 @@
 use cardinal_time_invalidator::state::TimeInvalidator as TimeInvalidatorAccount;
 use indexer_core::{
-    db::{insert_into, models::TimeInvalidator, tables::time_invalidators},
+    db::{insert_into, models::CardinalTimeInvalidator, tables::cardinal_time_invalidators},
     prelude::*,
 };
 
@@ -12,7 +12,7 @@ pub(crate) async fn process(
     key: Pubkey,
     time_invalidator: TimeInvalidatorAccount,
 ) -> Result<()> {
-    let row = TimeInvalidator {
+    let row = CardinalTimeInvalidator {
         address: Owned(bs58::encode(key).into_string()),
         bump: time_invalidator.bump.try_into()?,
         token_manager_address: Owned(bs58::encode(time_invalidator.token_manager).into_string()),
@@ -43,9 +43,9 @@ pub(crate) async fn process(
     client
         .db()
         .run(move |db| {
-            insert_into(time_invalidators::table)
+            insert_into(cardinal_time_invalidators::table)
                 .values(&row)
-                .on_conflict(time_invalidators::address)
+                .on_conflict(cardinal_time_invalidators::address)
                 .do_update()
                 .set(&row)
                 .execute(db)

@@ -560,7 +560,7 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode};
 
-    token_managers (address) {
+    cardinal_token_managers (address) {
         address -> Varchar,
         version -> Int2,
         bump -> Int2,
@@ -585,7 +585,7 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode};
 
-    paid_claim_approvers (address) {
+    cardinal_paid_claim_approvers (address) {
         program -> Varchar,
         address -> Varchar,
         bump -> Int2,
@@ -601,7 +601,7 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode};
 
-    token_manager_invalidators (token_manager_address, invalidator) {
+    cardinal_token_manager_invalidators (token_manager_address, invalidator) {
         token_manager_address -> Varchar,
         invalidator -> Varchar,
         program -> Varchar,
@@ -613,7 +613,7 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode};
 
-    time_invalidators (address) {
+    cardinal_time_invalidators (address) {
         program -> Varchar,
         address -> Varchar,
         bump -> Int2,
@@ -633,7 +633,7 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode};
 
-    use_invalidators (address) {
+    cardinal_use_invalidators (address) {
         program -> Varchar,
         address -> Varchar,
         bump -> Int2,
@@ -687,6 +687,9 @@ allow_tables_to_appear_in_same_query!(
     token_accounts,
     twitter_handle_name_services,
     whitelisted_creators,
-    token_managers,
-    time_invalidators,
+    cardinal_token_managers,
+    cardinal_time_invalidators,
+    cardinal_use_invalidators,
+    cardinal_paid_claim_approvers,
+    cardinal_token_manager_invalidators,
 );

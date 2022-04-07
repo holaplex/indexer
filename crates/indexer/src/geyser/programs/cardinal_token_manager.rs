@@ -1,7 +1,7 @@
 use anchor_lang_v0_22_1::{solana_program::hash::hash, AccountDeserialize};
-use cardinal_token_manager::state::TokenManager;
+use ::cardinal_token_manager::state::TokenManager;
 
-use super::{accounts::token_manager, AccountUpdate, Client};
+use super::{accounts::cardinal_token_manager, AccountUpdate, Client};
 use crate::prelude::*;
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
@@ -12,7 +12,7 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
         let token_manager: TokenManager =
             TokenManager::try_deserialize(&mut update.data.as_slice())
                 .context("Failed to deserialize token_manager")?;
-        token_manager::process(client, update.key, token_manager).await?
+        cardinal_token_manager::process(client, update.key, token_manager).await?
     }
     Ok(())
 }

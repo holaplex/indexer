@@ -18,24 +18,28 @@ mod ids {
     pubkeys!(candy_machine, "cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ");
     pubkeys!(graph_program, "grphSXQnjAoPXSG5p1aJ7ZFw2A1akqP3pkXvjfbSJef");
     pubkeys!(name_service, "namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX");
-    pubkeys!(token_manager, "mgr99QFMYByTqGPWmNqunV7vBLmWWXdSrHUfV8Jf3JM");
     pubkeys!(
-        time_invalidator,
+        cardinal_token_manager,
+        "mgr99QFMYByTqGPWmNqunV7vBLmWWXdSrHUfV8Jf3JM"
+    );
+    pubkeys!(
+        cardinal_time_invalidator,
         "tmeEDp1RgoDtZFtx6qod3HkbQmv9LMe36uqKVvsLTDE"
     );
     pubkeys!(
-        use_invalidator,
+        cardinal_use_invalidator,
         "useZ65tbyvWpdYCLDJaegGK34Lnsi8S3jZdwx8122qp"
     );
     pubkeys!(
-        paid_claim_approver,
+        cardinal_paid_claim_approver,
         "pcaBwhJ1YHp7UDA7HASpQsRUmUNwzgYaLQto2kSj1fR"
     );
 }
 
 pub use ids::{
-    auction, auction_house, candy_machine, graph_program, metadata, metaplex, name_service,
-    time_invalidator, token, token_manager, use_invalidator, vault,
+    auction, auction_house, candy_machine, cardinal_paid_claim_approver, cardinal_time_invalidator,
+    cardinal_token_manager, cardinal_use_invalidator, graph_program, metadata, metaplex,
+    name_service, token, vault,
 };
 
 /// Find the address of a store given its owner's address
