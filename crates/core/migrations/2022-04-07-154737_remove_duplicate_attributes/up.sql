@@ -11,5 +11,5 @@ alter table temp
     alter column metadata_address set not null,
     alter column id set default gen_random_uuid();
 
-drop table attributes;
+alter table attributes rename to temp_attributes;
 alter table temp rename to attributes;
