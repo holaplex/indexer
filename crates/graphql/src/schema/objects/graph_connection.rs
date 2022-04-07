@@ -39,8 +39,8 @@ impl TryFrom<models::TwitterEnrichedGraphConnection> for GraphConnection {
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             address: connection_address,
-            from: Wallet::new(from_account, from_twitter_handle),
-            to: Wallet::new(to_account, to_twitter_handle),
+            from: Wallet::new(from_account.into(), from_twitter_handle),
+            to: Wallet::new(to_account.into(), to_twitter_handle),
         })
     }
 }
