@@ -401,6 +401,7 @@ fn process_attributes(
                 attributes::value,
                 attributes::trait_type,
             ))
+            .do_update()
             .set(&row)
             .execute(db)
             .context("Failed to insert attribute!")?;

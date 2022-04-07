@@ -1,5 +1,5 @@
 create table temp as
-    select distinct on (metadata_address,value,trait_type) * from attributes;
+    select distinct on (metadata_address, value, trait_type) * from attributes;
 
 alter table attributes
     drop constraint if exists attributes_unique_constraint,
