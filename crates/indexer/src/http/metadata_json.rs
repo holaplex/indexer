@@ -396,7 +396,13 @@ fn process_attributes(
 
         insert_into(attributes::table)
             .values(&row)
-            .on_conflict_do_nothing()
+            .on_conflict((
+                attributes::metadata_address,
+                attributes::value,
+                attributes::trait_type,
+            ))
+            .do_update()
+            .set(&row)
             .execute(db)
             .context("Failed to insert attribute!")?;
     }
