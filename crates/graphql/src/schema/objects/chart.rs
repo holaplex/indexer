@@ -32,8 +32,12 @@ impl<'a> TryFrom<models::PricePoint> for PricePoint {
 impl MintChart {
     pub fn floor_price(&self, ctx: &AppContext) -> FieldResult<Vec<PricePoint>> {
         let conn = ctx.db_pool.get()?;
-        let rows =
-            charts::floor_prices(&conn, &self.auction_house, self.start_date.naive_utc(), self.end_date.naive_utc())?;
+        let rows = charts::floor_prices(
+            &conn,
+            &self.auction_house,
+            self.start_date.naive_utc(),
+            self.end_date.naive_utc(),
+        )?;
 
         rows.into_iter()
             .map(TryInto::try_into)
@@ -43,8 +47,12 @@ impl MintChart {
 
     pub fn average_price(&self, ctx: &AppContext) -> FieldResult<Vec<PricePoint>> {
         let conn = ctx.db_pool.get()?;
-        let rows =
-            charts::average_prices(&conn, &self.auction_house, self.start_date.naive_utc(), self.end_date.naive_utc())?;
+        let rows = charts::average_prices(
+            &conn,
+            &self.auction_house,
+            self.start_date.naive_utc(),
+            self.end_date.naive_utc(),
+        )?;
 
         rows.into_iter()
             .map(TryInto::try_into)

@@ -75,7 +75,12 @@ impl AuctionHouse {
         start_date(description = "Start date for which we want to get the average price"),
         end_date(description = "End date for which we want to get the average price")
     ))]
-    pub async fn charts(&self, _context: &AppContext, start_date: DateTime<Utc>, end_date: DateTime<Utc>) -> FieldResult<MintChart> {
+    pub async fn charts(
+        &self,
+        _context: &AppContext,
+        start_date: DateTime<Utc>,
+        end_date: DateTime<Utc>,
+    ) -> FieldResult<MintChart> {
         Ok(MintChart {
             auction_house: self.address.clone(),
             start_date,

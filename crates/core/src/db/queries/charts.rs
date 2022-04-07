@@ -13,10 +13,11 @@ use crate::{
 
 const FLOOR_PRICES_QUERY: &str = r"
 select
-    date_trunc('day', listed_at) as date
-    min(listing_price) filter (where listing_canceled_at is null and listing_purchase_receipt is null)::bigint as price,
+    date_trunc('day', listed_at) as date,
+    min(listing_price) filter (where listing_canceled_at is null and listing_purchase_receipt is null)::bigint as price
 
-from (select lr.auction_house as auction_house,
+from (
+    select lr.auction_house as auction_house,
         lr.price as listing_price, pr.price as purchase_price,
         pr.created_at as purchased_at,
         lr.created_at as listed_at,
@@ -29,7 +30,7 @@ from listing_receipts lr
     left join purchase_receipts pr
         on (lr.purchase_receipt = pr.address)
 
-where lr.auction_house = ANY($1) and lr.created_at >= $2 and lr.created_at <= $3
+where lr.auction_house = $1 and lr.created_at >= $2 and lr.created_at <= $3
 ) as auction_house_stats
 group by 1
 order by 1 asc;
@@ -52,15 +53,16 @@ pub fn floor_prices(
         .bind::<Timestamp, _>(start_date)
         .bind::<Timestamp, _>(end_date)
         .load(conn)
-        .context("Failed to load floor price chart")
+        .context("Failed to load floor prices")
 }
 
 const AVERAGE_PRICES_QUERY: &str = r"
 select
-    date_trunc('day', listed_at) as date
+    date_trunc('day', listed_at) as date,
     round(avg(purchase_price))::bigint as price
 
-from (select lr.auction_house as auction_house,
+from (
+    select lr.auction_house as auction_house,
         lr.price as listing_price, pr.price as purchase_price,
         pr.created_at as purchased_at,
         lr.created_at as listed_at,
@@ -73,7 +75,7 @@ from listing_receipts lr
     left join purchase_receipts pr
         on (lr.purchase_receipt = pr.address)
 
-where lr.auction_house = ANY($1) and lr.created_at >= $2 and lr.created_at <= $3
+where lr.auction_house = $1 and lr.created_at >= $2 and lr.created_at <= $3
 ) as auction_house_stats
 group by 1
 order by 1 asc;
@@ -96,5 +98,5 @@ pub fn average_prices(
         .bind::<Timestamp, _>(start_date)
         .bind::<Timestamp, _>(end_date)
         .load(conn)
-        .context("Failed to load average price chart")
+        .context("Failed to load average prices")
 }
