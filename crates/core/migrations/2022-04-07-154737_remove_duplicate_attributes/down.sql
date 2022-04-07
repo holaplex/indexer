@@ -1,0 +1,2 @@
+alter table attributes 
+drop constraint attributes_unique_constraint;
