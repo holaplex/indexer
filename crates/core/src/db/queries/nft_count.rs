@@ -1,6 +1,15 @@
 //! Query utilities for looking up  nft counts
 
-use diesel::prelude::*;
+use diesel::{
+    expression::{operators::Eq, AsExpression, NonAggregate},
+    pg::Pg,
+    prelude::*,
+    query_builder::QueryFragment,
+    query_source::joins::{Inner, Join, JoinOn},
+    serialize::ToSql,
+    sql_types::Text,
+    AppearsOnTable,
+};
 
 use crate::{
     db::{
@@ -15,7 +24,7 @@ use crate::{
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
-pub fn total(conn: &Connection, creators: Vec<String>) -> Result<i64> {
+pub fn total<C: ToSql<Text, Pg>>(conn: &Connection, creators: &[C]) -> Result<i64> {
     metadatas::table
         .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
@@ -23,7 +32,7 @@ pub fn total(conn: &Connection, creators: Vec<String>) -> Result<i64> {
         .filter(metadata_creators::creator_address.eq(any(creators)))
         .filter(metadata_creators::verified.eq(true))
         .count()
-        .get_result::<i64>(conn)
+        .get_result(conn)
         .context("failed to load total nfts count")
 }
 
@@ -31,10 +40,10 @@ pub fn total(conn: &Connection, creators: Vec<String>) -> Result<i64> {
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
-pub fn listed(
+pub fn listed<C: ToSql<Text, Pg>, L: ToSql<Text, Pg>>(
     conn: &Connection,
-    creators: Vec<String>,
-    listed: Option<Vec<String>>,
+    creators: &[C],
+    listed: Option<&[L]>,
 ) -> Result<i64> {
     let mut query = metadatas::table
         .inner_join(
@@ -53,7 +62,7 @@ pub fn listed(
         .filter(listing_receipts::purchase_receipt.is_null())
         .filter(listing_receipts::canceled_at.is_null())
         .count()
-        .get_result::<i64>(conn)
+        .get_result(conn)
         .context("failed to load listed nfts count")
 }
 
@@ -61,7 +70,28 @@ pub fn listed(
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
-pub fn owned(conn: &Connection, wallet: String, creators: Option<Vec<String>>) -> Result<i64> {
+pub fn owned<W: AsExpression<Text>, C: ToSql<Text, Pg>>(
+    conn: &Connection,
+    wallet: W,
+    creators: Option<&[C]>,
+) -> Result<i64>
+where
+    W::Expression: NonAggregate
+        + QueryFragment<Pg>
+        + AppearsOnTable<
+            JoinOn<
+                Join<
+                    JoinOn<
+                        Join<metadatas::table, metadata_creators::table, Inner>,
+                        Eq<metadatas::address, metadata_creators::metadata_address>,
+                    >,
+                    token_accounts::table,
+                    Inner,
+                >,
+                Eq<metadatas::mint_address, token_accounts::mint_address>,
+            >,
+        >,
+{
     let mut query = metadatas::table
         .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
@@ -80,7 +110,7 @@ pub fn owned(conn: &Connection, wallet: String, creators: Option<Vec<String>>) -
         .filter(token_accounts::amount.eq(1))
         .filter(token_accounts::owner_address.eq(wallet))
         .count()
-        .get_result::<i64>(conn)
+        .get_result(conn)
         .context("failed to load owned nfts count")
 }
 
@@ -88,12 +118,29 @@ pub fn owned(conn: &Connection, wallet: String, creators: Option<Vec<String>>) -
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
-pub fn offered(
+pub fn offered<W: AsExpression<Text>, C: ToSql<Text, Pg>, H: ToSql<Text, Pg>>(
     conn: &Connection,
-    wallet: String,
-    creators: Option<Vec<String>>,
-    auction_houses: Option<Vec<String>>,
-) -> Result<i64> {
+    wallet: W,
+    creators: Option<&[C]>,
+    auction_houses: Option<&[H]>,
+) -> Result<i64>
+where
+    W::Expression: NonAggregate
+        + QueryFragment<Pg>
+        + AppearsOnTable<
+            JoinOn<
+                Join<
+                    JoinOn<
+                        Join<metadatas::table, metadata_creators::table, Inner>,
+                        Eq<metadatas::address, metadata_creators::metadata_address>,
+                    >,
+                    bid_receipts::table,
+                    Inner,
+                >,
+                Eq<metadatas::address, bid_receipts::metadata>,
+            >,
+        >,
+{
     let mut query = metadatas::table
         .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
@@ -115,7 +162,7 @@ pub fn offered(
         .filter(bid_receipts::purchase_receipt.is_null())
         .filter(bid_receipts::canceled_at.is_null())
         .count()
-        .get_result::<i64>(conn)
+        .get_result(conn)
         .context("failed to load nfts count of open offers for a wallet")
 }
 
@@ -123,12 +170,29 @@ pub fn offered(
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
-pub fn wallet_listed(
+pub fn wallet_listed<W: AsExpression<Text>, C: ToSql<Text, Pg>, L: ToSql<Text, Pg>>(
     conn: &Connection,
-    wallet: String,
-    creators: Option<Vec<String>>,
-    listed: Option<Vec<String>>,
-) -> Result<i64> {
+    wallet: W,
+    creators: Option<&[C]>,
+    listed: Option<&[L]>,
+) -> Result<i64>
+where
+    W::Expression: NonAggregate
+        + QueryFragment<Pg>
+        + AppearsOnTable<
+            JoinOn<
+                Join<
+                    JoinOn<
+                        Join<metadatas::table, metadata_creators::table, Inner>,
+                        Eq<metadatas::address, metadata_creators::metadata_address>,
+                    >,
+                    listing_receipts::table,
+                    Inner,
+                >,
+                Eq<metadatas::address, listing_receipts::metadata>,
+            >,
+        >,
+{
     let mut query = metadatas::table
         .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
@@ -150,6 +214,6 @@ pub fn wallet_listed(
         .filter(listing_receipts::canceled_at.is_null())
         .filter(listing_receipts::seller.eq(wallet))
         .count()
-        .get_result::<i64>(conn)
+        .get_result(conn)
         .context("failed to load listed nfts count")
 }

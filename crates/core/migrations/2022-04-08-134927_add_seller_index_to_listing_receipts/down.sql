@@ -1,1 +1,1 @@
--- This file should undo anything in `up.sql`
+drop index if exists seller_listing_receipts_idx;

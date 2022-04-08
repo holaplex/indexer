@@ -39,11 +39,9 @@ impl WalletNftCount {
 impl WalletNftCount {
     fn owned(&self, context: &AppContext) -> FieldResult<i32> {
         let conn = context.db_pool.get()?;
-        let creators: Option<Vec<String>> = self
-            .clone()
-            .creators
-            .map(|c| c.into_iter().map(Into::into).collect::<Vec<_>>());
-        let count = queries::nft_count::owned(&conn, self.wallet.clone().into(), creators)?;
+
+        let count = queries::nft_count::owned(&conn, &self.wallet, self.creators.as_deref())?;
+
         Ok(count.try_into()?)
     }
 
@@ -54,17 +52,14 @@ impl WalletNftCount {
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
     ) -> FieldResult<i32> {
         let conn = context.db_pool.get()?;
-        let creators: Option<Vec<String>> = self
-            .creators
-            .clone()
-            .map(|c| c.into_iter().map(Into::into).collect());
-        let auction_houses = auction_houses.map(|a| a.into_iter().map(Into::into).collect());
+
         let count = queries::nft_count::offered(
             &conn,
-            self.wallet.clone().into(),
-            creators,
-            auction_houses,
+            &self.wallet,
+            self.creators.as_deref(),
+            auction_houses.as_deref(),
         )?;
+
         Ok(count.try_into()?)
     }
 
@@ -75,17 +70,14 @@ impl WalletNftCount {
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
     ) -> FieldResult<i32> {
         let conn = context.db_pool.get()?;
-        let creators: Option<Vec<String>> = self
-            .creators
-            .clone()
-            .map(|c| c.into_iter().map(Into::into).collect());
-        let auction_houses = auction_houses.map(|a| a.into_iter().map(Into::into).collect());
+
         let count = queries::nft_count::wallet_listed(
             &conn,
-            self.wallet.clone().into(),
-            creators,
-            auction_houses,
+            &self.wallet,
+            self.creators.as_deref(),
+            auction_houses.as_deref(),
         )?;
+
         Ok(count.try_into()?)
     }
 }
@@ -100,7 +92,7 @@ impl Wallet {
         let db_conn = ctx.db_pool.get()?;
         let rows: Vec<models::Bid> = bids::table
             .select(bids::all_columns)
-            .filter(bids::bidder_address.eq::<String>(self.address.clone().into()))
+            .filter(bids::bidder_address.eq(&self.address))
             .order_by(bids::last_bid_time.desc())
             .load(&db_conn)
             .context("Failed to load wallet bids")?;

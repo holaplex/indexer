@@ -8,9 +8,9 @@ use objects::{
     profile::TwitterProfile, purchase_receipt::PurchaseReceipt,
 };
 use reqwest::Url;
+use scalars::PublicKey;
 
 use super::prelude::*;
-use crate::schema::scalars::PublicKey;
 
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
@@ -413,8 +413,9 @@ impl NftCount {
 impl NftCount {
     fn total(&self, context: &AppContext) -> FieldResult<i32> {
         let conn = context.db_pool.get()?;
-        let creators: Vec<String> = self.creators.clone().into_iter().map(Into::into).collect();
-        let count = queries::nft_count::total(&conn, creators)?;
+
+        let count = queries::nft_count::total(&conn, &self.creators)?;
+
         Ok(count.try_into()?)
     }
 
@@ -425,14 +426,9 @@ impl NftCount {
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
     ) -> FieldResult<i32> {
         let conn = context.db_pool.get()?;
-        let creators: Vec<String> = self
-            .creators
-            .clone()
-            .into_iter()
-            .map(Into::into)
-            .collect::<Vec<_>>();
-        let auction_houses = auction_houses.map(|a| a.into_iter().map(Into::into).collect());
-        let count = queries::nft_count::listed(&conn, creators, auction_houses)?;
+
+        let count = queries::nft_count::listed(&conn, &self.creators, auction_houses.as_deref())?;
+
         Ok(count.try_into()?)
     }
 }

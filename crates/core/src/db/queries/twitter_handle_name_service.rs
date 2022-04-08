@@ -28,7 +28,7 @@ where
     twitter_handle_name_services::table
         .filter(twitter_handle_name_services::wallet_address.eq(address))
         .select(twitter_handle_name_services::twitter_handle)
-        .first::<String>(conn)
+        .first(conn)
         .optional()
         .context("Failed to load twitter handle")
 }
