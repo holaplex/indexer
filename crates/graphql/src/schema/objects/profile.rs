@@ -72,7 +72,7 @@ impl Profile {
             .filter(twitter_handle_name_services::twitter_handle.eq(&self.handle))
             .load(&db_conn)
             .context("Failed to load wallet address")?;
-        if result.len() == 0 {
+        if result.is_empty() {
             return Ok(None);
         }
         let matching_item = result.get(0).unwrap();
