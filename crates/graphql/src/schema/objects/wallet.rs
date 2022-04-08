@@ -1,4 +1,7 @@
-use objects::{listing::Bid, profile::TwitterProfile};
+use indexer_core::db::queries;
+use objects::{
+    auction_house::AuctionHouse, listing::Bid, nft::NftCreator, profile::TwitterProfile,
+};
 use scalars::PublicKey;
 use tables::{bids, graph_connections};
 
@@ -16,6 +19,66 @@ impl Wallet {
             address,
             twitter_handle,
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct WalletNftCount {
+    wallet: PublicKey<Wallet>,
+    creators: Option<Vec<PublicKey<NftCreator>>>,
+}
+
+impl WalletNftCount {
+    #[must_use]
+    pub fn new(wallet: PublicKey<Wallet>, creators: Option<Vec<PublicKey<NftCreator>>>) -> Self {
+        Self { wallet, creators }
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl WalletNftCount {
+    fn owned(&self, context: &AppContext) -> FieldResult<i32> {
+        let conn = context.db_pool.get()?;
+
+        let count = queries::nft_count::owned(&conn, &self.wallet, self.creators.as_deref())?;
+
+        Ok(count.try_into()?)
+    }
+
+    #[graphql(arguments(auction_houses(description = "auction houses to scope wallet counts")))]
+    fn offered(
+        &self,
+        context: &AppContext,
+        auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
+    ) -> FieldResult<i32> {
+        let conn = context.db_pool.get()?;
+
+        let count = queries::nft_count::offered(
+            &conn,
+            &self.wallet,
+            self.creators.as_deref(),
+            auction_houses.as_deref(),
+        )?;
+
+        Ok(count.try_into()?)
+    }
+
+    #[graphql(arguments(auction_houses(description = "auction houses to scope wallet counts")))]
+    fn listed(
+        &self,
+        context: &AppContext,
+        auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
+    ) -> FieldResult<i32> {
+        let conn = context.db_pool.get()?;
+
+        let count = queries::nft_count::wallet_listed(
+            &conn,
+            &self.wallet,
+            self.creators.as_deref(),
+            auction_houses.as_deref(),
+        )?;
+
+        Ok(count.try_into()?)
     }
 }
 
@@ -56,6 +119,15 @@ impl Wallet {
         Ok(ConnectionCounts {
             address: self.address.clone(),
         })
+    }
+
+    #[graphql(arguments(creators(description = "a list of auction house public keys")))]
+    pub fn nft_counts(
+        &self,
+        _ctx: &AppContext,
+        creators: Option<Vec<PublicKey<NftCreator>>>,
+    ) -> WalletNftCount {
+        WalletNftCount::new(self.address.clone(), creators)
     }
 }
 

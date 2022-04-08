@@ -42,11 +42,11 @@ impl CreatorCounts {
     fn creations(&self, context: &AppContext) -> FieldResult<i32> {
         let conn = context.db_pool.get()?;
 
-        let count = metadata_creators::table
+        let count: i64 = metadata_creators::table
             .filter(metadata_creators::creator_address.eq(&self.creator.address))
             .filter(metadata_creators::verified.eq(true))
             .count()
-            .get_result::<i64>(&conn)?;
+            .get_result(&conn)?;
 
         Ok(count.try_into()?)
     }
