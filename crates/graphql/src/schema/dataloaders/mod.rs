@@ -19,7 +19,8 @@ pub(self) mod prelude {
     pub(super) use super::{
         super::prelude::*,
         batcher::{
-            BatchIter, BatchMap, BatchResult, Batcher, TryBatchFn, TryBatchMap, TwitterBatcher,
+            BatchIter, BatchMap, BatchResult, Batcher, Error, TryBatchFn, TryBatchMap,
+            TwitterBatcher,
         },
     };
 }

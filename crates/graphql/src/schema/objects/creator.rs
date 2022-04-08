@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use indexer_core::{db::queries::stats, prelude::*};
 use itertools::Itertools;
 use objects::{auction_house::AuctionHouse, profile::TwitterProfile, stats::MintStats};
+use scalars::PublicKey;
 use tables::{attributes, metadata_creators};
 
 use super::prelude::*;
-use crate::schema::scalars::PublicKey;
 
 #[derive(Debug, Clone)]
 pub struct Creator {
@@ -130,13 +130,10 @@ impl Creator {
     }
 
     pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
-        let twitter_handle = self.twitter_handle.clone();
-
-        if twitter_handle.is_none() {
-            return Ok(None);
-        }
-
-        let twitter_handle = twitter_handle.unwrap();
+        let twitter_handle = match self.twitter_handle {
+            Some(ref t) => t.clone(),
+            None => return Ok(None),
+        };
 
         ctx.twitter_profile_loader
             .load(twitter_handle)

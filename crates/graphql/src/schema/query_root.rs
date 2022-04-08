@@ -121,7 +121,7 @@ impl QueryRoot {
     ) -> FieldResult<Creator> {
         let conn = context.db_pool.get().context("failed to connect to db")?;
 
-        let twitter_handle = queries::twitter_handle_name_service::get(&conn, address.clone())?;
+        let twitter_handle = queries::twitter_handle_name_service::get(&conn, &address)?;
 
         Ok(Creator {
             address,
@@ -174,7 +174,7 @@ impl QueryRoot {
     ) -> FieldResult<Wallet> {
         let conn = context.db_pool.get()?;
 
-        let twitter_handle = queries::twitter_handle_name_service::get(&conn, address.clone().into())?;
+        let twitter_handle = queries::twitter_handle_name_service::get(&conn, &address)?;
 
         Ok(Wallet::new(address, twitter_handle))
     }

@@ -1,8 +1,8 @@
 use objects::{listing::Bid, profile::TwitterProfile};
+use scalars::PublicKey;
 use tables::{bids, graph_connections};
 
 use super::prelude::*;
-use crate::schema::scalars::PublicKey;
 
 #[derive(Debug, Clone)]
 pub struct Wallet {
@@ -28,8 +28,8 @@ impl Wallet {
     pub fn bids(&self, ctx: &AppContext) -> FieldResult<Vec<Bid>> {
         let db_conn = ctx.db_pool.get()?;
         let rows: Vec<models::Bid> = bids::table
-            .select(bids::all_columns)      // How to avoid cloning?
-            .filter(bids::bidder_address.eq::<String>(self.address.clone().into()))
+            .select(bids::all_columns)
+            .filter(bids::bidder_address.eq(&self.address))
             .order_by(bids::last_bid_time.desc())
             .load(&db_conn)
             .context("Failed to load wallet bids")?;
@@ -41,13 +41,10 @@ impl Wallet {
     }
 
     pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
-        let twitter_handle = self.twitter_handle.clone();
-
-        if twitter_handle.is_none() {
-            return Ok(None);
-        }
-
-        let twitter_handle = twitter_handle.unwrap();
+        let twitter_handle = match self.twitter_handle {
+            Some(ref t) => t.clone(),
+            None => return Ok(None),
+        };
 
         ctx.twitter_profile_loader
             .load(twitter_handle)
@@ -70,20 +67,25 @@ pub struct ConnectionCounts {
 impl ConnectionCounts {
     pub fn from_count(&self, ctx: &AppContext) -> FieldResult<i32> {
         let db_conn = ctx.db_pool.get()?;
-        let count = graph_connections::table
-            .filter(graph_connections::from_account.eq::<String>(self.address.clone().into()))
+
+        let count: i64 = graph_connections::table
+            .filter(graph_connections::from_account.eq(&self.address))
             .count()
-            .get_result::<i64>(&db_conn)
+            .get_result(&db_conn)
             .context("Failed to count from_connections")?;
+
         Ok(count.try_into()?)
     }
+
     pub fn to_count(&self, ctx: &AppContext) -> FieldResult<i32> {
         let db_conn = ctx.db_pool.get()?;
-        let count = graph_connections::table
-            .filter(graph_connections::to_account.eq::<String>(self.address.clone().into()))
+
+        let count: i64 = graph_connections::table
+            .filter(graph_connections::to_account.eq(&self.address))
             .count()
-            .get_result::<i64>(&db_conn)
+            .get_result(&db_conn)
             .context("Failed to count to_connections")?;
+
         Ok(count.try_into()?)
     }
 }

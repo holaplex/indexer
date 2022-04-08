@@ -93,13 +93,10 @@ impl NftCreator {
     }
 
     pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
-        let twitter_handle = self.twitter_handle.clone();
-
-        if twitter_handle.is_none() {
-            return Ok(None);
-        }
-
-        let twitter_handle = twitter_handle.unwrap();
+        let twitter_handle = match self.twitter_handle {
+            Some(ref t) => t.clone(),
+            None => return Ok(None),
+        };
 
         ctx.twitter_profile_loader
             .load(twitter_handle)
@@ -154,13 +151,10 @@ impl NftOwner {
     }
 
     pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
-        let twitter_handle = self.twitter_handle.clone();
-
-        if twitter_handle.is_none() {
-            return Ok(None);
-        }
-
-        let twitter_handle = twitter_handle.unwrap();
+        let twitter_handle = match self.twitter_handle {
+            Some(ref t) => t.clone(),
+            None => return Ok(None),
+        };
 
         ctx.twitter_profile_loader
             .load(twitter_handle)

@@ -1,4 +1,6 @@
-use super::{nft::Nft, prelude::*};
+use objects::nft::Nft;
+
+use super::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct StoreCreator {
