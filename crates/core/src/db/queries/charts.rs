@@ -11,6 +11,19 @@ use crate::{
     prelude::*,
 };
 
+r"
+select 
+    coalesce(min(lr.price), 0)::bigint as price,
+    date_trunc('day', lr.created_at) as date
+from listing_receipts lr
+    inner join auction_houses ah
+    on (lr.auction_house = ah.address)
+    left join purchase_receipts pr
+    on (lr.purchase_receipt = pr.address)
+where lr.auction_house = 'EsrVUnwaqmsq8aDyZ3xLf8f5RmpcHL6ym5uTzwCRLqbE' and lr.created_at >= '2022-03-01T15:17:13Z' and lr.created_at <= '2022-04-03T15:17:13Z' and lr.canceled_at is null and lr.purchase_receipt is null
+group by date
+order by date asc;
+"
 const FLOOR_PRICES_QUERY: &str = r"
 select
     date_trunc('day', listed_at) as date,
