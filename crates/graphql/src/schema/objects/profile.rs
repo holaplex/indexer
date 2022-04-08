@@ -1,9 +1,11 @@
 use serde::Deserialize;
+use tables::twitter_handle_name_services;
 
 use super::prelude::*;
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct TwitterProfile {
+    pub wallet_address: Option<String>,
     pub handle: String,
     pub profile_image_url: String,
     pub banner_image_url: String,
@@ -12,6 +14,7 @@ pub struct TwitterProfile {
 
 #[derive(Debug, Clone)]
 pub struct Profile {
+    pub wallet_address: Option<String>,
     pub handle: String,
     pub profile_image_url_lowres: String,
     pub profile_image_url_highres: String,
@@ -28,6 +31,7 @@ impl From<TwitterUserProfileResponse> for TwitterProfile {
         }: TwitterUserProfileResponse,
     ) -> Self {
         Self {
+            wallet_address: None,
             handle: screen_name,
             profile_image_url: profile_image_url_https,
             banner_image_url: profile_banner_url,
@@ -63,6 +67,21 @@ pub struct TwitterUserProfileResponse {
 
 #[graphql_object(Context = AppContext)]
 impl Profile {
+    fn wallet_address(&self, ctx: &AppContext) -> FieldResult<Option<String>> {
+        let db_conn = ctx.db_pool.get()?;
+        let result: Vec<models::TwitterHandle> = twitter_handle_name_services::table
+            .select(twitter_handle_name_services::all_columns)
+            .limit(1)
+            .filter(twitter_handle_name_services::twitter_handle.eq(&self.handle))
+            .load(&db_conn)
+            .context("Failed to load wallet address")?;
+        if result.len() == 0 {
+            return Ok(None);
+        }
+        let matching_item = result.get(0).unwrap();
+        let wallet_address = &matching_item.wallet_address;
+        Ok(Some(wallet_address.to_string()))
+    }
     fn handle(&self) -> &str {
         &self.handle
     }
@@ -88,6 +107,7 @@ impl From<(TwitterProfilePictureResponse, TwitterShowResponse)> for Profile {
         ),
     ) -> Self {
         Self {
+            wallet_address: None,
             banner_image_url: show_response.profile_banner_url,
             handle: show_response.screen_name,
             profile_image_url_highres: profile_picture_response.data.profile_image_url,
