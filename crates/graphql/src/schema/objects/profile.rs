@@ -5,7 +5,6 @@ use super::prelude::*;
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct TwitterProfile {
-    pub wallet_address: Option<String>,
     pub handle: String,
     pub profile_image_url: String,
     pub banner_image_url: String,
@@ -14,7 +13,6 @@ pub struct TwitterProfile {
 
 #[derive(Debug, Clone)]
 pub struct Profile {
-    pub wallet_address: Option<String>,
     pub handle: String,
     pub profile_image_url_lowres: String,
     pub profile_image_url_highres: String,
@@ -31,7 +29,6 @@ impl From<TwitterUserProfileResponse> for TwitterProfile {
         }: TwitterUserProfileResponse,
     ) -> Self {
         Self {
-            wallet_address: None,
             handle: screen_name,
             profile_image_url: profile_image_url_https,
             banner_image_url: profile_banner_url,
@@ -107,7 +104,6 @@ impl From<(TwitterProfilePictureResponse, TwitterShowResponse)> for Profile {
         ),
     ) -> Self {
         Self {
-            wallet_address: None,
             banner_image_url: show_response.profile_banner_url,
             handle: show_response.screen_name,
             profile_image_url_highres: profile_picture_response.data.profile_image_url,
