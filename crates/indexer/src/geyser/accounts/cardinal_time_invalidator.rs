@@ -16,25 +16,29 @@ pub(crate) async fn process(
         address: Owned(bs58::encode(key).into_string()),
         bump: time_invalidator.bump.try_into()?,
         token_manager_address: Owned(bs58::encode(time_invalidator.token_manager).into_string()),
-        expiration: time_invalidator
+        time_invalidator_payment_manager: Owned(
+            bs58::encode(time_invalidator.payment_manager).into_string(),
+        ),
+        time_invalidator_collector: Owned(bs58::encode(time_invalidator.collector).into_string()),
+        time_invalidator_expiration: time_invalidator
             .expiration
             .map(|e| NaiveDateTime::from_timestamp(e, 0)),
-        duration_seconds: time_invalidator.duration_seconds.try_into()?,
-        extension_payment_amount: time_invalidator
+        time_invalidator_duration_seconds: time_invalidator.duration_seconds.try_into()?,
+        time_invalidator_extension_payment_amount: time_invalidator
             .extension_payment_amount
             .map(TryFrom::try_from)
             .transpose()?,
-        extension_payment_mint: time_invalidator
+        time_invalidator_extension_payment_mint: time_invalidator
             .extension_payment_mint
             .map(|m| Owned(bs58::encode(m).into_string())),
-        extension_duration_seconds: time_invalidator
+        time_invalidator_extension_duration_seconds: time_invalidator
             .extension_duration_seconds
             .map(TryFrom::try_from)
             .transpose()?,
-        max_expiration: time_invalidator
+        time_invalidator_max_expiration: time_invalidator
             .max_expiration
             .map(|e| NaiveDateTime::from_timestamp(e, 0)),
-        disable_partial_extension: time_invalidator
+        time_invalidator_disable_partial_extension: time_invalidator
             .disable_partial_extension
             .map(TryFrom::try_from)
             .transpose()?,

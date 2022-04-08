@@ -16,26 +16,30 @@ pub(crate) async fn process(
         address: Owned(bs58::encode(key).into_string()),
         bump: use_invalidator.bump.try_into()?,
         token_manager_address: Owned(bs58::encode(use_invalidator.token_manager).into_string()),
-        use_authority: use_invalidator
+        use_invalidator_payment_manager: Owned(
+            bs58::encode(use_invalidator.payment_manager).into_string(),
+        ),
+        use_invalidator_collector: Owned(bs58::encode(use_invalidator.collector).into_string()),
+        use_invalidator_use_authority: use_invalidator
             .use_authority
             .map(|m| Owned(bs58::encode(m).into_string())),
-        usages: use_invalidator.usages.try_into()?,
-        total_usages: use_invalidator
+        use_invalidator_usages: use_invalidator.usages.try_into()?,
+        use_invalidator_total_usages: use_invalidator
             .total_usages
             .map(TryFrom::try_from)
             .transpose()?,
-        extension_payment_amount: use_invalidator
+        use_invalidator_extension_payment_amount: use_invalidator
             .extension_payment_amount
             .map(TryFrom::try_from)
             .transpose()?,
-        extension_payment_mint: use_invalidator
+        use_invalidator_extension_payment_mint: use_invalidator
             .extension_payment_mint
             .map(|m| Owned(bs58::encode(m).into_string())),
-        extension_usages: use_invalidator
+        use_invalidator_extension_usages: use_invalidator
             .extension_usages
             .map(TryFrom::try_from)
             .transpose()?,
-        max_usages: use_invalidator
+        use_invalidator_max_usages: use_invalidator
             .max_usages
             .map(TryFrom::try_from)
             .transpose()?,

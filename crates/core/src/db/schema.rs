@@ -246,6 +246,150 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
+    cardinal_claim_events (state_changed_at, mint) {
+        token_manager_address -> Varchar,
+        version -> Int2,
+        bump -> Int2,
+        count -> Int8,
+        num_invalidators -> Int2,
+        issuer -> Varchar,
+        mint -> Varchar,
+        amount -> Int8,
+        kind -> Int2,
+        state -> Int2,
+        state_changed_at -> Timestamp,
+        invalidation_type -> Int2,
+        recipient_token_account -> Varchar,
+        receipt_mint -> Nullable<Varchar>,
+        claim_approver -> Nullable<Varchar>,
+        transfer_authority -> Nullable<Varchar>,
+        invalidators -> Nullable<Array<Text>>,
+        paid_claim_approver_payment_amount -> Nullable<Int8>,
+        paid_claim_approver_payment_mint -> Nullable<Varchar>,
+        paid_claim_approver_payment_manager -> Nullable<Varchar>,
+        paid_claim_approver_collector -> Nullable<Varchar>,
+        time_invalidator_address -> Nullable<Varchar>,
+        time_invalidator_payment_manager -> Nullable<Varchar>,
+        time_invalidator_collector -> Nullable<Varchar>,
+        time_invalidator_expiration -> Nullable<Timestamp>,
+        time_invalidator_duration_seconds -> Nullable<Int8>,
+        time_invalidator_extension_payment_amount -> Nullable<Int8>,
+        time_invalidator_extension_duration_seconds -> Nullable<Int8>,
+        time_invalidator_extension_payment_mint -> Nullable<Varchar>,
+        time_invalidator_max_expiration -> Nullable<Timestamp>,
+        time_invalidator_disable_partial_extension -> Nullable<Bool>,
+        use_invalidator_address -> Nullable<Varchar>,
+        // use_invalidator_payment_manager -> Nullable<Varchar>,
+        // use_invalidator_collector -> Nullable<Varchar>,
+        // use_invalidator_usages -> Nullable<Int8>,
+        // use_invalidator_use_authority -> Nullable<Varchar>,
+        // use_invalidator_total_usages -> Nullable<Int8>,
+        // use_invalidator_extension_payment_amount -> Nullable<Int8>,
+        // use_invalidator_extension_payment_mint -> Nullable<Varchar>,
+        // use_invalidator_extension_usages -> Nullable<Int8>,
+        // use_invalidator_max_usages -> Nullable<Int8>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    cardinal_paid_claim_approvers (address) {
+        address -> Varchar,
+        bump -> Int2,
+        token_manager_address -> Varchar,
+        paid_claim_approver_payment_manager -> Varchar,
+        paid_claim_approver_payment_amount -> Int8,
+        paid_claim_approver_payment_mint -> Varchar,
+        paid_claim_approver_collector -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    cardinal_time_invalidators (address) {
+        address -> Varchar,
+        bump -> Int2,
+        token_manager_address -> Varchar,
+        time_invalidator_payment_manager -> Nullable<Varchar>,
+        time_invalidator_collector -> Nullable<Varchar>,
+        time_invalidator_expiration -> Nullable<Timestamp>,
+        time_invalidator_duration_seconds -> Nullable<Int8>,
+        time_invalidator_extension_payment_amount -> Nullable<Int8>,
+        time_invalidator_extension_duration_seconds -> Nullable<Int8>,
+        time_invalidator_extension_payment_mint -> Nullable<Varchar>,
+        time_invalidator_max_expiration -> Nullable<Timestamp>,
+        time_invalidator_disable_partial_extension -> Nullable<Bool>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    cardinal_token_manager_invalidators (token_manager_address, invalidator) {
+        token_manager_address -> Varchar,
+        invalidator -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    cardinal_token_managers (address) {
+        address -> Varchar,
+        version -> Int2,
+        bump -> Int2,
+        count -> Int8,
+        num_invalidators -> Int2,
+        issuer -> Varchar,
+        mint -> Varchar,
+        amount -> Int8,
+        kind -> Int2,
+        state -> Int2,
+        state_changed_at -> Timestamp,
+        invalidation_type -> Int2,
+        recipient_token_account -> Varchar,
+        receipt_mint -> Nullable<Varchar>,
+        claim_approver -> Nullable<Varchar>,
+        transfer_authority -> Nullable<Varchar>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    cardinal_use_invalidators (address) {
+        address -> Varchar,
+        bump -> Int2,
+        token_manager_address -> Varchar,
+        use_invalidator_payment_manager -> Nullable<Varchar>,
+        use_invalidator_collector -> Nullable<Varchar>,
+        use_invalidator_usages -> Nullable<Int8>,
+        use_invalidator_use_authority -> Nullable<Varchar>,
+        use_invalidator_total_usages -> Nullable<Int8>,
+        use_invalidator_extension_payment_amount -> Nullable<Int8>,
+        use_invalidator_extension_payment_mint -> Nullable<Varchar>,
+        use_invalidator_extension_usages -> Nullable<Int8>,
+        use_invalidator_max_usages -> Nullable<Int8>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
     editions (address) {
         address -> Varchar,
         parent_address -> Varchar,
@@ -555,98 +699,7 @@ table! {
     }
 }
 
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
-
-    cardinal_token_managers (address) {
-        address -> Varchar,
-        version -> Int2,
-        bump -> Int2,
-        count -> Int8,
-        num_invalidators -> Int2,
-        issuer -> Varchar,
-        mint -> Varchar,
-        amount -> Int8,
-        kind -> Int2,
-        state -> Int2,
-        state_changed_at -> Nullable<Timestamp>,
-        invalidation_type -> Int2,
-        recipient_token_account -> Varchar,
-        receipt_mint -> Nullable<Varchar>,
-        claim_approver -> Nullable<Varchar>,
-        transfer_authority -> Nullable<Varchar>,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
-
-    cardinal_paid_claim_approvers (address) {
-        program -> Varchar,
-        address -> Varchar,
-        bump -> Int2,
-        token_manager_address -> Varchar,
-        payment_amount -> Int8,
-        payment_mint -> Varchar,
-        collector -> Varchar,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
-
-    cardinal_token_manager_invalidators (token_manager_address, invalidator) {
-        token_manager_address -> Varchar,
-        invalidator -> Varchar,
-        program -> Varchar,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
-
-    cardinal_time_invalidators (address) {
-        program -> Varchar,
-        address -> Varchar,
-        bump -> Int2,
-        token_manager_address -> Varchar,
-        expiration -> Nullable<Timestamp>,
-        duration_seconds -> Nullable<Int8>,
-        extension_payment_amount -> Nullable<Int8>,
-        extension_duration_seconds -> Nullable<Int8>,
-        extension_payment_mint -> Nullable<Varchar>,
-        max_expiration -> Nullable<Timestamp>,
-        disable_partial_extension -> Nullable<Bool>,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode};
-
-    cardinal_use_invalidators (address) {
-        program -> Varchar,
-        address -> Varchar,
-        bump -> Int2,
-        token_manager_address -> Varchar,
-        use_authority -> Nullable<Varchar>,
-        usages -> Int8,
-        total_usages -> Int8,
-        extension_payment_amount -> Int8,
-        extension_payment_mint -> Varchar,
-        extension_usages -> Int8,
-        max_usages -> Nullable<Int8>,
-    }
-}
+joinable!(cardinal_token_manager_invalidators -> cardinal_token_managers (token_manager_address));
 
 allow_tables_to_appear_in_same_query!(
     attributes,
@@ -665,6 +718,12 @@ allow_tables_to_appear_in_same_query!(
     candy_machine_hidden_settings,
     candy_machine_whitelist_mint_settings,
     candy_machines,
+    cardinal_claim_events,
+    cardinal_paid_claim_approvers,
+    cardinal_time_invalidators,
+    cardinal_token_manager_invalidators,
+    cardinal_token_managers,
+    cardinal_use_invalidators,
     editions,
     files,
     graph_connections,
@@ -687,9 +746,4 @@ allow_tables_to_appear_in_same_query!(
     token_accounts,
     twitter_handle_name_services,
     whitelisted_creators,
-    cardinal_token_managers,
-    cardinal_time_invalidators,
-    cardinal_use_invalidators,
-    cardinal_paid_claim_approvers,
-    cardinal_token_manager_invalidators,
 );

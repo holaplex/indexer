@@ -1,0 +1,6 @@
+drop table cardinal_claim_events;
+drop table cardinal_token_manager_invalidators;
+drop table cardinal_time_invalidators;
+drop table cardinal_use_invalidators;
+drop table cardinal_paid_claim_approvers;
+drop table cardinal_token_managers;

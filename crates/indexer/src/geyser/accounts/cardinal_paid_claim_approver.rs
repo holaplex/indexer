@@ -16,9 +16,16 @@ pub(crate) async fn process(
         address: Owned(bs58::encode(key).into_string()),
         bump: paid_claim_approver.bump.try_into()?,
         token_manager_address: Owned(bs58::encode(paid_claim_approver.token_manager).into_string()),
-        payment_amount: paid_claim_approver.payment_amount.try_into()?,
-        payment_mint: Owned(bs58::encode(paid_claim_approver.payment_mint).into_string()),
-        collector: Owned(bs58::encode(paid_claim_approver.collector).into_string()),
+        paid_claim_approver_payment_manager: Owned(
+            bs58::encode(paid_claim_approver.payment_manager).into_string(),
+        ),
+        paid_claim_approver_collector: Owned(
+            bs58::encode(paid_claim_approver.collector).into_string(),
+        ),
+        paid_claim_approver_payment_amount: paid_claim_approver.payment_amount.try_into()?,
+        paid_claim_approver_payment_mint: Owned(
+            bs58::encode(paid_claim_approver.payment_mint).into_string(),
+        ),
     };
     debug!("Paid Claim Approver {:?}", row);
     client

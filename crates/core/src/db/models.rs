@@ -12,12 +12,12 @@ use super::schema::{
     bids, candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators,
     candy_machine_datas, candy_machine_end_settings, candy_machine_gate_keeper_configs,
     candy_machine_hidden_settings, candy_machine_whitelist_mint_settings, candy_machines,
-    cardinal_paid_claim_approvers, cardinal_time_invalidators, cardinal_token_manager_invalidators,
-    cardinal_token_managers, cardinal_use_invalidators, editions, files, graph_connections,
-    listing_metadatas, listing_receipts, master_editions, metadata_collection_keys,
-    metadata_collections, metadata_creators, metadata_jsons, metadatas, purchase_receipts,
-    store_config_jsons, store_configs, store_creators, storefronts, stores, token_accounts,
-    twitter_handle_name_services, whitelisted_creators,
+    cardinal_claim_events, cardinal_paid_claim_approvers, cardinal_time_invalidators,
+    cardinal_token_manager_invalidators, cardinal_token_managers, cardinal_use_invalidators,
+    editions, files, graph_connections, listing_metadatas, listing_receipts, master_editions,
+    metadata_collection_keys, metadata_collections, metadata_creators, metadata_jsons, metadatas,
+    purchase_receipts, store_config_jsons, store_configs, store_creators, storefronts, stores,
+    token_accounts, twitter_handle_name_services, whitelisted_creators,
 };
 use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
 
@@ -898,21 +898,102 @@ pub struct MetadataCollectionKey<'a> {
     pub verified: bool,
 }
 
-/// Join of `metadatas` `metadata_jsons` `store_creators` for an collection preview
+/// Joint table from querying a token_manager and related plugins
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct CardinalTokenManagerQuery {
+    /// Address of the token_manager
     #[sql_type = "Text"]
     pub address: String,
-
-    // #[sql_type = "Text"]
-    // pub token_manager_address: String,
+    /// Version of the token_manager
+    #[sql_type = "Int4"]
+    pub version: i16,
+    /// Bump seed of the token_manager
+    #[sql_type = "Int4"]
+    pub bump: i16,
+    /// Count for the given mint to identify this token_manager
+    #[sql_type = "Int8"]
+    pub count: i64,
+    /// Max number of invalidators this token_manager can hold
+    #[sql_type = "Int4"]
+    pub num_invalidators: i16,
+    /// Issuer of this token_manager
+    #[sql_type = "Text"]
+    pub issuer: String,
+    /// The mint that this token_manager holder
+    #[sql_type = "Text"]
+    pub mint: String,
+    /// How many of the given mint in this token_manager
+    #[sql_type = "Int8"]
+    pub amount: i64,
+    /// Kind of this token_manager
+    #[sql_type = "Int4"]
+    pub kind: i16,
+    /// Current state of the token_manager
+    #[sql_type = "Int4"]
+    pub state: i16,
+    /// Timestamp in seconds for last state change
+    #[sql_type = "Timestamp"]
+    pub state_changed_at: NaiveDateTime,
+    /// What happens upon invalidation
+    #[sql_type = "Int4"]
+    pub invalidation_type: i16,
+    /// Current token_account holding this managed token
+    #[sql_type = "Text"]
+    pub recipient_token_account: String,
+    /// Optional receipt claimed from the token_manager representing the rightful owner
     #[sql_type = "Nullable<Text>"]
-    pub payment_mint: Option<String>,
-    /* #[sql_type = "Timestamp"]
-     * pub state_changed_at: NaiveDateTime, */
+    pub receipt_mint: Option<String>,
+    /// Option authority that can approve claiming the token
+    #[sql_type = "Nullable<Text>"]
+    pub claim_approver: Option<String>,
+    /// Optional authority that can approve transfers (defaults to self)
+    #[sql_type = "Nullable<Text>"]
+    pub transfer_authority: Option<String>,
+    /// Amount the pay for extension
+    #[sql_type = "Nullable<Int8>"]
+    pub paid_claim_approver_payment_amount: Option<i64>,
+    /// Mint that extension is denominated in
+    #[sql_type = "Nullable<Text>"]
+    pub paid_claim_approver_payment_mint: Option<String>,
+    /// payment manager
+    #[sql_type = "Nullable<Text>"]
+    pub paid_claim_approver_payment_manager: Option<String>,
+    /// collector
+    #[sql_type = "Nullable<Text>"]
+    pub paid_claim_approver_collector: Option<String>,
+    /* /// Optional expiration which this time invalidator will expire
+     * #[sql_type = "Nullable<Int8>"]
+     * pub time_invalidator_expiration: Option<NaiveDateTime>,
+     * /// Duration after claim
+     * #[sql_type = "Nullable<Int8>"]
+     * pub time_invalidator_duration_seconds: Option<i64>,
+     * /// Amount the pay for extension
+     * #[sql_type = "Nullable<Int8>"]
+     * pub time_invalidator_extension_payment_amount: Option<i64>,
+     * /// Duration received after extension
+     * #[sql_type = "Nullable<Int8>"]
+     * pub time_invalidator_extension_duration_seconds: Option<i64>,
+     * /// Mint that extension is denominated in
+     * #[sql_type = "Nullable<Text>"]
+     * pub time_invalidator_extension_payment_mint: Option<String>,
+     * /// Optional max this can ever be extended until
+     * #[sql_type = "Nullable<Timestamp>"]
+     * pub time_invalidator_max_expiration: Option<NaiveDateTime>,
+     * /// Whether extension can be in partial increments
+     * #[sql_type = "Nullable<Bool>"]
+     * pub time_invalidator_disable_partial_extension: Option<bool>,
+     * /// Optional expiration which this time invalidator will expire
+     * #[sql_type = "Nullable<Int8>"]
+     * pub use_invalidator_usages: Option<i64>,
+     * /// Address that can increment usages
+     * #[sql_type = "Nullable<Text>"]
+     * pub use_invalidator_use_authority: Option<String>,
+     * /// Total usages
+     * #[sql_type = "Nullable<Int8>"]
+     * pub use_invalidator_total_usages: Option<i64>, */
 }
 
-/// A row in the `token_managers` table
+/// A row in the `cardinal_token_managers` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "cardinal_token_managers"]
@@ -951,7 +1032,7 @@ pub struct CardinalTokenManager<'a> {
     pub transfer_authority: Option<Cow<'a, str>>,
 }
 
-/// A row in the `token_manager_invalidators` table
+/// A row in the `cardinal_token_manager_invalidators` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "cardinal_token_manager_invalidators"]
@@ -962,7 +1043,7 @@ pub struct CardinalTokenManagerInvalidator<'a> {
     pub invalidator: Cow<'a, str>,
 }
 
-/// A row in the `token_manager_invalidators` table
+/// A row in the `cardinal_time_invalidators` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "cardinal_time_invalidators"]
@@ -973,23 +1054,27 @@ pub struct CardinalTimeInvalidator<'a> {
     pub bump: i16,
     /// Address of the token_manager
     pub token_manager_address: Cow<'a, str>,
+    /// Address of the payment manager
+    pub time_invalidator_payment_manager: Cow<'a, str>,
+    /// Address of the collector
+    pub time_invalidator_collector: Cow<'a, str>,
     /// Optional expiration which this time invalidator will expire
-    pub expiration: Option<NaiveDateTime>,
+    pub time_invalidator_expiration: Option<NaiveDateTime>,
     /// Duration after claim
-    pub duration_seconds: Option<i64>,
+    pub time_invalidator_duration_seconds: Option<i64>,
     /// Amount the pay for extension
-    pub extension_payment_amount: Option<i64>,
+    pub time_invalidator_extension_payment_amount: Option<i64>,
     /// Duration received after extension
-    pub extension_duration_seconds: Option<i64>,
+    pub time_invalidator_extension_duration_seconds: Option<i64>,
     /// Mint that extension is denominated in
-    pub extension_payment_mint: Option<Cow<'a, str>>,
+    pub time_invalidator_extension_payment_mint: Option<Cow<'a, str>>,
     /// Optional max this can ever be extended until
-    pub max_expiration: Option<NaiveDateTime>,
+    pub time_invalidator_max_expiration: Option<NaiveDateTime>,
     /// Whether extension can be in partial increments
-    pub disable_partial_extension: Option<bool>,
+    pub time_invalidator_disable_partial_extension: Option<bool>,
 }
 
-/// A row in the `token_manager_invalidators` table
+/// A row in the `cardinal_use_invalidators` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "cardinal_use_invalidators"]
@@ -1000,23 +1085,27 @@ pub struct CardinalUseInvalidator<'a> {
     pub bump: i16,
     /// Address of the token_manager
     pub token_manager_address: Cow<'a, str>,
+    /// Address of the payment manager
+    pub use_invalidator_payment_manager: Cow<'a, str>,
+    /// Address of the collector
+    pub use_invalidator_collector: Cow<'a, str>,
     /// Optional expiration which this time invalidator will expire
-    pub usages: i64,
+    pub use_invalidator_usages: i64,
     /// Address that can increment usages
-    pub use_authority: Option<Cow<'a, str>>,
+    pub use_invalidator_use_authority: Option<Cow<'a, str>>,
     /// Total usages
-    pub total_usages: Option<i64>,
+    pub use_invalidator_total_usages: Option<i64>,
     /// Amount the pay for extension
-    pub extension_payment_amount: Option<i64>,
+    pub use_invalidator_extension_payment_amount: Option<i64>,
     /// Mint that extension is denominated in
-    pub extension_payment_mint: Option<Cow<'a, str>>,
+    pub use_invalidator_extension_payment_mint: Option<Cow<'a, str>>,
     /// Number of usages received after extension
-    pub extension_usages: Option<i64>,
+    pub use_invalidator_extension_usages: Option<i64>,
     /// Optional max this can ever be extended until
-    pub max_usages: Option<i64>,
+    pub use_invalidator_max_usages: Option<i64>,
 }
 
-/// A row in the `token_manager_invalidators` table
+/// A row in the `cardinal_token_manager_invalidators` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "cardinal_paid_claim_approvers"]
@@ -1027,10 +1116,101 @@ pub struct CardinalPaidClaimApprover<'a> {
     pub bump: i16,
     /// Address of the token_manager
     pub token_manager_address: Cow<'a, str>,
+    /// Address of the payment manager
+    pub paid_claim_approver_payment_manager: Cow<'a, str>,
+    /// Address of the collector
+    pub paid_claim_approver_collector: Cow<'a, str>,
     /// Amount the pay for extension
-    pub payment_amount: i64,
+    pub paid_claim_approver_payment_amount: i64,
     /// Mint that extension is denominated in
-    pub payment_mint: Cow<'a, str>,
-    /// Address that can collect rent
-    pub collector: Cow<'a, str>,
+    pub paid_claim_approver_payment_mint: Cow<'a, str>,
+}
+
+/// A row in the `cardinal_claim_events` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "cardinal_claim_events"]
+pub struct CardinalClaimEvent<'a> {
+    /// Address of the token_manager
+    pub token_manager_address: Cow<'a, str>,
+    /// Version of the token_manager
+    pub version: i16,
+    /// Bump seed of the token_manager
+    pub bump: i16,
+    /// Count for the given mint to identify this token_manager
+    pub count: i64,
+    /// Max number of invalidators this token_manager can hold
+    pub num_invalidators: i16,
+    /// Issuer of this token_manager
+    pub issuer: Cow<'a, str>,
+    /// The mint that this token_manager holder
+    pub mint: Cow<'a, str>,
+    /// How many of the given mint in this token_manager
+    pub amount: i64,
+    /// Kind of this token_manager
+    pub kind: i16,
+    /// Current state of the token_manager
+    pub state: i16,
+    /// Timestamp in seconds for last state change
+    pub state_changed_at: NaiveDateTime,
+    /// What happens upon invalidation
+    pub invalidation_type: i16,
+    /// Current token_account holding this managed token
+    pub recipient_token_account: Cow<'a, str>,
+    /// Optional receipt claimed from the token_manager representing the rightful owner
+    pub receipt_mint: Option<Cow<'a, str>>,
+    /// Option authority that can approve claiming the token
+    pub claim_approver: Option<Cow<'a, str>>,
+    /// Optional authority that can approve transfers (defaults to self)
+    pub transfer_authority: Option<Cow<'a, str>>,
+    /// Listof invalidators
+    pub invalidators: Vec<Cow<'a, str>>,
+    /// Amount the pay for extension
+    pub paid_claim_approver_payment_amount: Option<i64>,
+    /// Mint that extension is denominated in
+    pub paid_claim_approver_payment_mint: Option<Cow<'a, str>>,
+    /// Payment manager address
+    pub paid_claim_approver_payment_manager: Option<Cow<'a, str>>,
+    /// Claim approver collector
+    pub paid_claim_approver_collector: Option<Cow<'a, str>>,
+    /// Time invalidator address
+    pub time_invalidator_address: Option<Cow<'a, str>>,
+    /// Time inavlidator payment manager address
+    pub time_invalidator_payment_manager: Option<Cow<'a, str>>,
+    /// Time inavlidator collector
+    pub time_invalidator_collector: Option<Cow<'a, str>>,
+    /// Optional expiration which this time invalidator will expire
+    pub time_invalidator_expiration: Option<NaiveDateTime>,
+    /// Duration after claim
+    pub time_invalidator_duration_seconds: Option<i64>,
+    /// Amount the pay for extension
+    pub time_invalidator_extension_payment_amount: Option<i64>,
+    /// Duration received after extension
+    pub time_invalidator_extension_duration_seconds: Option<i64>,
+    /// Mint that extension is denominated in
+    pub time_invalidator_extension_payment_mint: Option<Cow<'a, str>>,
+    /// Optional max this can ever be extended until
+    pub time_invalidator_max_expiration: Option<NaiveDateTime>,
+    /// Whether extension can be in partial increments
+    pub time_invalidator_disable_partial_extension: Option<bool>,
+    /// Use invalidator address
+    pub use_invalidator_address: Option<Cow<'a, str>>,
+    /* /// Use inavlidator payment manager address
+     * pub use_invalidator_payment_manager: Option<Cow<'a, str>>,
+     * /// Use inavlidator collector
+     * pub use_invalidator_collector: Option<Cow<'a, str>>, *
+     * /// Optional expiration which this time invalidator will expire
+     * pub use_invalidator_usages: Option<i64>,
+     * /// Address that can increment usages
+     * pub use_invalidator_use_authority: Option<Cow<'a, str>>,
+     * /// Total usages
+     * pub use_invalidator_total_usages: Option<i64>,
+     * /// Amount the pay for extension
+     * pub use_invalidator_extension_payment_amount: Option<i64>,
+     * /// Mint that extension is denominated in
+     * pub use_invalidator_extension_payment_mint: Option<Cow<'a, str>>,
+     * /// Number of usages received after extension
+     * pub use_invalidator_extension_usages: Option<i64>,
+     * /// Optional max this can ever be extended until
+     * pub use_invalidator_max_usages: Option<i64>, */
 }
