@@ -1,15 +1,16 @@
-create table temp as
-    select distinct on (metadata_address, value, trait_type) * from attributes;
-
-alter table attributes
-    drop constraint if exists attributes_unique_constraint,
-    drop constraint if exists attributes_primary_key_constraint;
-
-alter table temp
-    add constraint attributes_unique_constraint unique (metadata_address, value, trait_type),
-    add constraint attributes_primary_key_constraint primary key (id),
-    alter column metadata_address set not null,
-    alter column id set default gen_random_uuid();
-
 alter table attributes rename to temp_attributes;
-alter table temp rename to attributes;
+
+create table attributes (
+  metadata_address      varchar(48)     not null,
+  value                 text,
+  trait_type            text,
+  id                    uuid            primary key default gen_random_uuid(),
+  first_verified_creator varchar(48)    null,
+  unique (metadata_address, value, trait_type)
+);
+
+create index if not exists attributes_metadata_address_idx on 
+attributes using hash (metadata_address);
+
+create index if not exists attributes_first_verified_creator_idx
+on attributes (first_verified_creator);
