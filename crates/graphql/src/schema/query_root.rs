@@ -3,6 +3,7 @@ use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
     bonding_change::EnrichedBondingChange,
+    chart::PriceChart,
     creator::Creator,
     denylist::Denylist,
     feed_event::FeedEvent,
@@ -68,6 +69,24 @@ impl QueryRoot {
     #[graphql(arguments(creators(description = "creators of nfts"),))]
     fn nft_counts(&self, creators: Vec<PublicKey<NftCreator>>) -> FieldResult<NftCount> {
         Ok(NftCount::new(creators))
+    }
+    #[graphql(arguments(
+        auction_housese(description = "List of auction houses"),
+        start_date(description = "Start date for which we want to get the average price"),
+        end_date(description = "End date for which we want to get the average price")
+    ))]
+    pub async fn charts(
+        &self,
+        _context: &AppContext,
+        auction_houses: Vec<PublicKey<AuctionHouse>>,
+        start_date: DateTime<Utc>,
+        end_date: DateTime<Utc>,
+    ) -> FieldResult<PriceChart> {
+        Ok(PriceChart {
+            auction_houses,
+            start_date,
+            end_date,
+        })
     }
 
     async fn profile(

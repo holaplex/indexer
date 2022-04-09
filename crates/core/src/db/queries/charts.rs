@@ -1,3 +1,5 @@
+//! Query utilities for nft price charts
+
 use diesel::{
     pg::Pg,
     prelude::*,
@@ -11,53 +13,28 @@ use crate::{
     prelude::*,
 };
 
-r"
-select 
-    coalesce(min(lr.price), 0)::bigint as price,
-    date_trunc('day', lr.created_at) as date
-from listing_receipts lr
-    inner join auction_houses ah
-    on (lr.auction_house = ah.address)
-    left join purchase_receipts pr
-    on (lr.purchase_receipt = pr.address)
-where lr.auction_house = 'EsrVUnwaqmsq8aDyZ3xLf8f5RmpcHL6ym5uTzwCRLqbE' and lr.created_at >= '2022-03-01T15:17:13Z' and lr.created_at <= '2022-04-03T15:17:13Z' and lr.canceled_at is null and lr.purchase_receipt is null
+const FLOOR_PRICES_QUERY: &str = r"
+select series as date,
+       coalesce(min(price), 0)::bigint as price
+from generate_series($2::date, $3::date, '1 day'::interval) as series
+left join (
+    select date_trunc('day', created_at) as created_at_day, price from listing_receipts lr
+        where lr.auction_house = ANY($1) and lr.created_at >= $2 and lr.created_at <= $3 and lr.canceled_at is null and lr.purchase_receipt is null
+) as i
+on i.created_at_day = series
 group by date
 order by date asc;
-"
-const FLOOR_PRICES_QUERY: &str = r"
-select
-    date_trunc('day', listed_at) as date,
-    min(listing_price) filter (where listing_canceled_at is null and listing_purchase_receipt is null)::bigint as price
-
-from (
-    select lr.auction_house as auction_house,
-        lr.price as listing_price, pr.price as purchase_price,
-        pr.created_at as purchased_at,
-        lr.created_at as listed_at,
-        lr.purchase_receipt as listing_purchase_receipt,
-        lr.canceled_at as listing_canceled_at,
-        ah.treasury_mint as mint
-from listing_receipts lr
-    inner join auction_houses ah
-        on (lr.auction_house = ah.address)
-    left join purchase_receipts pr
-        on (lr.purchase_receipt = pr.address)
-
-where lr.auction_house = $1 and lr.created_at >= $2 and lr.created_at <= $3
-) as auction_house_stats
-group by 1
-order by 1 asc;
  -- $1: auction house addresses::text[]
  -- $2: start date::timestamp
  -- $3: end date::timestamp";
 
-/// Load floor prices during a given date range for the given auction house address
+/// Load floor prices during a given date range for the desired auction house address per day
 ///
 /// # Errors
 /// This function fails if the underlying SQL query returns an error
 pub fn floor_prices(
     conn: &Connection,
-    auction_houses: impl ToSql<Text, Pg>,
+    auction_houses: impl ToSql<Array<Text>, Pg>,
     start_date: NaiveDateTime,
     end_date: NaiveDateTime,
 ) -> Result<Vec<PricePoint>> {
@@ -70,43 +47,64 @@ pub fn floor_prices(
 }
 
 const AVERAGE_PRICES_QUERY: &str = r"
-select
-    date_trunc('day', listed_at) as date,
-    round(avg(purchase_price))::bigint as price
-
-from (
-    select lr.auction_house as auction_house,
-        lr.price as listing_price, pr.price as purchase_price,
-        pr.created_at as purchased_at,
-        lr.created_at as listed_at,
-        lr.purchase_receipt as listing_purchase_receipt,
-        lr.canceled_at as listing_canceled_at,
-        ah.treasury_mint as mint
-from listing_receipts lr
-    inner join auction_houses ah
-        on (lr.auction_house = ah.address)
-    left join purchase_receipts pr
-        on (lr.purchase_receipt = pr.address)
-
-where lr.auction_house = $1 and lr.created_at >= $2 and lr.created_at <= $3
-) as auction_house_stats
-group by 1
-order by 1 asc;
+select series as date,
+       coalesce(round(avg(price)), 0)::bigint as price
+from generate_series($2::date, $3::date, '1 day'::interval) as series
+left join (
+    select date_trunc('day', created_at) as created_at_day, price from purchase_receipts pr
+        where pr.auction_house = ANY($1) and pr.created_at >= $2 and pr.created_at <= $3
+) as i
+on i.created_at_day = series
+group by date
+order by date asc;
  -- $1: auction house addresses::text[]
  -- $2: start date::timestamp
  -- $3: end date::timestamp";
 
-/// Load average prices during a given date range for the given auction house address
+/// Load average prices during a given date range for the desired auction house address per day
 ///
 /// # Errors
 /// This function fails if the underlying SQL query returns an error
 pub fn average_prices(
     conn: &Connection,
-    auction_houses: impl ToSql<Text, Pg>,
+    auction_houses: impl ToSql<Array<Text>, Pg>,
     start_date: NaiveDateTime,
     end_date: NaiveDateTime,
 ) -> Result<Vec<PricePoint>> {
     diesel::sql_query(AVERAGE_PRICES_QUERY)
+        .bind(auction_houses)
+        .bind::<Timestamp, _>(start_date)
+        .bind::<Timestamp, _>(end_date)
+        .load(conn)
+        .context("Failed to load average prices")
+}
+
+const TOTAL_VOLUME_QUERY: &str = r"
+select series as date,
+       coalesce(round(sum(price)), 0)::bigint as price
+from generate_series($2::date, $3::date, '1 day'::interval) as series
+left join (
+    select date_trunc('day', created_at) as created_at_day, price from purchase_receipts pr
+        where pr.auction_house = ANY($1) and pr.created_at >= $2 and pr.created_at <= $3
+) as i
+on i.created_at_day = series
+group by date
+order by date asc;
+ -- $1: auction house addresses::text[]
+ -- $2: start date::timestamp
+ -- $3: end date::timestamp";
+
+/// Load total sales volum during a given date range for the desired auction house address per day
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
+pub fn total_volume_prices(
+    conn: &Connection,
+    auction_houses: impl ToSql<Array<Text>, Pg>,
+    start_date: NaiveDateTime,
+    end_date: NaiveDateTime,
+) -> Result<Vec<PricePoint>> {
+    diesel::sql_query(TOTAL_VOLUME_QUERY)
         .bind(auction_houses)
         .bind::<Timestamp, _>(start_date)
         .bind::<Timestamp, _>(end_date)

@@ -904,8 +904,8 @@ pub struct TwitterEnrichedGraphConnection {
 #[derive(Debug, Clone, Copy, QueryableByName)]
 pub struct PricePoint {
     /// The requested price on a date
-    #[sql_type = "Nullable<Int8>"]
-    pub price: Option<i64>,
+    #[sql_type = "Int8"]
+    pub price: i64,
 
     /// The date for which the price was requested
     #[sql_type = "Timestamp"]
