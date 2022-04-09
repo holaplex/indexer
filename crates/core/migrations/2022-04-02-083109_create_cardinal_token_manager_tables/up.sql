@@ -31,9 +31,9 @@ create index if not exists cardinal_token_manager_invalidators_idx
 on cardinal_token_manager_invalidators (token_manager_address);
 
 create table cardinal_time_invalidators (
-    address                                      varchar(48)     primary key,
-    bump                                         smallint        not null,
-    token_manager_address                        varchar(48)     not null,
+    time_invalidator_address                     varchar(48)     primary key,
+    time_invalidator_bump                        smallint        not null,
+    time_invalidator_token_manager_address       varchar(48)     not null,
     time_invalidator_payment_manager             varchar(48),
     time_invalidator_collector                   varchar(48),
     time_invalidator_expiration                  timestamp,
@@ -46,12 +46,12 @@ create table cardinal_time_invalidators (
 );
 
 create index if not exists cardinal_time_invalidators_token_manager_idx
-on cardinal_time_invalidators (token_manager_address);
+on cardinal_time_invalidators (time_invalidator_token_manager_address);
 
 create table cardinal_use_invalidators (
-    address                                     varchar(48)     primary key,
-    bump                                        smallint        not null,
-    token_manager_address                       varchar(48)     not null,
+    use_invalidator_address                     varchar(48)     primary key,
+    use_invalidator_bump                        smallint        not null,
+    use_invalidator_token_manager_address       varchar(48)     not null,
     use_invalidator_payment_manager             varchar(48),
     use_invalidator_collector                   varchar(48),
     use_invalidator_usages                      bigint,
@@ -64,12 +64,12 @@ create table cardinal_use_invalidators (
 );
 
 create index if not exists cardinal_use_invalidators_token_manager_idx
-on cardinal_use_invalidators (token_manager_address);
+on cardinal_use_invalidators (use_invalidator_token_manager_address);
 
 create table cardinal_paid_claim_approvers (
-    address                             varchar(48)     primary key,
-    bump                                smallint        not null,
-    token_manager_address               varchar(48)     not null,
+    paid_claim_approver_address                         varchar(48)     primary key,
+    paid_claim_approver_bump                            smallint        not null,
+    paid_claim_approver_token_manager_address           varchar(48)     not null,
     paid_claim_approver_payment_manager varchar(48)     not null,
     paid_claim_approver_payment_amount  bigint          not null,
     paid_claim_approver_payment_mint    varchar(48)     not null,
@@ -77,7 +77,7 @@ create table cardinal_paid_claim_approvers (
 );
 
 create index if not exists cardinal_paid_claim_approver_token_manager_idx
-on cardinal_paid_claim_approvers (token_manager_address);
+on cardinal_paid_claim_approvers (paid_claim_approver_token_manager_address);
 
 create table cardinal_claim_events (
     token_manager_address       varchar(48)     not null,
@@ -121,5 +121,5 @@ create table cardinal_claim_events (
     use_invalidator_extension_payment_mint      varchar(48),
     use_invalidator_extension_usages            bigint,
     use_invalidator_max_usages                  bigint,
-    primary key (state_changed_at, mint)
+    primary key (token_manager_address, state_changed_at)
 );

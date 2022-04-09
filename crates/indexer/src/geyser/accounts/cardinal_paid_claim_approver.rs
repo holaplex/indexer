@@ -13,9 +13,9 @@ pub(crate) async fn process(
     paid_claim_approver: PaidClaimApproverAccount,
 ) -> Result<()> {
     let row = CardinalPaidClaimApprover {
-        address: Owned(bs58::encode(key).into_string()),
-        bump: paid_claim_approver.bump.try_into()?,
-        token_manager_address: Owned(bs58::encode(paid_claim_approver.token_manager).into_string()),
+        paid_claim_approver_address: Owned(bs58::encode(key).into_string()),
+        paid_claim_approver_bump: paid_claim_approver.bump.try_into()?,
+        paid_claim_approver_token_manager_address: Owned(bs58::encode(paid_claim_approver.token_manager).into_string()),
         paid_claim_approver_payment_manager: Owned(
             bs58::encode(paid_claim_approver.payment_manager).into_string(),
         ),
@@ -33,7 +33,7 @@ pub(crate) async fn process(
         .run(move |db| {
             insert_into(cardinal_paid_claim_approvers::table)
                 .values(&row)
-                .on_conflict(cardinal_paid_claim_approvers::address)
+                .on_conflict(cardinal_paid_claim_approvers::paid_claim_approver_address)
                 .do_update()
                 .set(&row)
                 .execute(db)

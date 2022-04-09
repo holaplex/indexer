@@ -13,9 +13,11 @@ pub(crate) async fn process(
     time_invalidator: TimeInvalidatorAccount,
 ) -> Result<()> {
     let row = CardinalTimeInvalidator {
-        address: Owned(bs58::encode(key).into_string()),
-        bump: time_invalidator.bump.try_into()?,
-        token_manager_address: Owned(bs58::encode(time_invalidator.token_manager).into_string()),
+        time_invalidator_address: Owned(bs58::encode(key).into_string()),
+        time_invalidator_bump: time_invalidator.bump.try_into()?,
+        time_invalidator_token_manager_address: Owned(
+            bs58::encode(time_invalidator.token_manager).into_string(),
+        ),
         time_invalidator_payment_manager: Owned(
             bs58::encode(time_invalidator.payment_manager).into_string(),
         ),
@@ -49,7 +51,7 @@ pub(crate) async fn process(
         .run(move |db| {
             insert_into(cardinal_time_invalidators::table)
                 .values(&row)
-                .on_conflict(cardinal_time_invalidators::address)
+                .on_conflict(cardinal_time_invalidators::time_invalidator_address)
                 .do_update()
                 .set(&row)
                 .execute(db)

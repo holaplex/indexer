@@ -961,36 +961,66 @@ pub struct CardinalTokenManagerQuery {
     /// collector
     #[sql_type = "Nullable<Text>"]
     pub paid_claim_approver_collector: Option<String>,
-    /* /// Optional expiration which this time invalidator will expire
-     * #[sql_type = "Nullable<Int8>"]
-     * pub time_invalidator_expiration: Option<NaiveDateTime>,
-     * /// Duration after claim
-     * #[sql_type = "Nullable<Int8>"]
-     * pub time_invalidator_duration_seconds: Option<i64>,
-     * /// Amount the pay for extension
-     * #[sql_type = "Nullable<Int8>"]
-     * pub time_invalidator_extension_payment_amount: Option<i64>,
-     * /// Duration received after extension
-     * #[sql_type = "Nullable<Int8>"]
-     * pub time_invalidator_extension_duration_seconds: Option<i64>,
-     * /// Mint that extension is denominated in
-     * #[sql_type = "Nullable<Text>"]
-     * pub time_invalidator_extension_payment_mint: Option<String>,
-     * /// Optional max this can ever be extended until
-     * #[sql_type = "Nullable<Timestamp>"]
-     * pub time_invalidator_max_expiration: Option<NaiveDateTime>,
-     * /// Whether extension can be in partial increments
-     * #[sql_type = "Nullable<Bool>"]
-     * pub time_invalidator_disable_partial_extension: Option<bool>,
-     * /// Optional expiration which this time invalidator will expire
-     * #[sql_type = "Nullable<Int8>"]
-     * pub use_invalidator_usages: Option<i64>,
-     * /// Address that can increment usages
-     * #[sql_type = "Nullable<Text>"]
-     * pub use_invalidator_use_authority: Option<String>,
-     * /// Total usages
-     * #[sql_type = "Nullable<Int8>"]
-     * pub use_invalidator_total_usages: Option<i64>, */
+    /// address
+    #[sql_type = "Nullable<Text>"]
+    pub time_invalidator_address: Option<String>,
+    /// payment manager
+    #[sql_type = "Nullable<Text>"]
+    pub time_invalidator_payment_manager: Option<String>,
+    /// collector
+    #[sql_type = "Nullable<Text>"]
+    pub time_invalidator_collector: Option<String>,
+    /// Optional expiration which this time invalidator will expire
+    #[sql_type = "Nullable<Int8>"]
+    pub time_invalidator_expiration: Option<NaiveDateTime>,
+    /// Duration after claim
+    #[sql_type = "Nullable<Int8>"]
+    pub time_invalidator_duration_seconds: Option<i64>,
+    /// Amount the pay for extension
+    #[sql_type = "Nullable<Int8>"]
+    pub time_invalidator_extension_payment_amount: Option<i64>,
+    /// Duration received after extension
+    #[sql_type = "Nullable<Int8>"]
+    pub time_invalidator_extension_duration_seconds: Option<i64>,
+    /// Mint that extension is denominated in
+    #[sql_type = "Nullable<Text>"]
+    pub time_invalidator_extension_payment_mint: Option<String>,
+    /// Optional max this can ever be extended until
+    #[sql_type = "Nullable<Timestamp>"]
+    pub time_invalidator_max_expiration: Option<NaiveDateTime>,
+    /// Whether extension can be in partial increments
+    #[sql_type = "Nullable<Bool>"]
+    pub time_invalidator_disable_partial_extension: Option<bool>,
+    /// address
+    #[sql_type = "Nullable<Text>"]
+    pub use_invalidator_address: Option<String>,
+    /// use invalidator payment manager
+    #[sql_type = "Nullable<Text>"]
+    pub use_invalidator_payment_manager: Option<String>,
+    /// use_invalidator_collector
+    #[sql_type = "Nullable<Text>"]
+    pub use_invalidator_collector: Option<String>,
+    /// use_invalidator_usages
+    #[sql_type = "Nullable<Int8>"]
+    pub use_invalidator_usages: Option<i64>,
+    /// use_invalidator_use_authority
+    #[sql_type = "Nullable<Text>"]
+    pub use_invalidator_use_authority: Option<String>,
+    /// use_invalidator_total_usages
+    #[sql_type = "Nullable<Int8>"]
+    pub use_invalidator_total_usages: Option<i64>,
+    /// use_invalidator_extension_payment_amount
+    #[sql_type = "Nullable<Int8>"]
+    pub use_invalidator_extension_payment_amount: Option<i64>,
+    /// use_invalidator_extension_payment_mint
+    #[sql_type = "Nullable<Text>"]
+    pub use_invalidator_extension_payment_mint: Option<String>,
+    /// use_invalidator_extension_usages
+    #[sql_type = "Nullable<Int8>"]
+    pub use_invalidator_extension_usages: Option<i64>,
+    /// use_invalidator_max_usages
+    #[sql_type = "Nullable<Int8>"]
+    pub use_invalidator_max_usages: Option<i64>,
 }
 
 /// A row in the `cardinal_token_managers` table
@@ -1049,11 +1079,11 @@ pub struct CardinalTokenManagerInvalidator<'a> {
 #[table_name = "cardinal_time_invalidators"]
 pub struct CardinalTimeInvalidator<'a> {
     /// Address of the time_invalidator
-    pub address: Cow<'a, str>,
+    pub time_invalidator_address: Cow<'a, str>,
     /// Bump seed of the time_invalidator
-    pub bump: i16,
+    pub time_invalidator_bump: i16,
     /// Address of the token_manager
-    pub token_manager_address: Cow<'a, str>,
+    pub time_invalidator_token_manager_address: Cow<'a, str>,
     /// Address of the payment manager
     pub time_invalidator_payment_manager: Cow<'a, str>,
     /// Address of the collector
@@ -1080,11 +1110,11 @@ pub struct CardinalTimeInvalidator<'a> {
 #[table_name = "cardinal_use_invalidators"]
 pub struct CardinalUseInvalidator<'a> {
     /// Address of the use_invalidator
-    pub address: Cow<'a, str>,
+    pub use_invalidator_address: Cow<'a, str>,
     /// Bump seed of the use_invalidator
-    pub bump: i16,
+    pub use_invalidator_bump: i16,
     /// Address of the token_manager
-    pub token_manager_address: Cow<'a, str>,
+    pub use_invalidator_token_manager_address: Cow<'a, str>,
     /// Address of the payment manager
     pub use_invalidator_payment_manager: Cow<'a, str>,
     /// Address of the collector
@@ -1111,11 +1141,11 @@ pub struct CardinalUseInvalidator<'a> {
 #[table_name = "cardinal_paid_claim_approvers"]
 pub struct CardinalPaidClaimApprover<'a> {
     /// Address of the use_invalidator
-    pub address: Cow<'a, str>,
+    pub paid_claim_approver_address: Cow<'a, str>,
     /// Bump seed of the use_invalidator
-    pub bump: i16,
+    pub paid_claim_approver_bump: i16,
     /// Address of the token_manager
-    pub token_manager_address: Cow<'a, str>,
+    pub paid_claim_approver_token_manager_address: Cow<'a, str>,
     /// Address of the payment manager
     pub paid_claim_approver_payment_manager: Cow<'a, str>,
     /// Address of the collector
@@ -1163,8 +1193,8 @@ pub struct CardinalClaimEvent<'a> {
     pub claim_approver: Option<Cow<'a, str>>,
     /// Optional authority that can approve transfers (defaults to self)
     pub transfer_authority: Option<Cow<'a, str>>,
-    /// Listof invalidators
-    pub invalidators: Vec<Cow<'a, str>>,
+    // /// Listof invalidators
+    // pub invalidators: Vec<Cow<'a, str>>,
     /// Amount the pay for extension
     pub paid_claim_approver_payment_amount: Option<i64>,
     /// Mint that extension is denominated in
@@ -1195,22 +1225,22 @@ pub struct CardinalClaimEvent<'a> {
     pub time_invalidator_disable_partial_extension: Option<bool>,
     /// Use invalidator address
     pub use_invalidator_address: Option<Cow<'a, str>>,
-    /* /// Use inavlidator payment manager address
-     * pub use_invalidator_payment_manager: Option<Cow<'a, str>>,
-     * /// Use inavlidator collector
-     * pub use_invalidator_collector: Option<Cow<'a, str>>, *
-     * /// Optional expiration which this time invalidator will expire
-     * pub use_invalidator_usages: Option<i64>,
-     * /// Address that can increment usages
-     * pub use_invalidator_use_authority: Option<Cow<'a, str>>,
-     * /// Total usages
-     * pub use_invalidator_total_usages: Option<i64>,
-     * /// Amount the pay for extension
-     * pub use_invalidator_extension_payment_amount: Option<i64>,
-     * /// Mint that extension is denominated in
-     * pub use_invalidator_extension_payment_mint: Option<Cow<'a, str>>,
-     * /// Number of usages received after extension
-     * pub use_invalidator_extension_usages: Option<i64>,
-     * /// Optional max this can ever be extended until
-     * pub use_invalidator_max_usages: Option<i64>, */
+    /// Use inavlidator payment manager address
+    pub use_invalidator_payment_manager: Option<Cow<'a, str>>,
+    /// Use inavlidator collector
+    pub use_invalidator_collector: Option<Cow<'a, str>>,
+    /// Optional expiration which this time invalidator will expire
+    pub use_invalidator_usages: Option<i64>,
+    /// Address that can increment usages
+    pub use_invalidator_use_authority: Option<Cow<'a, str>>,
+    /// Total usages
+    pub use_invalidator_total_usages: Option<i64>,
+    /// Amount the pay for extension
+    pub use_invalidator_extension_payment_amount: Option<i64>,
+    /// Mint that extension is denominated in
+    pub use_invalidator_extension_payment_mint: Option<Cow<'a, str>>,
+    /// Number of usages received after extension
+    pub use_invalidator_extension_usages: Option<i64>,
+    /// Optional max this can ever be extended until
+    pub use_invalidator_max_usages: Option<i64>,
 }
