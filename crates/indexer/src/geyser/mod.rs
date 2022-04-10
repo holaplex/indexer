@@ -84,6 +84,15 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         {
             programs::cardinal_paid_claim_approver::process(client, update).await
         },
+        Message::AccountUpdate(update) if update.owner == pubkeys::goki_smart_wallet() => {
+            programs::goki_smart_wallet::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::tribeca_locked_voter() => {
+            programs::tribeca_locked_voter::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::tribeca_govern() => {
+            programs::tribeca_govern::process(client, update).await
+        },
         Message::AccountUpdate(update) => {
             debug!(
                 "Unhandled account update for program {}",

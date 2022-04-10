@@ -6,6 +6,7 @@ use indexer_core::{
     db::{insert_into, models::Storefront, tables::storefronts, PooledConnection},
     hash::{DashSet, HashMap},
     pubkeys::find_store_address,
+    util,
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
@@ -225,7 +226,8 @@ pub async fn run(db: &Pool, mut url: Url) -> Result<()> {
                         .collect(),
                     edge.node
                         .block
-                        .map(|b| NaiveDateTime::from_timestamp(b.timestamp, 0)),
+                        .map(|b| util::unix_timestamp(b.timestamp))
+                        .transpose()?,
                     db,
                     known_pubkeys,
                 )

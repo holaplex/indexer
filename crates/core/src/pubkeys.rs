@@ -34,12 +34,24 @@ mod ids {
         cardinal_paid_claim_approver,
         "pcaBwhJ1YHp7UDA7HASpQsRUmUNwzgYaLQto2kSj1fR"
     );
+    pubkeys!(
+        goki_smart_wallet,
+        "GokivDYuQXPZCWRkwMhdH2h91KpDQXBEmpgBgs55bnpH"
+    );
+    pubkeys!(
+        tribeca_locked_voter,
+        "LocktDzaV1W2Bm9DeZeiyz4J9zs4fRqNiYqQyracRXw"
+    );
+    pubkeys!(
+        tribeca_govern,
+        "Govz1VyoyLD5BL6CSCxUJLVLsQHRwjfFj1prNsdNg5Jw"
+    );
 }
 
 pub use ids::{
     auction, auction_house, candy_machine, cardinal_paid_claim_approver, cardinal_time_invalidator,
-    cardinal_token_manager, cardinal_use_invalidator, graph_program, metadata, metaplex,
-    name_service, token, vault,
+    cardinal_token_manager, cardinal_use_invalidator, goki_smart_wallet, graph_program, metadata,
+    metaplex, name_service, token, tribeca_govern, tribeca_locked_voter, vault,
 };
 
 /// Find the address of a store given its owner's address

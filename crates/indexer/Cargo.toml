@@ -77,6 +77,11 @@ cid = { version = "0.7.0", optional = true }
 reqwest = { version = "0.11.6", features = ["json", "gzip", "brotli", "deflate"], optional = true }
 serde_json = { version = "1.0.70", optional = true }
 
+# Tribeca
+goki_smart_wallet = { package = "smart-wallet", version = "0.10.1", features = ["no-entrypoint"] }
+tribeca-locked-voter = { package = "locked-voter", version = "0.5.5", features = ["no-entrypoint"] }
+tribeca-govern = { package = "govern", version = "0.5.5", features = ["no-entrypoint"] }
+
 [dependencies.mpl-metaplex]
 git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
 rev = "63f26d6b1c393859c1d93c18dc9379827347229b"

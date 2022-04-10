@@ -1,0 +1,106 @@
+name: Kubernetes deployment (dev)
+
+on:
+  push:
+    branches: [ dev ]
+
+jobs:
+  build:
+    name: Building and Pushing Image
+    if: ${{ !contains(github.event.head_commit.message, '#k8s') }}
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cargo Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+            ${{ runner.os }}-cargo
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push Geyser consumer to Amazon ECR (dev)
+        id: build-geyser-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+
+        run: |
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          app=geyser-consumer
+          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:$app-${GITHUB_REF##*/}-$git_hash"
+          docker build -t $image_tag --target $app .
+          echo "Pushing image to ECR..."
+          docker push $image_tag
+          echo "::set-output name=image::$image_tag"
+
+      - name: Build, tag, and push HTTP consumer to Amazon ECR (dev)
+        id: build-http-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+
+        run: |
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          app=http-consumer
+          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:$app-${GITHUB_REF##*/}-$git_hash"
+          docker build -t $image_tag --target $app .
+          echo "Pushing image to ECR..."
+          docker push $image_tag
+          echo "::set-output name=image::$image_tag"
+
+      - name: Build, tag, and push GraphQL to Amazon ECR (dev)
+        id: build-graphql-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+
+        run: |
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          app=graphql
+          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:$app-${GITHUB_REF##*/}-$git_hash"
+          docker build -t $image_tag --target $app .
+          echo "Pushing image to ECR..."
+          docker push $image_tag
+          echo "::set-output name=image::$image_tag"
+
+      - name: Update deployments image versions (dev)
+        run: |
+            git_hash=$(git rev-parse --short "$GITHUB_SHA")
+            app=geyser-consumer
+            deployment_path="./k8s/${GITHUB_REF##*/}/app"
+            deployment_file="$deployment_path/$app.yaml"
+            version=$(cat $deployment_file | grep -i image\: | awk {'print $2'} | cut -d: -f2)
+            echo "Updating ${app} deployment with new image tag"
+            sed -i "s/$version/$app-${GITHUB_REF##*/}-$git_hash/" $deployment_file
+            app=http-consumer
+            deployment_file="$deployment_path/$app.yaml"
+            version=$(cat $deployment_file | grep -i image\: | awk {'print $2'} | cut -d: -f2)
+            echo "Updating ${app} deployment with new image tag"
+            sed -i "s/$version/$app-${GITHUB_REF##*/}-$git_hash/" $deployment_file
+            app=graphql
+            deployment_file="$deployment_path/$app.yaml"
+            version=$(cat $deployment_file | grep -i image\: | awk {'print $2'} | cut -d: -f2)
+            echo "Updating ${app} deployment with new image tag"
+            sed -i "s/$version/$app-${GITHUB_REF##*/}-$git_hash/" $deployment_file
+
+      - name: Commit and push changes
+        uses: devops-infra/action-commit-push@master
+        with:
+          github_token: ${{ secrets.ACTIONS_TOKEN}}
+          commit_message: Updated deployment image version

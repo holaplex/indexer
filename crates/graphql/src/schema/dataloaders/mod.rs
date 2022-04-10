@@ -6,6 +6,7 @@ pub mod nft;
 pub mod stats;
 pub mod store_creator;
 pub mod storefront;
+pub mod wallet;
 
 pub(self) mod batcher;
 
@@ -17,8 +18,11 @@ pub(self) mod prelude {
     #[allow(unused_imports)]
     pub(super) use super::{
         super::prelude::*,
-        batcher::{BatchIter, BatchMap, BatchResult, Batcher, TryBatchFn, TryBatchMap},
+        batcher::{
+            BatchIter, BatchMap, BatchResult, Batcher, Error, TryBatchFn, TryBatchMap,
+            TwitterBatcher,
+        },
     };
 }
 
-pub use batcher::{BatchResult, Batcher, Error, Loader};
+pub use batcher::{BatchResult, Batcher, Error, Loader, TwitterBatcher};
