@@ -1,14 +1,12 @@
 use ::cardinal_use_invalidator::state::UseInvalidator;
-use anchor_lang_v0_22_1::{solana_program::hash::hash, AccountDeserialize};
+use anchor_lang_v0_22_1::{Discriminator, AccountDeserialize};
 
 use super::{accounts::cardinal_use_invalidator, AccountUpdate, Client};
 use crate::prelude::*;
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
-    let use_invalidator_discriminator: &[u8] =
-        &hash("account:UseInvalidator".as_bytes()).to_bytes()[..8];
     let account_discriminator = &update.data[..8];
-    if account_discriminator == use_invalidator_discriminator {
+    if account_discriminator == UseInvalidator::discriminator() {
         let use_invalidator: UseInvalidator =
             UseInvalidator::try_deserialize(&mut update.data.as_slice())
                 .context("Failed to deserialize use_invalidator")?;
