@@ -58,7 +58,7 @@ impl<'a> TryFrom<models::MetadataAttribute<'a>> for NftAttribute {
 }
 
 #[derive(Debug, Clone)]
-/// NftCreator information
+/// An NFT creator
 pub struct NftCreator {
     pub address: String,
     pub metadata_address: String,
