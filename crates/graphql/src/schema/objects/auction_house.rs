@@ -6,7 +6,7 @@ use super::prelude::*;
 #[graphql(description = "Auction House information")]
 pub struct AuctionHouse {
     pub address: String,
-    #[graphql(description = "Auction House spl token")]
+    #[graphql(description = "Auction House treasury spl token currency")]
     pub treasury_mint: String,
     pub auction_house_treasury: String,
     pub treasury_withdrawal_destination: String,
