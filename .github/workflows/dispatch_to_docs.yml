@@ -35,4 +35,4 @@ jobs:
           token: ${{ secrets.DOCS_REPO_ACCESS_TOKEN }}
           repository: holaplex/marketplace-api-docs
           event-type: api_update
-          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+
