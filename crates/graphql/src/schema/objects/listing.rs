@@ -5,6 +5,7 @@ use tables::{auction_caches, auction_datas, auction_datas_ext};
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
+/// A bid on an NFT listing
 pub struct Bid {
     pub listing_address: String,
     pub bidder_address: String,
@@ -89,6 +90,7 @@ pub type ListingRow = (
 );
 
 #[derive(Debug, Clone)]
+/// A listing of for sale of an NFT
 pub struct Listing {
     pub address: String,
     pub ext_address: String,
