@@ -1,4 +1,4 @@
-name: Let docs know to update.
+name: Send event to rebuild docs
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   dispatch:
-    -name: Dispatch msg to docs repo
+    -name: Dispatch event to docs repo
       uses: peter-evans/repository-dispatch@v2
       with:
         token: ${{ secrets.DOCS_REPO_ACCESS_TOKEN }}
