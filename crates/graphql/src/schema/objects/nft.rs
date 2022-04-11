@@ -203,7 +203,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
 }
 
 #[derive(Debug, Clone)]
-/// Nft information
+/// An NFT
 pub struct Nft {
     pub address: String,
     pub name: String,
