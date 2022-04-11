@@ -7,7 +7,7 @@ on:
 
 jobs:
   dispatch:
-    -name: Dispatch event to docs repo
+    - name: Dispatch event to docs repo
       uses: peter-evans/repository-dispatch@v2
       with:
         token: ${{ secrets.DOCS_REPO_ACCESS_TOKEN }}
