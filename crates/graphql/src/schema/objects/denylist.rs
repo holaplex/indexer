@@ -5,6 +5,7 @@ use scalars::PublicKey;
 use super::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
+#[graphql(description = "Holaplex Denylist. Lists of publicKey's.")]
 pub struct Denylist;
 
 #[graphql_object(Context = AppContext)]
