@@ -7,10 +7,12 @@ on:
 
 jobs:
   dispatch:
-    - name: Dispatch event to docs repo
-      uses: peter-evans/repository-dispatch@v2
-      with:
-        token: ${{ secrets.DOCS_REPO_ACCESS_TOKEN }}
-        repository: holaplex/marketplace-api-docs
-        event-type: api_update
-        client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch event to docs repo
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.DOCS_REPO_ACCESS_TOKEN }}
+          repository: holaplex/marketplace-api-docs
+          event-type: api_update
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
