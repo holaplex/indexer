@@ -1,0 +1,17 @@
+name: Send event to rebuild docs
+
+on:
+  push:
+    branches: [dev, master]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch event to docs repo
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.DOCS_REPO_ACCESS_TOKEN }}
+          repository: holaplex/marketplace-api-docs
+          event-type: api_update
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
