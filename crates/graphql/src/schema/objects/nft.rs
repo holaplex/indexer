@@ -58,7 +58,7 @@ impl<'a> TryFrom<models::MetadataAttribute<'a>> for NftAttribute {
 }
 
 #[derive(Debug, Clone)]
-#[graphql(description = "NftCreator information")]
+/// NftCreator information
 pub struct NftCreator {
     pub address: String,
     pub metadata_address: String,
@@ -203,7 +203,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
 }
 
 #[derive(Debug, Clone)]
-#[graphql(description = "Nft information")]
+/// Nft information
 pub struct Nft {
     pub address: String,
     pub name: String,

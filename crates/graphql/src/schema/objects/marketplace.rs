@@ -3,7 +3,7 @@ use objects::{auction_house::AuctionHouse, stats::MarketStats, store_creator::St
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
-#[graphql(description = "Marketplace information")]
+/// Marketplace information
 pub struct Marketplace {
     pub config_address: String,
     pub subdomain: String,

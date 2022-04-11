@@ -3,10 +3,10 @@ use objects::stats::MintStats;
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
-#[graphql(description = "Auction House information")]
+/// Auction House information
 pub struct AuctionHouse {
     pub address: String,
-    #[graphql(description = "Auction House treasury spl token currency")]
+    /// Auction House treasury spl token currency
     pub treasury_mint: String,
     pub auction_house_treasury: String,
     pub treasury_withdrawal_destination: String,
@@ -19,7 +19,7 @@ pub struct AuctionHouse {
     pub seller_fee_basis_points: i32,
     pub requires_sign_off: bool,
     pub can_change_sale_price: bool,
-    #[graphql(description = "Auction House fee")]
+    /// House fee
     pub auction_house_fee_account: String,
 }
 

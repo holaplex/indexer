@@ -5,7 +5,7 @@ use tables::{auction_caches, auction_datas, auction_datas_ext};
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
-#[graphql(description = "Bid on Nft Listing")]
+/// Bid on Nft Listing
 pub struct Bid {
     pub listing_address: String,
     pub bidder_address: String,
@@ -90,7 +90,7 @@ pub type ListingRow = (
 );
 
 #[derive(Debug, Clone)]
-#[graphql(description = "Listing of for sale Nft")]
+/// Listing of for sale Nft 
 pub struct Listing {
     pub address: String,
     pub ext_address: String,
