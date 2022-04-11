@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use tables::twitter_handle_name_services;
 
 use super::prelude::*;
 
@@ -63,6 +64,21 @@ pub struct TwitterUserProfileResponse {
 
 #[graphql_object(Context = AppContext)]
 impl Profile {
+    fn wallet_address(&self, ctx: &AppContext) -> FieldResult<Option<String>> {
+        let db_conn = ctx.db_pool.get()?;
+        let result: Vec<models::TwitterHandle> = twitter_handle_name_services::table
+            .select(twitter_handle_name_services::all_columns)
+            .limit(1)
+            .filter(twitter_handle_name_services::twitter_handle.eq(&self.handle))
+            .load(&db_conn)
+            .context("Failed to load wallet address")?;
+        if result.is_empty() {
+            return Ok(None);
+        }
+        let matching_item = result.get(0).unwrap();
+        let wallet_address = &matching_item.wallet_address;
+        Ok(Some(wallet_address.to_string()))
+    }
     fn handle(&self) -> &str {
         &self.handle
     }

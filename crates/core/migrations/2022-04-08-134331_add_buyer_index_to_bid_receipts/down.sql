@@ -1,0 +1,1 @@
+drop index if exists buyer_bid_receipts_idx;

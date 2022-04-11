@@ -1,6 +1,7 @@
 use super::prelude::*;
 
 #[derive(Debug, Clone, GraphQLObject)]
+#[graphql(description = "An NFT listing receipt")]
 pub struct ListingReceipt {
     pub address: String,
     pub trade_state: String,
@@ -19,6 +20,7 @@ pub struct ListingReceipt {
 
 impl<'a> TryFrom<models::ListingReceipt<'a>> for ListingReceipt {
     type Error = std::num::TryFromIntError;
+
     fn try_from(
         models::ListingReceipt {
             address,
@@ -48,7 +50,7 @@ impl<'a> TryFrom<models::ListingReceipt<'a>> for ListingReceipt {
             canceled_at: canceled_at.map(|c| DateTime::from_utc(c, Utc)),
             bookkeeper: bookkeeper.into_owned(),
             purchase_receipt: purchase_receipt.map(Cow::into_owned),
-            token_size: token_size.try_into().unwrap(),
+            token_size: token_size.try_into()?,
             bump: bump.into(),
         })
     }

@@ -25,10 +25,8 @@ impl GraphConnection {
     }
 }
 
-impl TryFrom<models::TwitterEnrichedGraphConnection> for GraphConnection {
-    type Error = std::num::TryFromIntError;
-
-    fn try_from(
+impl From<models::TwitterEnrichedGraphConnection> for GraphConnection {
+    fn from(
         models::TwitterEnrichedGraphConnection {
             connection_address,
             from_account,
@@ -36,11 +34,11 @@ impl TryFrom<models::TwitterEnrichedGraphConnection> for GraphConnection {
             from_twitter_handle,
             to_twitter_handle,
         }: models::TwitterEnrichedGraphConnection,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             address: connection_address,
-            from: Wallet::new(from_account, from_twitter_handle),
-            to: Wallet::new(to_account, to_twitter_handle),
-        })
+            from: Wallet::new(from_account.into(), from_twitter_handle),
+            to: Wallet::new(to_account.into(), to_twitter_handle),
+        }
     }
 }

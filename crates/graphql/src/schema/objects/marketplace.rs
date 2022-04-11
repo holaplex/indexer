@@ -3,6 +3,7 @@ use objects::{auction_house::AuctionHouse, stats::MarketStats, store_creator::St
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
+/// An Holaplex marketplace
 pub struct Marketplace {
     pub config_address: String,
     pub subdomain: String,

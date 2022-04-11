@@ -5,6 +5,7 @@ use scalars::PublicKey;
 use super::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
+/// Deny-list for Holaplex storefronts and listings
 pub struct Denylist;
 
 #[graphql_object(Context = AppContext)]

@@ -768,6 +768,20 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
+    temp_attributes (id) {
+        metadata_address -> Varchar,
+        value -> Nullable<Text>,
+        trait_type -> Nullable<Text>,
+        id -> Uuid,
+        first_verified_creator -> Nullable<Varchar>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
     token_accounts (address) {
         address -> Varchar,
         mint_address -> Varchar,
@@ -916,6 +930,7 @@ allow_tables_to_appear_in_same_query!(
     storefronts,
     stores,
     sub_account_infos,
+    temp_attributes,
     token_accounts,
     transactions,
     twitter_handle_name_services,

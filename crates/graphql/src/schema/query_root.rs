@@ -6,7 +6,7 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::Nft,
+    nft::{Nft, NftCount, NftCreator},
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
@@ -35,6 +35,11 @@ impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
 
 #[graphql_object(Context = AppContext)]
 impl QueryRoot {
+    #[graphql(arguments(creators(description = "creators of nfts"),))]
+    fn nft_counts(&self, creators: Vec<PublicKey<NftCreator>>) -> FieldResult<NftCount> {
+        Ok(NftCount::new(creators))
+    }
+
     async fn profile(
         &self,
         ctx: &AppContext,
@@ -121,7 +126,7 @@ impl QueryRoot {
     ) -> FieldResult<Creator> {
         let conn = context.db_pool.get().context("failed to connect to db")?;
 
-        let twitter_handle = queries::twitter_handle_name_service::get(&conn, address.clone())?;
+        let twitter_handle = queries::twitter_handle_name_service::get(&conn, &address)?;
 
         Ok(Creator {
             address,
@@ -170,11 +175,11 @@ impl QueryRoot {
     fn wallet(
         &self,
         context: &AppContext,
-        #[graphql(description = "Address of the wallet")] address: String,
+        #[graphql(description = "Address of the wallet")] address: PublicKey<Wallet>,
     ) -> FieldResult<Wallet> {
         let conn = context.db_pool.get()?;
 
-        let twitter_handle = queries::twitter_handle_name_service::get(&conn, address.clone())?;
+        let twitter_handle = queries::twitter_handle_name_service::get(&conn, &address)?;
 
         Ok(Wallet::new(address, twitter_handle))
     }
