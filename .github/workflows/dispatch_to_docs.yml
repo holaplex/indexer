@@ -11,8 +11,15 @@ jobs:
      - name: Wait for dev deploy to succeed
         uses: lewagon/wait-on-check-action@v1.0.0
         with:
-          ref: master
+          ref: dev
           check-name: Update deployments image versions (dev)
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 20
+     - name: Wait for staging deploy to succeed
+        uses: lewagon/wait-on-check-action@v1.0.0
+        with:
+          ref: dev
+          check-name: GraphQL server
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 20
      - name: Wait for prod deploy to succeed
