@@ -6,7 +6,7 @@ use super::prelude::*;
 /// Auction House information
 pub struct AuctionHouse {
     pub address: String,
-    /// Auction House treasury spl token currency
+    /// Mint address of the token in which fees are vendored
     pub treasury_mint: String,
     pub auction_house_treasury: String,
     pub treasury_withdrawal_destination: String,
