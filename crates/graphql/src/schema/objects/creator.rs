@@ -9,7 +9,7 @@ use tables::{attributes, metadata_creators};
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
-/// Nft Creator information
+/// A creator associated with a marketplace
 pub struct Creator {
     pub address: String,
     pub twitter_handle: Option<String>,
