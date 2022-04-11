@@ -1,0 +1,16 @@
+name: Let docs know to update.
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  dispatch:
+    -name: Dispatch msg to docs repo
+      uses: peter-evans/repository-dispatch@v2
+      with:
+        token: ${{ secrets.DOCS_REPO_ACCESS_TOKEN }}
+        repository: holaplex/marketplace-api-docs
+        event-type: api_update
+        client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}
