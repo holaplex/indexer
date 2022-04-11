@@ -145,29 +145,29 @@ pub(crate) async fn process(
             paid_claim_approver_payment_mint: current_token_manager
                 .paid_claim_approver_payment_mint
                 .clone()
-                .map(|k| Owned(k)),
+                .map(Owned),
             paid_claim_approver_payment_manager: current_token_manager
                 .paid_claim_approver_payment_manager
                 .clone()
-                .map(|k| Owned(k)),
+                .map(Owned),
             paid_claim_approver_collector: current_token_manager
                 .paid_claim_approver_collector
                 .clone()
-                .map(|k| Owned(k)),
+                .map(Owned),
 
             ////////////// time invalidator //////////////
             time_invalidator_address: current_token_manager
                 .time_invalidator_address
                 .clone()
-                .map(|k| Owned(k)),
+                .map(Owned),
             time_invalidator_payment_manager: current_token_manager
                 .time_invalidator_payment_manager
                 .clone()
-                .map(|k| Owned(k)),
+                .map(Owned),
             time_invalidator_collector: current_token_manager
                 .time_invalidator_collector
                 .clone()
-                .map(|k| Owned(k)),
+                .map(Owned),
             time_invalidator_expiration: current_token_manager
                 .time_invalidator_expiration
                 .try_into()?,
@@ -183,7 +183,7 @@ pub(crate) async fn process(
             time_invalidator_extension_payment_mint: current_token_manager
                 .time_invalidator_extension_payment_mint
                 .clone()
-                .map(|k| Owned(k)),
+                .map(Owned),
             time_invalidator_max_expiration: current_token_manager
                 .time_invalidator_max_expiration
                 .try_into()?,
@@ -195,20 +195,20 @@ pub(crate) async fn process(
             use_invalidator_address: current_token_manager
                 .use_invalidator_address
                 .clone()
-                .map(|k| Owned(k)),
+                .map(Owned),
             use_invalidator_payment_manager: current_token_manager
                 .use_invalidator_payment_manager
                 .clone()
-                .map(|k| Owned(k)),
+                .map(Owned),
             use_invalidator_collector: current_token_manager
                 .use_invalidator_collector
                 .clone()
-                .map(|k| Owned(k)),
+                .map(Owned),
             use_invalidator_usages: current_token_manager.use_invalidator_usages.try_into()?,
             use_invalidator_use_authority: current_token_manager
                 .use_invalidator_use_authority
                 .clone()
-                .map(|k| Owned(k)),
+                .map(Owned),
             use_invalidator_total_usages: current_token_manager
                 .use_invalidator_total_usages
                 .try_into()?,
@@ -218,7 +218,7 @@ pub(crate) async fn process(
             use_invalidator_extension_payment_mint: current_token_manager
                 .use_invalidator_extension_payment_mint
                 .clone()
-                .map(|k| Owned(k)),
+                .map(Owned),
             use_invalidator_extension_usages: current_token_manager
                 .use_invalidator_extension_usages
                 .try_into()?,
@@ -263,7 +263,7 @@ pub(crate) async fn process(
             .transfer_authority
             .map(|k| Owned(bs58::encode(k).into_string())),
     };
-    debug!("Processing token manager {:?}", row);
+    trace!("Processing token manager {:?}", row);
 
     client
         .db()
@@ -278,10 +278,11 @@ pub(crate) async fn process(
         .await
         .context("Failed to insert TokenManager")?;
 
-    let mut invalidator_strings = Vec::new();
-    for invalidator in token_manager.invalidators {
-        invalidator_strings.push(bs58::encode(invalidator).into_string())
-    }
+    let invalidator_strings: Vec<_> = token_manager
+        .invalidators
+        .into_iter()
+        .map(|i| bs58::encode(i).into_string())
+        .collect();
     // process invalidators into separate table
     process_invalidators(client, key, invalidator_strings).await?;
     Ok(())

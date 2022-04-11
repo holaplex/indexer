@@ -923,7 +923,7 @@ pub struct MetadataCollectionKey<'a> {
     pub verified: bool,
 }
 
-/// Joint table from querying a token_manager and related plugins
+/// Joint table from querying a `token_manager` and related plugins
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct CardinalTokenManagerQuery {
     /// Address of the token_manager

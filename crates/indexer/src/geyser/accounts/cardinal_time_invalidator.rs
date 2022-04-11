@@ -25,7 +25,7 @@ pub(crate) async fn process(
         time_invalidator_expiration: time_invalidator
             .expiration
             .map(|e| NaiveDateTime::from_timestamp(e, 0)),
-        time_invalidator_duration_seconds: time_invalidator.duration_seconds.try_into()?,
+        time_invalidator_duration_seconds: time_invalidator.duration_seconds,
         time_invalidator_extension_payment_amount: time_invalidator
             .extension_payment_amount
             .map(TryFrom::try_from)
@@ -45,7 +45,7 @@ pub(crate) async fn process(
             .map(TryFrom::try_from)
             .transpose()?,
     };
-    debug!("Time invalidator {:?}", row);
+    trace!("Time invalidator {:?}", row);
     client
         .db()
         .run(move |db| {

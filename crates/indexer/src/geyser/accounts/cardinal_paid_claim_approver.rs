@@ -27,7 +27,7 @@ pub(crate) async fn process(
             bs58::encode(paid_claim_approver.payment_mint).into_string(),
         ),
     };
-    debug!("Paid Claim Approver {:?}", row);
+    trace!("Paid Claim Approver {:?}", row);
     client
         .db()
         .run(move |db| {
