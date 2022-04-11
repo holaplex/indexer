@@ -9,7 +9,7 @@ use tables::{attributes, metadata_creators};
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
-#[graphql(description = "Nft Creator")]
+#[graphql(description = "Nft Creator information")]
 pub struct Creator {
     pub address: String,
     pub twitter_handle: Option<String>,
