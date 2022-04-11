@@ -2,7 +2,7 @@ name: Send event to rebuild docs
 
 on:
   push:
-    branches: [dev, master]
+    branches: [master]
 
 jobs:
   dispatch:
