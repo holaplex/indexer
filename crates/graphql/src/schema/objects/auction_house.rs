@@ -3,7 +3,7 @@ use objects::stats::MintStats;
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
-/// Auction House information
+/// A Metaplex auction house
 pub struct AuctionHouse {
     pub address: String,
     /// Mint address of the token in which fees are vendored
