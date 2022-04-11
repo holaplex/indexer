@@ -8,6 +8,20 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
+     - name: Wait for dev deploy to succeed
+        uses: lewagon/wait-on-check-action@v1.0.0
+        with:
+          ref: master
+          check-name: Update deployments image versions (dev)
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 20
+     - name: Wait for prod deploy to succeed
+        uses: lewagon/wait-on-check-action@v1.0.0
+        with:
+          ref: master
+          check-name: GraphQL server
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 20
       - name: Dispatch event to docs repo
         uses: peter-evans/repository-dispatch@v2
         with:
