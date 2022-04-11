@@ -19,7 +19,7 @@ pub struct AuctionHouse {
     pub seller_fee_basis_points: i32,
     pub requires_sign_off: bool,
     pub can_change_sale_price: bool,
-    /// House fee
+    /// Account for which fees are paid out to
     pub auction_house_fee_account: String,
 }
 
