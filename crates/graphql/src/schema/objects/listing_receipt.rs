@@ -1,7 +1,7 @@
 use super::prelude::*;
 
 #[derive(Debug, Clone, GraphQLObject)]
-#[graphql(description = "Nft Listing Receipt")]
+#[graphql(description = "An NFT listing receipt")]
 pub struct ListingReceipt {
     pub address: String,
     pub trade_state: String,
