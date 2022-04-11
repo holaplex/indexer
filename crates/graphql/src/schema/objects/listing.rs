@@ -90,7 +90,7 @@ pub type ListingRow = (
 );
 
 #[derive(Debug, Clone)]
-/// Listing of for sale Nft
+/// A listing of for sale of an NFT
 pub struct Listing {
     pub address: String,
     pub ext_address: String,
