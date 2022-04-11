@@ -5,7 +5,7 @@ use tables::{auction_caches, auction_datas, auction_datas_ext};
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
-/// Bid on Nft Listing
+/// A bid on an NFT listing
 pub struct Bid {
     pub listing_address: String,
     pub bidder_address: String,
