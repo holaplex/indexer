@@ -1,0 +1,24 @@
+name: Send event to rebuild docs
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+     - name: Wait for prod deploy to succeed
+       uses: lewagon/wait-on-check-action@v1.0.0
+       with:
+          ref: master
+          check-name: GraphQL server
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 20
+     - name: Dispatch event to docs repo
+       uses: peter-evans/repository-dispatch@v2
+       with:
+          token: ${{ secrets.DOCS_REPO_ACCESS_TOKEN }}
+          repository: holaplex/marketplace-api-docs
+          event-type: api_update
+

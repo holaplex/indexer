@@ -58,6 +58,7 @@ impl<'a> TryFrom<models::MetadataAttribute<'a>> for NftAttribute {
 }
 
 #[derive(Debug, Clone)]
+/// An NFT creator
 pub struct NftCreator {
     pub address: String,
     pub metadata_address: String,
@@ -202,6 +203,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
 }
 
 #[derive(Debug, Clone)]
+/// An NFT
 pub struct Nft {
     pub address: String,
     pub name: String,
@@ -412,7 +414,7 @@ impl NftCount {
 #[graphql_object(Context = AppContext)]
 impl NftCount {
     fn total(&self, context: &AppContext) -> FieldResult<i32> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
 
         let count = queries::nft_count::total(&conn, &self.creators)?;
 
@@ -425,7 +427,7 @@ impl NftCount {
         context: &AppContext,
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
     ) -> FieldResult<i32> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
 
         let count = queries::nft_count::listed(&conn, &self.creators, auction_houses.as_deref())?;
 

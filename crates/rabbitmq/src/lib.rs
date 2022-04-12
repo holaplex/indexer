@@ -34,17 +34,18 @@ pub enum Error {
     InvalidQueueType(&'static str),
 }
 
+#[allow(dead_code)]
 pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
-#[cfg(any(test, feature = "consumer"))]
+#[cfg(feature = "consumer")]
 pub mod consumer;
-#[cfg(any(test, feature = "consumer"))]
+#[cfg(feature = "consumer")]
 pub mod dl_consumer;
-#[cfg(any(test, feature = "geyser"))]
+#[cfg(feature = "geyser")]
 pub mod geyser;
-#[cfg(any(test, feature = "http-indexer"))]
+#[cfg(feature = "http-indexer")]
 pub mod http_indexer;
-#[cfg(any(test, feature = "producer"))]
+#[cfg(feature = "producer")]
 pub mod producer;
 mod queue_type;
 mod serialize;

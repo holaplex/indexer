@@ -9,11 +9,11 @@
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
 pub mod db;
-#[cfg(any(test, feature = "geyser"))]
+#[cfg(feature = "geyser")]
 pub mod geyser;
-#[cfg(any(test, feature = "http"))]
+#[cfg(feature = "http")]
 pub mod http;
-#[cfg(any(test, feature = "http"))]
+#[cfg(feature = "http")]
 pub mod legacy_storefronts;
 pub(crate) mod util;
 
@@ -47,7 +47,7 @@ mod runtime {
     #[derive(Debug, Parser)]
     struct Opts<T: Debug + Args> {
         /// The number of threads to use.  Defaults to available core count.
-        #[clap(short = 'j')]
+        #[clap(short = 'j', env)]
         thread_count: Option<usize>,
 
         #[clap(flatten)]
@@ -91,7 +91,7 @@ mod runtime {
                     .context("Failed to initialize async runtime")?
             };
 
-            let concurrency = thread_count.unwrap_or_else(num_cpus::get);
+            let concurrency = thread_count.unwrap_or_else(indexer_core::num_cpus::get);
 
             rt.block_on(f(extra, Params { concurrency }, db))
         })
@@ -101,10 +101,24 @@ mod runtime {
     ///
     /// # Errors
     /// This function fails if a connection cannot be established
-    pub async fn amqp_connect(addr: impl AsRef<str>) -> Result<lapin::Connection> {
+    pub async fn amqp_connect(
+        addr: impl AsRef<str>,
+        name: &'static str,
+    ) -> Result<lapin::Connection> {
         lapin::Connection::connect(
             addr.as_ref(),
             lapin::ConnectionProperties::default()
+                .with_connection_name(
+                    format!(
+                        "{}@{}",
+                        name,
+                        hostname::get()
+                            .context("Failed to get system hostname")?
+                            .into_string()
+                            .map_err(|_| anyhow!("Failed to parse system hostname"))?,
+                    )
+                    .into(),
+                )
                 .with_executor(tokio_executor_trait::Tokio::current())
                 .with_reactor(tokio_reactor_trait::Tokio),
         )

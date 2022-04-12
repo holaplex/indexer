@@ -9,6 +9,7 @@ use tables::{attributes, metadata_creators};
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
+/// A creator associated with a marketplace
 pub struct Creator {
     pub address: String,
     pub twitter_handle: Option<String>,
@@ -40,7 +41,7 @@ impl CreatorCounts {
 #[graphql_object(Context = AppContext)]
 impl CreatorCounts {
     fn creations(&self, context: &AppContext) -> FieldResult<i32> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
 
         let count: i64 = metadata_creators::table
             .filter(metadata_creators::creator_address.eq(&self.creator.address))
@@ -68,7 +69,7 @@ impl Creator {
         auction_houses: Vec<PublicKey<AuctionHouse>>,
         ctx: &AppContext,
     ) -> FieldResult<Vec<MintStats>> {
-        let conn = ctx.db_pool.get()?;
+        let conn = ctx.shared.db.get()?;
         let rows = stats::collection(&conn, auction_houses, &self.address)?;
 
         rows.into_iter()
@@ -78,7 +79,7 @@ impl Creator {
     }
 
     pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
 
         let metadata_attributes: Vec<models::MetadataAttribute> = attributes::table
             .inner_join(
