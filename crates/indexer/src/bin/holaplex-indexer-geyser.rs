@@ -22,7 +22,7 @@ struct Args {
     ///
     /// For example, `metadata,candy-machine` will ignore the Metaplex metadata
     /// and candy machine programs.
-    #[clap(long, env, use_delimiter(true))]
+    #[clap(long, env, use_value_delimiter(true))]
     ignore_on_startup: Option<Vec<IgnoreType>>,
 
     /// An optional suffix for the AMQP queue ID
@@ -49,7 +49,7 @@ fn main() {
 
             let sender = queue_suffix.clone().unwrap_or_else(|| network.to_string());
 
-            let conn = holaplex_indexer::amqp_connect(amqp_url).await?;
+            let conn = holaplex_indexer::amqp_connect(amqp_url, env!("CARGO_BIN_NAME")).await?;
             let client = Client::new_rc(
                 db,
                 &conn,
@@ -60,7 +60,7 @@ fn main() {
             .context("Failed to construct Client")?;
 
             let queue_type = geyser::QueueType::new(network, startup, queue_suffix.as_deref());
-            let consumer = geyser::Consumer::new(&conn, queue_type.clone())
+            let consumer = geyser::Consumer::new(&conn, queue_type.clone(), "geyser-consumer")
                 .await
                 .context("Failed to create queue consumer")?;
 

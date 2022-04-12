@@ -8,7 +8,7 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
-use std::{future::Future, pin::Pin, sync::Arc};
+use std::sync::Arc;
 
 use actix_cors::Cors;
 use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer};
@@ -34,59 +34,50 @@ struct Opts {
     asset_proxy_count: u8,
 }
 
-fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
-    move || {
-        let html = graphiql_source(&uri, None);
-
-        HttpResponse::Ok()
-            .content_type("text/html; charset=utf-8")
-            .body(html)
-    }
+struct GraphiqlData {
+    uri: String,
 }
 
-fn redirect_version(
+struct RedirectData {
     route: &'static str,
-    version: &'static str,
-) -> impl Fn() -> HttpResponse + Clone {
-    move || {
-        HttpResponse::MovedPermanently()
-            .insert_header(("Location", version))
-            .body(format!(
-                "API route {} deprecated, please use {}",
-                route, version
-            ))
-    }
-}
-
-fn graphql(
-    db_pool: Arc<Pool>,
-    shared: Arc<SharedData>,
-) -> impl Fn(
-    web::Data<Arc<Schema>>,
-    web::Json<GraphQLRequest>,
-) -> Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>>
-+ Clone {
-    move |st: web::Data<Arc<Schema>>, data: web::Json<GraphQLRequest>| {
-        let pool = Arc::clone(&db_pool);
-        let shared = Arc::clone(&shared);
-
-        Box::pin(async move {
-            let ctx = AppContext::new(pool, shared);
-            let res = data.execute(&st, &ctx).await;
-
-            let json = serde_json::to_string(&res)?;
-
-            Ok(HttpResponse::Ok()
-                .content_type("application/json")
-                .body(json))
-        })
-    }
+    new_route: &'static str,
 }
 
 pub(crate) struct SharedData {
+    schema: Schema,
+    pub db: Arc<Pool>,
     pub asset_proxy_endpoint: String,
     pub asset_proxy_count: u8,
     pub twitter_bearer_token: String,
+}
+
+#[allow(clippy::unused_async)]
+async fn graphiql(data: web::Data<GraphiqlData>) -> HttpResponse {
+    let html = graphiql_source(&data.uri, None);
+
+    HttpResponse::Ok()
+        .content_type("text/html; charset=utf-8")
+        .body(html)
+}
+
+#[allow(clippy::unused_async)]
+async fn redirect_version(data: web::Data<RedirectData>) -> HttpResponse {
+    HttpResponse::MovedPermanently()
+        .insert_header(("Location", data.new_route))
+        .body(format!(
+            "API route {} deprecated, please use {}",
+            data.route, data.new_route
+        ))
+}
+
+async fn graphql(
+    data: web::Data<SharedData>,
+    req: web::Json<GraphQLRequest>,
+) -> Result<HttpResponse, Error> {
+    let ctx = AppContext::new(data.clone().into_inner());
+    let resp = req.execute(&data.schema, &ctx).await;
+
+    Ok(HttpResponse::Ok().json(&resp))
 }
 
 fn main() {
@@ -102,30 +93,37 @@ fn main() {
         info!("Listening on {}", addr);
 
         let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
-        let shared = Arc::new(SharedData {
+
+        // TODO: db_ty indicates if any actions that mutate the database can be run
+        let (db, _db_ty) =
+            db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
+        let db = Arc::new(db);
+
+        let shared = web::Data::new(SharedData {
+            schema: schema::create(),
+            db,
             asset_proxy_endpoint,
             asset_proxy_count,
             twitter_bearer_token,
         });
 
-        // TODO: db_ty indicates if any actions that mutate the database can be run
-        let (db_pool, _db_ty) =
-            db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
-        let db_pool = Arc::new(db_pool);
-
         let version_extension = "/v1";
 
-        // Should look something like "/..."
-        let graphiql_uri = version_extension.to_owned();
-        assert!(graphiql_uri.starts_with('/'));
+        let redirect_data = web::Data::new(RedirectData {
+            route: "/v0",
+            new_route: "/v1",
+        });
 
-        let schema = Arc::new(schema::create());
+        // Should look something like "/..."
+        let graphiql_data = web::Data::new(GraphiqlData {
+            uri: version_extension.to_owned(),
+        });
+        assert!(graphiql_data.uri.starts_with('/'));
 
         actix_web::rt::System::new()
             .block_on(
                 HttpServer::new(move || {
                     App::new()
-                        .app_data(actix_web::web::Data::new(schema.clone()))
                         .wrap(middleware::Logger::default())
                         .wrap(
                             Cors::default()
@@ -140,14 +138,18 @@ fn main() {
                         )
                         .service(
                             web::resource(version_extension)
-                                .route(web::post().to(graphql(db_pool.clone(), shared.clone()))),
+                                .app_data(shared.clone())
+                                .route(web::post().to(graphql)),
                         )
                         .service(
-                            web::resource("/v0").to(redirect_version("/v0", version_extension)),
+                            web::resource(redirect_data.route)
+                                .app_data(redirect_data.clone())
+                                .to(redirect_version),
                         )
                         .service(
                             web::resource("/graphiql")
-                                .route(web::get().to(graphiql(graphiql_uri.clone()))),
+                                .app_data(graphiql_data.clone())
+                                .route(web::get().to(graphiql)),
                         )
                 })
                 .bind(addr)?

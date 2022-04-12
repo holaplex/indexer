@@ -23,6 +23,7 @@ struct Inner {
     background_count: AtomicUsize,
 
     amqp: config::Amqp,
+    name: String,
     startup_type: StartupType,
     producer: RwLock<Producer>,
     metrics: Arc<Metrics>,
@@ -31,14 +32,16 @@ struct Inner {
 impl Inner {
     async fn new(
         amqp: config::Amqp,
+        name: String,
         startup_type: StartupType,
         metrics: Arc<Metrics>,
     ) -> Result<Self, indexer_rabbitmq::Error> {
-        let producer = Self::create_producer(&amqp, startup_type).await?;
+        let producer = Self::create_producer(&amqp, name.as_ref(), startup_type).await?;
 
         Ok(Self {
             background_count: AtomicUsize::new(0),
             amqp,
+            name,
             startup_type,
             producer: RwLock::new(producer),
             metrics,
@@ -47,11 +50,14 @@ impl Inner {
 
     async fn create_producer(
         amqp: &config::Amqp,
+        name: impl Into<indexer_rabbitmq::lapin::types::LongString>,
         startup_type: StartupType,
     ) -> Result<Producer, indexer_rabbitmq::Error> {
         let conn = Connection::connect(
             &amqp.address,
-            ConnectionProperties::default().with_executor(smol_executor_trait::Smol),
+            ConnectionProperties::default()
+                .with_connection_name(name.into())
+                .with_executor(smol_executor_trait::Smol),
         )
         .await?;
 
@@ -64,12 +70,12 @@ impl Inner {
     ) -> Result<RwLockUpgradableReadGuard<'a, Producer>, indexer_rabbitmq::Error> {
         let mut prod = RwLockUpgradableReadGuard::upgrade(prod).await;
 
-        *prod = Self::create_producer(&self.amqp, self.startup_type).await?;
+        *prod = Self::create_producer(&self.amqp, self.name.as_ref(), self.startup_type).await?;
 
         Ok(RwLockWriteGuard::downgrade_to_upgradable(prod))
     }
 
-    async fn send(self: Arc<Self>, msg: Message, backgrounded: bool) {
+    async fn send_internal(&self, msg: Message) {
         #[inline]
         fn log_err<E: std::fmt::Debug>(counter: &'_ Counter) -> impl FnOnce(E) + '_ {
             |err| {
@@ -95,6 +101,10 @@ impl Inner {
         match prod.write(&msg).await.map_err(log_err(&metrics.errs)) {
             Ok(()) | Err(()) => (), // Type-level assertion that we consumed the error
         }
+    }
+
+    async fn send(self: Arc<Self>, msg: Message, backgrounded: bool) {
+        self.send_internal(msg).await;
 
         if backgrounded {
             assert!(self.background_count.fetch_sub(1, Ordering::SeqCst) > 0);
@@ -113,6 +123,7 @@ pub struct Sender {
 impl Sender {
     pub async fn new(
         amqp: config::Amqp,
+        name: String,
         jobs: &config::Jobs,
         startup_type: StartupType,
         metrics: Arc<Metrics>,
@@ -127,7 +138,7 @@ impl Sender {
         });
 
         Ok(Self {
-            inner: Arc::new(Inner::new(amqp, startup_type, metrics).await?),
+            inner: Arc::new(Inner::new(amqp, name, startup_type, metrics).await?),
             executor,
             _stop: stop_tx,
             limit: jobs.limit,

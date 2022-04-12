@@ -414,7 +414,7 @@ impl NftCount {
 #[graphql_object(Context = AppContext)]
 impl NftCount {
     fn total(&self, context: &AppContext) -> FieldResult<i32> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
 
         let count = queries::nft_count::total(&conn, &self.creators)?;
 
@@ -427,7 +427,7 @@ impl NftCount {
         context: &AppContext,
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
     ) -> FieldResult<i32> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
 
         let count = queries::nft_count::listed(&conn, &self.creators, auction_houses.as_deref())?;
 

@@ -78,7 +78,43 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
 
     fn on_load(&mut self, cfg: &str) -> Result<()> {
         solana_logger::setup_with_default("info");
+
         let metrics = Metrics::new_rc();
+
+        let version;
+        let host;
+
+        {
+            let ver = env!("CARGO_PKG_VERSION");
+            let git = option_env!("META_GIT_HEAD");
+            // TODO
+            // let rem = option_env!("META_GIT_REMOTE");
+
+            {
+                use std::fmt::Write;
+
+                let mut s = format!("v{}", ver);
+
+                if let Some(git) = git {
+                    write!(s, "+git.{}", git).unwrap();
+                }
+
+                version = s;
+            }
+
+            // TODO
+            // let rustc_ver = env!("META_RUSTC_VERSION");
+            // let build_host = env!("META_BUILD_HOST");
+            // let target = env!("META_BUILD_TARGET");
+            // let profile = env!("META_BUILD_PROFILE");
+            // let platform = env!("META_BUILD_PLATFORM");
+
+            host = hostname::get()
+                .map_err(custom_err(&metrics.errs))?
+                .into_string()
+                .map_err(|_| anyhow!("Failed to parse system hostname"))
+                .map_err(custom_err(&metrics.errs))?;
+        }
 
         let (amqp, jobs, metrics_conf, acct, ins) = Config::read(cfg)
             .and_then(Config::into_parts)
@@ -105,9 +141,15 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
 
         smol::block_on(async {
             self.producer = Some(
-                Sender::new(amqp, &jobs, startup_type, Arc::clone(&metrics))
-                    .await
-                    .map_err(custom_err(&metrics.errs))?,
+                Sender::new(
+                    amqp,
+                    format!("geyser-rabbitmq-{}@{}", version, host),
+                    &jobs,
+                    startup_type,
+                    Arc::clone(&metrics),
+                )
+                .await
+                .map_err(custom_err(&metrics.errs))?,
             );
 
             Ok(())
