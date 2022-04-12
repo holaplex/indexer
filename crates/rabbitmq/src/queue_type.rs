@@ -1,16 +1,22 @@
 use std::time::Duration;
 
-use lapin::{
-    options::{
-        BasicConsumeOptions, BasicPublishOptions, BasicQosOptions, ExchangeDeclareOptions,
-        QueueBindOptions, QueueDeclareOptions,
+#[cfg(feature = "producer")]
+use lapin::{options::BasicPublishOptions, publisher_confirm::PublisherConfirm, BasicProperties};
+#[cfg(feature = "consumer")]
+use {
+    crate::Error,
+    lapin::{
+        options::{BasicConsumeOptions, BasicQosOptions, QueueBindOptions, QueueDeclareOptions},
+        types::AMQPValue,
+        Consumer,
     },
-    publisher_confirm::PublisherConfirm,
-    types::{AMQPValue, FieldTable},
-    BasicProperties, Channel, Consumer, ExchangeKind,
+    rand::prelude::*,
 };
-
-use crate::{Error, Result};
+#[cfg(any(feature = "producer", feature = "consumer"))]
+use {
+    crate::Result,
+    lapin::{options::ExchangeDeclareOptions, types::FieldTable, Channel, ExchangeKind},
+};
 
 /// A trait representing an AMQP queue with a specific message type and AMQP
 /// configuration.
@@ -28,6 +34,7 @@ pub enum Binding {
     Direct(String),
 }
 
+#[cfg(feature = "consumer")]
 impl Binding {
     fn routing_key(&self) -> &str {
         match self {
@@ -65,23 +72,15 @@ impl<'a> From<&'a QueueProps> for QueueInfo<'a> {
     }
 }
 
+#[cfg(feature = "consumer")]
 pub const DLX_DEAD_KEY: &str = "dead";
+#[cfg(feature = "consumer")]
 pub const DLX_LIVE_KEY: &str = "live";
+#[cfg(feature = "consumer")]
 pub const DLX_TRIAGE_KEY: &str = "triage";
 
+#[cfg(any(feature = "producer", feature = "consumer"))]
 impl<'a> QueueInfo<'a> {
-    fn dl_exchange(self) -> String {
-        format!("dlx.{}", self.0.queue)
-    }
-
-    fn dl_queue(self) -> String {
-        format!("dlq.{}", self.0.queue)
-    }
-
-    fn dl_triage_queue(self) -> String {
-        format!("triage.dlq.{}", self.0.queue)
-    }
-
     async fn exchange_declare(self, chan: &Channel) -> Result<()> {
         chan.exchange_declare(
             self.0.exchange.as_ref(),
@@ -95,6 +94,42 @@ impl<'a> QueueInfo<'a> {
         .await?;
 
         Ok(())
+    }
+}
+
+#[cfg(feature = "producer")]
+impl<'a> QueueInfo<'a> {
+    pub(crate) async fn init_producer(self, chan: &Channel) -> Result<()> {
+        self.exchange_declare(chan).await?;
+
+        Ok(())
+    }
+
+    pub(crate) async fn publish(self, chan: &Channel, data: &[u8]) -> Result<PublisherConfirm> {
+        chan.basic_publish(
+            self.0.exchange.as_ref(),
+            self.0.queue.as_ref(),
+            BasicPublishOptions::default(),
+            data,
+            BasicProperties::default(),
+        )
+        .await
+        .map_err(Into::into)
+    }
+}
+
+#[cfg(feature = "consumer")]
+impl<'a> QueueInfo<'a> {
+    fn dl_exchange(self) -> String {
+        format!("dlx.{}", self.0.queue)
+    }
+
+    fn dl_queue(self) -> String {
+        format!("dlq.{}", self.0.queue)
+    }
+
+    fn dl_triage_queue(self) -> String {
+        format!("triage.dlq.{}", self.0.queue)
     }
 
     async fn queue_declare(self, chan: &Channel) -> Result<()> {
@@ -162,25 +197,11 @@ impl<'a> QueueInfo<'a> {
         Ok((exchg, self.dl_queue(), self.dl_triage_queue()))
     }
 
-    pub(crate) async fn init_producer(self, chan: &Channel) -> Result<()> {
-        self.exchange_declare(chan).await?;
-
-        Ok(())
-    }
-
-    pub(crate) async fn publish(self, chan: &Channel, data: &[u8]) -> Result<PublisherConfirm> {
-        chan.basic_publish(
-            self.0.exchange.as_ref(),
-            self.0.queue.as_ref(),
-            BasicPublishOptions::default(),
-            data,
-            BasicProperties::default(),
-        )
-        .await
-        .map_err(Into::into)
-    }
-
-    pub(crate) async fn init_consumer(self, chan: &Channel) -> Result<Consumer> {
+    pub(crate) async fn init_consumer(
+        self,
+        chan: &Channel,
+        tag: impl AsRef<str>,
+    ) -> Result<Consumer> {
         self.dl_exchange_declare(chan).await?;
         self.exchange_declare(chan).await?;
         self.queue_declare(chan).await?;
@@ -199,7 +220,7 @@ impl<'a> QueueInfo<'a> {
 
         chan.basic_consume(
             self.0.queue.as_ref(),
-            self.0.queue.as_ref(),
+            &format!("{}-{:04x}", tag.as_ref(), rand::thread_rng().gen::<u16>()),
             BasicConsumeOptions::default(),
             FieldTable::default(),
         )
@@ -297,7 +318,7 @@ impl<'a> QueueInfo<'a> {
         let consumer = chan
             .basic_consume(
                 triage_queue.as_ref(),
-                triage_queue.as_ref(),
+                &format!("dl-consumer-{:04x}", rand::thread_rng().gen::<u16>()),
                 BasicConsumeOptions::default(),
                 FieldTable::default(),
             )
@@ -317,6 +338,7 @@ impl<'a> QueueInfo<'a> {
     }
 }
 
+#[cfg(feature = "consumer")]
 #[derive(Debug, Clone)]
 pub(crate) struct DlConsumerInfo {
     exchange: String,
@@ -325,6 +347,7 @@ pub(crate) struct DlConsumerInfo {
     retry: RetryProps,
 }
 
+#[cfg(feature = "consumer")]
 impl DlConsumerInfo {
     pub fn exchange(&self) -> &str {
         &self.exchange

@@ -13,12 +13,15 @@ license = "AGPL-3.0-or-later"
 keywords = ["solana", "metaplex", "holaplex", "web3", "rabbitmq"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
+build = "build.rs"
+
 [lib]
 crate_type = ["cdylib", "rlib"]
 
 [dependencies]
 anyhow = "1.0.52"
 bs58 = "0.4.0"
+hostname = "0.3.1"
 log = "0.4.14"
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = "1.0.75"
@@ -26,7 +29,7 @@ serde_with = "1.11.0"
 smol = "1.2.5"
 smol-executor-trait = "2.1.0"
 
-solana-geyser-plugin-interface = "1.9.13"
+solana-geyser-plugin-interface = "1.9.15"
 solana-logger = "1.9.4"
 solana-program = "1.9.4"
 solana-sdk = "1.9.4"
@@ -38,5 +41,5 @@ reqwest = "0.11.6"
 package = "holaplex-indexer-rabbitmq"
 version = "=0.1.0"
 path = "../rabbitmq"
-default_features = false
+default-features = false
 features = ["producer", "geyser"]
