@@ -34,6 +34,7 @@ clap = { version = "3.0.7", features = ["derive", "env"] }
 dotenv = "0.15.0"
 env_logger = "0.9.0"
 log = "0.4.14"
+num_cpus = "1.13.1"
 rand = "0.8.4"
 serde_json = "1.0.70"
 strum = { version = "0.24.0", features = ["derive"] }

@@ -45,7 +45,6 @@ required-features = ["http"]
 async-trait = "0.1.52"
 futures-util = "0.3.21"
 hostname = "0.3.1"
-num_cpus = "1.13.1"
 serde = { version = "1.0.130", features = ["derive"] }
 strum = { version = "0.24.0", features = ["derive"] }
 tokio = { version = "1.13.0", features = ["macros", "rt", "rt-multi-thread", "sync"] }

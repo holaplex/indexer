@@ -47,7 +47,7 @@ mod runtime {
     #[derive(Debug, Parser)]
     struct Opts<T: Debug + Args> {
         /// The number of threads to use.  Defaults to available core count.
-        #[clap(short = 'j')]
+        #[clap(short = 'j', env)]
         thread_count: Option<usize>,
 
         #[clap(flatten)]
@@ -91,7 +91,7 @@ mod runtime {
                     .context("Failed to initialize async runtime")?
             };
 
-            let concurrency = thread_count.unwrap_or_else(num_cpus::get);
+            let concurrency = thread_count.unwrap_or_else(indexer_core::num_cpus::get);
 
             rt.block_on(f(extra, Params { concurrency }, db))
         })

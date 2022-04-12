@@ -19,6 +19,7 @@ extern crate diesel_migrations;
 
 pub extern crate chrono;
 pub extern crate clap;
+pub extern crate num_cpus;
 pub extern crate url;
 
 #[cfg(feature = "assets")]
