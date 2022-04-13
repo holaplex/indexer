@@ -52,3 +52,23 @@ impl<'a> TryFrom<models::MarketStats<'a>> for MarketStats {
         })
     }
 }
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct StoreCreatorStats {
+    pub nfts: Option<Volume>,
+}
+
+impl<'a> TryFrom<models::StoreCreatorStats<'a>> for StoreCreatorStats {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::StoreCreatorStats {
+            store_creator: _,
+            nfts,
+        }: models::StoreCreatorStats,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            nfts: nfts.map(TryInto::try_into).transpose()?,
+        })
+    }
+}

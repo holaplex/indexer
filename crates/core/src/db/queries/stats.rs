@@ -11,7 +11,7 @@ use diesel::{
 
 use crate::{
     db::{
-        models::{MarketStats, MintStats},
+        models::{MarketStats, MintStats, StoreCreatorStats},
         Connection,
     },
     error::Result,
@@ -138,4 +138,31 @@ pub fn collection(
         .bind::<Timestamp, _>(Local::now().naive_utc())
         .load(conn)
         .context("Failed to load collection mint stats")
+}
+
+const STORE_CREATOR_QUERY: &str = r"
+select
+    sc.creator_address as store_creator,
+    count(distinct mc.metadata_address)::bigint as nfts
+
+from store_creators sc
+    inner join metadata_creators mc
+        on (mc.creator_address = sc.creator_address)
+
+where sc.creator_address = any($1)
+group by sc.creator_address;
+ -- $1: store creator addresses::text[]";
+
+/// Count the number of nfts created by a creator
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
+pub fn store_creator(
+    conn: &Connection,
+    store_creators: impl ToSql<Array<Text>, Pg>,
+) -> Result<Vec<StoreCreatorStats>> {
+    diesel::sql_query(STORE_CREATOR_QUERY)
+        .bind(store_creators)
+        .load(conn)
+        .context("Failed to load marketplace stats")
 }

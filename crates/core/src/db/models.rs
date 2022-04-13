@@ -1677,3 +1677,16 @@ pub struct CurrentMetadataOwner<'a> {
     /// The period of time for which each leader ingests transactions and produces a block.
     pub slot: i64,
 }
+
+/// A row in a `metadatas::count_by_store_creator` query, representing stats for
+/// a store creator
+#[derive(Debug, Clone, QueryableByName)]
+pub struct StoreCreatorStats<'a> {
+    /// The store creator's address for which stats were
+    /// collected
+    #[sql_type = "VarChar"]
+    pub store_creator: Cow<'a, str>,
+    /// Number of NFTs creatred by this store_creator
+    #[sql_type = "Nullable<Int8>"]
+    pub nfts: Option<i64>,
+}

@@ -1,6 +1,6 @@
 use objects::nft::Nft;
 
-use super::{prelude::*, profile::TwitterProfile};
+use super::{prelude::*, profile::TwitterProfile, stats::StoreCreatorStats};
 
 #[derive(Debug, Clone)]
 pub struct StoreCreator {
@@ -39,6 +39,14 @@ impl StoreCreator {
 
         ctx.twitter_profile_loader
             .load(twitter_handle)
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn stats(&self, context: &AppContext) -> FieldResult<Option<StoreCreatorStats>> {
+        context
+            .collection_stats_loader
+            .load(self.creator_address.clone().into())
             .await
             .map_err(Into::into)
     }

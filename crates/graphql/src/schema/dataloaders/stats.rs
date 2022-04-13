@@ -6,6 +6,7 @@ use objects::{
 use scalars::{markers::StoreConfig, PublicKey};
 
 use super::prelude::*;
+use crate::schema::objects::{stats::StoreCreatorStats, store_creator::StoreCreator};
 
 #[async_trait]
 impl TryBatchFn<PublicKey<AuctionHouse>, Option<MintStats>> for Batcher {
@@ -35,6 +36,22 @@ impl TryBatchFn<PublicKey<StoreConfig>, Option<MarketStats>> for Batcher {
         Ok(rows
             .into_iter()
             .map(|s| (s.store_config.clone(), s.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<StoreCreator>, Option<StoreCreatorStats>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<StoreCreator>],
+    ) -> TryBatchMap<PublicKey<StoreCreator>, Option<StoreCreatorStats>> {
+        let db = self.db()?;
+        let rows = stats::store_creator(&db, addresses)?;
+
+        Ok(rows
+            .into_iter()
+            .map(|s| (s.store_creator.clone(), s.try_into()))
             .batch(addresses))
     }
 }

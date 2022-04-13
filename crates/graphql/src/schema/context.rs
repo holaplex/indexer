@@ -13,7 +13,7 @@ use objects::{
 };
 use scalars::{markers::StoreConfig, PublicKey};
 
-use super::prelude::*;
+use super::{objects::stats::StoreCreatorStats, prelude::*};
 
 #[derive(Clone)]
 pub struct AppContext {
@@ -35,6 +35,7 @@ pub struct AppContext {
     pub purchase_receipts_loader: Loader<PublicKey<Nft>, Vec<PurchaseReceipt>>,
     pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
+    pub collection_stats_loader: Loader<PublicKey<StoreCreator>, Option<StoreCreatorStats>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
     pub twitter_profile_loader: Loader<String, Option<TwitterProfile>, TwitterBatcher>,
 }
@@ -62,6 +63,7 @@ impl AppContext {
             purchase_receipts_loader: Loader::new(batcher.clone()),
             bid_receipts_loader: Loader::new(batcher.clone()),
             store_creator_loader: Loader::new(batcher.clone()),
+            collection_stats_loader: Loader::new(batcher.clone()),
             collection_loader: Loader::new(batcher),
             twitter_profile_loader: Loader::new(twitter_batcher),
             shared,
