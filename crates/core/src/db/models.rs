@@ -20,7 +20,7 @@ use super::schema::{
     proposal_instructions, proposal_metas, proposals, purchase_receipts, smart_wallet_owners,
     smart_wallets, store_config_jsons, store_configs, store_creators, storefronts, stores,
     sub_account_infos, token_accounts, transactions, twitter_handle_name_services,
-    tx_instruction_keys, tx_instructions, votes, whitelisted_creators,
+    tx_instruction_keys, tx_instructions, votes, whitelisted_creators,feed_events, feed_event_wallets, mint_events
 };
 use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
 
@@ -1312,4 +1312,34 @@ pub struct InsBufferBundleInsKey<'a> {
     pub is_signer: bool,
     /// True if the `pubkey` can be loaded as a read-write account.
     pub is_writable: bool,
+}
+
+/// A row in the `feed_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "feed_events"]
+pub struct FeedEvent<'a> {
+    /// generated id
+    pub id: Cow<'a, uuid::Uuid>,
+    /// generated created_at
+    pub created_at: NaiveDateTime,
+}
+
+/// A row in the `feed_event_wallets` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "feed_event_wallets"]
+pub struct FeedEventWallet<'a> {
+     /// a wallet associated to the event
+    pub wallet_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
+}
+
+/// A row in the `mint_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "mint_events"]
+pub struct MintEvent<'a> {
+     /// foreign key to `metadatas`` address
+    pub metadata_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
 }

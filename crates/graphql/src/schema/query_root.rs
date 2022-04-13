@@ -3,6 +3,7 @@ use objects::{
     auction_house::AuctionHouse,
     creator::Creator,
     denylist::Denylist,
+    feed_event::FeedEvent,
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
@@ -35,6 +36,33 @@ impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
 
 #[graphql_object(Context = AppContext)]
 impl QueryRoot {
+    #[graphql(
+        description = "Query feed events for a wallet. Returns events related to the specified user and events for the wallets the user follows.",
+        arguments(
+            wallet(description = "A user wallet public key"),
+            limit(description = "The query record limit"),
+            offset(description = "The query record offset")
+        )
+    )]
+    fn feed_events(
+        &self,
+        ctx: &AppContext,
+        wallet: PublicKey<Wallet>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<FeedEvent>> {
+        let conn = ctx.db_pool.get().context("failed to connect to db")?;
+
+        let feed_events =
+            queries::feed_event::list(&conn, wallet, limit.try_into()?, offset.try_into()?)?;
+
+        feed_events
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
     #[graphql(arguments(creators(description = "creators of nfts"),))]
     fn nft_counts(&self, creators: Vec<PublicKey<NftCreator>>) -> FieldResult<NftCount> {
         Ok(NftCount::new(creators))

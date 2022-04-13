@@ -1,9 +1,15 @@
+use either::*;
 use indexer_core::{
     db::{
         custom_types::TokenStandardEnum,
-        insert_into,
-        models::{Metadata, MetadataCollectionKey, MetadataCreator},
-        tables::{metadata_collection_keys, metadata_creators, metadatas},
+        exists, insert_into,
+        models::{FeedEventWallet, Metadata, MetadataCollectionKey, MetadataCreator, MintEvent},
+        select,
+        tables::{
+            feed_event_wallets, feed_events, metadata_collection_keys, metadata_creators,
+            metadatas, mint_events,
+        },
+        uuid,
     },
     pubkeys::find_edition,
 };
@@ -40,18 +46,48 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
         .as_ref()
         .and_then(|creators| creators.iter().find(|c| c.verified).map(|c| c.address));
 
-    client
+    let feed_event_id = client
         .db()
-        .run(move |db| {
-            insert_into(metadatas::table)
-                .values(&row)
-                .on_conflict(metadatas::address)
-                .do_update()
-                .set(&row)
-                .execute(db)
+        .run({
+            let addr = addr.clone();
+
+            move |db| {
+                let metadata_exists = select(exists(
+                    metadatas::table.filter(metadatas::address.eq(addr.clone())),
+                ))
+                .get_result::<bool>(db);
+
+                insert_into(metadatas::table)
+                    .values(&row)
+                    .on_conflict(metadatas::address)
+                    .do_update()
+                    .set(&row)
+                    .execute(db)
+                    .context("Failed to insert metadata")?;
+
+                if Ok(true) == metadata_exists {
+                    return Result::<_>::Ok(Left(()));
+                }
+
+                let feed_event_id = insert_into(feed_events::table)
+                    .default_values()
+                    .returning(feed_events::id)
+                    .get_result::<uuid::Uuid>(db)
+                    .context("Failed to insert feed event")?;
+
+                insert_into(mint_events::table)
+                    .values(&MintEvent {
+                        feed_event_id: Owned(feed_event_id.clone()),
+                        metadata_address: Owned(addr),
+                    })
+                    .execute(db)
+                    .context("failed to insert mint event")?;
+
+                Result::<_>::Ok(Right(feed_event_id))
+            }
         })
         .await
-        .context("Failed to insert metadata")?;
+        .context("Failed to insert metadata or mint event")?;
 
     client
         .dispatch_metadata_json(
@@ -63,9 +99,11 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
         .context("Failed to dispatch metadata JSON job")?;
 
     for (position, creator) in meta.data.creators.iter().flatten().enumerate() {
+        let creator_address = bs58::encode(creator.address).into_string();
+
         let row = MetadataCreator {
             metadata_address: Owned(addr.clone()),
-            creator_address: Owned(bs58::encode(creator.address).into_string()),
+            creator_address: Owned(creator_address.clone()),
             share: creator.share.into(),
             verified: creator.verified,
             position: Some(
@@ -84,9 +122,21 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
                         metadata_creators::metadata_address,
                         metadata_creators::creator_address,
                     ))
-                    .do_update()
-                    .set(&row)
+                    .do_nothing()
                     .execute(db)
+                    .context("failed to insert metadata creators")?;
+
+                if let Some(id) = feed_event_id.right() {
+                    insert_into(feed_event_wallets::table)
+                        .values(&FeedEventWallet {
+                            wallet_address: Owned(creator_address),
+                            feed_event_id: Owned(id),
+                        })
+                        .execute(db)
+                        .context(" Failed to insert feed event wallet")?;
+                }
+
+                Result::<_>::Ok(())
             })
             .await
             .context("Failed to insert metadata creator")?;

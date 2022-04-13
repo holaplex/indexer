@@ -38,6 +38,7 @@ pub struct AppContext {
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
     pub twitter_profile_loader: Loader<String, Option<TwitterProfile>, TwitterBatcher>,
+    pub nft_loader: Loader<PublicKey<Nft>, Option<Nft>>
 }
 
 impl juniper::Context for AppContext {}
@@ -63,7 +64,8 @@ impl AppContext {
             purchase_receipts_loader: Loader::new(batcher.clone()),
             bid_receipts_loader: Loader::new(batcher.clone()),
             store_creator_loader: Loader::new(batcher.clone()),
-            collection_loader: Loader::new(batcher),
+            collection_loader: Loader::new(batcher.clone()),
+            nft_loader: Loader::new(batcher),
             twitter_profile_loader: Loader::new(twitter_batcher),
             db_pool,
             shared,
