@@ -1,6 +1,6 @@
 //! Includes `WhitelistMintMode` enum and `EndSettingType` enum
 
-use std::io::Write;
+use std::{fmt, io::Write};
 
 use diesel::{
     deserialize::{self, FromSql},
@@ -120,6 +120,51 @@ impl FromSql<TokenStandard, Pg> for TokenStandardEnum {
             b"Fungible" => Ok(TokenStandardEnum::Fungible),
             b"NonFungibleEdition" => Ok(TokenStandardEnum::NonFungibleEdition),
             _ => Err("invalid enum entry".into()),
+        }
+    }
+}
+
+/// An offer event lifecycle
+#[derive(SqlType, Debug, Clone, Copy)]
+#[postgres(type_name = "offereventlifecycle")]
+/// Represents database `offereventlifecycle` type
+pub struct OfferEventLifecycle;
+
+#[derive(Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy)]
+#[sql_type = "OfferEventLifecycle"]
+/// `OfferEventLifecycle` enum in `OfferEvents` struct
+pub enum OfferEventLifecycleEnum {
+    /// An offer was made on NFT
+    Created,
+    /// An offer was cancelled on NFT
+    Cancelled,
+}
+
+impl ToSql<OfferEventLifecycle, Pg> for OfferEventLifecycleEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        match *self {
+            OfferEventLifecycleEnum::Created => out.write_all(b"Created")?,
+            OfferEventLifecycleEnum::Cancelled => out.write_all(b"Cancelled")?,
+        }
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<OfferEventLifecycle, Pg> for OfferEventLifecycleEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        match not_none!(bytes) {
+            b"Created" => Ok(OfferEventLifecycleEnum::Created),
+            b"Cancelled" => Ok(OfferEventLifecycleEnum::Cancelled),
+            _ => Err("invalid enum entry".into()),
+        }
+    }
+}
+
+impl fmt::Display for OfferEventLifecycleEnum {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            OfferEventLifecycleEnum::Created => write!(f, "Created"),
+            OfferEventLifecycleEnum::Cancelled => write!(f, "Cancelled"),
         }
     }
 }

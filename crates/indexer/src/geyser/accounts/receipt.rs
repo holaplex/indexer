@@ -1,11 +1,17 @@
 use indexer_core::{
     db::{
-        insert_into,
+        custom_types::OfferEventLifecycleEnum,
+        exists, insert_into,
         models::{
-            BidReceipt as DbBidReceipt, ListingReceipt as DbListingReceipt,
-            PurchaseReceipt as DbPurchaseReceipt,
+            BidReceipt as DbBidReceipt, FeedEventWallet, ListingReceipt as DbListingReceipt,
+            OfferEvent, PurchaseReceipt as DbPurchaseReceipt,
         },
-        tables::{bid_receipts, listing_receipts, purchase_receipts},
+        select,
+        tables::{
+            bid_receipts, current_metadata_owners, feed_event_wallets, feed_events,
+            listing_receipts, metadatas, offer_events, purchase_receipts,
+        },
+        uuid,
     },
     prelude::*,
     util,
@@ -120,12 +126,62 @@ pub(crate) async fn process_bid_receipt(
     client
         .db()
         .run(move |db| {
+            let bid_receipt_exists = select(exists(
+                bid_receipts::table.filter(bid_receipts::address.eq(row.address.clone())),
+            ))
+            .get_result::<bool>(db);
+
             insert_into(bid_receipts::table)
                 .values(&row)
                 .on_conflict(bid_receipts::address)
                 .do_update()
                 .set(&row)
+                .execute(db)?;
+
+            if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
+                return Result::<_>::Ok(());
+            }
+
+            let metadata_owner: String = current_metadata_owners::table
+                .inner_join(
+                    metadatas::table
+                        .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
+                )
+                .select(current_metadata_owners::owner_address)
+                .first(db)?;
+
+            let feed_event_id = insert_into(feed_events::table)
+                .default_values()
+                .returning(feed_events::id)
+                .get_result::<uuid::Uuid>(db)
+                .context("Failed to insert feed event")?;
+
+            insert_into(offer_events::table)
+                .values(&OfferEvent {
+                    feed_event_id: Owned(feed_event_id),
+                    lifecycle: OfferEventLifecycleEnum::Created,
+                    bid_receipt_address: row.address,
+                })
                 .execute(db)
+                .context("failed to insert offer created event")?;
+
+            insert_into(feed_event_wallets::table)
+                .values(&FeedEventWallet {
+                    wallet_address: row.buyer,
+                    feed_event_id: Owned(feed_event_id),
+                })
+                .execute(db)
+                .context("Failed to insert offer feed event wallet for buyer")?;
+
+            insert_into(feed_event_wallets::table)
+                .values(&FeedEventWallet {
+                    wallet_address: Owned(metadata_owner),
+                    feed_event_id: Owned(feed_event_id),
+                })
+                .execute(db)
+                .context("Failed to insert offer feed event wallet for metadata owner")?;
+
+            Result::<_>::Ok(())
         })
         .await
         .context("Failed to insert bid receipt!")?;

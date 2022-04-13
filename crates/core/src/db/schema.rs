@@ -1,7 +1,7 @@
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     attributes (id) {
         metadata_address -> Varchar,
@@ -15,7 +15,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     auction_caches (address) {
         address -> Varchar,
@@ -31,7 +31,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     auction_datas (address) {
         address -> Varchar,
@@ -50,7 +50,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     auction_datas_ext (address) {
         address -> Varchar,
@@ -63,7 +63,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     auction_houses (address) {
         address -> Varchar,
@@ -86,7 +86,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     bid_receipts (address) {
         address -> Varchar,
@@ -109,7 +109,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     bids (listing_address, bidder_address) {
         listing_address -> Varchar,
@@ -123,7 +123,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     bonding_changes (address, slot) {
         address -> Varchar,
@@ -149,7 +149,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     candy_machine_config_lines (address) {
         address -> Varchar,
@@ -161,7 +161,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     candy_machine_creators (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -174,7 +174,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     candy_machine_datas (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -193,7 +193,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     candy_machine_end_settings (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -205,7 +205,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     candy_machine_gate_keeper_configs (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -217,7 +217,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     candy_machine_hidden_settings (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -230,7 +230,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     candy_machine_whitelist_mint_settings (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -244,7 +244,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     candy_machines (address) {
         address -> Varchar,
@@ -258,7 +258,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     cardinal_claim_events (token_manager_address, state_changed_at) {
         token_manager_address -> Varchar,
@@ -308,7 +308,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     cardinal_paid_claim_approvers (paid_claim_approver_address) {
         paid_claim_approver_address -> Varchar,
@@ -324,7 +324,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     cardinal_time_invalidators (time_invalidator_address) {
         time_invalidator_address -> Varchar,
@@ -345,7 +345,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     cardinal_token_manager_invalidators (token_manager_address, invalidator) {
         token_manager_address -> Varchar,
@@ -356,7 +356,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     cardinal_token_managers (address) {
         address -> Varchar,
@@ -381,7 +381,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     cardinal_use_invalidators (use_invalidator_address) {
         use_invalidator_address -> Varchar,
@@ -402,7 +402,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     current_metadata_owners (mint_address) {
         mint_address -> Varchar,
@@ -416,7 +416,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     editions (address) {
         address -> Varchar,
@@ -428,7 +428,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     escrows (address) {
         address -> Varchar,
@@ -446,7 +446,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     feed_event_wallets (wallet_address, feed_event_id) {
         wallet_address -> Varchar,
@@ -457,7 +457,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     feed_events (id) {
         id -> Uuid,
@@ -468,7 +468,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     files (id) {
         metadata_address -> Varchar,
@@ -481,7 +481,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     governance_parameters (governor_address) {
         governor_address -> Varchar,
@@ -495,7 +495,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     governors (address) {
         address -> Varchar,
@@ -510,7 +510,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     graph_connections (address) {
         address -> Varchar,
@@ -522,7 +522,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     ins_buffer_bundle_ins_keys (instruction_buffer_address, program_id, pubkey) {
         instruction_buffer_address -> Varchar,
@@ -536,7 +536,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     ins_buffer_bundle_instructions (instruction_buffer_address, program_id) {
         instruction_buffer_address -> Varchar,
@@ -548,7 +548,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     ins_buffer_bundles (instruction_buffer_address) {
         instruction_buffer_address -> Varchar,
@@ -559,7 +559,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     instruction_buffers (address) {
         address -> Varchar,
@@ -574,7 +574,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     listing_denylist (listing_address) {
         listing_address -> Varchar,
@@ -585,7 +585,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     listing_metadatas (listing_address, metadata_address) {
         listing_address -> Varchar,
@@ -597,7 +597,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     listing_receipts (address) {
         address -> Varchar,
@@ -619,7 +619,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     locker_params (locker_address) {
         locker_address -> Varchar,
@@ -634,7 +634,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     locker_whitelist_entries (address) {
         address -> Varchar,
@@ -648,7 +648,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     lockers (address) {
         address -> Varchar,
@@ -663,7 +663,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     master_editions (address) {
         address -> Varchar,
@@ -675,7 +675,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     metadata_collection_keys (metadata_address, collection_address) {
         metadata_address -> Varchar,
@@ -687,7 +687,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     metadata_collections (id) {
         metadata_address -> Varchar,
@@ -700,7 +700,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     metadata_creators (metadata_address, creator_address) {
         metadata_address -> Varchar,
@@ -714,7 +714,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     metadata_jsons (metadata_address) {
         metadata_address -> Varchar,
@@ -733,7 +733,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     metadatas (address) {
         address -> Varchar,
@@ -754,7 +754,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     mint_events (metadata_address, feed_event_id) {
         metadata_address -> Varchar,
@@ -765,7 +765,19 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
+
+    offer_events (bid_receipt_address, feed_event_id) {
+        bid_receipt_address -> Varchar,
+        feed_event_id -> Uuid,
+        lifecycle -> Offereventlifecycle,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     proposal_account_metas (proposal_address, program_id, pubkey) {
         proposal_address -> Varchar,
@@ -779,7 +791,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     proposal_instructions (proposal_address, program_id) {
         proposal_address -> Varchar,
@@ -791,7 +803,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     proposal_metas (address) {
         address -> Varchar,
@@ -804,7 +816,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     proposals (address) {
         address -> Varchar,
@@ -828,7 +840,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     purchase_receipts (address) {
         address -> Varchar,
@@ -847,7 +859,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     smart_wallet_owners (smart_wallet_address, owner_address) {
         smart_wallet_address -> Varchar,
@@ -859,7 +871,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     smart_wallets (address) {
         address -> Varchar,
@@ -876,7 +888,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     store_config_jsons (config_address) {
         config_address -> Varchar,
@@ -894,7 +906,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     store_configs (address) {
         address -> Varchar,
@@ -905,7 +917,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     store_creators (store_config_address, creator_address) {
         store_config_address -> Varchar,
@@ -916,7 +928,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     store_denylist (owner_address) {
         owner_address -> Varchar,
@@ -927,7 +939,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     storefronts (address) {
         owner_address -> Varchar,
@@ -946,7 +958,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     stores (address) {
         address -> Varchar,
@@ -958,7 +970,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     sub_account_infos (address) {
         address -> Varchar,
@@ -971,7 +983,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     temp_attributes (id) {
         metadata_address -> Varchar,
@@ -985,7 +997,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     token_accounts (address) {
         address -> Varchar,
@@ -1000,7 +1012,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     transactions (address) {
         address -> Varchar,
@@ -1019,7 +1031,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     twitter_handle_name_services (address) {
         address -> Varchar,
@@ -1032,7 +1044,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     tx_instruction_keys (transaction_address, program_id, pubkey) {
         transaction_address -> Varchar,
@@ -1046,7 +1058,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     tx_instructions (transaction_address, program_id) {
         transaction_address -> Varchar,
@@ -1058,7 +1070,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     votes (address) {
         address -> Varchar,
@@ -1073,7 +1085,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle};
 
     whitelisted_creators (address) {
         address -> Varchar,
@@ -1086,6 +1098,8 @@ joinable!(cardinal_token_manager_invalidators -> cardinal_token_managers (token_
 joinable!(feed_event_wallets -> feed_events (feed_event_id));
 joinable!(mint_events -> feed_events (feed_event_id));
 joinable!(mint_events -> metadatas (metadata_address));
+joinable!(offer_events -> bid_receipts (bid_receipt_address));
+joinable!(offer_events -> feed_events (feed_event_id));
 
 allow_tables_to_appear_in_same_query!(
     attributes,
@@ -1137,6 +1151,7 @@ allow_tables_to_appear_in_same_query!(
     metadata_jsons,
     metadatas,
     mint_events,
+    offer_events,
     proposal_account_metas,
     proposal_instructions,
     proposal_metas,

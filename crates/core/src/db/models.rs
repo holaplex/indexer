@@ -7,9 +7,12 @@ use std::borrow::Cow;
 use chrono::NaiveDateTime;
 use diesel::sql_types::{Array, Bool, Int4, Int8, Nullable, Text, Timestamp, VarChar};
 
+
 #[allow(clippy::wildcard_imports)]
 use super::schema::*;
-use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
+use crate::db::custom_types::{
+    EndSettingType, OfferEventLifecycleEnum, TokenStandardEnum, WhitelistMintMode,
+};
 
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
@@ -1737,8 +1740,20 @@ pub struct FeedEventWallet<'a> {
 #[derive(Debug, Clone, Queryable, Insertable)]
 #[table_name = "mint_events"]
 pub struct MintEvent<'a> {
-    /// foreign key to `metadatas`` address
+    /// foreign key to `metadatas` address
     pub metadata_address: Cow<'a, str>,
     /// foreign key to `feed_events`
     pub feed_event_id: Cow<'a, uuid::Uuid>,
+}
+
+/// A row in the `offer_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "offer_events"]
+pub struct OfferEvent<'a> {
+    /// foreign key to `bid_recipts` address
+    pub bid_receipt_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
+    ///  enum of offer lifecycle
+    pub lifecycle: OfferEventLifecycleEnum,
 }
