@@ -15,7 +15,9 @@ pub(crate) async fn process(
     let row = CardinalPaidClaimApprover {
         paid_claim_approver_address: Owned(bs58::encode(key).into_string()),
         paid_claim_approver_bump: paid_claim_approver.bump.try_into()?,
-        paid_claim_approver_token_manager_address: Owned(bs58::encode(paid_claim_approver.token_manager).into_string()),
+        paid_claim_approver_token_manager_address: Owned(
+            bs58::encode(paid_claim_approver.token_manager).into_string(),
+        ),
         paid_claim_approver_payment_manager: Owned(
             bs58::encode(paid_claim_approver.payment_manager).into_string(),
         ),

@@ -18,12 +18,12 @@ use indexer_core::{
 use super::Client;
 use crate::prelude::*;
 
-pub(crate) async fn process(
+#[inline]
+async fn get_current_token_managers(
     client: &Client,
     key: Pubkey,
-    token_manager: TokenManagerAccount,
-) -> Result<()> {
-    let current_token_managers: Vec<CardinalTokenManagerQuery> = client
+) -> Result<Vec<CardinalTokenManagerQuery>> {
+    client
         .db()
         .run(move |db| {
             cardinal_token_managers::table
@@ -108,137 +108,18 @@ pub(crate) async fn process(
                 .load(db)
         })
         .await
-        .context("Failed to find TokenManager")?;
+        .context("Failed to find TokenManager")
+}
 
-    if current_token_managers.len() > 0 && token_manager.state == TokenManagerState::Claimed as u8 {
-        let current_token_manager = &current_token_managers[0];
-        let claim_event = CardinalClaimEvent {
-            token_manager_address: Owned(bs58::encode(key).into_string()),
-            version: token_manager.version.try_into()?,
-            bump: token_manager.bump.try_into()?,
-            count: token_manager.count.try_into()?,
-            num_invalidators: token_manager.num_invalidators.try_into()?,
-            issuer: Owned(bs58::encode(token_manager.issuer).into_string()),
-            mint: Owned(bs58::encode(token_manager.mint).into_string()),
-            amount: token_manager.amount.try_into()?,
-            kind: token_manager.kind.try_into()?,
-            state: token_manager.state.try_into()?,
-            state_changed_at: NaiveDateTime::from_timestamp(token_manager.state_changed_at, 0),
-            invalidation_type: token_manager.invalidation_type.try_into()?,
-            recipient_token_account: Owned(
-                bs58::encode(token_manager.recipient_token_account).into_string(),
-            ),
-            receipt_mint: token_manager
-                .receipt_mint
-                .map(|k| Owned(bs58::encode(k).into_string())),
-            claim_approver: token_manager
-                .claim_approver
-                .map(|k| Owned(bs58::encode(k).into_string())),
-            transfer_authority: token_manager
-                .transfer_authority
-                .map(|k| Owned(bs58::encode(k).into_string())),
-
-            ////////////// claim approver //////////////
-            paid_claim_approver_payment_amount: current_token_manager
-                .paid_claim_approver_payment_amount
-                .try_into()?,
-            paid_claim_approver_payment_mint: current_token_manager
-                .paid_claim_approver_payment_mint
-                .clone()
-                .map(Owned),
-            paid_claim_approver_payment_manager: current_token_manager
-                .paid_claim_approver_payment_manager
-                .clone()
-                .map(Owned),
-            paid_claim_approver_collector: current_token_manager
-                .paid_claim_approver_collector
-                .clone()
-                .map(Owned),
-
-            ////////////// time invalidator //////////////
-            time_invalidator_address: current_token_manager
-                .time_invalidator_address
-                .clone()
-                .map(Owned),
-            time_invalidator_payment_manager: current_token_manager
-                .time_invalidator_payment_manager
-                .clone()
-                .map(Owned),
-            time_invalidator_collector: current_token_manager
-                .time_invalidator_collector
-                .clone()
-                .map(Owned),
-            time_invalidator_expiration: current_token_manager
-                .time_invalidator_expiration
-                .try_into()?,
-            time_invalidator_duration_seconds: current_token_manager
-                .time_invalidator_duration_seconds
-                .try_into()?,
-            time_invalidator_extension_payment_amount: current_token_manager
-                .time_invalidator_extension_payment_amount
-                .try_into()?,
-            time_invalidator_extension_duration_seconds: current_token_manager
-                .time_invalidator_extension_duration_seconds
-                .try_into()?,
-            time_invalidator_extension_payment_mint: current_token_manager
-                .time_invalidator_extension_payment_mint
-                .clone()
-                .map(Owned),
-            time_invalidator_max_expiration: current_token_manager
-                .time_invalidator_max_expiration
-                .try_into()?,
-            time_invalidator_disable_partial_extension: current_token_manager
-                .time_invalidator_disable_partial_extension
-                .try_into()?,
-
-            ////////////// use invalidator //////////////
-            use_invalidator_address: current_token_manager
-                .use_invalidator_address
-                .clone()
-                .map(Owned),
-            use_invalidator_payment_manager: current_token_manager
-                .use_invalidator_payment_manager
-                .clone()
-                .map(Owned),
-            use_invalidator_collector: current_token_manager
-                .use_invalidator_collector
-                .clone()
-                .map(Owned),
-            use_invalidator_usages: current_token_manager.use_invalidator_usages.try_into()?,
-            use_invalidator_use_authority: current_token_manager
-                .use_invalidator_use_authority
-                .clone()
-                .map(Owned),
-            use_invalidator_total_usages: current_token_manager
-                .use_invalidator_total_usages
-                .try_into()?,
-            use_invalidator_extension_payment_amount: current_token_manager
-                .use_invalidator_extension_payment_amount
-                .try_into()?,
-            use_invalidator_extension_payment_mint: current_token_manager
-                .use_invalidator_extension_payment_mint
-                .clone()
-                .map(Owned),
-            use_invalidator_extension_usages: current_token_manager
-                .use_invalidator_extension_usages
-                .try_into()?,
-            use_invalidator_max_usages: current_token_manager
-                .use_invalidator_max_usages
-                .try_into()?,
-        };
-        client
-            .db()
-            .run(move |db| {
-                insert_into(cardinal_claim_events::table)
-                    .values(&claim_event)
-                    .execute(db)
-            })
-            .await
-            .context("Failed to insert Claim Event")?;
-    }
-
-    let row = CardinalTokenManager {
-        address: Owned(bs58::encode(key).into_string()),
+#[allow(clippy::too_many_lines)]
+async fn store_claim_event(
+    client: &Client,
+    key: Pubkey,
+    token_manager: &TokenManagerAccount,
+    current_token_manager: &CardinalTokenManagerQuery,
+) -> Result<()> {
+    let claim_event = CardinalClaimEvent {
+        token_manager_address: Owned(bs58::encode(key).into_string()),
         version: token_manager.version.try_into()?,
         bump: token_manager.bump.try_into()?,
         count: token_manager.count.try_into()?,
@@ -250,6 +131,129 @@ pub(crate) async fn process(
         state: token_manager.state.try_into()?,
         state_changed_at: NaiveDateTime::from_timestamp(token_manager.state_changed_at, 0),
         invalidation_type: token_manager.invalidation_type.try_into()?,
+        recipient_token_account: Owned(
+            bs58::encode(token_manager.recipient_token_account).into_string(),
+        ),
+        receipt_mint: token_manager
+            .receipt_mint
+            .map(|k| Owned(bs58::encode(k).into_string())),
+        claim_approver: token_manager
+            .claim_approver
+            .map(|k| Owned(bs58::encode(k).into_string())),
+        transfer_authority: token_manager
+            .transfer_authority
+            .map(|k| Owned(bs58::encode(k).into_string())),
+
+        ////////////// claim approver //////////////
+        paid_claim_approver_payment_amount: current_token_manager
+            .paid_claim_approver_payment_amount,
+        paid_claim_approver_payment_mint: current_token_manager
+            .paid_claim_approver_payment_mint
+            .clone()
+            .map(Owned),
+        paid_claim_approver_payment_manager: current_token_manager
+            .paid_claim_approver_payment_manager
+            .clone()
+            .map(Owned),
+        paid_claim_approver_collector: current_token_manager
+            .paid_claim_approver_collector
+            .clone()
+            .map(Owned),
+
+        ////////////// time invalidator //////////////
+        time_invalidator_address: current_token_manager
+            .time_invalidator_address
+            .clone()
+            .map(Owned),
+        time_invalidator_payment_manager: current_token_manager
+            .time_invalidator_payment_manager
+            .clone()
+            .map(Owned),
+        time_invalidator_collector: current_token_manager
+            .time_invalidator_collector
+            .clone()
+            .map(Owned),
+        time_invalidator_expiration: current_token_manager.time_invalidator_expiration,
+        time_invalidator_duration_seconds: current_token_manager.time_invalidator_duration_seconds,
+        time_invalidator_extension_payment_amount: current_token_manager
+            .time_invalidator_extension_payment_amount,
+        time_invalidator_extension_duration_seconds: current_token_manager
+            .time_invalidator_extension_duration_seconds,
+        time_invalidator_extension_payment_mint: current_token_manager
+            .time_invalidator_extension_payment_mint
+            .clone()
+            .map(Owned),
+        time_invalidator_max_expiration: current_token_manager.time_invalidator_max_expiration,
+        time_invalidator_disable_partial_extension: current_token_manager
+            .time_invalidator_disable_partial_extension,
+
+        ////////////// use invalidator //////////////
+        use_invalidator_address: current_token_manager
+            .use_invalidator_address
+            .clone()
+            .map(Owned),
+        use_invalidator_payment_manager: current_token_manager
+            .use_invalidator_payment_manager
+            .clone()
+            .map(Owned),
+        use_invalidator_collector: current_token_manager
+            .use_invalidator_collector
+            .clone()
+            .map(Owned),
+        use_invalidator_usages: current_token_manager.use_invalidator_usages,
+        use_invalidator_use_authority: current_token_manager
+            .use_invalidator_use_authority
+            .clone()
+            .map(Owned),
+        use_invalidator_total_usages: current_token_manager.use_invalidator_total_usages,
+        use_invalidator_extension_payment_amount: current_token_manager
+            .use_invalidator_extension_payment_amount,
+        use_invalidator_extension_payment_mint: current_token_manager
+            .use_invalidator_extension_payment_mint
+            .clone()
+            .map(Owned),
+        use_invalidator_extension_usages: current_token_manager.use_invalidator_extension_usages,
+        use_invalidator_max_usages: current_token_manager.use_invalidator_max_usages,
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(cardinal_claim_events::table)
+                .values(&claim_event)
+                .execute(db)
+        })
+        .await
+        .context("Failed to insert Claim Event")?;
+
+    Ok(())
+}
+
+pub(crate) async fn process(
+    client: &Client,
+    key: Pubkey,
+    token_manager: TokenManagerAccount,
+) -> Result<()> {
+    let current_token_managers = get_current_token_managers(client, key).await?;
+
+    if !current_token_managers.is_empty() && token_manager.state == TokenManagerState::Claimed as u8
+    {
+        store_claim_event(client, key, &token_manager, &current_token_managers[0]).await?;
+    }
+
+    let row = CardinalTokenManager {
+        address: Owned(bs58::encode(key).into_string()),
+        version: token_manager.version.into(),
+        bump: token_manager.bump.into(),
+        count: token_manager.count.try_into()?,
+        num_invalidators: token_manager.num_invalidators.into(),
+        issuer: Owned(bs58::encode(token_manager.issuer).into_string()),
+        mint: Owned(bs58::encode(token_manager.mint).into_string()),
+        amount: token_manager.amount.try_into()?,
+        kind: token_manager.kind.into(),
+        state: token_manager.state.into(),
+        state_changed_at: NaiveDateTime::from_timestamp(token_manager.state_changed_at, 0),
+        invalidation_type: token_manager.invalidation_type.into(),
         recipient_token_account: Owned(
             bs58::encode(token_manager.recipient_token_account).into_string(),
         ),
