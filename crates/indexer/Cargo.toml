@@ -43,6 +43,7 @@ required-features = ["http"]
 
 [dependencies]
 async-trait = "0.1.52"
+either = "1.6.1"
 futures-util = "0.3.21"
 hostname = "0.3.1"
 serde = { version = "1.0.130", features = ["derive"] }

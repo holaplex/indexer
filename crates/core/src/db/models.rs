@@ -1713,3 +1713,32 @@ pub struct StoreCreatorCount<'a> {
     #[sql_type = "Int8"]
     pub nfts: i64,
 }
+/// A row in the `feed_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "feed_events"]
+pub struct FeedEvent<'a> {
+    /// generated id
+    pub id: Cow<'a, uuid::Uuid>,
+    /// generated created_at
+    pub created_at: NaiveDateTime,
+}
+
+/// A row in the `feed_event_wallets` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "feed_event_wallets"]
+pub struct FeedEventWallet<'a> {
+    /// a wallet associated to the event
+    pub wallet_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
+}
+
+/// A row in the `mint_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "mint_events"]
+pub struct MintEvent<'a> {
+    /// foreign key to `metadatas`` address
+    pub metadata_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
+}

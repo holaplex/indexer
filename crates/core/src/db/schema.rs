@@ -448,6 +448,28 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
+    feed_event_wallets (wallet_address, feed_event_id) {
+        wallet_address -> Varchar,
+        feed_event_id -> Uuid,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    feed_events (id) {
+        id -> Uuid,
+        created_at -> Timestamptz,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
     files (id) {
         metadata_address -> Varchar,
         uri -> Text,
@@ -726,6 +748,17 @@ table! {
         edition_nonce -> Nullable<Int4>,
         edition_pda -> Varchar,
         token_standard -> Nullable<Token_standard>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
+    mint_events (metadata_address, feed_event_id) {
+        metadata_address -> Varchar,
+        feed_event_id -> Uuid,
     }
 }
 
@@ -1050,6 +1083,9 @@ table! {
 }
 
 joinable!(cardinal_token_manager_invalidators -> cardinal_token_managers (token_manager_address));
+joinable!(feed_event_wallets -> feed_events (feed_event_id));
+joinable!(mint_events -> feed_events (feed_event_id));
+joinable!(mint_events -> metadatas (metadata_address));
 
 allow_tables_to_appear_in_same_query!(
     attributes,
@@ -1078,6 +1114,8 @@ allow_tables_to_appear_in_same_query!(
     current_metadata_owners,
     editions,
     escrows,
+    feed_event_wallets,
+    feed_events,
     files,
     governance_parameters,
     governors,
@@ -1098,6 +1136,7 @@ allow_tables_to_appear_in_same_query!(
     metadata_creators,
     metadata_jsons,
     metadatas,
+    mint_events,
     proposal_account_metas,
     proposal_instructions,
     proposal_metas,
