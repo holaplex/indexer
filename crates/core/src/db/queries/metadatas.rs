@@ -51,6 +51,7 @@ pub struct ListQueryOptions {
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
+#[allow(clippy::too_many_lines)]
 pub fn list(
     conn: &Connection,
     ListQueryOptions {

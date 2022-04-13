@@ -1,0 +1,1 @@
+drop index if exists price_listing_receipts_idx;
