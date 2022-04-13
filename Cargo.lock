@@ -2789,6 +2789,7 @@ dependencies = [
  "rand 0.8.5",
  "rmp-serde",
  "serde",
+ "serde_json",
  "solana-sdk",
  "strum 0.23.0",
  "thiserror",
