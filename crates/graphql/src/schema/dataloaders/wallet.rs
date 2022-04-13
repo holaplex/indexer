@@ -2,7 +2,7 @@ use futures_util::future::join_all;
 use itertools::Either;
 use objects::profile::{TwitterProfile, TwitterUserProfileResponse};
 
-use super::{batcher::Error, prelude::*};
+use super::prelude::*;
 
 const TWITTER_SCREEN_NAME_CHUNKS: usize = 100;
 

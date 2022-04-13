@@ -16,7 +16,7 @@ use std::env;
 
 pub use diesel::{
     backend::Backend,
-    debug_query, delete, insert_into,
+    debug_query, delete, expression, insert_into,
     pg::{upsert::excluded, Pg},
     query_dsl,
     result::Error,
@@ -97,6 +97,7 @@ pub fn connect(mode: ConnectMode) -> Result<(Pool, ConnectionType)> {
 
     let man = ConnectionManager::new(url);
     let pool = Pool::builder()
+        .max_size(num_cpus::get().try_into().unwrap_or(u32::MAX))
         .min_idle(Some(1))
         .idle_timeout(Some(std::time::Duration::from_secs(60)))
         .build(man)

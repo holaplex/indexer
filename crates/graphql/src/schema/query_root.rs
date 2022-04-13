@@ -3,9 +3,10 @@ use objects::{
     auction_house::AuctionHouse,
     creator::Creator,
     denylist::Denylist,
+    graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::Nft,
+    nft::{Nft, NftCount, NftCreator},
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
@@ -34,6 +35,11 @@ impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
 
 #[graphql_object(Context = AppContext)]
 impl QueryRoot {
+    #[graphql(arguments(creators(description = "creators of nfts"),))]
+    fn nft_counts(&self, creators: Vec<PublicKey<NftCreator>>) -> FieldResult<NftCount> {
+        Ok(NftCount::new(creators))
+    }
+
     async fn profile(
         &self,
         ctx: &AppContext,
@@ -75,12 +81,57 @@ impl QueryRoot {
         )))
     }
 
+    fn connections(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Connections from a list of wallets")] from: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
+        #[graphql(description = "Connections to a list of wallets")] to: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
+        #[graphql(description = "Query limit")] limit: i32,
+        #[graphql(description = "Query offset")] offset: i32,
+    ) -> FieldResult<Vec<GraphConnection>> {
+        if from.is_none() && to.is_none() {
+            return Err(FieldError::new(
+                "No filter provided! Please provide at least one of the filters",
+                graphql_value!({ "Filters": "from: Vec<PublicKey>, to: Vec<PublicKey>" }),
+            ));
+        }
+        let conn = context.shared.db.get().context("failed to connect to db")?;
+        let from: Vec<String> = from
+            .unwrap_or_else(Vec::new)
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        let to: Vec<String> = to
+            .unwrap_or_else(Vec::new)
+            .into_iter()
+            .map(Into::into)
+            .collect();
+
+        let rows = queries::graph_connection::list(&conn, from, to, limit, offset)?;
+
+        rows.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
     fn creator(
         &self,
-        _context: &AppContext,
+        context: &AppContext,
         #[graphql(description = "Address of creator")] address: String,
-    ) -> Creator {
-        Creator { address }
+    ) -> FieldResult<Creator> {
+        let conn = context.shared.db.get().context("failed to connect to db")?;
+
+        let twitter_handle = queries::twitter_handle_name_service::get(&conn, &address)?;
+
+        Ok(Creator {
+            address,
+            twitter_handle,
+        })
     }
 
     fn nfts(
@@ -105,7 +156,7 @@ impl QueryRoot {
             ));
         }
 
-        let conn = context.db_pool.get().context("failed to connect to db")?;
+        let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let query_options = queries::metadatas::ListQueryOptions {
             owners: owners.map(|a| a.into_iter().map(Into::into).collect()),
@@ -123,15 +174,19 @@ impl QueryRoot {
 
     fn wallet(
         &self,
-        _context: &AppContext,
-        #[graphql(description = "Address of NFT")] address: String,
-    ) -> Option<Wallet> {
-        Some(Wallet { address })
+        context: &AppContext,
+        #[graphql(description = "Address of the wallet")] address: PublicKey<Wallet>,
+    ) -> FieldResult<Wallet> {
+        let conn = context.shared.db.get()?;
+
+        let twitter_handle = queries::twitter_handle_name_service::get(&conn, &address)?;
+
+        Ok(Wallet::new(address, twitter_handle))
     }
 
     fn listings(&self, context: &AppContext) -> FieldResult<Vec<Listing>> {
         let now = Local::now().naive_utc();
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
 
         let rows: Vec<ListingRow> = auction_caches::table
             .inner_join(
@@ -164,7 +219,7 @@ impl QueryRoot {
         context: &AppContext,
         #[graphql(description = "Address of NFT")] address: String,
     ) -> FieldResult<Option<Nft>> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
         let mut rows: Vec<models::Nft> = metadatas::table
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
@@ -187,7 +242,7 @@ impl QueryRoot {
     }
 
     fn storefronts(&self, context: &AppContext) -> FieldResult<Vec<Storefront>> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
         let rows: Vec<models::Storefront> = storefronts::table
             .filter(queries::store_denylist::owner_address_ok(
                 storefronts::owner_address,
@@ -205,7 +260,7 @@ impl QueryRoot {
         context: &AppContext,
         subdomain: String,
     ) -> FieldResult<Option<Storefront>> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
         let mut rows: Vec<models::Storefront> = storefronts::table
             .filter(storefronts::subdomain.eq(subdomain))
             .select(StorefrontColumns::default())
@@ -222,7 +277,7 @@ impl QueryRoot {
         context: &AppContext,
         subdomain: String,
     ) -> FieldResult<Option<Marketplace>> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
         let mut rows: Vec<models::StoreConfigJson> = store_config_jsons::table
             .filter(store_config_jsons::subdomain.eq(subdomain))
             .select(store_config_jsons::all_columns)

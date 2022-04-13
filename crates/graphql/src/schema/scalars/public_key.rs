@@ -117,6 +117,28 @@ where
     }
 }
 
+impl<T, U> indexer_core::db::expression::AsExpression<U> for PublicKey<T>
+where
+    String: indexer_core::db::expression::AsExpression<U>,
+{
+    type Expression = <String as indexer_core::db::expression::AsExpression<U>>::Expression;
+
+    fn as_expression(self) -> Self::Expression {
+        self.0.as_expression()
+    }
+}
+
+impl<'a, T, U> indexer_core::db::expression::AsExpression<U> for &'a PublicKey<T>
+where
+    &'a String: indexer_core::db::expression::AsExpression<U>,
+{
+    type Expression = <&'a String as indexer_core::db::expression::AsExpression<U>>::Expression;
+
+    fn as_expression(self) -> Self::Expression {
+        (&self.0).as_expression()
+    }
+}
+
 //// BUG: juniper v0.15 does not support implementing GraphQLScalar on structs
 ////      with generic parameters.  As a result the expansion of this macro has
 ////      been manually included in the code and tweaked to compile, and should

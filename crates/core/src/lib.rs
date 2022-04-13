@@ -10,19 +10,25 @@
 #![feature(iter_intersperse)]
 
 // TODO: #[macro_use] is somewhat deprecated, but diesel still relies on it
+#[cfg(feature = "db")]
 #[macro_use]
 extern crate diesel;
+#[cfg(feature = "db")]
 #[macro_use]
 extern crate diesel_migrations;
 
 pub extern crate chrono;
 pub extern crate clap;
+pub extern crate num_cpus;
 pub extern crate url;
 
+#[cfg(feature = "assets")]
 pub mod assets;
+#[cfg(feature = "db")]
 pub mod db;
 pub mod error;
 pub mod hash;
+#[cfg(feature = "solana")]
 pub mod pubkeys;
 pub mod util;
 
@@ -34,6 +40,7 @@ pub mod prelude {
     };
 
     pub use chrono::{self, prelude::*};
+    #[cfg(feature = "db")]
     pub use diesel::{
         debug_query,
         dsl::{any, exists, not},
@@ -41,6 +48,7 @@ pub mod prelude {
         pg::Pg,
         query_dsl::{BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl},
     };
+    #[cfg(feature = "db")]
     pub use diesel_full_text_search::{TsQueryExtensions, TsVectorExtensions};
     pub use log::{debug, error, info, trace, warn};
 

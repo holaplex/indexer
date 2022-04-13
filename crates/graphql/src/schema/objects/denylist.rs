@@ -5,12 +5,13 @@ use scalars::PublicKey;
 use super::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
+/// Deny-list for Holaplex storefronts and listings
 pub struct Denylist;
 
 #[graphql_object(Context = AppContext)]
 impl Denylist {
     fn storefronts(&self, ctx: &AppContext) -> FieldResult<Vec<PublicKey<Storefront>>> {
-        let db = ctx.db_pool.get().context("Failed to connect to DB")?;
+        let db = ctx.shared.db.get().context("Failed to connect to DB")?;
 
         store_denylist::get_hard_banned(&db)
             .context("Failed to load denylist")
@@ -18,7 +19,7 @@ impl Denylist {
     }
 
     fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<PublicKey<Listing>>> {
-        let db = ctx.db_pool.get().context("Failed to connect to DB")?;
+        let db = ctx.shared.db.get().context("Failed to connect to DB")?;
 
         listing_denylist::get_hard_banned(&db)
             .context("Failed to load denylist")

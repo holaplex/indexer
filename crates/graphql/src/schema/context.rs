@@ -17,7 +17,6 @@ use super::prelude::*;
 
 #[derive(Clone)]
 pub struct AppContext {
-    pub db_pool: Arc<Pool>,
     pub(crate) shared: Arc<SharedData>,
 
     // Data loaders
@@ -43,8 +42,8 @@ pub struct AppContext {
 impl juniper::Context for AppContext {}
 
 impl AppContext {
-    pub(crate) fn new(db_pool: Arc<Pool>, shared: Arc<SharedData>) -> AppContext {
-        let batcher = Batcher::new(db_pool.clone());
+    pub(crate) fn new(shared: Arc<SharedData>) -> AppContext {
+        let batcher = Batcher::new(shared.db.clone());
         let twitter_batcher = TwitterBatcher::new(shared.twitter_bearer_token.clone());
 
         Self {
@@ -65,7 +64,6 @@ impl AppContext {
             store_creator_loader: Loader::new(batcher.clone()),
             collection_loader: Loader::new(batcher),
             twitter_profile_loader: Loader::new(twitter_batcher),
-            db_pool,
             shared,
         }
     }

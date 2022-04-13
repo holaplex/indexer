@@ -57,11 +57,11 @@ async fn run<E: Send + holaplex_indexer::http::Process + 'static>(
         bail!("Debug builds must specify a RabbitMQ queue suffix!");
     }
 
-    let conn = holaplex_indexer::amqp_connect(amqp_url).await?;
+    let conn = holaplex_indexer::amqp_connect(amqp_url, env!("CARGO_BIN_NAME")).await?;
     let client = Client::new_rc(db, client).context("Failed to construct Client")?;
 
     let queue_type = http_indexer::QueueType::<E>::new(&sender, queue_suffix.as_deref());
-    let consumer = http_indexer::Consumer::new(&conn, queue_type.clone())
+    let consumer = http_indexer::Consumer::new(&conn, queue_type.clone(), "http-consumer")
         .await
         .context("Failed to create queue consumer")?;
 
