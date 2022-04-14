@@ -33,6 +33,9 @@ http = [
 reqwest-client = [
   "reqwest",
 ]
+search = [
+  "indexer-rabbitmq/search-indexer",
+]
 
 [[bin]]
 name = "holaplex-indexer-geyser"
@@ -45,6 +48,10 @@ required-features = ["http"]
 [[bin]]
 name = "holaplex-indexer-legacy-storefronts"
 required-features = ["http"]
+
+[[bin]]
+name = "holaplex-indexer-search"
+required-features = ["search"]
 
 [dependencies]
 async-trait = "0.1.52"
