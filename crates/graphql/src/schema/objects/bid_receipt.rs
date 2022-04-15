@@ -15,6 +15,19 @@ pub struct BidReceipt {
     pub canceled_at: Option<DateTime<Utc>>,
 }
 
+pub type BidReceiptRow = {
+    String, // Address
+    String, // trade_state
+    String, // buyer
+    String, // metadata
+    String, // auction house
+    scalars::Lamports, // price
+    i32, // trade_state_bump
+    String, // token account
+    NaiveDateTime, // created at
+    Option<NaiveDateTime> // cancelled at
+}
+
 impl<'a> TryFrom<models::BidReceipt<'a>> for BidReceipt {
     type Error = std::num::TryFromIntError;
     fn try_from(
