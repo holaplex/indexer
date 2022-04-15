@@ -51,6 +51,7 @@ pub struct ListQueryOptions {
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
+#[allow(clippy::too_many_lines)]
 pub fn list(
     conn: &Connection,
     ListQueryOptions {
@@ -63,41 +64,6 @@ pub fn list(
         offset,
     }: ListQueryOptions,
 ) -> Result<Vec<Nft>> {
-    if creators.is_some()
-        && attributes.is_none()
-        && owners.is_none()
-        && offerers.is_none()
-        && listed.is_none()
-    {
-        let query = metadatas::table
-            .inner_join(
-                metadata_creators::table
-                    .on(metadatas::address.eq(metadata_creators::metadata_address)),
-            )
-            .inner_join(
-                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
-            )
-            .filter(metadata_creators::creator_address.eq(any(creators.unwrap_or_else(Vec::new))))
-            .filter(metadata_creators::verified.eq(true))
-            .select((
-                metadatas::address,
-                metadatas::name,
-                metadatas::seller_fee_basis_points,
-                metadatas::mint_address,
-                metadatas::primary_sale_happened,
-                metadata_jsons::description,
-                metadata_jsons::image,
-            ))
-            .distinct()
-            .order(metadatas::address.asc())
-            .limit(limit)
-            .offset(offset);
-
-        let rows: Vec<Nft> = query.load(conn).context("failed to load nft(s)")?;
-
-        return Ok(rows.into_iter().map(Into::into).collect());
-    }
-
     let mut query = metadatas::table
         .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
@@ -150,30 +116,32 @@ pub fn list(
     }
 
     if let Some(listed) = listed {
-        query = query
-            .filter(listing_receipts::auction_house.eq(any(listed)))
-            .filter(listing_receipts::purchase_receipt.is_null())
-            .filter(listing_receipts::canceled_at.is_null());
+        query = query.filter(listing_receipts::auction_house.eq(any(listed)));
     }
 
-    let rows: Vec<Nft> = query
+    let rows: Vec<(Nft, Option<i64>)> = query
+        .filter(listing_receipts::purchase_receipt.is_null())
+        .filter(listing_receipts::canceled_at.is_null())
         .select((
-            metadatas::address,
-            metadatas::name,
-            metadatas::seller_fee_basis_points,
-            metadatas::mint_address,
-            metadatas::primary_sale_happened,
-            metadata_jsons::description,
-            metadata_jsons::image,
+            (
+                metadatas::address,
+                metadatas::name,
+                metadatas::seller_fee_basis_points,
+                metadatas::mint_address,
+                metadatas::primary_sale_happened,
+                metadata_jsons::description,
+                metadata_jsons::image,
+            ),
+            listing_receipts::price.nullable(),
         ))
         .distinct()
-        .order(metadatas::address.asc())
+        .order((listing_receipts::price.asc(), metadatas::name.asc()))
         .limit(limit)
         .offset(offset)
         .load(conn)
         .context("failed to load nft(s)")?;
 
-    Ok(rows)
+    Ok(rows.into_iter().map(|(nft, _)| nft).collect())
 }
 
 const ACTIVITES_QUERY: &str = r"
