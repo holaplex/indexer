@@ -1,8 +1,8 @@
 use indexer_core::db::queries;
 use objects::{
     auction_house::AuctionHouse,
-    creator::Creator,
     bid_receipt::BidReceiptRow,
+    creator::Creator,
     denylist::Denylist,
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
@@ -31,7 +31,7 @@ struct AttributeFilter {
 #[derive(GraphQLInputObject, Clone, Debug)]
 #[graphql(description = "Filter on NFT receipts")]
 struct ReceiptFilter {
-    address: String
+    address: String,
 }
 
 impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
@@ -192,13 +192,14 @@ impl QueryRoot {
     }
 
     fn offers(
-        &self, 
+        &self,
         context: &AppContext,
         #[graphql(description = "Filter on bid_receipt address")] receipt: Option<ReceiptFilter>,
     ) -> FieldResult<BidReceipt> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
-        let rows: Vec<BidReceiptRow> = auction_caches::table
+        // let rows: Vec<BidReceiptRow>
+        0
     }
 
     fn listings(&self, context: &AppContext) -> FieldResult<Vec<Listing>> {
