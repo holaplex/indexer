@@ -1,6 +1,8 @@
 use objects::nft::Nft;
 
-use super::{prelude::*, profile::TwitterProfile, stats::StoreCreatorStats};
+use crate::schema::scalars::Volume;
+
+use super::{prelude::*, profile::TwitterProfile};
 
 #[derive(Debug, Clone)]
 pub struct StoreCreator {
@@ -43,12 +45,13 @@ impl StoreCreator {
             .map_err(Into::into)
     }
 
-    pub async fn stats(&self, context: &AppContext) -> FieldResult<Option<StoreCreatorStats>> {
+    pub async fn nft_count(&self, context: &AppContext) -> FieldResult<Option<StoreCreatorCount>> {
         context
-            .collection_stats_loader
+            .collection_count_loader
             .load(self.creator_address.clone().into())
             .await
             .map_err(Into::into)
+      
     }
 }
 
@@ -69,3 +72,25 @@ impl<'a> From<(Option<String>, models::StoreCreator<'a>)> for StoreCreator {
         }
     }
 }
+
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct StoreCreatorCount {
+    pub nfts: Option<Volume>,
+}
+
+impl<'a> TryFrom<models::StoreCreatorCount<'a>> for StoreCreatorCount {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::StoreCreatorCount {
+            store_creator: _,
+            nfts,
+        }: models::StoreCreatorCount,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            nfts: nfts.map(TryInto::try_into).transpose()?,
+        })
+    }
+}
+

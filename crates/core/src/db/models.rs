@@ -1681,7 +1681,7 @@ pub struct CurrentMetadataOwner<'a> {
 /// A row in a `metadatas::count_by_store_creator` query, representing stats for
 /// a store creator
 #[derive(Debug, Clone, QueryableByName)]
-pub struct StoreCreatorStats<'a> {
+pub struct StoreCreatorCount<'a> {
     /// The store creator's address for which stats were
     /// collected
     #[sql_type = "VarChar"]
