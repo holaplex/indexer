@@ -14,9 +14,9 @@ use super::schema::{
     candy_machine_hidden_settings, candy_machine_whitelist_mint_settings, candy_machines,
     cardinal_claim_events, cardinal_paid_claim_approvers, cardinal_time_invalidators,
     cardinal_token_manager_invalidators, cardinal_token_managers, cardinal_use_invalidators,
-    editions, escrows, files, governance_parameters, governors, graph_connections,
-    ins_buffer_bundle_ins_keys, ins_buffer_bundle_instructions, ins_buffer_bundles,
-    instruction_buffers, listing_metadatas, listing_receipts, locker_params,
+    current_metadata_owners, editions, escrows, files, governance_parameters, governors,
+    graph_connections, ins_buffer_bundle_ins_keys, ins_buffer_bundle_instructions,
+    ins_buffer_bundles, instruction_buffers, listing_metadatas, listing_receipts, locker_params,
     locker_whitelist_entries, lockers, master_editions, metadata_collection_keys,
     metadata_collections, metadata_creators, metadata_jsons, metadatas, proposal_account_metas,
     proposal_instructions, proposal_metas, proposals, purchase_receipts, smart_wallet_owners,
@@ -1661,4 +1661,19 @@ pub struct InsBufferBundleInsKey<'a> {
     pub is_signer: bool,
     /// True if the `pubkey` can be loaded as a read-write account.
     pub is_writable: bool,
+}
+
+/// A row in the `metadata_owners` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct CurrentMetadataOwner<'a> {
+    /// The mint address of the token
+    pub mint_address: Cow<'a, str>,
+    /// The token owner address
+    pub owner_address: Cow<'a, str>,
+    /// The address of token account
+    pub token_account_address: Cow<'a, str>,
+    /// Solana slot number
+    /// The period of time for which each leader ingests transactions and produces a block.
+    pub slot: i64,
 }
