@@ -14,7 +14,7 @@ use objects::{
 };
 use scalars::PublicKey;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, metadata_jsons, metadatas,
+    auction_caches, auction_datas, auction_datas_ext, metadata_jsons, metadatas, bid_receipts,
     store_config_jsons, storefronts,
 };
 
