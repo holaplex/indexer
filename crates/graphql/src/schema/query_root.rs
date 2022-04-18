@@ -96,7 +96,6 @@ impl QueryRoot {
         auction_houses: Vec<PublicKey<AuctionHouse>>,
     ) -> FieldResult<Vec<Activity>> {
         let conn = context.db_pool.get()?;
-
         let rows = queries::activities::activities(&conn, auction_houses)?;
 
         rows.into_iter()
