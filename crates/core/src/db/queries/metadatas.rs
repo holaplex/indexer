@@ -12,8 +12,8 @@ use crate::{
         any,
         models::{Nft, NftActivity},
         tables::{
-            attributes, bid_receipts, listing_receipts, metadata_creators, metadata_jsons,
-            metadatas, token_accounts,
+            attributes, bid_receipts, current_metadata_owners, listing_receipts, metadata_creators,
+            metadata_jsons, metadatas,
         },
         Connection,
     },
@@ -72,7 +72,8 @@ pub fn list(
             metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
         )
         .inner_join(
-            token_accounts::table.on(metadatas::mint_address.eq(token_accounts::mint_address)),
+            current_metadata_owners::table
+                .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
         )
         .left_outer_join(
             listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)),
@@ -103,9 +104,7 @@ pub fn list(
     }
 
     if let Some(owners) = owners {
-        query = query
-            .filter(token_accounts::amount.eq(1))
-            .filter(token_accounts::owner_address.eq(any(owners)));
+        query = query.filter(current_metadata_owners::owner_address.eq(any(owners)));
     }
 
     if let Some(offerers) = offerers {
