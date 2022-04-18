@@ -394,6 +394,7 @@ table! {
         mint_address -> Varchar,
         owner_address -> Varchar,
         token_account_address -> Varchar,
+        updated_at -> Timestamp,
         slot -> Int8,
     }
 }

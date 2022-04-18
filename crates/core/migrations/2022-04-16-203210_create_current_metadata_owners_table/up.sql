@@ -16,6 +16,10 @@ alter updated_at
 set default now();
 
 alter table current_metadata_owners
+alter updated_at
+set not null;
+
+alter table current_metadata_owners
 alter owner_address
 set not null;
 

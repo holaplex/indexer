@@ -1,2 +1,0 @@
-drop table if exists current_metadata_owners;
-drop trigger set_curr_metadata_owner_updated_at_column on current_metadata_owners;
