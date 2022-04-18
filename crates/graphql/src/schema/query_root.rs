@@ -103,7 +103,6 @@ impl QueryRoot {
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
-
     }
 
     async fn profile(

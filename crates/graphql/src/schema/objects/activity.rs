@@ -1,6 +1,6 @@
 use indexer_core::db::models;
-use super::prelude::*;
 
+use super::prelude::*;
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct Activity {
@@ -14,7 +14,6 @@ pub struct Activity {
     pub wallets: Vec<String>,
     pub activity_type: String,
 }
-
 
 impl TryFrom<models::Activity> for Activity {
     type Error = std::num::TryFromIntError;
