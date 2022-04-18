@@ -21,7 +21,7 @@ use tables::{
     store_config_jsons, storefronts,
 };
 
-use super::prelude::*;
+use super::{objects::activity::Activity, prelude::*};
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
@@ -87,6 +87,23 @@ impl QueryRoot {
             start_date,
             end_date,
         })
+    }
+
+    #[graphql(arguments(auction_housese(description = "List of auction houses"),))]
+    pub async fn activities(
+        &self,
+        context: &AppContext,
+        auction_houses: Vec<PublicKey<AuctionHouse>>,
+    ) -> FieldResult<Vec<Activity>> {
+        let conn = context.db_pool.get()?;
+
+        let rows = queries::activities::activities(&conn, auction_houses)?;
+
+        rows.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+
     }
 
     async fn profile(

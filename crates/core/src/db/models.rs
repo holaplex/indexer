@@ -1837,3 +1837,43 @@ pub struct FollowEvent<'a> {
     /// foreign key to `feed_events`
     pub feed_event_id: Uuid,
 }
+
+/// Union of `listing_receipts` and `purchase_receipts` for an auction house `Activity`
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct Activity {
+    /// The address of the activity
+    #[sql_type = "VarChar"]
+    pub address: String,
+
+    /// The metadata associated of the activity
+    #[sql_type = "VarChar"]
+    pub metadata: String,
+
+    /// Image of the metadata (nft)
+    #[sql_type = "Text"]
+    pub metadata_image: String,
+
+    /// name of the metadata (nft)
+    #[sql_type = "Text"]
+    pub metadata_name: String,
+
+    /// The auction house activity generated from
+    #[sql_type = "VarChar"]
+    pub auction_house: String,
+
+    /// The price of listing or purchase
+    #[sql_type = "Int8"]
+    pub price: i64,
+
+    /// Listing/Purchase created time
+    #[sql_type = "Timestamp"]
+    pub created_at: NaiveDateTime,
+
+    /// The wallet address asociated to the activity [seller, buyer]
+    #[sql_type = "Array<VarChar>"]
+    pub wallets: Vec<String>,
+
+    /// Listing/Purchase created time
+    #[sql_type = "Text"]
+    pub activity_type: String,
+}
