@@ -1,5 +1,6 @@
 use indexer_core::db::queries;
 use objects::{
+    bid_receipt::BidReceipt,
     auction_house::AuctionHouse,
     creator::Creator,
     denylist::Denylist,
@@ -79,6 +80,20 @@ impl QueryRoot {
             twitter_profile_picture_response,
             twitter_show_response,
         )))
+    }
+
+    fn offers(&self, context: &AppContext, address: String)-> FieldResult<Vec<models::BidReceipt>>{
+        let conn = context.shared.db.get().context("failed to connect to db");
+
+        let rows: Vec<models::BidReceipt> = bid_receipts::table
+        .inner_join(metadatas::table.on(metadatas::address.eq(bid_receipts::metadata)))
+        .select(bid_receipts::all_columns)
+        .filter(bid_receipts::canceled_at.is_null())
+        .filter(bid_receipts::purchase_receipt.is_null())
+        .filter(bid_receipts::metadata.eq(addresses))
+        .load(&conn)
+
+        rows
     }
 
     fn connections(
