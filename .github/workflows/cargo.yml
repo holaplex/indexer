@@ -50,7 +50,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --lib --bins --all-features --no-deps --profile=debug-lite
+          args: --all --lib --all-features --no-deps --profile=debug-lite
 
   release-check:
     name: cargo check/doc/clippy (release profile)
@@ -76,4 +76,4 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --lib --bins --all-features --no-deps --profile=release-lite
+          args: --all --lib --all-features --no-deps --profile=release-lite
