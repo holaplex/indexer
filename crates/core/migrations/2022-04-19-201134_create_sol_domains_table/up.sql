@@ -6,7 +6,7 @@ create table sol_domains (
 );
 
 create index if not exists sol_domains_owner_idx
-on sol_domains (name);
+on sol_domains (owner);
 
 create index if not exists sol_domains_name_idx
 on sol_domains (name);
