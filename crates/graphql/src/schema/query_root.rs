@@ -1,6 +1,7 @@
 use indexer_core::db::queries;
 use objects::{
     auction_house::AuctionHouse,
+    bid_receipt::BidReceipt,
     creator::Creator,
     denylist::Denylist,
     graph_connection::GraphConnection,
@@ -8,7 +9,6 @@ use objects::{
     marketplace::Marketplace,
     nft::{Nft, NftCount, NftCreator},
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
-    receipts::BidReceipt,
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
@@ -82,11 +82,7 @@ impl QueryRoot {
         )))
     }
 
-    fn offers(
-        &self,
-        context: &AppContext,
-        address: String,
-    ) -> FieldResult<Vec<models::BidReceipt>> {
+    fn offers(&self, context: &AppContext, address: String) -> FieldResult<Vec<BidReceipt>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let rows: Vec<models::BidReceipt> = bid_receipts::table
