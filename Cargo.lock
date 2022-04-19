@@ -2125,6 +2125,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashmap"
+version = "5.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c8858831f7781322e539ea39e72449c46b059638250c14344fec8d0aa6e539c"
+dependencies = [
+ "cfg-if 1.0.0",
+ "num_cpus",
+ "parking_lot 0.12.0",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2307,6 +2318,27 @@ dependencies = [
  "libc",
  "redox_users",
  "winapi",
+]
+
+[[package]]
+name = "dispose"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a73c22432c5657d246abd8b3490c0678ed59549c474d96402367be7bd18700d1"
+dependencies = [
+ "dispose-derive",
+]
+
+[[package]]
+name = "dispose-derive"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b62e5546deabd472871fc4de055f8d75c0a97c492f1889cc19623e98d20ba294"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2 1.0.38",
+ "quote 1.0.18",
+ "syn 1.0.93",
 ]
 
 [[package]]
@@ -2970,7 +3002,7 @@ dependencies = [
  "chrono",
  "cid",
  "clap 3.1.12",
- "dashmap",
+ "dashmap 4.0.2",
  "diesel",
  "diesel_full_text_search",
  "diesel_migrations",
@@ -3021,16 +3053,20 @@ name = "holaplex-indexer-rabbitmq"
 version = "0.1.0"
 dependencies = [
  "clap 3.1.12",
+ "dashmap 5.2.0",
+ "dispose",
  "futures-util",
  "lapin",
  "log",
  "rand 0.8.5",
  "rmp-serde",
  "serde",
+ "serde-value",
  "serde_json",
  "solana-program",
  "strum 0.23.0",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -4099,6 +4135,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ordered-float"
+version = "2.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7940cf2ca942593318d07fcf2596cdca60a85c9e7fab408a5e21a4f9dcd40d87"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "os_str_bytes"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4885,6 +4930,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-value"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3a1a3341211875ef120e117ea7fd5228530ae7e7036a779fdc9117be6b3282c"
+dependencies = [
+ "ordered-float",
+ "serde",
+]
+
+[[package]]
 name = "serde_bytes"
 version = "0.11.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5561,7 +5616,7 @@ dependencies = [
  "byteorder",
  "bzip2",
  "crossbeam-channel",
- "dashmap",
+ "dashmap 4.0.2",
  "dir-diff",
  "flate2",
  "fnv",

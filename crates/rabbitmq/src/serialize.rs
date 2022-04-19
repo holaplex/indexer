@@ -1,15 +1,10 @@
-#[cfg(feature = "consumer")]
-use std::io::Read;
-#[cfg(feature = "producer")]
-use std::io::Write;
-
 /// Serialize a message into a [`Write`] stream
 ///
 /// # Errors
 /// This function fails if an I/O error occurs or a wire format error occurs.
-#[cfg(feature = "producer")]
+#[cfg(any(feature = "producer", feature = "rpc"))]
 pub fn serialize<M: serde::Serialize>(
-    w: impl Write,
+    w: impl std::io::Write,
     msg: &M,
 ) -> Result<(), rmp_serde::encode::Error> {
     let mut ser = rmp_serde::Serializer::new(w)
@@ -23,9 +18,9 @@ pub fn serialize<M: serde::Serialize>(
 ///
 /// # Errors
 /// This function fails if an I/O error occurs or a wire format error occurs.
-#[cfg(feature = "consumer")]
+#[cfg(any(feature = "consumer", feature = "rpc"))]
 pub fn deserialize<M: for<'a> serde::Deserialize<'a>>(
-    r: impl Read,
+    r: impl std::io::Read,
 ) -> Result<M, rmp_serde::decode::Error> {
     let mut de = rmp_serde::Deserializer::new(r).with_binary();
 

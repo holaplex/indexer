@@ -88,14 +88,12 @@ async fn try_consume<Q: QueueType>(conn: &Connection, ty: &Q) -> Result<()> {
     let (mut consumer, inf) = ty.info().init_dl_consumer(&chan).await?;
 
     while let Some(del) = consumer.next().await {
-        let del = del?;
-
         let Delivery {
             mut properties,
             data,
             acker,
             ..
-        } = del;
+        } = del?;
 
         let headers = properties.headers().as_ref().map(FieldTable::inner);
 

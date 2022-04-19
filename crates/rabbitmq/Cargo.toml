@@ -19,18 +19,23 @@ default = ["consumer"]
 geyser = ["solana-program", "suffix"]
 http-indexer = ["solana-program", "suffix"]
 producer = ["suffix"]
+rpc = ["dashmap", "dispose", "serde-value", "tokio"]
 search-indexer = ["serde_json", "suffix"]
 suffix = ["clap"]
 
 [dependencies]
 clap = { version = "3.1.12", default-features = false, features = ["env", "std"], optional = true }
 futures-util = "0.3.19"
+dashmap = { version = "5.2.0", optional = true }
+dispose = { version = "0.4.0", optional = true }
 lapin = "2.0.3"
 log = "0.4.14"
 rand = "0.8.5"
 rmp-serde = "1.0.0-beta.2"
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = { version = "1.0.79", optional = true }
+serde-value = { version = "0.7.0", optional = true }
 solana-program = { version = "1.9.4", optional = true }
 strum = { version = "0.23.0", features = ["derive"] }
 thiserror = "1.0.30"
+tokio = { version = "1.17.0", default-features = false, features = ["parking_lot", "sync"], optional = true }

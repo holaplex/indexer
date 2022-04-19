@@ -36,7 +36,7 @@ where
     /// # Errors
     /// This function fails if the consumer cannot be created and configured
     /// successfully.
-    pub async fn new(conn: &Connection, ty: Q, tag: impl AsRef<str>) -> Result<Self> {
+    pub async fn new(conn: &Connection, ty: Q, tag: impl std::fmt::Display) -> Result<Self> {
         let chan = conn.create_channel().await?;
 
         let consumer = ty.info().init_consumer(&chan, tag).await?;

@@ -2,20 +2,19 @@ use std::time::Duration;
 
 #[cfg(feature = "producer")]
 use lapin::{options::BasicPublishOptions, publisher_confirm::PublisherConfirm, BasicProperties};
+#[cfg(any(feature = "producer", feature = "consumer"))]
+use {
+    crate::Result,
+    lapin::{options::ExchangeDeclareOptions, types::FieldTable, Channel, ExchangeKind},
+};
 #[cfg(feature = "consumer")]
 use {
-    crate::Error,
+    crate::{tag, Error},
     lapin::{
         options::{BasicConsumeOptions, BasicQosOptions, QueueBindOptions, QueueDeclareOptions},
         types::AMQPValue,
         Consumer,
     },
-    rand::prelude::*,
-};
-#[cfg(any(feature = "producer", feature = "consumer"))]
-use {
-    crate::Result,
-    lapin::{options::ExchangeDeclareOptions, types::FieldTable, Channel, ExchangeKind},
 };
 
 /// A trait representing an AMQP queue with a specific message type and AMQP
@@ -203,7 +202,7 @@ impl<'a> QueueInfo<'a> {
     pub(crate) async fn init_consumer(
         self,
         chan: &Channel,
-        tag: impl AsRef<str>,
+        tag: impl std::fmt::Display,
     ) -> Result<Consumer> {
         self.dl_exchange_declare(chan).await?;
         self.exchange_declare(chan).await?;
@@ -223,7 +222,7 @@ impl<'a> QueueInfo<'a> {
 
         chan.basic_consume(
             self.0.queue.as_ref(),
-            &format!("{}-{:04x}", tag.as_ref(), rand::thread_rng().gen::<u16>()),
+            &tag::tag(tag),
             BasicConsumeOptions::default(),
             FieldTable::default(),
         )
@@ -321,7 +320,7 @@ impl<'a> QueueInfo<'a> {
         let consumer = chan
             .basic_consume(
                 triage_queue.as_ref(),
-                &format!("dl-consumer-{:04x}", rand::thread_rng().gen::<u16>()),
+                &tag::tag("dl-consumer"),
                 BasicConsumeOptions::default(),
                 FieldTable::default(),
             )
