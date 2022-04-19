@@ -1864,6 +1864,7 @@ pub struct WalletTotal {
     /// wallet following
     pub following: i64,
 }
+
 /// A row in the `store_auction_houses` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
 #[diesel(treat_none_as_null = true)]
