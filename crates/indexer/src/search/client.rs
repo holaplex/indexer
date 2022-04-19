@@ -36,9 +36,30 @@ impl Client {
         } = args;
 
         let meili = MeiliClient::new(meili_url, meili_key);
+
         #[allow(clippy::blacklisted_name)] // :p
-        let foo = meili.index("foo");
-        foo.set_primary_key("id").await?;
+        let foo = {
+            const NAME: &str = "foo";
+            const PKEY: &str = "id";
+
+            if let Ok(idx) = meili.get_index(NAME).await {
+                ensure!(
+                    idx.get_primary_key()
+                        .await
+                        .context("Failed to check primary key name")?
+                        .map_or(false, |k| k == PKEY),
+                    "Primary key mismatch for index {}",
+                    NAME
+                );
+
+                idx
+            } else {
+                let task = meili.create_index(NAME, Some(PKEY)).await?;
+                meili.wait_for_task(task, None, None).await?;
+
+                meili.index(NAME)
+            }
+        };
 
         Ok(Arc::new(Self { db, foo }))
     }
