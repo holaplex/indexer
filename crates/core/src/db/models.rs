@@ -1687,6 +1687,6 @@ pub struct StoreCreatorCount<'a> {
     #[sql_type = "VarChar"]
     pub store_creator: Cow<'a, str>,
     /// Number of NFTs creatred by this store_creator
-    #[sql_type = "Nullable<Int8>"]
-    pub nfts: Option<i64>,
+    #[sql_type = "Int8"]
+    pub nfts: i64,
 }

@@ -14,10 +14,10 @@ use diesel::{
 use crate::{
     db::{
         any,
+        models::StoreCreatorCount,
         tables::{
             bid_receipts, current_metadata_owners, listing_receipts, metadata_creators, metadatas,
         },
-        models::StoreCreatorCount,
         Connection,
     },
     error::prelude::*,
