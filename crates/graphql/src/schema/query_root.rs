@@ -1,6 +1,7 @@
 use indexer_core::db::queries;
 use objects::{
     auction_house::AuctionHouse,
+    bid_receipt::BidReceipt,
     creator::Creator,
     denylist::Denylist,
     graph_connection::GraphConnection,
@@ -13,7 +14,7 @@ use objects::{
 };
 use scalars::PublicKey;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, metadata_jsons, metadatas,
+    auction_caches, auction_datas, auction_datas_ext, bid_receipts, metadata_jsons, metadatas,
     store_config_jsons, storefronts,
 };
 
@@ -79,6 +80,23 @@ impl QueryRoot {
             twitter_profile_picture_response,
             twitter_show_response,
         )))
+    }
+
+    fn offers(&self, context: &AppContext, address: String) -> FieldResult<Vec<BidReceipt>> {
+        let conn = context.shared.db.get().context("failed to connect to db")?;
+
+        let rows: Vec<models::BidReceipt> = bid_receipts::table
+            .select(bid_receipts::all_columns)
+            .filter(bid_receipts::canceled_at.is_null())
+            .filter(bid_receipts::purchase_receipt.is_null())
+            .filter(bid_receipts::metadata.eq(address))
+            .load(&conn)
+            .context("Failed to load bid_receipts")?;
+
+        rows.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     fn connections(
