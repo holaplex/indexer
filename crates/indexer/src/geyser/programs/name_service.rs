@@ -15,6 +15,10 @@ mod ids {
         twitter_root_parent_registry_key,
         "4YcexoW3r78zz16J2aqmukBLRwGq6rAvWzJpkYAXqebv"
     );
+    pubkeys!(
+        sol_domain_reverse_lookup_class,
+        "33m47vH6Eav6jr5Ry86XjhRft2jRBLDnDgPSHoquXi2Z"
+    );
 }
 
 #[derive(BorshDeserialize, PartialEq, Debug, Clone)]
@@ -37,15 +41,24 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
     let parent = Pubkey::new(header.parent.as_slice());
     let class = Pubkey::new(header.class.as_slice());
 
-    if parent != ids::twitter_root_parent_registry_key()
-        || class != ids::twitter_verification_authority()
+    if (parent != ids::twitter_root_parent_registry_key()
+        && class != ids::sol_domain_reverse_lookup_class())
+        || (class != ids::twitter_verification_authority()
+            && class != ids::sol_domain_reverse_lookup_class())
     {
         return Ok(());
     }
 
     let wallet = Pubkey::new(header.owner.as_slice());
 
-    let data: Vec<u8> = update.data[HEADER_LENGTH..].to_vec();
+    let mut data: Vec<u8> = update.data[HEADER_LENGTH..].to_vec();
+
+    if class == ids::sol_domain_reverse_lookup_class() {
+        let domain_length: usize = u32::from_le_bytes(data[0..4].try_into()?).try_into()?;
+        data = data[4..4 + domain_length].to_vec();
+        name_service::process_domain_name(client, update.key, update.slot, wallet, data).await?;
+        return Ok(());
+    }
 
     name_service::process(client, update.key, update.slot, wallet, data).await
 }

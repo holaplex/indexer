@@ -20,8 +20,8 @@ use super::schema::{
     locker_whitelist_entries, lockers, master_editions, metadata_collection_keys,
     metadata_collections, metadata_creators, metadata_jsons, metadatas, proposal_account_metas,
     proposal_instructions, proposal_metas, proposals, purchase_receipts, smart_wallet_owners,
-    smart_wallets, store_config_jsons, store_configs, store_creators, storefronts, stores,
-    sub_account_infos, token_accounts, transactions, twitter_handle_name_services,
+    smart_wallets, sol_domains, store_config_jsons, store_configs, store_creators, storefronts,
+    stores, sub_account_infos, token_accounts, transactions, twitter_handle_name_services,
     tx_instruction_keys, tx_instructions, votes, whitelisted_creators,
 };
 use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
@@ -1689,4 +1689,19 @@ pub struct StoreCreatorCount<'a> {
     /// Number of NFTs creatred by this store_creator
     #[sql_type = "Int8"]
     pub nfts: i64,
+}
+
+/// A row in the `sol_domains` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "sol_domains"]
+pub struct SolDomain<'a> {
+    /// NameService account address
+    pub address: Cow<'a, str>,
+    /// Domain name owner address
+    pub owner: Cow<'a, str>,
+    /// Domain name
+    pub name: Cow<'a, str>,
+    /// Solana slot number
+    pub slot: i64,
 }

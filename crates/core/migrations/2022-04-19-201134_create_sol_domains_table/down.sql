@@ -1,0 +1,1 @@
+drop table sol_domains;

@@ -831,6 +831,19 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
+    sol_domains (address) {
+        address -> Varchar,
+        owner -> Varchar,
+        name -> Text,
+        slot -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
     store_config_jsons (config_address) {
         config_address -> Varchar,
         name -> Text,
@@ -1090,6 +1103,7 @@ allow_tables_to_appear_in_same_query!(
     purchase_receipts,
     smart_wallet_owners,
     smart_wallets,
+    sol_domains,
     store_config_jsons,
     store_configs,
     store_creators,
