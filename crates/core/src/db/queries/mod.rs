@@ -8,3 +8,4 @@ pub mod nft_count;
 pub mod stats;
 pub mod store_denylist;
 pub mod twitter_handle_name_service;
+pub mod bonding_changes;

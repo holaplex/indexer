@@ -13,5 +13,6 @@ pub mod name_service;
 pub mod receipt;
 pub mod smart_wallet;
 pub mod token;
+pub mod bonding_change;
 
 pub(self) use super::Client;

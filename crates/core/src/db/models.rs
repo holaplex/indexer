@@ -20,7 +20,7 @@ use super::schema::{
     proposal_instructions, proposal_metas, proposals, purchase_receipts, smart_wallet_owners,
     smart_wallets, store_config_jsons, store_configs, store_creators, storefronts, stores,
     sub_account_infos, token_accounts, transactions, twitter_handle_name_services,
-    tx_instruction_keys, tx_instructions, votes, whitelisted_creators,
+    tx_instruction_keys, tx_instructions, votes, whitelisted_creators, bonding_changes
 };
 use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
 
@@ -1313,3 +1313,42 @@ pub struct InsBufferBundleInsKey<'a> {
     /// True if the `pubkey` can be loaded as a read-write account.
     pub is_writable: bool,
 }
+
+/// A row in the `bonding_change` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "bonding_changes"]
+pub struct BondingChange<'a> {
+    /// Account address
+    pub address: Cow<'a, str>,
+    /// Insert timestamp
+    pub insert_ts: NaiveDateTime,
+    /// The solana slot
+    pub slot: i64,
+    /// Current value of the reserves_from_bonding field
+    pub current_reserves_from_bonding: i64,
+    /// Current value of the supply_from_bonding field
+    pub current_supply_from_bonding: i64,
+}
+
+/// An enriched query on bonding changes
+#[derive(Debug, Clone, QueryableByName)]
+#[diesel(treat_none_as_null = true)]
+pub struct EnrichedBondingChange<'a> {
+    /// Account address
+    #[sql_type = "Text"]
+    pub address: Cow<'a, str>,
+    /// The solana slot
+    #[sql_type = "Int8"]
+    pub slot: i64,
+    /// Insert timestamp
+    #[sql_type = "Timestamp"]
+    pub insert_ts: NaiveDateTime,
+    /// The observed reserve change
+    #[sql_type = "Int8"]
+    pub reserve_change: i64,
+    ///The observed supply change
+    #[sql_type = "Int8"]
+    pub supply_change: i64,
+}
+

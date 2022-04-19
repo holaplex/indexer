@@ -125,6 +125,20 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
 
+    bonding_changes (address, slot) {
+        address -> Varchar,
+        insert_ts -> Timestamp,
+        slot -> Int8,
+        current_reserves_from_bonding -> Int8,
+        current_supply_from_bonding -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+
     candy_machine_collection_pdas (address) {
         address -> Varchar,
         mint -> Varchar,
@@ -885,6 +899,7 @@ allow_tables_to_appear_in_same_query!(
     auction_houses,
     bid_receipts,
     bids,
+    bonding_changes,
     candy_machine_collection_pdas,
     candy_machine_config_lines,
     candy_machine_creators,

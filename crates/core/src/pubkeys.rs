@@ -30,11 +30,12 @@ mod ids {
         tribeca_govern,
         "Govz1VyoyLD5BL6CSCxUJLVLsQHRwjfFj1prNsdNg5Jw"
     );
+    pubkeys!(token_bonding, "TBondmkCYxaPCKG4CHYfVTcwQ8on31xnJrPzk8F8WsS");
 }
 
 pub use ids::{
     auction, auction_house, candy_machine, goki_smart_wallet, graph_program, metadata, metaplex,
-    name_service, token, tribeca_govern, tribeca_locked_voter, vault,
+    name_service, token, tribeca_govern, tribeca_locked_voter, vault, token_bonding
 };
 
 /// Find the address of a store given its owner's address
