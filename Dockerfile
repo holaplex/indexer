@@ -22,10 +22,12 @@ RUN cargo build --profile docker \
   --features " \
     holaplex-indexer/geyser, \
     holaplex-indexer/http \
+    holaplex-indexer/search \
   " \
   --bin holaplex-indexer-geyser \
   --bin holaplex-indexer-http \
   --bin holaplex-indexer-legacy-storefronts \
+  --bin holaplex-indexer-search \
   --bin holaplex-indexer-graphql
 
 COPY scripts scripts
@@ -63,6 +65,11 @@ FROM base AS legacy-storefronts
 
 COPY --from=build build/bin/holaplex-indexer-legacy-storefronts bin/
 COPY --from=build build/scripts/docker/legacy-storefronts.sh startup.sh
+
+FROM base AS search-consumer
+
+COPY --from=build build/bin/holaplex-indexer-search bin/
+COPY --from=build build/scripts/docker/search-consumer.sh startup.sh
 
 FROM base AS graphql
 
