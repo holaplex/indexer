@@ -18,6 +18,8 @@ pub mod http;
 pub mod legacy_storefronts;
 #[cfg(feature = "reqwest-client")]
 pub(crate) mod reqwest;
+#[cfg(feature = "search")]
+pub mod search;
 pub(crate) mod util;
 
 pub use runtime::*;

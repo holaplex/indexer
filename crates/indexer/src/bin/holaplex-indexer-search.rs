@@ -1,3 +1,4 @@
+use holaplex_indexer::search::{Client, ClientArgs};
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::search_indexer;
 
@@ -13,6 +14,9 @@ struct Args {
 
     #[clap(flatten)]
     queue_suffix: indexer_rabbitmq::suffix::Suffix,
+
+    #[clap(flatten)]
+    client: ClientArgs,
 }
 
 fn main() {
@@ -21,9 +25,10 @@ fn main() {
              amqp_url,
              sender,
              queue_suffix,
+             client,
          },
          params,
-         _db| async move {
+         db| async move {
             let conn = holaplex_indexer::amqp_connect(amqp_url, env!("CARGO_BIN_NAME")).await?;
 
             let queue_type = search_indexer::QueueType::new(&sender, &queue_suffix)?;
@@ -32,20 +37,15 @@ fn main() {
                     .await
                     .context("Failed to create queue consumer")?;
 
-            holaplex_indexer::amqp_consume(
-                &params,
-                conn,
-                consumer,
-                queue_type,
-                move |m| async move { process(m).await },
-            )
+            let client = Client::new_rc(db, client)
+                .await
+                .context("Failed to construct Client")?;
+
+            holaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
+                let client = client.clone();
+                async move { holaplex_indexer::search::process_message(m, &*client).await }
+            })
             .await
         },
     );
-}
-
-async fn process(m: search_indexer::Message) -> Result<()> {
-    debug!("TODO: {:?}", m);
-
-    Ok(())
 }

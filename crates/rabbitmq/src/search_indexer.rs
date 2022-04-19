@@ -12,16 +12,18 @@ use crate::{
 
 /// Message data for a document upsert request
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpsertDocument {
-    /// The document to upsert
-    pub document: serde_json::Value,
+pub struct Document {
+    /// The unique ID of the document
+    pub id: String,
+    /// The body of the document
+    pub body: serde_json::Value,
 }
 
 /// Message data for a search index job
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Message {
     /// Upsert a document to the index
-    Upsert(UpsertDocument),
+    Upsert(Document),
 }
 
 /// AMQP configuration for search indexers
