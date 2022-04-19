@@ -275,10 +275,14 @@ Any other value will return the original image size.
 
 If no value is provided, it will return XSmall")))]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
+        let id = if let Ok(url) = Url::parse(&self.image) {
+            AssetIdentifier::new(&url)
+        } else {
+            return Ok(self.image.clone());
+        };
+
         let width = ImageSize::from(width.unwrap_or(ImageSize::XSmall as i32));
         let width_str = (width as i32).to_string();
-        let id =
-            AssetIdentifier::new(&Url::parse(&self.image).context("Couldn't parse asset URL")?);
 
         Ok(
             proxy_url(&ctx.shared.asset_proxy, &id, Some(("width", &*width_str)))?
