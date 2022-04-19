@@ -6,8 +6,8 @@ use objects::{
 };
 use scalars::PublicKey;
 use tables::{
-    attributes, listing_receipts, metadata_creators, metadatas, purchase_receipts, token_accounts,
-    twitter_handle_name_services,
+    attributes, current_metadata_owners, listing_receipts, metadata_creators, metadatas,
+    purchase_receipts, twitter_handle_name_services,
 };
 
 use super::prelude::*;
@@ -68,21 +68,21 @@ impl TryBatchFn<PublicKey<Nft>, Option<NftOwner>> for Batcher {
     ) -> TryBatchMap<PublicKey<Nft>, Option<NftOwner>> {
         let conn = self.db()?;
 
-        let rows: Vec<(Option<String>, models::TokenAccount)> =
-            token_accounts::table
-                .left_join(twitter_handle_name_services::table.on(
-                    twitter_handle_name_services::wallet_address.eq(token_accounts::owner_address),
-                ))
-                .filter(token_accounts::mint_address.eq(any(mint_addresses)))
-                .filter(token_accounts::amount.eq(1))
+        let rows: Vec<(Option<String>, models::CurrentMetadataOwner)> =
+            current_metadata_owners::table
+                .left_join(
+                    twitter_handle_name_services::table
+                        .on(twitter_handle_name_services::wallet_address
+                            .eq(current_metadata_owners::owner_address)),
+                )
+                .filter(current_metadata_owners::mint_address.eq(any(mint_addresses)))
                 .select((
                     twitter_handle_name_services::twitter_handle.nullable(),
                     (
-                        token_accounts::address,
-                        token_accounts::mint_address,
-                        token_accounts::owner_address,
-                        token_accounts::amount,
-                        token_accounts::slot,
+                        current_metadata_owners::mint_address,
+                        current_metadata_owners::owner_address,
+                        current_metadata_owners::token_account_address,
+                        current_metadata_owners::slot,
                     ),
                 ))
                 .load(&conn)
@@ -93,7 +93,7 @@ impl TryBatchFn<PublicKey<Nft>, Option<NftOwner>> for Batcher {
             .map(|(h, t)| {
                 (t.mint_address.into_owned(), NftOwner {
                     address: t.owner_address.into_owned(),
-                    associated_token_account_address: t.address.into_owned(),
+                    associated_token_account_address: t.token_account_address.into_owned(),
                     twitter_handle: h,
                 })
             })
@@ -135,10 +135,10 @@ impl TryBatchFn<PublicKey<Nft>, Vec<ListingReceipt>> for Batcher {
         let rows: Vec<models::ListingReceipt> = listing_receipts::table
             .inner_join(metadatas::table.on(metadatas::address.eq(listing_receipts::metadata)))
             .inner_join(
-                token_accounts::table.on(token_accounts::mint_address.eq(metadatas::mint_address)),
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
             )
             .select(listing_receipts::all_columns)
-            .filter(token_accounts::amount.eq(1))
             .filter(listing_receipts::canceled_at.is_null())
             .filter(listing_receipts::purchase_receipt.is_null())
             .filter(listing_receipts::metadata.eq(any(addresses)))
