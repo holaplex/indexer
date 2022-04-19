@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use indexer_core::db::{
     delete, insert_into,
-    models::{StoreConfigJson, StoreCreator},
+    models::{StoreAuctionHouse, StoreConfigJson, StoreCreator},
     tables::{store_config_jsons, store_creators},
 };
 use reqwest::Url;
@@ -26,6 +26,7 @@ pub struct Metadata {
 #[serde(rename_all = "camelCase")]
 pub struct Address {
     pub owner: String,
+    #[deprecated(note = "Use `auction_houses` instead")]
     pub auction_house: String,
     pub store: Option<String>,
     pub store_config: String,
@@ -54,6 +55,7 @@ struct SettingUri {
     creators: Option<Vec<Creator>>,
     #[serde(flatten)]
     extra: HashMap<String, serde_json::Value>,
+    auction_houses: Option<Vec<String>>,
 }
 
 pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Result<()> {
@@ -145,6 +147,55 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
             })
             .await
             .context("failed to insert store creator")?;
+    }
+
+    if let Some(auction_houses) = json.auction_houses {
+        client
+            .db()
+            .run(move |db| {
+                let remove_ahs = store_auction_houses::table
+                    .filter(store_auction_houses::store_config_address.eq(addr.clone()))
+                    .select(store_auction_houses::auction_house_address)
+                    .get_results::<String>(db)
+                    .unwrap_or_else(|_| Vec::new())
+                    .into_iter()
+                    .filter(|ah| {
+                        !auction_houses
+                            .clone()
+                            .into_iter()
+                            .any(|ah| &ah.address == ah)
+                    })
+                    .collect::<Vec<_>>();
+
+                db.build_transaction().read_write().run(|| {
+                    delete(
+                        store_auction_houses::table
+                            .filter(store_auction_houses::auction_house_address.eq(any(remove_ahs)))
+                            .filter(store_auction_houses::store_config_address.eq(addr.clone())),
+                    )
+                    .execute(db)?;
+
+                    auction_houses.into_iter().try_for_each(|ah| {
+                        let row = StoreAuctionHouse {
+                            store_config_address: Owned(addr.clone()),
+                            auction_house_address: Owned(ah.address),
+                        };
+
+                        insert_into(store_auction_houses::table)
+                            .values(&row)
+                            .on_conflict((
+                                store_auction_houses::store_config_address,
+                                store_auction_houses::auction_house_address,
+                            ))
+                            .do_update()
+                            .set(&row)
+                            .execute(db)
+                            .map(|_| ())
+                    })
+                })
+            })
+            .await
+            .context("failed to insert auction house")?;
     }
 
     Ok(())
