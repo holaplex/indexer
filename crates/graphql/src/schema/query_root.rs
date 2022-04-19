@@ -94,7 +94,7 @@ impl QueryRoot {
             .filter(bid_receipts::canceled_at.is_null())
             .filter(bid_receipts::purchase_receipt.is_null())
             .filter(bid_receipts::metadata.eq(address))
-            .load(&conn)?;
+            .load(&conn).context("Failed to load bid_receipts")?;
 
         rows.into_iter()
             .map(TryInto::try_into)
