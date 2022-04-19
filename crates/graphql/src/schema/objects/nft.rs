@@ -277,13 +277,20 @@ If no value is provided, it will return XSmall")))]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
         let width = ImageSize::from(width.unwrap_or(ImageSize::XSmall as i32));
         let width_str = (width as i32).to_string();
-        let id =
-            AssetIdentifier::new(&Url::parse(&self.image).context("Couldn't parse asset URL")?);
 
-        Ok(
-            proxy_url(&ctx.shared.asset_proxy, &id, Some(("width", &*width_str)))?
-                .map_or_else(|| self.image.clone(), |u| u.to_string()),
-        )
+        Ok(Url::parse(&self.image)
+            .and_then(|url| Ok(AssetIdentifier::new(&url)))
+            .map(|asset_id| {
+                proxy_url(
+                    &ctx.shared.asset_proxy,
+                    &asset_id,
+                    Some(("width", &*width_str)),
+                )
+            })
+            .map_or_else(
+                |_url| self.image.clone(),
+                |u| u.ok().flatten().unwrap().to_string(),
+            ))
     }
 
     pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
