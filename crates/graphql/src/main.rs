@@ -12,7 +12,9 @@ use std::sync::Arc;
 
 use actix_cors::Cors;
 use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer};
-use indexer_core::{clap, clap::Parser, db, db::Pool, prelude::*, ServerOpts};
+use indexer_core::{
+    assets::AssetProxyArgs, clap, clap::Parser, db, db::Pool, prelude::*, ServerOpts,
+};
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
 
 use crate::schema::{AppContext, Schema};
@@ -27,11 +29,8 @@ struct Opts {
     #[clap(long, env)]
     twitter_bearer_token: Option<String>,
 
-    #[clap(long, env)]
-    asset_proxy_endpoint: String,
-
-    #[clap(long, env)]
-    asset_proxy_count: u8,
+    #[clap(flatten)]
+    asset_proxy: AssetProxyArgs,
 }
 
 struct GraphiqlData {
@@ -46,8 +45,7 @@ struct RedirectData {
 pub(crate) struct SharedData {
     schema: Schema,
     pub db: Arc<Pool>,
-    pub asset_proxy_endpoint: String,
-    pub asset_proxy_count: u8,
+    pub asset_proxy: AssetProxyArgs,
     pub twitter_bearer_token: String,
 }
 
@@ -85,8 +83,7 @@ fn main() {
         let Opts {
             server,
             twitter_bearer_token,
-            asset_proxy_endpoint,
-            asset_proxy_count,
+            asset_proxy,
         } = Opts::parse();
 
         let (addr,) = server.into_parts();
@@ -102,8 +99,7 @@ fn main() {
         let shared = web::Data::new(SharedData {
             schema: schema::create(),
             db,
-            asset_proxy_endpoint,
-            asset_proxy_count,
+            asset_proxy,
             twitter_bearer_token,
         });
 

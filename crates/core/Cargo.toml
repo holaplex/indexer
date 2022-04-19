@@ -18,12 +18,16 @@ assets = [
   "base64",
   "cid",
 ]
+asset-cdn = [
+  "assets",
+  "md5",
+]
 db = [
   "diesel",
   "diesel_migrations",
   "diesel_full_text_search",
 ]
-default = ["assets", "db", "solana"]
+default = ["assets", "asset-cdn", "db", "solana"]
 solana = ["solana-sdk"]
 
 [dependencies]
@@ -56,3 +60,4 @@ solana-sdk = { version = "1.9.4", optional = true }
 base64 = { version = "0.13.0", optional = true }
 cid = { version = "0.7.0", optional = true }
 url = "2.2.2"
+md5 = { version = "0.7.0", optional = true }

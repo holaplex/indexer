@@ -27,24 +27,6 @@ pub enum AssetHint {
     Arweave,
 }
 
-/// Supported width sizes for asset proxy
-#[derive(Debug, Clone, Copy, strum::FromRepr)]
-#[repr(i32)]
-pub enum ImageSize {
-    /// image natural size
-    Original = 0,
-    /// tiny image
-    Tiny = 100,
-    /// extra small image
-    XSmall = 400,
-    /// small image
-    Small = 600,
-    /// medium image
-    Medium = 800,
-    /// large image
-    Large = 1400,
-}
-
 impl From<i32> for ImageSize {
     fn from(value: i32) -> Self {
         Self::from_repr(value).unwrap_or(Self::Original)
@@ -192,3 +174,132 @@ impl AssetIdentifier {
         &txid.0
     }
 }
+
+#[cfg(feature = "asset-cdn")]
+mod cdn {
+    use super::{AssetHint, AssetIdentifier, Url};
+    use crate::prelude::*;
+
+    /// Supported width sizes for asset proxy
+    #[derive(Debug, Clone, Copy, strum::FromRepr)]
+    #[repr(i32)]
+    pub enum ImageSize {
+        /// image natural size
+        Original = 0,
+        /// tiny image
+        Tiny = 100,
+        /// extra small image
+        XSmall = 400,
+        /// small image
+        Small = 600,
+        /// medium image
+        Medium = 800,
+        /// large image
+        Large = 1400,
+    }
+
+    /// Common arguments for binaries using [`proxy_url`]
+    #[derive(Debug, Clone, clap::Parser)]
+    pub struct AssetProxyArgs {
+        /// Endpoint for Holaplex asset CDN
+        #[clap(long, env)]
+        asset_proxy_endpoint: String,
+
+        /// Number of replicas available to proxy asset requests to
+        #[clap(long, env)]
+        asset_proxy_count: u8,
+    }
+
+    fn format_impl<'p, 'q>(
+        args: &AssetProxyArgs,
+        id: &AssetIdentifier,
+        hint: AssetHint,
+        path: impl IntoIterator<Item = &'p str>,
+        query: impl IntoIterator<Item = (&'q str, &'q str)>,
+    ) -> Result<Url> {
+        let rem = md5::compute(
+            id.fingerprint(Some(hint))
+                .unwrap_or_else(|| unreachable!())
+                .as_ref(),
+        )[0]
+        .rem_euclid(args.asset_proxy_count);
+        let assets_cdn = &args.asset_proxy_endpoint;
+
+        let mut url = Url::parse(&assets_cdn.replace(
+            "[n]",
+            &if rem == 0 {
+                String::new()
+            } else {
+                rem.to_string()
+            },
+        ))
+        .context("Invalid asset proxy URL")?;
+
+        url.path_segments_mut()
+            .unwrap_or_else(|_| unreachable!())
+            .extend(path);
+        url.query_pairs_mut().extend_pairs(query);
+
+        Ok(url)
+    }
+
+    /// Format an [`AssetIdentifier`] as an Holaplex asset proxy URL.  Returns
+    /// `None` if the ID was unparseable or ambiguous.
+    ///
+    /// # Errors
+    /// This function fails if the asset proxy configured by `args` has an
+    /// invalid URL
+    pub fn proxy_url_hinted<'a>(
+        args: &AssetProxyArgs,
+        id: &'a AssetIdentifier,
+        hint: impl Into<Option<AssetHint>>,
+        query: impl IntoIterator<Item = (&'a str, &'a str)>,
+    ) -> Result<Option<Url>> {
+        match (id.arweave, &id.ipfs, hint.into()) {
+            (Some(_), Some(_), None) => {
+                warn!("Ambiguous asset ID {:?} encountered", id);
+                Ok(None)
+            },
+            (None, None, _) => Ok(None),
+            (Some(txid), None, _) | (Some(txid), Some(_), Some(AssetHint::Arweave)) => {
+                let txid = base64::encode_config(&txid.0, base64::URL_SAFE_NO_PAD);
+
+                format_impl(args, id, AssetHint::Arweave, ["arweave", &txid], query).map(Some)
+            },
+            (None, Some((cid, path)), _) | (Some(_), Some((cid, path)), Some(AssetHint::Ipfs)) => {
+                let cid = cid.to_string();
+
+                format_impl(
+                    args,
+                    id,
+                    AssetHint::Ipfs,
+                    ["ipfs", &cid],
+                    query.into_iter().chain(if path.is_empty() {
+                        None
+                    } else {
+                        Some(("path", &**path))
+                    }),
+                )
+                .map(Some)
+            },
+        }
+    }
+
+    /// Format an [`AssetIdentifier`] as an Holaplex asset proxy URL.  Returns
+    /// `None` if the ID was unparseable or ambiguous.
+    ///
+    /// # Errors
+    /// This function fails if the asset proxy configured by `args` has an
+    /// invalid URL
+    #[inline]
+    pub fn proxy_url<'a>(
+        args: &AssetProxyArgs,
+        id: &'a AssetIdentifier,
+        query: impl IntoIterator<Item = (&'a str, &'a str)>,
+    ) -> Result<Option<Url>> {
+        proxy_url_hinted(args, id, None, query)
+    }
+}
+
+#[cfg(feature = "asset-cdn")]
+pub use cdn::*;
