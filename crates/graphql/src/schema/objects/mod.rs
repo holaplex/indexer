@@ -1,5 +1,6 @@
 pub mod auction_house;
 pub mod bid_receipt;
+pub mod bonding_change;
 pub mod creator;
 pub mod denylist;
 pub mod graph_connection;
@@ -13,7 +14,6 @@ pub mod stats;
 pub mod store_creator;
 pub mod storefront;
 pub mod wallet;
-pub mod bonding_change;
 
 pub(self) mod prelude {
     pub(super) use super::super::prelude::*;

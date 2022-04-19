@@ -4,7 +4,7 @@ use diesel::{
     pg::Pg,
     serialize::ToSql,
     sql_query,
-    sql_types::{Timestamp, Int4, Text},
+    sql_types::{Int4, Text, Timestamp},
 };
 
 use crate::{
@@ -19,12 +19,12 @@ SELECT * FROM (
    address,
    slot,
    insert_ts,
-   current_reserves_from_bonding - LAG(current_reserves_from_bonding, 1) OVER (PARTITION BY address ORDER BY slot DESC) reserve_change, 
-   current_supply_from_bonding - LAG(current_supply_from_bonding, 1) OVER (PARTITION BY address ORDER BY slot DESC) supply_change 
+   current_reserves_from_bonding - LAG(current_reserves_from_bonding, 1) OVER (PARTITION BY address ORDER BY slot DESC) reserve_change,
+   current_supply_from_bonding - LAG(current_supply_from_bonding, 1) OVER (PARTITION BY address ORDER BY slot DESC) supply_change
   FROM bonding_changes
   WHERE address = $1 AND
         insert_ts >= $2 AND insert_ts < $3
-) s 
+) s
 WHERE supply_change IS NOT NULL AND reserve_change <> 0
 ORDER BY insert_ts DESC
 LIMIT $4 OFFSET $5;

@@ -1413,6 +1413,62 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 
 [[package]]
+name = "cardinal-paid-claim-approver"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "becf732db55ac89abbc82eaa0deb341028abdee7c515877735d05da447e1d17e"
+dependencies = [
+ "anchor-lang 0.22.1",
+ "anchor-spl 0.22.1",
+ "cardinal-token-manager",
+ "solana-program",
+ "spl-associated-token-account",
+ "spl-token",
+]
+
+[[package]]
+name = "cardinal-time-invalidator"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3660f1c1e2569004191717b3277d16288fc3d22b6fa17bd810f1d8f16a77dc1a"
+dependencies = [
+ "anchor-lang 0.22.1",
+ "anchor-spl 0.22.1",
+ "cardinal-token-manager",
+ "solana-program",
+ "spl-associated-token-account",
+ "spl-token",
+]
+
+[[package]]
+name = "cardinal-token-manager"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28b5e27ad606e72a9bd1dfbb77f64b548be47ad29780c527fbe555b55da139c1"
+dependencies = [
+ "anchor-lang 0.22.1",
+ "anchor-spl 0.22.1",
+ "mpl-token-metadata",
+ "solana-program",
+ "spl-associated-token-account",
+ "spl-token",
+]
+
+[[package]]
+name = "cardinal-use-invalidator"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e1117533159473f8d37d6f8b062c890680f7b4f9cbbe2e91f77c934ef89c473"
+dependencies = [
+ "anchor-lang 0.22.1",
+ "anchor-spl 0.22.1",
+ "cardinal-token-manager",
+ "solana-program",
+ "spl-associated-token-account",
+ "spl-token",
+]
+
+[[package]]
 name = "cbc"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2445,6 +2501,10 @@ dependencies = [
  "async-trait",
  "base64 0.13.0",
  "borsh",
+ "cardinal-paid-claim-approver",
+ "cardinal-time-invalidator",
+ "cardinal-token-manager",
+ "cardinal-use-invalidator",
  "cid",
  "futures-util",
  "govern",
@@ -2501,6 +2561,7 @@ dependencies = [
  "dotenv",
  "env_logger",
  "log",
+ "md5",
  "num_cpus",
  "rand 0.8.5",
  "serde_json",

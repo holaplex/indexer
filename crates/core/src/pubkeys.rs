@@ -19,6 +19,22 @@ mod ids {
     pubkeys!(graph_program, "grphSXQnjAoPXSG5p1aJ7ZFw2A1akqP3pkXvjfbSJef");
     pubkeys!(name_service, "namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX");
     pubkeys!(
+        cardinal_token_manager,
+        "mgr99QFMYByTqGPWmNqunV7vBLmWWXdSrHUfV8Jf3JM"
+    );
+    pubkeys!(
+        cardinal_time_invalidator,
+        "tmeEDp1RgoDtZFtx6qod3HkbQmv9LMe36uqKVvsLTDE"
+    );
+    pubkeys!(
+        cardinal_use_invalidator,
+        "useZ65tbyvWpdYCLDJaegGK34Lnsi8S3jZdwx8122qp"
+    );
+    pubkeys!(
+        cardinal_paid_claim_approver,
+        "pcaBwhJ1YHp7UDA7HASpQsRUmUNwzgYaLQto2kSj1fR"
+    );
+    pubkeys!(
         goki_smart_wallet,
         "GokivDYuQXPZCWRkwMhdH2h91KpDQXBEmpgBgs55bnpH"
     );
@@ -34,8 +50,9 @@ mod ids {
 }
 
 pub use ids::{
-    auction, auction_house, candy_machine, goki_smart_wallet, graph_program, metadata, metaplex,
-    name_service, token, tribeca_govern, tribeca_locked_voter, vault, token_bonding
+    auction, auction_house, candy_machine, cardinal_paid_claim_approver, cardinal_time_invalidator,
+    cardinal_token_manager, cardinal_use_invalidator, goki_smart_wallet, graph_program, metadata,
+    metaplex, name_service, token, token_bonding, tribeca_govern, tribeca_locked_voter, vault,
 };
 
 /// Find the address of a store given its owner's address

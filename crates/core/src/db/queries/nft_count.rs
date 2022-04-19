@@ -7,14 +7,17 @@ use diesel::{
     query_builder::QueryFragment,
     query_source::joins::{Inner, Join, JoinOn},
     serialize::ToSql,
-    sql_types::Text,
+    sql_types::{Array, Text},
     AppearsOnTable,
 };
 
 use crate::{
     db::{
         any,
-        tables::{bid_receipts, listing_receipts, metadata_creators, metadatas, token_accounts},
+        models::StoreCreatorCount,
+        tables::{
+            bid_receipts, current_metadata_owners, listing_receipts, metadata_creators, metadatas,
+        },
         Connection,
     },
     error::prelude::*,
@@ -85,10 +88,10 @@ where
                         Join<metadatas::table, metadata_creators::table, Inner>,
                         Eq<metadatas::address, metadata_creators::metadata_address>,
                     >,
-                    token_accounts::table,
+                    current_metadata_owners::table,
                     Inner,
                 >,
-                Eq<metadatas::mint_address, token_accounts::mint_address>,
+                Eq<metadatas::mint_address, current_metadata_owners::mint_address>,
             >,
         >,
 {
@@ -97,7 +100,8 @@ where
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
         )
         .inner_join(
-            token_accounts::table.on(metadatas::mint_address.eq(token_accounts::mint_address)),
+            current_metadata_owners::table
+                .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
         )
         .into_boxed();
 
@@ -107,8 +111,7 @@ where
 
     query
         .filter(metadata_creators::verified.eq(true))
-        .filter(token_accounts::amount.eq(1))
-        .filter(token_accounts::owner_address.eq(wallet))
+        .filter(current_metadata_owners::owner_address.eq(wallet))
         .count()
         .get_result(conn)
         .context("failed to load owned nfts count")
@@ -216,4 +219,31 @@ where
         .count()
         .get_result(conn)
         .context("failed to load listed nfts count")
+}
+
+const STORE_CREATOR_QUERY: &str = r"
+select
+    sc.creator_address as store_creator,
+    count(distinct mc.metadata_address)::bigint as nfts
+
+from store_creators sc
+    inner join metadata_creators mc
+        on (mc.creator_address = sc.creator_address)
+
+where sc.creator_address = any($1) AND mc.verified
+group by sc.creator_address;
+ -- $1: store creator addresses::text[]";
+
+/// Count the number of nfts created by a creator
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
+pub fn store_creators(
+    conn: &Connection,
+    store_creators: impl ToSql<Array<Text>, Pg>,
+) -> Result<Vec<StoreCreatorCount>> {
+    diesel::sql_query(STORE_CREATOR_QUERY)
+        .bind(store_creators)
+        .load(conn)
+        .context("Failed to load store creators counts")
 }

@@ -1,5 +1,5 @@
 use indexer_core::{
-    db::{insert_into, models::TokenAccount as TokenAccountModel, tables::token_accounts, update},
+    db::{insert_into, models::CurrentMetadataOwner, tables::current_metadata_owners, update},
     prelude::*,
 };
 use spl_token::state::Account as TokenAccount;
@@ -20,85 +20,68 @@ pub async fn process(
         .try_into()
         .context("Token amount was too big to store")?;
 
-    if amount > 1 {
+    if amount != 1 {
         return Ok(());
     }
 
     let owner = token_account.owner.to_string();
     let mint_address = token_account.mint.to_string();
+    let incoming_slot: i64 = slot.try_into()?;
 
-    let values = TokenAccountModel {
-        address: Owned(pubkey),
-        amount,
+    let values = CurrentMetadataOwner {
         mint_address: Owned(mint_address),
         owner_address: Owned(owner),
-        slot: Some(slot.try_into()?),
+        token_account_address: Owned(pubkey),
+        slot: incoming_slot,
     };
-
-    let incoming_slot: i64 = slot.try_into()?;
 
     client
         .db()
         .run(move |db| {
-            let rows = token_accounts::table
+            let rows = current_metadata_owners::table
                 .select((
-                    token_accounts::address,
-                    token_accounts::mint_address,
-                    token_accounts::owner_address,
-                    token_accounts::amount,
-                    token_accounts::slot,
+                    current_metadata_owners::mint_address,
+                    current_metadata_owners::owner_address,
+                    current_metadata_owners::token_account_address,
+                    current_metadata_owners::slot,
                 ))
-                .filter(token_accounts::address.eq(key.to_string()))
-                .load::<TokenAccountModel>(db)
-                .context("failed to load token accounts!")?;
+                .filter(current_metadata_owners::mint_address.eq(token_account.mint.to_string()))
+                .load::<CurrentMetadataOwner>(db)
+                .context("failed to load metadata owner!")?;
 
-            match rows.get(0).and_then(|r| r.slot) {
-                Some(indexed_slot) if incoming_slot > indexed_slot => {
+            match rows.get(0) {
+                Some(r) if incoming_slot > r.slot => {
                     db.build_transaction().read_write().run(|| {
                         update(
-                            token_accounts::table
-                                .filter(token_accounts::address.eq(values.clone().address)),
+                            current_metadata_owners::table
+                                .filter(current_metadata_owners::mint_address.eq(values.clone().mint_address)),
                         )
                         .set(&values)
                         .execute(db)
-                        .context("transaction failed! unable to update token account when incoming slot > indexed slot")
+                        .context("transaction failed! unable to update metadata_owners when incoming slot > indexed slot")
                         .map(|_| ())
                     })
                 },
                 Some(_) => Ok(()),
                 None => {
-                    if amount == 1 {
-                        db.build_transaction()
-                            .read_write()
-                            .run(|| {
-                                update(token_accounts::table.filter(
-                                    token_accounts::mint_address.eq(token_account.mint.to_string()),
-                                ))
-                                .set(token_accounts::amount.eq(0))
-                                .execute(db)
-                                .map(|_| ())
-                            })
-                            .context("transaction failed! unable to zero out token accounts amount")?;
-                    };
-
                     db.build_transaction()
                         .read_write()
                         .run(|| {
-                            insert_into(token_accounts::table)
+                            insert_into(current_metadata_owners::table)
                                 .values(&values)
-                                .on_conflict(token_accounts::address)
+                                .on_conflict(current_metadata_owners::mint_address)
                                 .do_update()
                                 .set(&values)
                                 .execute(db)
                                 .map(|_| ())
                         })
-                        .context("transaction failed! unable to insert token account")?;
+                        .context("transaction failed! unable to insert metadata owner")?;
 
                     Ok(())
                 },
             }
         })
         .await
-        .context("failed to insert token account!")?;
+        .context("failed to insert token metadata owner!")?;
     Ok(())
 }

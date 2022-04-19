@@ -1,10 +1,11 @@
 use indexer_core::db::queries;
 use objects::{
     auction_house::AuctionHouse,
+    bid_receipt::BidReceipt,
+    bonding_change::EnrichedBondingChange,
     creator::Creator,
     denylist::Denylist,
     graph_connection::GraphConnection,
-    bonding_change::EnrichedBondingChange,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
     nft::{Nft, NftCount, NftCreator},
@@ -14,7 +15,7 @@ use objects::{
 };
 use scalars::PublicKey;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, metadata_jsons, metadatas,
+    auction_caches, auction_datas, auction_datas_ext, bid_receipts, metadata_jsons, metadatas,
     store_config_jsons, storefronts,
 };
 
@@ -86,7 +87,8 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(description = "The address of the bonding curve")] address: PublicKey<Wallet>,
-        #[graphql(description = "The starting unix timestamp (inclusive)")] start_unix_time: NaiveDateTime,
+        #[graphql(description = "The starting unix timestamp (inclusive)")]
+        start_unix_time: NaiveDateTime,
         #[graphql(description = "The stop unix timestamp")] stop_unix_time: NaiveDateTime,
         #[graphql(description = "Query limit")] limit: i32,
         #[graphql(description = "Query offset")] offset: i32,
@@ -94,13 +96,30 @@ impl QueryRoot {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let rows = queries::bonding_changes::list(
-          &conn,
-          address,
-          start_unix_time, 
-          stop_unix_time, 
-          limit,
-          offset
+            &conn,
+            address,
+            start_unix_time,
+            stop_unix_time,
+            limit,
+            offset,
         )?;
+
+        rows.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    fn offers(&self, context: &AppContext, address: String) -> FieldResult<Vec<BidReceipt>> {
+        let conn = context.shared.db.get().context("failed to connect to db")?;
+
+        let rows: Vec<models::BidReceipt> = bid_receipts::table
+            .select(bid_receipts::all_columns)
+            .filter(bid_receipts::canceled_at.is_null())
+            .filter(bid_receipts::purchase_receipt.is_null())
+            .filter(bid_receipts::metadata.eq(address))
+            .load(&conn)
+            .context("Failed to load bid_receipts")?;
 
         rows.into_iter()
             .map(TryInto::try_into)

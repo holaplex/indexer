@@ -34,11 +34,7 @@ pub(crate) async fn process_token_bonding(
 
     client
         .db()
-        .run(move |db| {
-            insert_into(bonding_changes::table)
-                .values(&row)
-                .execute(db)
-        })
+        .run(move |db| insert_into(bonding_changes::table).values(&row).execute(db))
         .await
         .context("failed to insert token bonding")?;
 
