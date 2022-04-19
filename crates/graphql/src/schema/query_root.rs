@@ -87,7 +87,7 @@ impl QueryRoot {
         context: &AppContext,
         address: String,
     ) -> FieldResult<Vec<models::BidReceipt>> {
-        let conn = context.shared.db.get().context("failed to connect to db");
+        let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let rows: Vec<models::BidReceipt> = bid_receipts::table
             .select(bid_receipts::all_columns)
