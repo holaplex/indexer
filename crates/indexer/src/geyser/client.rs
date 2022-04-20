@@ -45,7 +45,7 @@ impl Client {
                 store_config: http_indexer::Producer::new(conn, store_cfg_queue)
                     .await
                     .context("Couldn't create AMQP store config producer")?,
-                dialect_push: reqwest::Client::new()
+                dialect_push: reqwest::Client::new(),
             },
         }))
     }
