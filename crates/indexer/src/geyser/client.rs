@@ -119,7 +119,7 @@ impl Client {
             .body(Message {
                 msgType: MessageType::NftOffer,
                 data: MessageData {
-                    address: "1111111111111111111111",
+                    address: "1111111111111111111111".to_string(),
                 },
             })
             .send()
