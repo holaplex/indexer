@@ -10,7 +10,6 @@ use crate::db::Pool;
 struct HttpProducers {
     metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
     store_config: http_indexer::Producer<http_indexer::StoreConfig>,
-    dialect_push: reqwest::Client,
 }
 
 impl std::panic::UnwindSafe for HttpProducers {}
@@ -22,6 +21,7 @@ impl std::panic::RefUnwindSafe for HttpProducers {}
 pub struct Client {
     db: AssertUnwindSafe<Pool>,
     http: HttpProducers,
+    dialect_push: reqwest::Client,
 }
 
 impl Client {
@@ -45,7 +45,7 @@ impl Client {
                 store_config: http_indexer::Producer::new(conn, store_cfg_queue)
                     .await
                     .context("Couldn't create AMQP store config producer")?,
-                dialect_push: reqwest::Client::new(),
+                dialect_push: reqwest::Client::new()
             },
         }))
     }
@@ -112,7 +112,6 @@ impl Client {
         }
 
         let resp = self
-            .http
             .dialect_push
             .new()
             .post("")
