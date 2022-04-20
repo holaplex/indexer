@@ -6,9 +6,12 @@ use solana_sdk::pubkey::Pubkey;
 
 use crate::db::Pool;
 
+use reqwest;
+
 struct HttpProducers {
     metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
     store_config: http_indexer::Producer<http_indexer::StoreConfig>,
+    dialect_push: reqwest::Client::new()
 }
 
 impl std::panic::UnwindSafe for HttpProducers {}
@@ -91,5 +94,27 @@ impl Client {
                 uri,
             })
             .await
+    }
+
+    /// Dispatch a POST reqwest to Dialect
+    pub async fn dispatch_dialect() -> reqwest::Result {
+
+        enum msg_type {
+            NFT_OFFER,
+        }
+
+        struct msg_data { 
+            address: String
+        }
+
+        struct msg {
+            type: msg_type,
+            data: msg_data
+        }
+        
+        let resp = self.http.dialect_push.post("")
+        .body(msg{type: msg_type::NFT_OFFER, data: data{address: "1111111111111111111111"}})
+        .send()
+        .await?;
     }
 }
