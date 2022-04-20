@@ -10,7 +10,7 @@ use crate::db::Pool;
 struct HttpProducers {
     metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
     store_config: http_indexer::Producer<http_indexer::StoreConfig>,
-    dialect_push: reqwest::Client::new(),
+    dialect_push: reqwest::Client,
 }
 
 impl std::panic::UnwindSafe for HttpProducers {}
@@ -97,15 +97,15 @@ impl Client {
 
     /// Dispatch a POST reqwest to Dialect
     pub async fn dispatch_dialect() -> reqwest::Result {
-        enum message_type {
-            NFT_OFFER,
+        enum MessageType {
+            NftOffer,
         }
 
-        struct message_data {
+        struct MessageData {
             address: String,
         }
 
-        struct message {
+        struct Message {
             msg_type: msg_type,
             data: message_data,
         }
@@ -113,6 +113,7 @@ impl Client {
         let resp = self
             .http
             .dialect_push
+            .new()
             .post("")
             .body(msg {
                 msg_type: message_type::NFT_OFFER,
