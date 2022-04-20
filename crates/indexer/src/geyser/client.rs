@@ -45,7 +45,6 @@ impl Client {
                 store_config: http_indexer::Producer::new(conn, store_cfg_queue)
                     .await
                     .context("Couldn't create AMQP store config producer")?,
-                dialect_push: reqwest::Client::new(),
             },
         }))
     }
@@ -97,7 +96,7 @@ impl Client {
     }
 
     /// Dispatch a POST reqwest to Dialect
-    pub async fn dispatch_dialect(&self) -> reqwest::Result {
+    pub async fn dispatch_dialect(&self) -> {
         enum MessageType {
             NftOffer,
         }
