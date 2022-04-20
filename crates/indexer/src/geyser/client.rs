@@ -38,6 +38,7 @@ impl Client {
     ) -> Result<Arc<Self>> {
         Ok(Arc::new(Self {
             db: AssertUnwindSafe(db),
+            dialect_push: reqwest::client::new,
             http: HttpProducers {
                 metadata_json: http_indexer::Producer::new(conn, meta_queue)
                     .await
@@ -96,7 +97,7 @@ impl Client {
     }
 
     /// Dispatch a POST reqwest to Dialect
-    pub async fn dispatch_dialect(&self) -> {
+    pub async fn dispatch_dialect(&self) -> reqwest::Result {
         enum MessageType {
             NftOffer,
         }
@@ -122,5 +123,6 @@ impl Client {
             })
             .send()
             .await?;
+        Ok(resp)
     }
 }
