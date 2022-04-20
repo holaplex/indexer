@@ -96,7 +96,7 @@ impl Client {
     }
 
     /// Dispatch a POST reqwest to Dialect
-    pub async fn dispatch_dialect() -> reqwest::Result {
+    pub async fn dispatch_dialect(&self) -> reqwest::Result {
         enum MessageType {
             NftOffer,
         }
@@ -106,8 +106,8 @@ impl Client {
         }
 
         struct Message {
-            msg_type: msg_type,
-            data: message_data,
+            msgType: MessageType,
+            data: MessageData,
         }
 
         let resp = self
@@ -115,8 +115,8 @@ impl Client {
             .dialect_push
             .new()
             .post("")
-            .body(msg {
-                msg_type: message_type::NFT_OFFER,
+            .body(Message {
+                msgType: MessageType::NftOffer,
                 data: data {
                     address: "1111111111111111111111",
                 },
