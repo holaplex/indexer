@@ -1,7 +1,7 @@
 use std::fmt::{self, Debug, Display};
 
 use indexer_core::{
-    assets::{AssetHint, AssetIdentifier},
+    assets::{proxy_url_hinted, AssetHint, AssetIdentifier},
     db::{
         insert_into,
         models::{
@@ -167,16 +167,14 @@ async fn try_locate_json(
 
     let mut resp = Ok(None);
 
-    for (url, hint) in id
+    for hint in id
         .ipfs
         .iter()
-        .map(|(c, p)| (client.ipfs_link(c, p), AssetHint::Ipfs))
-        .chain(
-            id.arweave
-                .iter()
-                .map(|t| (client.arweave_link(t), AssetHint::Arweave)),
-        )
+        .map(|_| AssetHint::Ipfs)
+        .chain(id.arweave.iter().map(|_| AssetHint::Arweave))
     {
+        let url = proxy_url_hinted(client.proxy_args(), id, hint, None)
+            .map(|u| u.unwrap_or_else(|| unreachable!()));
         let url_str = url.as_ref().map_or("???", Url::as_str).to_owned();
         let fingerprint = id.fingerprint(Some(hint)).unwrap_or_else(|| unreachable!());
 
