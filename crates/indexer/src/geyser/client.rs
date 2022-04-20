@@ -2,16 +2,15 @@ use std::{panic::AssertUnwindSafe, sync::Arc};
 
 use indexer_core::prelude::*;
 use indexer_rabbitmq::http_indexer;
+use reqwest;
 use solana_sdk::pubkey::Pubkey;
 
 use crate::db::Pool;
 
-use reqwest;
-
 struct HttpProducers {
     metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
     store_config: http_indexer::Producer<http_indexer::StoreConfig>,
-    dialect_push: reqwest::Client::new()
+    dialect_push: reqwest::Client::new(),
 }
 
 impl std::panic::UnwindSafe for HttpProducers {}
@@ -98,23 +97,30 @@ impl Client {
 
     /// Dispatch a POST reqwest to Dialect
     pub async fn dispatch_dialect() -> reqwest::Result {
-
-        enum msg_type {
+        enum message_type {
             NFT_OFFER,
         }
 
-        struct msg_data { 
-            address: String
+        struct message_data {
+            address: String,
         }
 
-        struct msg {
-            type: msg_type,
-            data: msg_data
+        struct message {
+            msg_type: msg_type,
+            data: message_data,
         }
-        
-        let resp = self.http.dialect_push.post("")
-        .body(msg{type: msg_type::NFT_OFFER, data: data{address: "1111111111111111111111"}})
-        .send()
-        .await?;
+
+        let resp = self
+            .http
+            .dialect_push
+            .post("")
+            .body(msg {
+                msg_type: message_type::NFT_OFFER,
+                data: data {
+                    address: "1111111111111111111111",
+                },
+            })
+            .send()
+            .await?;
     }
 }
