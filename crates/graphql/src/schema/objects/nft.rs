@@ -241,6 +241,16 @@ impl TryFrom<models::NftActivity> for NftActivity {
     }
 }
 
+#[graphql_object(Context = AppContext)]
+impl NftActivity {
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Nft> {
+        ctx.nft_preview_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+}
+
 #[derive(Debug, Clone)]
 /// An NFT
 pub struct Nft {

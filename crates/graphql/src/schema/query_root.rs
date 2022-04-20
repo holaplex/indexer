@@ -21,7 +21,7 @@ use tables::{
     store_config_jsons, storefronts,
 };
 
-use super::{objects::activity::Activity, prelude::*};
+use super::{objects::nft::NftActivity, prelude::*};
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
@@ -94,9 +94,9 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         auction_houses: Vec<PublicKey<AuctionHouse>>,
-    ) -> FieldResult<Vec<Activity>> {
+    ) -> FieldResult<Vec<NftActivity>> {
         let conn = context.db_pool.get()?;
-        let rows = queries::activities::activities(&conn, auction_houses)?;
+        let rows = queries::activities::list(&conn, auction_houses)?;
 
         rows.into_iter()
             .map(TryInto::try_into)

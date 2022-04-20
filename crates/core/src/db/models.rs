@@ -1698,7 +1698,6 @@ pub struct InsBufferBundleInsKey<'a> {
     /// True if the `pubkey` can be loaded as a read-write account.
     pub is_writable: bool,
 }
-
 /// A row in the `bonding_change` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]

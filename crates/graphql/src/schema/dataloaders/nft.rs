@@ -222,3 +222,12 @@ impl TryBatchFn<PublicKey<Nft>, Option<Nft>> for Batcher {
             .batch(addresses))
     }
 }
+
+impl TryBatchFn<PublicKey<NftActivity>, Nft> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<NftActivity>],
+    ) -> TryBatchMap<PublicKey<NftActivity>, Nft> {
+        let conn = self.db()?;
+    }
+}

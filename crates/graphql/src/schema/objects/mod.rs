@@ -1,4 +1,3 @@
-pub mod activity;
 pub mod auction_house;
 pub mod bid_receipt;
 pub mod bonding_change;
