@@ -45,6 +45,7 @@ impl Client {
                 store_config: http_indexer::Producer::new(conn, store_cfg_queue)
                     .await
                     .context("Couldn't create AMQP store config producer")?,
+                dialect_push: reqwest::Client::new().context("Couldn't create reqwest client")?,
             },
         }))
     }
@@ -117,7 +118,7 @@ impl Client {
             .post("")
             .body(Message {
                 msgType: MessageType::NftOffer,
-                data: data {
+                data: MessageData {
                     address: "1111111111111111111111",
                 },
             })
