@@ -114,11 +114,11 @@ impl Client {
         let resp = self
             .dialect_push
             .new()
-            .post("")
+            .post("") // Get API Endpoint , put it here 
             .body(Message {
                 msgType: MessageType::NftOffer,
                 data: MessageData {
-                    address: "1111111111111111111111".to_string(),
+                    address: "1111111111111111111111".to_string(), // get bid_receipt, put it here
                 },
             })
             .send()
