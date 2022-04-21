@@ -13,7 +13,15 @@ use std::sync::Arc;
 use actix_cors::Cors;
 use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer};
 use indexer_core::{
-    assets::AssetProxyArgs, clap, clap::Parser, db, db::Pool, prelude::*, ServerOpts,
+    assets::AssetProxyArgs,
+    chrono::{Duration, Local},
+    clap,
+    clap::Parser,
+    db,
+    db::Pool,
+    prelude::*,
+    util::duration_hhmmssfff,
+    ServerOpts,
 };
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
 
@@ -73,7 +81,19 @@ async fn graphql(
     req: web::Json<GraphQLRequest>,
 ) -> Result<HttpResponse, Error> {
     let ctx = AppContext::new(data.clone().into_inner());
+    let start = Local::now();
+
     let resp = req.execute(&data.schema, &ctx).await;
+    let end = Local::now();
+    let duration = end - start;
+    let formatted_duration = duration_hhmmssfff(duration);
+
+    if duration > Duration::milliseconds(5000) {
+        warn!(
+            "long graphql request query={:?}, duration={:?}",
+            req, formatted_duration
+        );
+    }
 
     Ok(HttpResponse::Ok().json(&resp))
 }
