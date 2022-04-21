@@ -10,7 +10,7 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::{Nft, NftCount, NftCreator},
+    nft::{Nft, NftCount, NftCreator, NftActivity},
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
@@ -21,7 +21,7 @@ use tables::{
     store_config_jsons, storefronts,
 };
 
-use super::{objects::nft::NftActivity, prelude::*};
+use super::prelude::*;
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
