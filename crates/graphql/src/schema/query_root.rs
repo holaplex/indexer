@@ -82,7 +82,7 @@ impl QueryRoot {
         )))
     }
 
-    fn offers(&self, context: &AppContext, address: String) -> FieldResult<Vec<BidReceipt>> {
+    fn offers(&self, context: &AppContext, address: String) -> FieldResult<Option<BidReceipt>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let rows: Vec<models::BidReceipt> = bid_receipts::table
@@ -96,7 +96,9 @@ impl QueryRoot {
         rows.into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
-            .map_err(Into::into)
+            .map_err(Into::into);
+
+        rows.first()
     }
 
     fn connections(
