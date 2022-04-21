@@ -1,6 +1,8 @@
 use std::{sync::Arc, time::Duration};
 
 use indexer_core::{assets::AssetProxyArgs, clap};
+use indexer_rabbitmq::search_indexer;
+use serde_json::Value;
 
 use crate::{db::Pool, prelude::*, reqwest};
 
@@ -22,6 +24,7 @@ pub struct Client {
     db: Pool,
     http: reqwest::Client,
     asset_proxy: AssetProxyArgs,
+    search_prod: search_indexer::Producer,
 }
 
 impl Client {
@@ -30,7 +33,12 @@ impl Client {
     /// # Errors
     /// This function fails if an invalid URL is given for `ipfs_cdn` or
     /// `arweave_cdn`.
-    pub fn new_rc(db: Pool, args: Args) -> Result<Arc<Self>> {
+    pub async fn new_rc(
+        db: Pool,
+        conn: &indexer_rabbitmq::lapin::Connection,
+        args: Args,
+        search_queue: search_indexer::QueueType,
+    ) -> Result<Arc<Self>> {
         let Args {
             asset_proxy,
             timeout,
@@ -42,6 +50,9 @@ impl Client {
             db,
             http: reqwest::Client::new(timeout)?,
             asset_proxy,
+            search_prod: search_indexer::Producer::new(conn, search_queue)
+                .await
+                .context("Couldn't create AMQP search producer")?,
         }))
     }
 
@@ -62,5 +73,22 @@ impl Client {
     #[inline]
     pub fn proxy_args(&self) -> &AssetProxyArgs {
         &self.asset_proxy
+    }
+
+    /// Dispatch an AMQP message to the Search indexer to index documents
+    /// # Errors
+    /// This function fails if the AMQP payload cannot be sent.
+    pub async fn dispatch_upsert_document(
+        &self,
+        id: String,
+        index: String,
+        body: Value,
+    ) -> Result<(), indexer_rabbitmq::Error> {
+        self.search_prod
+            .write(search_indexer::Message::Upsert {
+                index,
+                document: search_indexer::Document { id, body },
+            })
+            .await
     }
 }

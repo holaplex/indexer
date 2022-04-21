@@ -1,6 +1,6 @@
 use holaplex_indexer::http::{Client, ClientArgs};
 use indexer_core::{clap, prelude::*};
-use indexer_rabbitmq::http_indexer;
+use indexer_rabbitmq::{http_indexer, search_indexer};
 
 #[derive(Debug, clap::Args)]
 struct Args {
@@ -51,7 +51,14 @@ async fn run<E: Send + holaplex_indexer::http::Process + 'static>(
     } = args;
 
     let conn = holaplex_indexer::amqp_connect(amqp_url, env!("CARGO_BIN_NAME")).await?;
-    let client = Client::new_rc(db, client).context("Failed to construct Client")?;
+    let client = Client::new_rc(
+        db,
+        &conn,
+        client,
+        search_indexer::QueueType::new(&sender, &queue_suffix)?,
+    )
+    .await
+    .context("Failed to construct Client")?;
 
     let queue_type = http_indexer::QueueType::<E>::new(&sender, &queue_suffix)?;
     let consumer = http_indexer::Consumer::new(&conn, queue_type.clone(), "http-consumer")

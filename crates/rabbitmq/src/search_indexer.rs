@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::{
     queue_type::{Binding, QueueProps, RetryProps},
@@ -12,18 +13,26 @@ use crate::{
 
 /// Message data for a document upsert request
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Document {
+pub struct Document<T: Serialize> {
     /// The unique ID of the document
     pub id: String,
     /// The body of the document
-    pub body: serde_json::Value,
+    #[serde(flatten)]
+    pub body: T,
 }
 
 /// Message data for a search index job
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Message {
     /// Upsert a document to the index
-    Upsert(Document),
+    Upsert {
+        /// MeiliSearch index name
+        /// Index stores set of documents
+        index: String,
+        /// MeiliSearch Document
+        /// contains primary key and content
+        document: Document<Value>,
+    },
 }
 
 /// AMQP configuration for search indexers

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use indexer_core::clap;
-use meilisearch_sdk::{client::Client as MeiliClient, indexes::Index, tasks::Task};
+use meilisearch_sdk::{client::Client as MeiliClient, tasks::Task};
 
 use crate::{db::Pool, prelude::*};
 
@@ -21,7 +21,7 @@ pub struct Args {
 #[derive(Debug)]
 pub struct Client {
     db: Pool,
-    foo: Index,
+    meili: MeiliClient,
 }
 
 impl Client {
@@ -37,31 +37,15 @@ impl Client {
 
         let meili = MeiliClient::new(meili_url, meili_key);
 
-        #[allow(clippy::blacklisted_name)] // :p
-        let foo = {
-            const NAME: &str = "foo";
-            const PKEY: &str = "id";
+        create_index(meili.clone(), "metadatas", "id")
+            .await
+            .context("failed to create metadatas index")?;
 
-            if let Ok(idx) = meili.get_index(NAME).await {
-                ensure!(
-                    idx.get_primary_key()
-                        .await
-                        .context("Failed to check primary key name")?
-                        .map_or(false, |k| k == PKEY),
-                    "Primary key mismatch for index {}",
-                    NAME
-                );
+        create_index(meili.clone(), "name_service", "id")
+            .await
+            .context("failed to create name service index")?;
 
-                idx
-            } else {
-                let task = meili.create_index(NAME, Some(PKEY)).await?;
-                meili.wait_for_task(task, None, None).await?;
-
-                meili.index(NAME)
-            }
-        };
-
-        Ok(Arc::new(Self { db, foo }))
+        Ok(Arc::new(Self { db, meili }))
     }
 
     /// Get a reference to the database
@@ -74,10 +58,35 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if the HTTP call returns an error
-    pub async fn upsert_foo(&self, docs: &[super::Document]) -> Result<Task> {
-        self.foo
+    pub async fn upsert_documents<
+        T: serde::Serialize + std::fmt::Debug + serde::de::DeserializeOwned,
+    >(
+        &self,
+        idx: String,
+        docs: &[super::Document<T>],
+    ) -> Result<Task> {
+        self.meili
+            .index(idx)
             .add_or_replace(docs, None)
             .await
             .context("Meilisearch API call failed")
     }
+}
+
+async fn create_index(meili: MeiliClient, index_name: &str, primary_key: &str) -> Result<()> {
+    if let Ok(idx) = meili.get_index(index_name).await {
+        ensure!(
+            idx.get_primary_key()
+                .await
+                .context("Failed to check primary key name")?
+                .map_or(false, |k| k == primary_key),
+            "Primary key mismatch for index {}",
+            index_name
+        );
+    } else {
+        let task = meili.create_index(index_name, Some(primary_key)).await?;
+        meili.wait_for_task(task, None, None).await?;
+    };
+
+    Ok(())
 }

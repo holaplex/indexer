@@ -9,18 +9,21 @@ use crate::prelude::*;
 
 /// A schemaless Meilisearch document
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct Document {
+pub struct Document<T: serde::Serialize> {
     id: String,
-    body: serde_json::Value,
+    #[serde(flatten)]
+    body: T,
 }
 
-impl From<search_indexer::Document> for Document {
-    fn from(search_indexer::Document { id, body }: search_indexer::Document) -> Self {
+impl<T: serde::Serialize> From<search_indexer::Document<T>> for Document<T> {
+    fn from(search_indexer::Document { id, body }: search_indexer::Document<T>) -> Self {
         Self { id, body }
     }
 }
 
-impl meilisearch_sdk::document::Document for Document {
+impl<T: serde::Serialize + std::fmt::Debug + serde::de::DeserializeOwned>
+    meilisearch_sdk::document::Document for Document<T>
+{
     type UIDType = String;
 
     fn get_uid(&self) -> &String {
@@ -34,8 +37,8 @@ impl meilisearch_sdk::document::Document for Document {
 /// This function fails if an error occurs processing the message body.
 pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
     match msg {
-        Message::Upsert(d) => {
-            client.upsert_foo(&[d.into()]).await?;
+        Message::Upsert { index, document } => {
+            client.upsert_documents(index, &[document.into()]).await?;
 
             Ok(())
         },

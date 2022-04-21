@@ -1,10 +1,11 @@
 use std::{panic::AssertUnwindSafe, sync::Arc, time::Duration};
 
-use indexer_core::{clap, prelude::*};
-use indexer_rabbitmq::http_indexer;
+use indexer_core::clap;
+use indexer_rabbitmq::{http_indexer, search_indexer};
+use serde_json::Value;
 use solana_sdk::pubkey::Pubkey;
 
-use crate::{db::Pool, reqwest};
+use crate::{db::Pool, prelude::*, reqwest};
 
 struct HttpProducers {
     metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
@@ -43,6 +44,7 @@ pub struct Client {
     db: AssertUnwindSafe<Pool>,
     http: reqwest::Client,
     http_prod: HttpProducers,
+    search_prod: search_indexer::Producer,
     dialect_api_endpoint: Option<String>,
     dialect_api_key: Option<String>,
 }
@@ -58,6 +60,7 @@ impl Client {
         conn: &indexer_rabbitmq::lapin::Connection,
         meta_queue: http_indexer::QueueType<http_indexer::MetadataJson>,
         store_cfg_queue: http_indexer::QueueType<http_indexer::StoreConfig>,
+        search_queue: search_indexer::QueueType,
         Args {
             dialect_api_endpoint,
             dialect_api_key,
@@ -80,6 +83,9 @@ impl Client {
                     .await
                     .context("Couldn't create AMQP store config producer")?,
             },
+            search_prod: search_indexer::Producer::new(conn, search_queue)
+                .await
+                .context("Couldn't create AMQP search producer")?,
             dialect_api_endpoint,
             dialect_api_key,
         }))
@@ -127,6 +133,23 @@ impl Client {
             .write(http_indexer::StoreConfig {
                 config_address,
                 uri,
+            })
+            .await
+    }
+
+    /// Dispatch an AMQP message to the Search indexer to index documents
+    /// # Errors
+    /// This function fails if the AMQP payload cannot be sent.
+    pub async fn dispatch_upsert_document(
+        &self,
+        id: String,
+        index: String,
+        body: Value,
+    ) -> Result<(), indexer_rabbitmq::Error> {
+        self.search_prod
+            .write(search_indexer::Message::Upsert {
+                index,
+                document: search_indexer::Document { id, body },
             })
             .await
     }

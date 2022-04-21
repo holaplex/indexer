@@ -22,6 +22,7 @@ geyser = [
   "indexer-rabbitmq/geyser",
   "indexer-rabbitmq/http-indexer",
   "indexer-rabbitmq/producer",
+  "indexer-rabbitmq/search-indexer",
 ]
 http = [
   "base64",
@@ -29,6 +30,7 @@ http = [
   "reqwest-client",
   "serde_json",
   "indexer-rabbitmq/http-indexer",
+  "indexer-rabbitmq/search-indexer",
 ]
 reqwest-client = [
   "reqwest",
@@ -36,7 +38,6 @@ reqwest-client = [
 search = [
   "indexer-rabbitmq/search-indexer",
   "meilisearch-sdk",
-  "serde_json",
 ]
 
 [[bin]]
@@ -60,7 +61,7 @@ async-trait = "0.1.52"
 futures-util = "0.3.21"
 hostname = "0.3.1"
 meilisearch-sdk = { version = "0.15.0", optional = true }
-serde = { version = "1.0.130", features = ["derive"] }
+serde = { version = "1.0.133", features = ["derive"] }
 strum = { version = "0.24.0", features = ["derive"] }
 tokio = { version = "1.13.0", features = ["macros", "rt", "rt-multi-thread", "sync"] }
 tokio-executor-trait = "2.1.0"
@@ -92,7 +93,7 @@ namespaces = { version = "0.1.0", features = ["no-entrypoint"] }
 base64 = { version = "0.13.0", optional = true }
 cid = { version = "0.7.0", optional = true }
 reqwest = { version = "0.11.6", features = ["json", "gzip", "brotli", "deflate"], optional = true }
-serde_json = { version = "1.0.70", optional = true }
+serde_json = { version = "1.0.79", optional = true }
 
 # Tribeca
 goki_smart_wallet = { package = "smart-wallet", version = "0.10.1", features = ["no-entrypoint"] }

@@ -1,7 +1,7 @@
 use std::fmt::{self, Debug, Display};
 
 use indexer_core::{
-    assets::{proxy_url_hinted, AssetHint, AssetIdentifier},
+    assets::{proxy_url, proxy_url_hinted, AssetHint, AssetIdentifier},
     db::{
         insert_into,
         models::{
@@ -16,7 +16,7 @@ use indexer_core::{
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use super::Client;
 use crate::prelude::*;
@@ -248,6 +248,15 @@ async fn process_full(
     let raw_content: Value =
         serde_json::value::to_value(&json).context("Failed to upcast metadata JSON")?;
 
+    dispatch_metadata_document(
+        client,
+        addr.clone(),
+        json.image.as_ref().context("failed to get image value")?,
+        raw_content.clone(),
+    )
+    .await
+    .context("failed to dispatch upsert metadata document job")?;
+
     let MetadataJson {
         description,
         image,
@@ -323,6 +332,15 @@ async fn process_minimal(
 
     let raw_content: Value =
         serde_json::value::to_value(&json).context("Failed to upcast minimal metadata JSON")?;
+
+    dispatch_metadata_document(
+        client,
+        addr.clone(),
+        &json.image.to_string(),
+        raw_content.clone(),
+    )
+    .await
+    .context("failed to dispatch upsert metadata document job")?;
 
     let MetadataJsonMinimal {
         name: _,
@@ -525,6 +543,30 @@ pub async fn process<'a>(
             },
         }
     }
+
+    Ok(())
+}
+
+async fn dispatch_metadata_document(
+    client: &Client,
+    addr: String,
+    image: &str,
+    content: Value,
+) -> Result<()> {
+    let id = AssetIdentifier::new(&Url::parse(image).context("Couldn't parse asset URL")?);
+
+    let image_url = proxy_url(client.proxy_args(), &id, Some(("width", "400")))?
+        .map_or_else(|| image.to_string(), |u| u.to_string());
+
+    let mut document: Value = content.clone();
+    *document
+        .get_mut("image")
+        .context("failed to get image key")? = json!(image_url);
+
+    client
+        .dispatch_upsert_document(addr, "metadatas".to_string(), document)
+        .await
+        .context("Failed to dispatch upsert metadata json document job")?;
 
     Ok(())
 }

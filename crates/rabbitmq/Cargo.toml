@@ -34,3 +34,8 @@ serde_json = { version = "1.0.79", optional = true }
 solana-sdk = { version = "1.9.4", optional = true }
 strum = { version = "0.23.0", features = ["derive"] }
 thiserror = "1.0.30"
+
+[dependencies.indexer-core]
+package = "holaplex-indexer-core"
+version = "=0.1.0"
+path = "../core"
