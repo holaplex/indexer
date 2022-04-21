@@ -1,7 +1,8 @@
 use std::{panic::AssertUnwindSafe, sync::Arc};
 
 use indexer_core::prelude::*;
-use indexer_rabbitmq::http_indexer;
+use indexer_rabbitmq::{http_indexer, search_indexer};
+use serde_json::Value;
 use solana_sdk::pubkey::Pubkey;
 
 use crate::db::Pool;
@@ -20,6 +21,7 @@ impl std::panic::RefUnwindSafe for HttpProducers {}
 pub struct Client {
     db: AssertUnwindSafe<Pool>,
     http: HttpProducers,
+    search: search_indexer::Producer,
 }
 
 impl Client {
@@ -33,6 +35,7 @@ impl Client {
         conn: &indexer_rabbitmq::lapin::Connection,
         meta_queue: http_indexer::QueueType<http_indexer::MetadataJson>,
         store_cfg_queue: http_indexer::QueueType<http_indexer::StoreConfig>,
+        search_queue: search_indexer::QueueType,
     ) -> Result<Arc<Self>> {
         Ok(Arc::new(Self {
             db: AssertUnwindSafe(db),
@@ -44,6 +47,9 @@ impl Client {
                     .await
                     .context("Couldn't create AMQP store config producer")?,
             },
+            search: search_indexer::Producer::new(conn, search_queue)
+                .await
+                .context("Couldn't create AMQP search producer")?,
         }))
     }
 
@@ -89,6 +95,23 @@ impl Client {
             .write(http_indexer::StoreConfig {
                 config_address,
                 uri,
+            })
+            .await
+    }
+
+    /// Dispatch an AMQP message to the Search indexer to index documents
+    /// # Errors
+    /// This function fails if the AMQP payload cannot be sent.
+    pub async fn dispatch_upsert_document(
+        &self,
+        id: String,
+        index: String,
+        body: Value,
+    ) -> Result<(), indexer_rabbitmq::Error> {
+        self.search
+            .write(search_indexer::Message::Upsert {
+                index,
+                document: search_indexer::Document { id, body },
             })
             .await
     }

@@ -1,9 +1,11 @@
 use std::{sync::Arc, time::Duration};
 
-use indexer_core::{assets::AssetProxyArgs, clap};
+use indexer_core::{assets::AssetProxyArgs, clap, prelude::*};
+use indexer_rabbitmq::search_indexer;
+use serde_json::Value;
 use tokio::sync::Mutex;
 
-use crate::{db::Pool, prelude::*};
+use crate::db::Pool;
 
 /// Common arguments for internal HTTP indexer usage
 #[derive(Debug, clap::Parser)]
@@ -24,6 +26,7 @@ pub struct Client {
     http: Mutex<(u8, reqwest::Client)>,
     asset_proxy: AssetProxyArgs,
     timeout: Duration,
+    search: search_indexer::Producer,
 }
 
 impl Client {
@@ -32,7 +35,12 @@ impl Client {
     /// # Errors
     /// This function fails if an invalid URL is given for `ipfs_cdn` or
     /// `arweave_cdn`.
-    pub fn new_rc(db: Pool, args: Args) -> Result<Arc<Self>> {
+    pub async fn new_rc(
+        db: Pool,
+        conn: &indexer_rabbitmq::lapin::Connection,
+        args: Args,
+        search_queue: search_indexer::QueueType,
+    ) -> Result<Arc<Self>> {
         let Args {
             asset_proxy,
             timeout,
@@ -45,6 +53,9 @@ impl Client {
             http: Mutex::new((0, Self::build_client(timeout)?)),
             asset_proxy,
             timeout,
+            search: search_indexer::Producer::new(conn, search_queue)
+                .await
+                .context("Couldn't create AMQP search producer")?,
         }))
     }
 
@@ -115,5 +126,22 @@ impl Client {
     #[inline]
     pub fn proxy_args(&self) -> &AssetProxyArgs {
         &self.asset_proxy
+    }
+
+    /// Dispatch an AMQP message to the Search indexer to index documents
+    /// # Errors
+    /// This function fails if the AMQP payload cannot be sent.
+    pub async fn dispatch_upsert_document(
+        &self,
+        id: String,
+        index: String,
+        body: Value,
+    ) -> Result<(), indexer_rabbitmq::Error> {
+        self.search
+            .write(search_indexer::Message::Upsert {
+                index,
+                document: search_indexer::Document { id, body },
+            })
+            .await
     }
 }

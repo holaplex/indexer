@@ -2,7 +2,7 @@ use std::{collections::HashSet, sync::Arc};
 
 use holaplex_indexer::geyser::{Client, IgnoreType};
 use indexer_core::{clap, prelude::*};
-use indexer_rabbitmq::{geyser, http_indexer, suffix::Suffix};
+use indexer_rabbitmq::{geyser, http_indexer, search_indexer, suffix::Suffix};
 
 #[derive(Debug, clap::Parser)]
 struct Args {
@@ -51,6 +51,7 @@ fn main() {
                 &conn,
                 http_indexer::QueueType::new(&sender, &queue_suffix)?,
                 http_indexer::QueueType::new(&sender, &queue_suffix)?,
+                search_indexer::QueueType::new(&sender, &queue_suffix)?,
             )
             .await
             .context("Failed to construct Client")?;
