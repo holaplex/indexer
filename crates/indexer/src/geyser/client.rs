@@ -2,7 +2,8 @@ use std::{panic::AssertUnwindSafe, sync::Arc};
 
 use indexer_core::prelude::*;
 use indexer_rabbitmq::http_indexer;
-use reqwest;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use solana_sdk::pubkey::Pubkey;
 
 use crate::db::Pool;
@@ -14,6 +15,26 @@ struct HttpProducers {
 
 impl std::panic::UnwindSafe for HttpProducers {}
 impl std::panic::RefUnwindSafe for HttpProducers {}
+
+#[derive(Serialize, Deserialize)]
+enum DialectEventType {
+    NftMakeOffer,
+}
+
+#[derive(Serialize, Deserialize)]
+struct DialectOfferEventData {
+    bid_receipt_address: String,
+}
+
+#[derive(Serialize, Deserialize)]
+enum DialectEventData {
+    DialectOfferEventData(DialectOfferEventData),
+}
+#[derive(Serialize, Deserialize)]
+struct DialectEvent {
+    event_type: DialectEventType,
+    data: DialectEventData,
+}
 
 // RpcClient doesn't implement Debug for some reason
 #[allow(missing_debug_implementations)]
@@ -38,7 +59,7 @@ impl Client {
     ) -> Result<Arc<Self>> {
         Ok(Arc::new(Self {
             db: AssertUnwindSafe(db),
-            dialect_push: reqwest::client::new,
+            dialect_push: reqwest::Client::new(),
             http: HttpProducers {
                 metadata_json: http_indexer::Producer::new(conn, meta_queue)
                     .await
@@ -97,32 +118,18 @@ impl Client {
     }
 
     /// Dispatch a POST reqwest to Dialect
-    pub async fn dispatch_dialect(&self) -> reqwest::Result {
-        enum MessageType {
-            NftOffer,
-        }
-
-        struct MessageData {
-            address: String,
-        }
-
-        struct Message {
-            msgType: MessageType,
-            data: MessageData,
-        }
-
-        let resp = self
-            .dialect_push
-            .new()
-            .post("")
-            .body(Message {
-                msgType: MessageType::NftOffer,
-                data: MessageData {
-                    address: "1111111111111111111111".to_string(),
-                },
+    pub async fn dispatch_dialect_offer_event(
+        &self,
+        bid_receipt_address: Pubkey,
+    ) -> Result<(), reqwest::Error> {
+        let msg = json!(DialectEvent {
+            event_type: DialectEventType::NftMakeOffer,
+            data: DialectEventData::DialectOfferEventData(DialectOfferEventData {
+                bid_receipt_address: bid_receipt_address.to_string(),
             })
-            .send()
-            .await?;
-        Ok(resp)
+        });
+
+        self.dialect_push.post("").json(&msg).send().await?;
+        Ok(())
     }
 }
