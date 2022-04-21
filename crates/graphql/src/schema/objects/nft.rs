@@ -10,6 +10,7 @@ use reqwest::Url;
 use scalars::{PublicKey, U64};
 
 use super::prelude::*;
+use crate::schema::scalars::PublicKey;
 
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
@@ -204,10 +205,10 @@ impl NftOwner {
     }
 }
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 pub struct NftActivity {
     pub address: String,
-    pub metadata: String,
+    pub metadata: PublicKey<Nft>,
     pub auction_house: String,
     pub price: U64,
     pub created_at: DateTime<Utc>,
@@ -231,7 +232,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             address,
-            metadata,
+            metadata: metadata.into(),
             auction_house,
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
@@ -243,9 +244,37 @@ impl TryFrom<models::NftActivity> for NftActivity {
 
 #[graphql_object(Context = AppContext)]
 impl NftActivity {
-    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Nft> {
-        ctx.nft_preview_loader
-            .load(self.address.clone().into())
+    fn address(&self) -> &str {
+        &self.address
+    }
+
+    fn metadata(&self) -> &PublicKey<Nft> {
+        &self.metadata
+    }
+
+    fn auction_house(&self) -> &str {
+        &self.auction_house
+    }
+
+    fn price(&self) -> scalars::Lamports {
+        self.price
+    }
+
+    fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    fn wallets(&self) -> &Vec<String> {
+        &self.wallets
+    }
+
+    fn activity_type(&self) -> &str {
+        &self.activity_type
+    }
+
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
+        ctx.nft_loader
+            .load(self.metadata.clone())
             .await
             .map_err(Into::into)
     }
