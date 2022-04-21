@@ -1,10 +1,11 @@
 use indexer_core::{
     db::{
-        insert_into,
+        exists, insert_into,
         models::{
             BidReceipt as DbBidReceipt, ListingReceipt as DbListingReceipt,
             PurchaseReceipt as DbPurchaseReceipt,
         },
+        select,
         tables::{bid_receipts, listing_receipts, purchase_receipts},
     },
     prelude::*,
@@ -120,12 +121,21 @@ pub(crate) async fn process_bid_receipt(
     client
         .db()
         .run(move |db| {
+            let bid_receipt_exists = select(exists(
+                bid_receipts::table.filter(bid_receipts::address.eq(row.address.clone())),
+            ))
+            .get_result::<bool>(db);
             insert_into(bid_receipts::table)
                 .values(&row)
                 .on_conflict(bid_receipts::address)
                 .do_update()
                 .set(&row)
-                .execute(db)
+                .execute(db)?;
+            if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
+                return Result::<_>::Ok(());
+            }
+            client.dispatch_dialect_offer_event(key).await?;
+            Result::<_>::Ok(())
         })
         .await
         .context("Failed to insert bid receipt!")?;
