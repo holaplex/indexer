@@ -213,7 +213,6 @@ pub(crate) async fn process_bid_receipt(
                 bid_receipts::table.filter(bid_receipts::address.eq(row.address.clone())),
             ))
             .get_result::<bool>(db);
-
             insert_into(bid_receipts::table)
                 .values(&row)
                 .on_conflict(bid_receipts::address)
