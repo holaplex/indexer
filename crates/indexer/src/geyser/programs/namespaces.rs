@@ -12,8 +12,6 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
         let entry: Entry = Entry::try_deserialize(&mut update.data.as_slice())
             .context("Failed to deserialize cardinal entry")?;
 
-        debug!("twitter handle: {:?}", entry.name);
-        debug!("pubkey: {:?}", entry.data);
 
         let slot = i64::try_from(update.slot)?;
         let write_version = i64::try_from(update.write_version)?;
