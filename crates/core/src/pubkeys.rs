@@ -35,6 +35,10 @@ mod ids {
         "pcaBwhJ1YHp7UDA7HASpQsRUmUNwzgYaLQto2kSj1fR"
     );
     pubkeys!(
+        namespaces,
+        "nameXpT2PwZ2iA6DTNYTotTmiMYusBCYqwBLN2QgF4w"
+    );
+    pubkeys!(
         goki_smart_wallet,
         "GokivDYuQXPZCWRkwMhdH2h91KpDQXBEmpgBgs55bnpH"
     );
@@ -51,7 +55,7 @@ mod ids {
 pub use ids::{
     auction, auction_house, candy_machine, cardinal_paid_claim_approver, cardinal_time_invalidator,
     cardinal_token_manager, cardinal_use_invalidator, goki_smart_wallet, graph_program, metadata,
-    metaplex, name_service, token, tribeca_govern, tribeca_locked_voter, vault,
+    metaplex, name_service, token, tribeca_govern, tribeca_locked_voter, vault, namespaces,
 };
 
 /// Find the address of a store given its owner's address

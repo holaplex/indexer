@@ -979,6 +979,9 @@ table! {
         wallet_address -> Varchar,
         twitter_handle -> Text,
         slot -> Int8,
+        from_bonfida -> Bool,
+        from_cardinal -> Bool,
+        write_version -> Int8,
     }
 }
 

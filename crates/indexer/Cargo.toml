@@ -70,6 +70,7 @@ cardinal-token-manager = { version="^1.0.3", features = ["no-entrypoint"] }
 cardinal-time-invalidator = { version="^1.0.3", features = ["no-entrypoint"] }
 cardinal-use-invalidator = { version="^1.0.3", features = ["no-entrypoint"] }
 cardinal-paid-claim-approver = { version="^1.0.3", features = ["no-entrypoint"] }
+namespaces = { version="0.1.0" }
 
 # HTTP indexer
 base64 = { version = "0.13.0", optional = true }

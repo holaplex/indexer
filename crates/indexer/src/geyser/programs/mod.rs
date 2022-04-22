@@ -13,5 +13,6 @@ pub mod name_service;
 pub mod token;
 pub mod tribeca_govern;
 pub mod tribeca_locked_voter;
+pub mod namespaces;
 
 pub(self) use super::{accounts, AccountUpdate, Client};
