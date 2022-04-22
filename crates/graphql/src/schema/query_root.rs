@@ -110,21 +110,19 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
-    fn offers(&self, context: &AppContext, address: String) -> FieldResult<Vec<BidReceipt>> {
+    fn offer(&self, context: &AppContext, address: String) -> FieldResult<Option<BidReceipt>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
-        let rows: Vec<models::BidReceipt> = bid_receipts::table
+        let row: Option<models::BidReceipt> = bid_receipts::table
             .select(bid_receipts::all_columns)
             .filter(bid_receipts::canceled_at.is_null())
             .filter(bid_receipts::purchase_receipt.is_null())
             .filter(bid_receipts::metadata.eq(address))
-            .load(&conn)
+            .first(&conn)
+            .optional()
             .context("Failed to load bid_receipts")?;
 
-        rows.into_iter()
-            .map(TryInto::try_into)
-            .collect::<Result<_, _>>()
-            .map_err(Into::into)
+        row.map(TryInto::try_into).transpose().map_err(Into::into)
     }
 
     fn connections(
