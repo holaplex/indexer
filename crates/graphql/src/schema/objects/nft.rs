@@ -7,7 +7,7 @@ use objects::{
     profile::TwitterProfile, purchase_receipt::PurchaseReceipt,
 };
 use reqwest::Url;
-use scalars::PublicKey;
+use scalars::{PublicKey, U64};
 
 use super::prelude::*;
 
@@ -169,7 +169,7 @@ pub struct NftActivity {
     pub address: String,
     pub metadata: String,
     pub auction_house: String,
-    pub price: scalars::Lamports,
+    pub price: U64,
     pub created_at: DateTime<Utc>,
     pub wallets: Vec<String>,
     pub activity_type: String,

@@ -7,24 +7,8 @@ use std::borrow::Cow;
 use chrono::NaiveDateTime;
 use diesel::sql_types::{Array, Bool, Int4, Int8, Nullable, Text, Timestamp, VarChar};
 
-use super::schema::{
-    attributes, auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
-    bids, bonding_changes, candy_machine_collection_pdas, candy_machine_config_lines,
-    candy_machine_creators, candy_machine_datas, candy_machine_end_settings,
-    candy_machine_gate_keeper_configs, candy_machine_hidden_settings,
-    candy_machine_whitelist_mint_settings, candy_machines, cardinal_claim_events,
-    cardinal_paid_claim_approvers, cardinal_time_invalidators, cardinal_token_manager_invalidators,
-    cardinal_token_managers, cardinal_use_invalidators, current_metadata_owners, editions, escrows,
-    files, governance_parameters, governors, graph_connections, ins_buffer_bundle_ins_keys,
-    ins_buffer_bundle_instructions, ins_buffer_bundles, instruction_buffers, listing_metadatas,
-    listing_receipts, locker_params, locker_whitelist_entries, lockers, master_editions,
-    metadata_collection_keys, metadata_collections, metadata_creators, metadata_jsons, metadatas,
-    proposal_account_metas, proposal_instructions, proposal_metas, proposals, purchase_receipts,
-    smart_wallet_owners, smart_wallets, store_config_jsons, store_configs, store_creators,
-    storefronts, stores, sub_account_infos, token_accounts, transactions,
-    twitter_handle_name_services, tx_instruction_keys, tx_instructions, votes,
-    whitelisted_creators,
-};
+#[allow(clippy::wildcard_imports)]
+use super::schema::*;
 use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
 
 /// A row in the `bids` table

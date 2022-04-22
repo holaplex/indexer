@@ -1,5 +1,6 @@
+use scalars::{I64, U64};
+
 use super::prelude::*;
-use crate::schema::scalars::{I64, U64};
 
 #[derive(Debug, Clone, GraphQLObject)]
 #[graphql(description = "Bonding change enriched with reserve change and supply change")]
@@ -27,8 +28,8 @@ impl<'a> TryFrom<models::EnrichedBondingChange<'a>> for EnrichedBondingChange {
             address: address.into_owned(),
             slot: slot.try_into()?,
             insert_ts,
-            reserve_change: reserve_change.try_into()?,
-            supply_change: supply_change.try_into()?,
+            reserve_change: reserve_change.into(),
+            supply_change: supply_change.into(),
         })
     }
 }

@@ -8,7 +8,7 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
     if let Ok(token_bonding) =
         TokenBondingV0::try_deserialize_unchecked(&mut update.data.as_slice())
     {
-        bonding_change::process_token_bonding(
+        bonding_change::process(
             client,
             update.key,
             i64::try_from(update.slot)?,

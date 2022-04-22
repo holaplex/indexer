@@ -1,1 +1,1 @@
-DROP TABLE bonding_changes;
+drop table bonding_changes;

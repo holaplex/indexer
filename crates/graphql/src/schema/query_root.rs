@@ -93,7 +93,7 @@ impl QueryRoot {
         #[graphql(description = "Query limit")] limit: i32,
         #[graphql(description = "Query offset")] offset: i32,
     ) -> FieldResult<Vec<EnrichedBondingChange>> {
-        let conn = context.shared.db.get().context("failed to connect to db")?;
+        let conn = context.shared.db.get().context("Failed to connect to db")?;
 
         let rows = queries::bonding_changes::list(
             &conn,

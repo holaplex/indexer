@@ -1,4 +1,4 @@
-use scalars::Volume;
+use scalars::U64;
 
 use super::prelude::*;
 
@@ -6,9 +6,9 @@ use super::prelude::*;
 pub struct MintStats {
     pub auction_house: String,
     pub mint: String,
-    pub floor: Option<Volume>,
-    pub average: Option<Volume>,
-    pub volume_24hr: Option<Volume>,
+    pub floor: Option<U64>,
+    pub average: Option<U64>,
+    pub volume_24hr: Option<U64>,
 }
 
 impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
@@ -35,7 +35,7 @@ impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct MarketStats {
-    pub nfts: Option<Volume>,
+    pub nfts: Option<U64>,
 }
 
 impl<'a> TryFrom<models::MarketStats<'a>> for MarketStats {

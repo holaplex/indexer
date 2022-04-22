@@ -1,3 +1,5 @@
+use scalars::U64;
+
 use super::prelude::*;
 
 #[derive(Debug, Clone, GraphQLObject)]
@@ -7,7 +9,7 @@ pub struct PurchaseReceipt {
     pub buyer: String,
     pub seller: String,
     pub auction_house: String,
-    pub price: scalars::Lamports,
+    pub price: U64,
     pub created_at: DateTime<Utc>,
 }
 
