@@ -269,6 +269,6 @@ pub(crate) async fn process_bid_receipt(
         })
         .await
         .context("Failed to insert bid receipt!")?;
-
+    client.dispatch_dialect_offer_event(key).await?;
     Ok(())
 }
