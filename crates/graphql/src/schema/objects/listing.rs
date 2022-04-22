@@ -1,5 +1,5 @@
 use objects::{nft::Nft, storefront::Storefront};
-use scalars::Lamports;
+use scalars::U64;
 use tables::{auction_caches, auction_datas, auction_datas_ext};
 
 use super::prelude::*;
@@ -10,7 +10,7 @@ pub struct Bid {
     pub listing_address: String,
     pub bidder_address: String,
     pub last_bid_time: String,
-    pub last_bid_amount: Lamports,
+    pub last_bid_amount: U64,
     pub cancelled: bool,
 }
 
@@ -51,7 +51,7 @@ impl Bid {
         &self.last_bid_time
     }
 
-    pub fn last_bid_amount(&self) -> Lamports {
+    pub fn last_bid_amount(&self) -> U64 {
         self.last_bid_amount
     }
 

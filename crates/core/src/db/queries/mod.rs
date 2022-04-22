@@ -1,5 +1,6 @@
 //! Reusable query operations for common or complicated queries.
 
+pub mod bonding_changes;
 pub mod graph_connection;
 pub mod listing_denylist;
 pub mod metadata_edition;

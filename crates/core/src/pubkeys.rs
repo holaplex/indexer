@@ -46,13 +46,10 @@ mod ids {
         tribeca_govern,
         "Govz1VyoyLD5BL6CSCxUJLVLsQHRwjfFj1prNsdNg5Jw"
     );
+    pubkeys!(token_bonding, "TBondmkCYxaPCKG4CHYfVTcwQ8on31xnJrPzk8F8WsS");
 }
 
-pub use ids::{
-    auction, auction_house, candy_machine, cardinal_paid_claim_approver, cardinal_time_invalidator,
-    cardinal_token_manager, cardinal_use_invalidator, goki_smart_wallet, graph_program, metadata,
-    metaplex, name_service, token, tribeca_govern, tribeca_locked_voter, vault,
-};
+pub use ids::*;
 
 /// Find the address of a store given its owner's address
 pub fn find_store_address(owner: impl Borrow<Pubkey>) -> (Pubkey, u8) {
