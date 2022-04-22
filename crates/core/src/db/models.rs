@@ -899,7 +899,6 @@ pub struct TwitterHandle<'a> {
     pub from_cardinal: bool,
     /// write version from solana
     pub write_version: i64,
-
 }
 
 /// A row in the `metadata_collection_keys` table

@@ -1,7 +1,10 @@
 use ::namespaces::state::{Entry, ENTRY_SIZE};
 use anchor_lang::AccountDeserialize;
 use indexer_core::{
-    db::{insert_into, models::TwitterHandle, tables::twitter_handle_name_services, update as dbUpdate},
+    db::{
+        insert_into, models::TwitterHandle, tables::twitter_handle_name_services,
+        update as dbUpdate,
+    },
     prelude::*,
 };
 
@@ -11,7 +14,6 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
     if update.data.len() == ENTRY_SIZE {
         let entry: Entry = Entry::try_deserialize(&mut update.data.as_slice())
             .context("Failed to deserialize cardinal entry")?;
-
 
         let slot = i64::try_from(update.slot)?;
         let write_version = i64::try_from(update.write_version)?;
@@ -39,9 +41,7 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
             .run(move |db| {
                 twitter_handle_name_services::table
                     .select(twitter_handle_name_services::all_columns)
-                    .filter(
-                        twitter_handle_name_services::wallet_address.eq(&wallet_address),
-                    )
+                    .filter(twitter_handle_name_services::wallet_address.eq(&wallet_address))
                     .load::<TwitterHandle>(db)
             })
             .await
@@ -54,10 +54,9 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
                 client
                     .db()
                     .run(move |db| {
-                        dbUpdate(
-                                twitter_handle_name_services::table
-                                .filter(twitter_handle_name_services::wallet_address.eq(&query_wallet_address)),
-                        )
+                        dbUpdate(twitter_handle_name_services::table.filter(
+                            twitter_handle_name_services::wallet_address.eq(&query_wallet_address),
+                        ))
                         .set(&values)
                         .execute(db)
                     })

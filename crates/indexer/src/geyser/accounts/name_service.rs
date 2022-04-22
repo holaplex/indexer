@@ -57,10 +57,9 @@ pub(crate) async fn process(
             client
                 .db()
                 .run(move |db| {
-                    update(
-                        twitter_handle_name_services::table
-                            .filter(twitter_handle_name_services::wallet_address.eq(wallet.to_string())),
-                    )
+                    update(twitter_handle_name_services::table.filter(
+                        twitter_handle_name_services::wallet_address.eq(wallet.to_string()),
+                    ))
                     .set(&values)
                     .execute(db)
                 })

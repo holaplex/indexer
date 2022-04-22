@@ -34,10 +34,7 @@ mod ids {
         cardinal_paid_claim_approver,
         "pcaBwhJ1YHp7UDA7HASpQsRUmUNwzgYaLQto2kSj1fR"
     );
-    pubkeys!(
-        namespaces,
-        "nameXpT2PwZ2iA6DTNYTotTmiMYusBCYqwBLN2QgF4w"
-    );
+    pubkeys!(namespaces, "nameXpT2PwZ2iA6DTNYTotTmiMYusBCYqwBLN2QgF4w");
     pubkeys!(
         goki_smart_wallet,
         "GokivDYuQXPZCWRkwMhdH2h91KpDQXBEmpgBgs55bnpH"
@@ -54,7 +51,6 @@ mod ids {
 }
 
 pub use ids::*;
-
 
 /// Find the address of a store given its owner's address
 pub fn find_store_address(owner: impl Borrow<Pubkey>) -> (Pubkey, u8) {
