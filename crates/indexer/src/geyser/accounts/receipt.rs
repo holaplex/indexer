@@ -1,15 +1,16 @@
 use indexer_core::{
     db::{
-        custom_types::OfferEventLifecycleEnum,
+        custom_types::{ListingEventLifecycleEnum, OfferEventLifecycleEnum},
         exists, insert_into,
         models::{
-            BidReceipt as DbBidReceipt, FeedEventWallet, ListingReceipt as DbListingReceipt,
-            OfferEvent, PurchaseReceipt as DbPurchaseReceipt,
+            BidReceipt as DbBidReceipt, FeedEventWallet, ListingEvent,
+            ListingReceipt as DbListingReceipt, OfferEvent, PurchaseEvent,
+            PurchaseReceipt as DbPurchaseReceipt,
         },
         select,
         tables::{
-            bid_receipts, current_metadata_owners, feed_event_wallets, feed_events,
-            listing_receipts, metadatas, offer_events, purchase_receipts,
+            bid_receipts, current_metadata_owners, feed_event_wallets, feed_events, listing_events,
+            listing_receipts, metadatas, offer_events, purchase_events, purchase_receipts,
         },
         uuid,
     },
@@ -47,12 +48,48 @@ pub(crate) async fn process_listing_receipt(
     client
         .db()
         .run(move |db| {
-            insert_into(listing_receipts::table)
-                .values(&row)
-                .on_conflict(listing_receipts::address)
-                .do_update()
-                .set(&row)
-                .execute(db)
+            let listing_receipt_exists = select(exists(
+                listing_receipts::table.filter(listing_receipts::address.eq(row.address.clone())),
+            ))
+            .get_result::<bool>(db);
+
+            db.build_transaction().read_write().run(|| {
+                insert_into(listing_receipts::table)
+                    .values(&row)
+                    .on_conflict(listing_receipts::address)
+                    .do_update()
+                    .set(&row)
+                    .execute(db)?;
+
+                if Ok(true) == listing_receipt_exists || row.purchase_receipt.is_some() {
+                    return Result::<_>::Ok(());
+                }
+
+                let feed_event_id = insert_into(feed_events::table)
+                    .default_values()
+                    .returning(feed_events::id)
+                    .get_result::<uuid::Uuid>(db)
+                    .context("Failed to insert feed event")?;
+
+                insert_into(listing_events::table)
+                    .values(&ListingEvent {
+                        feed_event_id: Owned(feed_event_id),
+                        lifecycle: ListingEventLifecycleEnum::Created,
+                        listing_receipt_address: row.address,
+                    })
+                    .execute(db)
+                    .context("failed to insert listing created event")?;
+
+                insert_into(feed_event_wallets::table)
+                    .values(&FeedEventWallet {
+                        wallet_address: row.seller,
+                        feed_event_id: Owned(feed_event_id),
+                    })
+                    .execute(db)
+                    .context("Failed to insert listing feed event wallet")?;
+
+                Result::<_>::Ok(())
+            })
         })
         .await
         .context("Failed to insert listing receipt!")?;
@@ -81,12 +118,55 @@ pub(crate) async fn process_purchase_receipt(
     client
         .db()
         .run(move |db| {
-            insert_into(purchase_receipts::table)
-                .values(&row)
-                .on_conflict(purchase_receipts::address)
-                .do_update()
-                .set(&row)
-                .execute(db)
+            let purchase_receipt_address = select(exists(
+                purchase_receipts::table.filter(purchase_receipts::address.eq(row.address.clone())),
+            ))
+            .get_result::<bool>(db);
+
+            db.build_transaction().read_write().run(|| {
+                insert_into(purchase_receipts::table)
+                    .values(&row)
+                    .on_conflict(purchase_receipts::address)
+                    .do_update()
+                    .set(&row)
+                    .execute(db)?;
+
+                if Ok(true) == purchase_receipt_address {
+                    return Result::<_>::Ok(());
+                }
+
+                let feed_event_id = insert_into(feed_events::table)
+                    .default_values()
+                    .returning(feed_events::id)
+                    .get_result::<uuid::Uuid>(db)
+                    .context("Failed to insert feed event")?;
+
+                insert_into(purchase_events::table)
+                    .values(&PurchaseEvent {
+                        feed_event_id: Owned(feed_event_id),
+                        purchase_receipt_address: row.address,
+                    })
+                    .execute(db)
+                    .context("failed to insert purchase created event")?;
+
+                insert_into(feed_event_wallets::table)
+                    .values(&FeedEventWallet {
+                        wallet_address: row.seller,
+                        feed_event_id: Owned(feed_event_id),
+                    })
+                    .execute(db)
+                    .context("Failed to insert purchase feed event wallet for seller")?;
+
+                insert_into(feed_event_wallets::table)
+                    .values(&FeedEventWallet {
+                        wallet_address: row.buyer,
+                        feed_event_id: Owned(feed_event_id),
+                    })
+                    .execute(db)
+                    .context("Failed to insert purchase feed event wallet for buyer")?;
+
+                Result::<_>::Ok(())
+            })
         })
         .await
         .context("Failed to insert purchase receipt!")?;
@@ -131,57 +211,59 @@ pub(crate) async fn process_bid_receipt(
             ))
             .get_result::<bool>(db);
 
-            insert_into(bid_receipts::table)
-                .values(&row)
-                .on_conflict(bid_receipts::address)
-                .do_update()
-                .set(&row)
-                .execute(db)?;
+            db.build_transaction().read_write().run(|| {
+                insert_into(bid_receipts::table)
+                    .values(&row)
+                    .on_conflict(bid_receipts::address)
+                    .do_update()
+                    .set(&row)
+                    .execute(db)?;
 
-            if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
-                return Result::<_>::Ok(());
-            }
+                if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
+                    return Result::<_>::Ok(());
+                }
 
-            let metadata_owner: String = current_metadata_owners::table
-                .inner_join(
-                    metadatas::table
-                        .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
-                )
-                .select(current_metadata_owners::owner_address)
-                .first(db)?;
+                let metadata_owner: String = current_metadata_owners::table
+                    .inner_join(
+                        metadatas::table
+                            .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
+                    )
+                    .select(current_metadata_owners::owner_address)
+                    .first(db)?;
 
-            let feed_event_id = insert_into(feed_events::table)
-                .default_values()
-                .returning(feed_events::id)
-                .get_result::<uuid::Uuid>(db)
-                .context("Failed to insert feed event")?;
+                let feed_event_id = insert_into(feed_events::table)
+                    .default_values()
+                    .returning(feed_events::id)
+                    .get_result::<uuid::Uuid>(db)
+                    .context("Failed to insert feed event")?;
 
-            insert_into(offer_events::table)
-                .values(&OfferEvent {
-                    feed_event_id: Owned(feed_event_id),
-                    lifecycle: OfferEventLifecycleEnum::Created,
-                    bid_receipt_address: row.address,
-                })
-                .execute(db)
-                .context("failed to insert offer created event")?;
+                insert_into(offer_events::table)
+                    .values(&OfferEvent {
+                        feed_event_id: Owned(feed_event_id),
+                        lifecycle: OfferEventLifecycleEnum::Created,
+                        bid_receipt_address: row.address,
+                    })
+                    .execute(db)
+                    .context("failed to insert offer created event")?;
 
-            insert_into(feed_event_wallets::table)
-                .values(&FeedEventWallet {
-                    wallet_address: row.buyer,
-                    feed_event_id: Owned(feed_event_id),
-                })
-                .execute(db)
-                .context("Failed to insert offer feed event wallet for buyer")?;
+                insert_into(feed_event_wallets::table)
+                    .values(&FeedEventWallet {
+                        wallet_address: row.buyer,
+                        feed_event_id: Owned(feed_event_id),
+                    })
+                    .execute(db)
+                    .context("Failed to insert offer feed event wallet for buyer")?;
 
-            insert_into(feed_event_wallets::table)
-                .values(&FeedEventWallet {
-                    wallet_address: Owned(metadata_owner),
-                    feed_event_id: Owned(feed_event_id),
-                })
-                .execute(db)
-                .context("Failed to insert offer feed event wallet for metadata owner")?;
+                insert_into(feed_event_wallets::table)
+                    .values(&FeedEventWallet {
+                        wallet_address: Owned(metadata_owner),
+                        feed_event_id: Owned(feed_event_id),
+                    })
+                    .execute(db)
+                    .context("Failed to insert offer feed event wallet for metadata owner")?;
 
-            Result::<_>::Ok(())
+                Result::<_>::Ok(())
+            })
         })
         .await
         .context("Failed to insert bid receipt!")?;

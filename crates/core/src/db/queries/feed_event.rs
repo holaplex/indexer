@@ -13,7 +13,10 @@ use crate::{
     db::{
         any, models,
         pg::Pg,
-        tables::{feed_event_wallets, feed_events, graph_connections, mint_events, offer_events},
+        tables::{
+            feed_event_wallets, feed_events, graph_connections, listing_events, mint_events,
+            offer_events, purchase_events,
+        },
         Connection,
     },
     error::prelude::*,
@@ -33,6 +36,8 @@ pub fn list<W: Clone + AsExpression<Text>>(
         models::FeedEvent,
         Option<models::MintEvent>,
         Option<models::OfferEvent>,
+        Option<models::ListingEvent>,
+        Option<models::PurchaseEvent>,
     )>,
 >
 where
@@ -99,6 +104,94 @@ where
                 >,
                 Inner,
             >,
+        > + AppearsOnTable<
+            Join<
+                graph_connections::table,
+                JoinOn<
+                    Join<
+                        JoinOn<
+                            Join<
+                                JoinOn<
+                                    Join<
+                                        JoinOn<
+                                            Join<
+                                                JoinOn<
+                                                    Join<
+                                                        feed_event_wallets::table,
+                                                        feed_events::table,
+                                                        Inner,
+                                                    >,
+                                                    Eq<
+                                                        Nullable<feed_event_wallets::feed_event_id>,
+                                                        Nullable<feed_events::id>,
+                                                    >,
+                                                >,
+                                                mint_events::table,
+                                                LeftOuter,
+                                            >,
+                                            Eq<feed_events::id, mint_events::feed_event_id>,
+                                        >,
+                                        offer_events::table,
+                                        LeftOuter,
+                                    >,
+                                    Eq<feed_events::id, offer_events::feed_event_id>,
+                                >,
+                                listing_events::table,
+                                LeftOuter,
+                            >,
+                            Eq<feed_events::id, listing_events::feed_event_id>,
+                        >,
+                        purchase_events::table,
+                        LeftOuter,
+                    >,
+                    Eq<feed_events::id, purchase_events::feed_event_id>,
+                >,
+                Inner,
+            >,
+        > + AppearsOnTable<
+            JoinOn<
+                Join<
+                    JoinOn<
+                        Join<
+                            JoinOn<
+                                Join<
+                                    JoinOn<
+                                        Join<
+                                            JoinOn<
+                                                Join<
+                                                    feed_event_wallets::table,
+                                                    feed_events::table,
+                                                    Inner,
+                                                >,
+                                                Eq<
+                                                    diesel::expression::nullable::Nullable<
+                                                        feed_event_wallets::feed_event_id,
+                                                    >,
+                                                    diesel::expression::nullable::Nullable<
+                                                        feed_events::id,
+                                                    >,
+                                                >,
+                                            >,
+                                            mint_events::table,
+                                            LeftOuter,
+                                        >,
+                                        Eq<feed_events::id, mint_events::feed_event_id>,
+                                    >,
+                                    offer_events::table,
+                                    LeftOuter,
+                                >,
+                                Eq<feed_events::id, offer_events::feed_event_id>,
+                            >,
+                            listing_events::table,
+                            LeftOuter,
+                        >,
+                        Eq<feed_events::id, listing_events::feed_event_id>,
+                    >,
+                    purchase_events::table,
+                    LeftOuter,
+                >,
+                Eq<feed_events::id, purchase_events::feed_event_id>,
+            >,
         >,
 {
     let following_query = graph_connections::table
@@ -109,16 +202,22 @@ where
         models::FeedEvent,
         Option<models::MintEvent>,
         Option<models::OfferEvent>,
+        Option<models::ListingEvent>,
+        Option<models::PurchaseEvent>,
     )> = feed_event_wallets::table
         .inner_join(feed_events::table)
         .left_join(mint_events::table.on(feed_events::id.eq(mint_events::feed_event_id)))
         .left_join(offer_events::table.on(feed_events::id.eq(offer_events::feed_event_id)))
+        .left_join(listing_events::table.on(feed_events::id.eq(listing_events::feed_event_id)))
+        .left_join(purchase_events::table.on(feed_events::id.eq(purchase_events::feed_event_id)))
         .filter(feed_event_wallets::wallet_address.eq(wallet))
         .or_filter(feed_event_wallets::wallet_address.eq(any(following_query)))
         .select((
             (feed_events::all_columns),
             (mint_events::all_columns.nullable()),
             (offer_events::all_columns.nullable()),
+            (listing_events::all_columns.nullable()),
+            (purchase_events::all_columns.nullable()),
         ))
         .limit(limit)
         .offset(offset)

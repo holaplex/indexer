@@ -11,7 +11,8 @@ use diesel::sql_types::{Array, Bool, Int4, Int8, Nullable, Text, Timestamp, VarC
 #[allow(clippy::wildcard_imports)]
 use super::schema::*;
 use crate::db::custom_types::{
-    EndSettingType, OfferEventLifecycleEnum, TokenStandardEnum, WhitelistMintMode,
+    EndSettingType, ListingEventLifecycleEnum, OfferEventLifecycleEnum, TokenStandardEnum,
+    WhitelistMintMode,
 };
 
 /// A row in the `bids` table
@@ -1756,4 +1757,36 @@ pub struct OfferEvent<'a> {
     pub feed_event_id: Cow<'a, uuid::Uuid>,
     ///  enum of offer lifecycle
     pub lifecycle: OfferEventLifecycleEnum,
+}
+
+/// A row in the `listing_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "listing_events"]
+pub struct ListingEvent<'a> {
+    /// foreign key to `listing_receipts` address
+    pub listing_receipt_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
+    /// enum of listing lifecycle
+    pub lifecycle: ListingEventLifecycleEnum,
+}
+
+/// A row in the `purchase_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "purchase_events"]
+pub struct PurchaseEvent<'a> {
+    /// foreign key to `purchase_receipts` address
+    pub purchase_receipt_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
+}
+
+/// A row in the `follow_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "follow_events"]
+pub struct FollowEvent<'a> {
+    /// foreign key to `graph_connections` address
+    pub graph_connection_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
 }

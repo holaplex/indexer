@@ -168,3 +168,48 @@ impl fmt::Display for OfferEventLifecycleEnum {
         }
     }
 }
+
+/// A listing event lifecycle
+#[derive(SqlType, Debug, Clone, Copy)]
+#[postgres(type_name = "listingeventlifecycle")]
+/// Represents database `listingeventlifecycle` type
+pub struct ListingEventLifecycle;
+
+#[derive(Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy)]
+#[sql_type = "ListingEventLifecycle"]
+/// `OfferEventLifecycle` enum in `OfferEvents` struct
+pub enum ListingEventLifecycleEnum {
+    /// A listing was created
+    Created,
+    /// A listing was cancelled
+    Cancelled,
+}
+
+impl ToSql<ListingEventLifecycle, Pg> for ListingEventLifecycleEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        match *self {
+            ListingEventLifecycleEnum::Created => out.write_all(b"Created")?,
+            ListingEventLifecycleEnum::Cancelled => out.write_all(b"Cancelled")?,
+        }
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<ListingEventLifecycle, Pg> for ListingEventLifecycleEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        match not_none!(bytes) {
+            b"Created" => Ok(ListingEventLifecycleEnum::Created),
+            b"Cancelled" => Ok(ListingEventLifecycleEnum::Cancelled),
+            _ => Err("invalid enum entry".into()),
+        }
+    }
+}
+
+impl fmt::Display for ListingEventLifecycleEnum {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ListingEventLifecycleEnum::Created => write!(f, "Created"),
+            ListingEventLifecycleEnum::Cancelled => write!(f, "Cancelled"),
+        }
+    }
+}
