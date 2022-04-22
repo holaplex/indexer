@@ -1,6 +1,5 @@
-mod lamports;
+mod bigint;
 mod public_key;
-mod volume;
 
 pub(self) mod prelude {
     pub use juniper::{graphql_scalar, ParseScalarResult, ParseScalarValue, Value};
@@ -12,6 +11,5 @@ pub mod markers {
     pub struct StoreConfig;
 }
 
-pub use lamports::Lamports;
+pub use bigint::{I64, U64};
 pub use public_key::PublicKey;
-pub use volume::Volume;

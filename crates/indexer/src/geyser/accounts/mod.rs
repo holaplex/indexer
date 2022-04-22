@@ -2,6 +2,7 @@ pub mod auction_cache;
 pub mod auction_data;
 pub mod auction_house;
 pub mod bidder_metadata;
+pub mod bonding_change;
 pub mod candy_machine;
 pub mod cardinal_paid_claim_approver;
 pub mod cardinal_time_invalidator;

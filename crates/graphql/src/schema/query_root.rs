@@ -2,6 +2,7 @@ use indexer_core::db::queries;
 use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
+    bonding_change::EnrichedBondingChange,
     creator::Creator,
     denylist::Denylist,
     graph_connection::GraphConnection,
@@ -80,6 +81,33 @@ impl QueryRoot {
             twitter_profile_picture_response,
             twitter_show_response,
         )))
+    }
+
+    fn enriched_bonding_changes(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "The address of the bonding curve")] address: PublicKey<Wallet>,
+        #[graphql(description = "The starting unix timestamp (inclusive)")]
+        start_unix_time: NaiveDateTime,
+        #[graphql(description = "The stop unix timestamp")] stop_unix_time: NaiveDateTime,
+        #[graphql(description = "Query limit")] limit: i32,
+        #[graphql(description = "Query offset")] offset: i32,
+    ) -> FieldResult<Vec<EnrichedBondingChange>> {
+        let conn = context.shared.db.get().context("Failed to connect to db")?;
+
+        let rows = queries::bonding_changes::list(
+            &conn,
+            address,
+            start_unix_time,
+            stop_unix_time,
+            limit,
+            offset,
+        )?;
+
+        rows.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     fn offer(&self, context: &AppContext, address: String) -> FieldResult<Option<BidReceipt>> {
