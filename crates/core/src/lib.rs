@@ -47,6 +47,7 @@ pub mod prelude {
         expression_methods::*,
         pg::Pg,
         query_dsl::{BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl},
+        result::OptionalExtension,
     };
     #[cfg(feature = "db")]
     pub use diesel_full_text_search::{TsQueryExtensions, TsVectorExtensions};
