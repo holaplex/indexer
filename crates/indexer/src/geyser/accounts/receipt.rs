@@ -1,6 +1,6 @@
 use indexer_core::{
     db::{
-        exists, insert_into,
+        insert_into,
         models::{
             BidReceipt as DbBidReceipt, ListingReceipt as DbListingReceipt,
             PurchaseReceipt as DbPurchaseReceipt,
@@ -134,11 +134,10 @@ pub(crate) async fn process_bid_receipt(
             if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
                 return Result::<_>::Ok(());
             }
-            client.dispatch_dialect_offer_event(key).await?;
             Result::<_>::Ok(())
         })
         .await
         .context("Failed to insert bid receipt!")?;
-
+    client.dispatch_dialect_offer_event(key).await?;
     Ok(())
 }
