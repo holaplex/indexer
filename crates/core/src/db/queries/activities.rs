@@ -1,6 +1,8 @@
+//! Query utilities for NFT activity.
+
+use anyhow::Context;
 use diesel::{
     pg::Pg,
-    prelude::*,
     sql_types::{Array, Text},
     types::ToSql,
     RunQueryDsl,
@@ -9,7 +11,6 @@ use diesel::{
 use crate::{
     db::{models::NftActivity, Connection},
     error::Result,
-    prelude::*,
 };
 
 const ACTIVITES_QUERY: &str = r"

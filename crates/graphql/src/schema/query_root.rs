@@ -10,7 +10,7 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::{Nft, NftCount, NftCreator, NftActivity},
+    nft::{Nft, NftActivity, NftCount, NftCreator},
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
@@ -95,7 +95,7 @@ impl QueryRoot {
         context: &AppContext,
         auction_houses: Vec<PublicKey<AuctionHouse>>,
     ) -> FieldResult<Vec<NftActivity>> {
-        let conn = context.db_pool.get()?;
+        let conn = context.shared.db.get()?;
         let rows = queries::activities::list(&conn, auction_houses)?;
 
         rows.into_iter()

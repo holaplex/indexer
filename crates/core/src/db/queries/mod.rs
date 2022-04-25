@@ -1,10 +1,10 @@
 //! Reusable query operations for common or complicated queries.
 
+pub mod activities;
 pub mod bonding_changes;
+pub mod charts;
 pub mod feed_event;
 pub mod graph_connection;
-pub mod activities;
-pub mod charts;
 pub mod listing_denylist;
 pub mod metadata_edition;
 pub mod metadatas;

@@ -1,6 +1,6 @@
 use indexer_core::db::queries::charts;
 use objects::auction_house::AuctionHouse;
-use scalars::{Lamports, PublicKey};
+use scalars::{PublicKey, U64};
 
 use super::prelude::*;
 
@@ -13,7 +13,7 @@ pub struct PriceChart {
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct PricePoint {
-    pub price: Lamports,
+    pub price: U64,
     pub date: DateTime<Utc>,
 }
 
@@ -33,7 +33,7 @@ impl<'a> TryFrom<models::PricePoint> for PricePoint {
 #[graphql_object(Context = AppContext)]
 impl PriceChart {
     pub fn listing_floor(&self, ctx: &AppContext) -> FieldResult<Vec<PricePoint>> {
-        let conn = ctx.db_pool.get()?;
+        let conn = ctx.shared.db.get()?;
         let rows = charts::floor_prices(
             &conn,
             &self.auction_houses,
@@ -48,7 +48,7 @@ impl PriceChart {
     }
 
     pub fn sales_average(&self, ctx: &AppContext) -> FieldResult<Vec<PricePoint>> {
-        let conn = ctx.db_pool.get()?;
+        let conn = ctx.shared.db.get()?;
         let rows = charts::average_prices(
             &conn,
             &self.auction_houses,
@@ -63,7 +63,7 @@ impl PriceChart {
     }
 
     pub fn total_volume(&self, ctx: &AppContext) -> FieldResult<Vec<PricePoint>> {
-        let conn = ctx.db_pool.get()?;
+        let conn = ctx.shared.db.get()?;
         let rows = charts::total_volume_prices(
             &conn,
             &self.auction_houses,

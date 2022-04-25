@@ -1,5 +1,7 @@
 //! Query utilities for nft price charts
 
+use anyhow::Context;
+use chrono::NaiveDateTime;
 use diesel::{
     pg::Pg,
     prelude::*,
@@ -10,7 +12,6 @@ use diesel::{
 use crate::{
     db::{models::PricePoint, Connection},
     error::Result,
-    prelude::*,
 };
 
 const FLOOR_PRICES_QUERY: &str = r"

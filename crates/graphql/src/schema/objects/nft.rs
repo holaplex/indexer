@@ -10,7 +10,6 @@ use reqwest::Url;
 use scalars::{PublicKey, U64};
 
 use super::prelude::*;
-use crate::schema::scalars::PublicKey;
 
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
@@ -256,7 +255,7 @@ impl NftActivity {
         &self.auction_house
     }
 
-    fn price(&self) -> scalars::Lamports {
+    fn price(&self) -> U64 {
         self.price
     }
 
