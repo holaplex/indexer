@@ -2,6 +2,7 @@ use dataloaders::{Batcher, Loader, TwitterBatcher};
 use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
+    graph_connection::GraphConnection,
     listing::{Bid, Listing},
     listing_receipt::ListingReceipt,
     nft::{Nft, NftActivity, NftAttribute, NftCreator, NftOwner},
@@ -31,6 +32,7 @@ pub struct AppContext {
     pub nft_owner_loader: Loader<PublicKey<Nft>, Option<NftOwner>>,
     pub nft_activities_loader: Loader<PublicKey<Nft>, Vec<NftActivity>>,
     pub storefront_loader: Loader<PublicKey<Storefront>, Option<Storefront>>,
+    pub graph_connection_loader: Loader<PublicKey<GraphConnection>, Option<GraphConnection>>,
     pub listing_receipts_loader: Loader<PublicKey<Nft>, Vec<ListingReceipt>>,
     pub listing_receipt_loader: Loader<PublicKey<ListingReceipt>, Option<ListingReceipt>>,
     pub purchase_receipts_loader: Loader<PublicKey<Nft>, Vec<PurchaseReceipt>>,
@@ -61,6 +63,7 @@ impl AppContext {
             nft_attributes_loader: Loader::new(batcher.clone()),
             nft_creators_loader: Loader::new(batcher.clone()),
             nft_owner_loader: Loader::new(batcher.clone()),
+            graph_connection_loader: Loader::new(batcher.clone()),
             nft_activities_loader: Loader::new(batcher.clone()),
             storefront_loader: Loader::new(batcher.clone()),
             listing_receipts_loader: Loader::new(batcher.clone()),

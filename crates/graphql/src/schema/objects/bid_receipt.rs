@@ -1,6 +1,5 @@
-use scalars::U64;
 use objects::nft::Nft;
-use scalars::PublicKey;
+use scalars::{PublicKey, U64};
 
 use super::prelude::*;
 
@@ -41,7 +40,7 @@ impl BidReceipt {
         &self.auction_house
     }
 
-    fn price(&self) -> scalars::Lamports {
+    fn price(&self) -> U64 {
         self.price
     }
 

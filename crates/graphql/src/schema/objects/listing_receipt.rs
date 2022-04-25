@@ -1,6 +1,5 @@
-use scalars::U64;
 use objects::{auction_house::AuctionHouse, nft::Nft, wallet::Wallet};
-use scalars::PublicKey;
+use scalars::{PublicKey, U64};
 
 use super::prelude::*;
 

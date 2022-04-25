@@ -7,7 +7,6 @@ use std::borrow::Cow;
 use chrono::NaiveDateTime;
 use diesel::sql_types::{Array, Bool, Int4, Int8, Nullable, Text, Timestamp, VarChar};
 
-
 #[allow(clippy::wildcard_imports)]
 use super::schema::*;
 use crate::db::custom_types::{

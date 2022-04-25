@@ -183,7 +183,7 @@ impl QueryRoot {
             .map(Into::into)
             .collect();
 
-        let rows = queries::graph_connection::list(&conn, from, to, limit, offset)?;
+        let rows = queries::graph_connection::connections(&conn, from, to, limit, offset)?;
 
         rows.into_iter()
             .map(TryInto::try_into)

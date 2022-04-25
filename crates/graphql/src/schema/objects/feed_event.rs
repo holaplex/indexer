@@ -1,9 +1,9 @@
 use derive_more::From;
-use indexer_core::db::models;
+use indexer_core::db::{models, queries};
 use juniper::GraphQLUnion;
 use objects::{
-    bid_receipt::BidReceipt, listing_receipt::ListingReceipt, nft::Nft,
-    purchase_receipt::PurchaseReceipt,
+    bid_receipt::BidReceipt, graph_connection::GraphConnection, listing_receipt::ListingReceipt,
+    nft::Nft, purchase_receipt::PurchaseReceipt,
 };
 
 use super::prelude::*;
@@ -14,6 +14,35 @@ pub struct MintEvent {
     created_at: DateTime<Utc>,
     feed_event_id: String,
     metadata_address: PublicKey<Nft>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FollowEvent {
+    created_at: DateTime<Utc>,
+    feed_event_id: String,
+    graph_connection_address: PublicKey<GraphConnection>,
+}
+
+#[graphql_object(Context = AppContext)]
+impl FollowEvent {
+    fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    fn feed_event_id(&self) -> &str {
+        &self.feed_event_id
+    }
+
+    fn graph_connection_address(&self) -> &PublicKey<GraphConnection> {
+        &self.graph_connection_address
+    }
+
+    pub async fn connection(&self, ctx: &AppContext) -> FieldResult<Option<GraphConnection>> {
+        ctx.graph_connection_loader
+            .load(self.graph_connection_address.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -142,21 +171,14 @@ impl MintEvent {
   Context = AppContext,
 )]
 pub enum FeedEvent {
-    MintEvent(MintEvent),
-    OfferEvent(OfferEvent),
-    ListingEvent(ListingEvent),
-    PurchaseEvent(PurchaseEvent),
+    Mint(MintEvent),
+    Offer(OfferEvent),
+    Listing(ListingEvent),
+    Purchase(PurchaseEvent),
+    Follow(FollowEvent),
 }
 
-impl<'a>
-    TryFrom<(
-        models::FeedEvent<'a>,
-        Option<models::MintEvent<'a>>,
-        Option<models::OfferEvent<'a>>,
-        Option<models::ListingEvent<'a>>,
-        Option<models::PurchaseEvent<'a>>,
-    )> for FeedEvent
-{
+impl<'a> TryFrom<queries::feed_event::QueryResult<'a>> for FeedEvent {
     // TODO: get to work with `type Error = std::num::TryFromIntError;`
     type Error = &'static str;
 
@@ -167,15 +189,16 @@ impl<'a>
             offer_event,
             listing_event,
             purchase_event,
-        ): (
-            models::FeedEvent,
-            Option<models::MintEvent>,
-            Option<models::OfferEvent>,
-            Option<models::ListingEvent>,
-            Option<models::PurchaseEvent>,
-        ),
+            follow_event,
+        ): queries::feed_event::QueryResult,
     ) -> Result<Self, Self::Error> {
-        match (mint_event, offer_event, listing_event, purchase_event) {
+        match (
+            mint_event,
+            offer_event,
+            listing_event,
+            purchase_event,
+            follow_event,
+        ) {
             (
                 Some(models::MintEvent {
                     metadata_address, ..
@@ -183,7 +206,8 @@ impl<'a>
                 None,
                 None,
                 None,
-            ) => Ok(Self::MintEvent(MintEvent {
+                None,
+            ) => Ok(Self::Mint(MintEvent {
                 feed_event_id: id.into_owned().to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
                 metadata_address: metadata_address.into_owned().into(),
@@ -197,7 +221,8 @@ impl<'a>
                 }),
                 None,
                 None,
-            ) => Ok(Self::OfferEvent(OfferEvent {
+                None,
+            ) => Ok(Self::Offer(OfferEvent {
                 feed_event_id: id.into_owned().to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
                 bid_receipt_address: bid_receipt_address.into_owned().into(),
@@ -212,7 +237,8 @@ impl<'a>
                     ..
                 }),
                 None,
-            ) => Ok(Self::ListingEvent(ListingEvent {
+                None,
+            ) => Ok(Self::Listing(ListingEvent {
                 feed_event_id: id.into_owned().to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
                 listing_receipt_address: listing_receipt_address.into_owned().into(),
@@ -226,10 +252,25 @@ impl<'a>
                     purchase_receipt_address,
                     ..
                 }),
-            ) => Ok(Self::PurchaseEvent(PurchaseEvent {
+                None,
+            ) => Ok(Self::Purchase(PurchaseEvent {
                 feed_event_id: id.into_owned().to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
                 purchase_receipt_address: purchase_receipt_address.into_owned().into(),
+            })),
+            (
+                None,
+                None,
+                None,
+                None,
+                Some(models::FollowEvent {
+                    graph_connection_address,
+                    ..
+                }),
+            ) => Ok(Self::Follow(FollowEvent {
+                feed_event_id: id.into_owned().to_string(),
+                created_at: DateTime::from_utc(created_at, Utc),
+                graph_connection_address: graph_connection_address.into_owned().into(),
             })),
             _ => Err("not a feed event variant"),
         }

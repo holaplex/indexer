@@ -1,6 +1,7 @@
 pub mod auction_house;
 pub mod bid_receipt;
 pub mod collection;
+pub mod graph_connection;
 pub mod listing;
 pub mod listing_receipt;
 pub mod nft;
