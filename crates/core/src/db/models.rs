@@ -878,6 +878,9 @@ pub struct MintStats<'a> {
     /// 24-hour volume for this token
     #[sql_type = "Nullable<Int8>"]
     pub volume_24hr: Option<i64>,
+    /// Total volume for this token
+    #[sql_type = "Nullable<Int8>"]
+    pub volume_total: Option<i64>,
 }
 
 /// A join of `graph_connections` and `twitter_handle_name_services` for connections that include twitter handle of wallets
