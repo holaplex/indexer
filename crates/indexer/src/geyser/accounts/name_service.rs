@@ -50,10 +50,8 @@ pub(crate) async fn process(
         write_version,
     };
 
-    let versions = (incoming_slot, write_version);
-
     match rows.get(0) {
-        Some(indexed) if versions > (indexed.slot, indexed.write_version) => {
+        Some(indexed) if (incoming_slot, write_version) > (indexed.slot, indexed.write_version) => {
             client
                 .db()
                 .run(move |db| {

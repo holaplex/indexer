@@ -15,6 +15,7 @@ pub mod locked_voter;
 pub mod metadata;
 pub mod mpl_store;
 pub mod name_service;
+pub mod namespace;
 pub mod receipt;
 pub mod smart_wallet;
 pub mod token;
