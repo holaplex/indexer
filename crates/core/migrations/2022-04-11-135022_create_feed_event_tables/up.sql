@@ -21,23 +21,25 @@ create table mint_events (
 create type offereventlifecycle as ENUM('Created', 'Cancelled');
 
 create table offer_events (
-  bid_receipt_address varchar(48) not null unique,
+  bid_receipt_address varchar(48) not null,
   feed_event_id uuid not null,
   lifecycle offereventlifecycle  not null,
   primary key (feed_event_id),
   foreign key (feed_event_id) references feed_events (id),
-  foreign key (bid_receipt_address) references bid_receipts (address)
+  foreign key (bid_receipt_address) references bid_receipts (address),
+  constraint uc_offer_events_bid_receipt_address_lifecycle UNIQUE (bid_receipt_address, lifecycle)
 );
 
 create type listingeventlifecycle as ENUM('Created', 'Cancelled');
 
 create table listing_events (
-  listing_receipt_address varchar(48) not null unique,
+  listing_receipt_address varchar(48) not null,
   feed_event_id uuid not null,
   lifecycle listingeventlifecycle not null,
   primary key (feed_event_id),
   foreign key (feed_event_id) references feed_events (id),
-  foreign key (listing_receipt_address) references listing_receipts (address)
+  foreign key (listing_receipt_address) references listing_receipts (address),
+  constraint uc_listing_events_listing_receipt_address_lifecycle UNIQUE (listing_receipt_address, lifecycle)
 );
 
 create table purchase_events (

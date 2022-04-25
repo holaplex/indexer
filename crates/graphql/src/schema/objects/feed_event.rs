@@ -272,7 +272,11 @@ impl<'a> TryFrom<queries::feed_event::QueryResult<'a>> for FeedEvent {
                 created_at: DateTime::from_utc(created_at, Utc),
                 graph_connection_address: graph_connection_address.into_owned().into(),
             })),
-            _ => Err("not a feed event variant"),
+            _ => {
+                debug!("feed_event_id: {}", id);
+
+                Err("not a feed event variant")
+            },
         }
     }
 }

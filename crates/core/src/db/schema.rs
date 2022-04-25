@@ -137,7 +137,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle, ListingEventLifecycle as Listingeventlifecycle};
 
     candy_machine_collection_pdas (address) {
         address -> Varchar,

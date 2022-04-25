@@ -23,22 +23,23 @@ pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Connecti
     client
         .db()
         .run(move |db| {
-            let graph_connection_exists = select(exists(
-                graph_connections::table.filter(graph_connections::address.eq(row.address.clone())),
-            ))
-            .get_result::<bool>(db);
-
-            if Ok(true) == graph_connection_exists {
-                return Result::<_>::Ok(());
-            }
+            insert_into(graph_connections::table)
+                .values(&row)
+                .on_conflict(graph_connections::address)
+                .do_update()
+                .set(&row)
+                .execute(db)?;
 
             db.build_transaction().read_write().run(|| {
-                insert_into(graph_connections::table)
-                    .values(&row)
-                    .on_conflict(graph_connections::address)
-                    .do_update()
-                    .set(&row)
-                    .execute(db)?;
+                let follow_event_exists = select(exists(
+                    follow_events::table
+                        .filter(follow_events::graph_connection_address.eq(row.address.clone())),
+                ))
+                .get_result::<bool>(db);
+
+                if Ok(true) == follow_event_exists {
+                    return Result::<_>::Ok(());
+                }
 
                 let feed_event_id = insert_into(feed_events::table)
                     .default_values()

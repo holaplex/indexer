@@ -48,20 +48,21 @@ pub(crate) async fn process_listing_receipt(
     client
         .db()
         .run(move |db| {
-            let listing_receipt_exists = select(exists(
-                listing_receipts::table.filter(listing_receipts::address.eq(row.address.clone())),
-            ))
-            .get_result::<bool>(db);
+            insert_into(listing_receipts::table)
+                .values(&row)
+                .on_conflict(listing_receipts::address)
+                .do_update()
+                .set(&row)
+                .execute(db)?;
 
             db.build_transaction().read_write().run(|| {
-                insert_into(listing_receipts::table)
-                    .values(&row)
-                    .on_conflict(listing_receipts::address)
-                    .do_update()
-                    .set(&row)
-                    .execute(db)?;
+                let listing_mint_event_exists = select(exists(
+                    listing_events::table
+                        .filter(listing_events::listing_receipt_address.eq(row.address.clone())),
+                ))
+                .get_result::<bool>(db);
 
-                if Ok(true) == listing_receipt_exists || row.purchase_receipt.is_some() {
+                if Ok(true) == listing_mint_event_exists || row.purchase_receipt.is_some() {
                     return Result::<_>::Ok(());
                 }
 
@@ -118,20 +119,21 @@ pub(crate) async fn process_purchase_receipt(
     client
         .db()
         .run(move |db| {
-            let purchase_receipt_address = select(exists(
-                purchase_receipts::table.filter(purchase_receipts::address.eq(row.address.clone())),
-            ))
-            .get_result::<bool>(db);
+            insert_into(purchase_receipts::table)
+                .values(&row)
+                .on_conflict(purchase_receipts::address)
+                .do_update()
+                .set(&row)
+                .execute(db)?;
 
             db.build_transaction().read_write().run(|| {
-                insert_into(purchase_receipts::table)
-                    .values(&row)
-                    .on_conflict(purchase_receipts::address)
-                    .do_update()
-                    .set(&row)
-                    .execute(db)?;
+                let purchase_event_exists = select(exists(
+                    purchase_events::table
+                        .filter(purchase_events::purchase_receipt_address.eq(row.address.clone())),
+                ))
+                .get_result::<bool>(db);
 
-                if Ok(true) == purchase_receipt_address {
+                if Ok(true) == purchase_event_exists {
                     return Result::<_>::Ok(());
                 }
 
@@ -206,20 +208,21 @@ pub(crate) async fn process_bid_receipt(
     client
         .db()
         .run(move |db| {
-            let bid_receipt_exists = select(exists(
-                bid_receipts::table.filter(bid_receipts::address.eq(row.address.clone())),
-            ))
-            .get_result::<bool>(db);
+            insert_into(bid_receipts::table)
+                .values(&row)
+                .on_conflict(bid_receipts::address)
+                .do_update()
+                .set(&row)
+                .execute(db)?;
 
             db.build_transaction().read_write().run(|| {
-                insert_into(bid_receipts::table)
-                    .values(&row)
-                    .on_conflict(bid_receipts::address)
-                    .do_update()
-                    .set(&row)
-                    .execute(db)?;
+                let offer_event_exists = select(exists(
+                    offer_events::table
+                        .filter(offer_events::bid_receipt_address.eq(row.address.clone())),
+                ))
+                .get_result::<bool>(db);
 
-                if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
+                if Ok(true) == offer_event_exists || row.purchase_receipt.is_some() {
                     return Result::<_>::Ok(());
                 }
 
