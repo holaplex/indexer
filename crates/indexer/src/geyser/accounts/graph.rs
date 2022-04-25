@@ -1,13 +1,13 @@
 use graph_program::state::Connection;
 use indexer_core::{
     db::{
-        exists, insert_into,
+        insert_into,
         models::{FeedEventWallet, FollowEvent, GraphConnection as DbGraphConnection},
         select,
         tables::{feed_event_wallets, feed_events, follow_events, graph_connections},
-        uuid,
     },
     prelude::*,
+    uuid::Uuid,
 };
 
 use super::Client;
@@ -38,13 +38,13 @@ pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Connecti
                 .get_result::<bool>(db);
 
                 if Ok(true) == follow_event_exists {
-                    return Result::<_>::Ok(());
+                    return Ok(());
                 }
 
                 let feed_event_id = insert_into(feed_events::table)
                     .default_values()
                     .returning(feed_events::id)
-                    .get_result::<uuid::Uuid>(db)
+                    .get_result::<Uuid>(db)
                     .context("Failed to insert feed event")?;
 
                 insert_into(follow_events::table)
@@ -53,7 +53,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Connecti
                         graph_connection_address: row.address,
                     })
                     .execute(db)
-                    .context("failed to insert follow event")?;
+                    .context("Failed to insert follow event")?;
 
                 insert_into(feed_event_wallets::table)
                     .values(&FeedEventWallet {

@@ -2506,7 +2506,6 @@ dependencies = [
  "cardinal-token-manager",
  "cardinal-use-invalidator",
  "cid",
- "either",
  "futures-util",
  "govern",
  "graph_program",

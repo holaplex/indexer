@@ -1,7 +1,7 @@
 use indexer_core::{
     db::{
         custom_types::{ListingEventLifecycleEnum, OfferEventLifecycleEnum},
-        exists, insert_into,
+        insert_into,
         models::{
             BidReceipt as DbBidReceipt, FeedEventWallet, ListingEvent,
             ListingReceipt as DbListingReceipt, OfferEvent, PurchaseEvent,
@@ -12,10 +12,10 @@ use indexer_core::{
             bid_receipts, current_metadata_owners, feed_event_wallets, feed_events, listing_events,
             listing_receipts, metadatas, offer_events, purchase_events, purchase_receipts,
         },
-        uuid,
     },
     prelude::*,
     util,
+    uuid::Uuid,
 };
 use mpl_auction_house::receipt::{BidReceipt, ListingReceipt, PurchaseReceipt};
 
@@ -63,13 +63,13 @@ pub(crate) async fn process_listing_receipt(
                 .get_result::<bool>(db);
 
                 if Ok(true) == listing_mint_event_exists || row.purchase_receipt.is_some() {
-                    return Result::<_>::Ok(());
+                    return Ok(());
                 }
 
                 let feed_event_id = insert_into(feed_events::table)
                     .default_values()
                     .returning(feed_events::id)
-                    .get_result::<uuid::Uuid>(db)
+                    .get_result::<Uuid>(db)
                     .context("Failed to insert feed event")?;
 
                 insert_into(listing_events::table)
@@ -134,13 +134,13 @@ pub(crate) async fn process_purchase_receipt(
                 .get_result::<bool>(db);
 
                 if Ok(true) == purchase_event_exists {
-                    return Result::<_>::Ok(());
+                    return Ok(());
                 }
 
                 let feed_event_id = insert_into(feed_events::table)
                     .default_values()
                     .returning(feed_events::id)
-                    .get_result::<uuid::Uuid>(db)
+                    .get_result::<Uuid>(db)
                     .context("Failed to insert feed event")?;
 
                 insert_into(purchase_events::table)
@@ -223,7 +223,7 @@ pub(crate) async fn process_bid_receipt(
                 .get_result::<bool>(db);
 
                 if Ok(true) == offer_event_exists || row.purchase_receipt.is_some() {
-                    return Result::<_>::Ok(());
+                    return Ok(());
                 }
 
                 let metadata_owner: String = current_metadata_owners::table
@@ -237,7 +237,7 @@ pub(crate) async fn process_bid_receipt(
                 let feed_event_id = insert_into(feed_events::table)
                     .default_values()
                     .returning(feed_events::id)
-                    .get_result::<uuid::Uuid>(db)
+                    .get_result::<Uuid>(db)
                     .context("Failed to insert feed event")?;
 
                 insert_into(offer_events::table)

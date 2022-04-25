@@ -1,24 +1,29 @@
-use either::Either::{Left, Right};
 use indexer_core::{
     db::{
         custom_types::TokenStandardEnum,
-        exists, insert_into,
+        insert_into,
         models::{FeedEventWallet, Metadata, MetadataCollectionKey, MetadataCreator, MintEvent},
         select,
         tables::{
             feed_event_wallets, feed_events, metadata_collection_keys, metadata_creators,
             metadatas, mint_events,
         },
-        uuid,
     },
+    prelude::*,
     pubkeys::find_edition,
+    uuid::Uuid,
 };
 use mpl_token_metadata::state::{Collection, Metadata as MetadataAccount, TokenStandard};
 
 use super::Client;
 use crate::prelude::*;
 
-#[allow(clippy::too_many_lines)]
+#[derive(Clone, Copy)]
+enum FeedEventId {
+    Existing,
+    Inserted(Uuid),
+}
+
 pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount) -> Result<()> {
     let addr = bs58::encode(key).into_string();
     let (edition_pda_key, _bump) = find_edition(meta.mint);
@@ -47,50 +52,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
         .as_ref()
         .and_then(|creators| creators.iter().find(|c| c.verified).map(|c| c.address));
 
-    let feed_event_id = client
-        .db()
-        .run({
-            let addr = addr.clone();
-
-            move |db| {
-                insert_into(metadatas::table)
-                    .values(&row)
-                    .on_conflict(metadatas::address)
-                    .do_update()
-                    .set(&row)
-                    .execute(db)
-                    .context("Failed to insert metadata")?;
-
-                db.build_transaction().read_write().run(|| {
-                    let mint_event_exists = select(exists(
-                        mint_events::table.filter(mint_events::metadata_address.eq(addr.clone())),
-                    ))
-                    .get_result::<bool>(db);
-
-                    if Ok(true) == mint_event_exists {
-                        return Result::<_>::Ok(Left(()));
-                    }
-
-                    let feed_event_id = insert_into(feed_events::table)
-                        .default_values()
-                        .returning(feed_events::id)
-                        .get_result::<uuid::Uuid>(db)
-                        .context("Failed to insert feed event")?;
-
-                    insert_into(mint_events::table)
-                        .values(&MintEvent {
-                            feed_event_id: Owned(feed_event_id),
-                            metadata_address: Owned(addr),
-                        })
-                        .execute(db)
-                        .context("failed to insert mint event")?;
-
-                    Result::<_>::Ok(Right(feed_event_id))
-                })
-            }
-        })
-        .await
-        .context("Failed to insert metadata or mint event")?;
+    let feed_event_id = insert_with_event(client, addr.clone(), row).await?;
 
     client
         .dispatch_metadata_json(
@@ -127,7 +89,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
                     .execute(db)
                     .context("failed to insert metadata creators")?;
 
-                if let Some(id) = feed_event_id.right() {
+                if let FeedEventId::Inserted(id) = feed_event_id {
                     insert_into(feed_event_wallets::table)
                         .values(&FeedEventWallet {
                             wallet_address: row.creator_address,
@@ -139,7 +101,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
                         ))
                         .do_nothing()
                         .execute(db)
-                        .context(" Failed to insert feed event wallet")?;
+                        .context("Failed to insert feed event wallet")?;
                 }
 
                 Result::<_>::Ok(())
@@ -153,6 +115,55 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
     }
 
     Ok(())
+}
+
+async fn insert_with_event(
+    client: &Client,
+    addr: String,
+    row: Metadata<'static>,
+) -> Result<FeedEventId> {
+    client
+        .db()
+        .run({
+            move |db| {
+                insert_into(metadatas::table)
+                    .values(&row)
+                    .on_conflict(metadatas::address)
+                    .do_update()
+                    .set(&row)
+                    .execute(db)
+                    .context("Failed to insert metadata")?;
+
+                db.build_transaction().read_write().run(|| {
+                    let mint_event_exists = select(exists(
+                        mint_events::table.filter(mint_events::metadata_address.eq(addr.clone())),
+                    ))
+                    .get_result::<bool>(db);
+
+                    if Ok(true) == mint_event_exists {
+                        return Ok(FeedEventId::Existing);
+                    }
+
+                    let feed_event_id = insert_into(feed_events::table)
+                        .default_values()
+                        .returning(feed_events::id)
+                        .get_result::<Uuid>(db)
+                        .context("Failed to insert feed event")?;
+
+                    insert_into(mint_events::table)
+                        .values(&MintEvent {
+                            feed_event_id: Owned(feed_event_id),
+                            metadata_address: Owned(addr),
+                        })
+                        .execute(db)
+                        .context("Failed to insert mint event")?;
+
+                    Result::<_>::Ok(FeedEventId::Inserted(feed_event_id))
+                })
+            }
+        })
+        .await
+        .context("Failed to insert metadata or mint event")
 }
 
 async fn index_metadata_collection_key(

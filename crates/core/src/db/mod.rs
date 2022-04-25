@@ -16,9 +16,7 @@ use std::env;
 
 pub use diesel::{
     backend::Backend,
-    debug_query, delete,
-    dsl::exists,
-    expression, insert_into,
+    debug_query, delete, expression, insert_into,
     pg::{upsert::excluded, Pg},
     query_dsl,
     result::Error,
@@ -28,7 +26,6 @@ use diesel::{pg, r2d2};
 pub use diesel_full_text_search::{
     websearch_to_tsquery, TsQuery, TsQueryExtensions, TsVector, TsVectorExtensions,
 };
-pub use uuid;
 
 use crate::prelude::*;
 

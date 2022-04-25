@@ -1,4 +1,3 @@
-use derive_more::From;
 use indexer_core::db::{models, queries};
 use juniper::GraphQLUnion;
 use objects::{
@@ -166,7 +165,7 @@ impl MintEvent {
     }
 }
 
-#[derive(From, GraphQLUnion)]
+#[derive(derive_more::From, GraphQLUnion)]
 #[graphql(
   Context = AppContext,
 )]
@@ -178,9 +177,12 @@ pub enum FeedEvent {
     Follow(FollowEvent),
 }
 
-impl<'a> TryFrom<queries::feed_event::QueryResult<'a>> for FeedEvent {
-    // TODO: get to work with `type Error = std::num::TryFromIntError;`
-    type Error = &'static str;
+#[derive(thiserror::Error, Debug)]
+#[error("Invalid feed event variant")]
+pub struct TryFromError;
+
+impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
+    type Error = TryFromError;
 
     fn try_from(
         (
@@ -190,7 +192,7 @@ impl<'a> TryFrom<queries::feed_event::QueryResult<'a>> for FeedEvent {
             listing_event,
             purchase_event,
             follow_event,
-        ): queries::feed_event::QueryResult,
+        ): queries::feed_event::Columns,
     ) -> Result<Self, Self::Error> {
         match (
             mint_event,
@@ -275,7 +277,7 @@ impl<'a> TryFrom<queries::feed_event::QueryResult<'a>> for FeedEvent {
             _ => {
                 debug!("feed_event_id: {}", id);
 
-                Err("not a feed event variant")
+                Err(TryFromError)
             },
         }
     }

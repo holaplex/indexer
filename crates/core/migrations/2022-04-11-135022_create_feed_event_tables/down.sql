@@ -1,5 +1,4 @@
 drop table offer_events;
-drop type offereventlifecycle;
 drop table mint_events;
 drop table listing_events;
 drop table purchase_events;

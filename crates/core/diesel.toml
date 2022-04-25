@@ -6,5 +6,11 @@ file = "src/db/schema.rs"
 import_types = [
   "diesel::sql_types::*",
   "diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery}",
-  "crate::db::custom_types::{SettingType as Settingtype, Mode, TokenStandard as Token_standard, OfferEventLifecycle as Offereventlifecycle, ListingEventLifecycle as Listingeventlifecycle}",
+  """crate::db::custom_types::{\
+    ListingEventLifecycle as Listingeventlifecycle, \
+    Mode, \
+    OfferEventLifecycle as Offereventlifecycle, \
+    SettingType as Settingtype, \
+    TokenStandard as Token_standard, \
+  }""",
 ]

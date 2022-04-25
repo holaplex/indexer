@@ -23,7 +23,7 @@ use crate::{
 };
 
 /// join of event tables into a single event type
-pub type QueryResult<'a> = (
+pub type Columns<'a> = (
     models::FeedEvent<'a>,
     Option<models::MintEvent<'a>>,
     Option<models::OfferEvent<'a>>,
@@ -42,7 +42,7 @@ pub fn list<W: Clone + AsExpression<Text>>(
     limit: i64,
     offset: i64,
 ) -> Result<
-    Vec<QueryResult>,
+    Vec<Columns>,
 >
 where
     W::Expression: NonAggregate
@@ -265,7 +265,7 @@ where
         .filter(graph_connections::from_account.eq(wallet.clone()))
         .select(graph_connections::to_account);
 
-    let rows: Vec<QueryResult> = feed_event_wallets::table
+    feed_event_wallets::table
         .inner_join(feed_events::table)
         .left_join(mint_events::table.on(feed_events::id.eq(mint_events::feed_event_id)))
         .left_join(offer_events::table.on(feed_events::id.eq(offer_events::feed_event_id)))
@@ -286,7 +286,5 @@ where
         .offset(offset)
         .order(feed_events::created_at.desc())
         .load(conn)
-        .context("Failed to load feed events")?;
-
-    Ok(rows)
+        .context("Failed to load feed events")
 }

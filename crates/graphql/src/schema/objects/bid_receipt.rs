@@ -18,7 +18,7 @@ pub struct BidReceipt {
 }
 
 #[graphql_object(Context = AppContext)]
-#[graphql(description = "auction house bid receipt")]
+#[graphql(description = "Auction house bid receipt")]
 impl BidReceipt {
     fn address(&self) -> &str {
         &self.address
