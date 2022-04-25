@@ -1413,6 +1413,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 
 [[package]]
+name = "cardinal-certificate"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a6cabbd82abca688a92b44e6ec74ee6d4ec74ecedae6de0193b94cf27ad1856"
+dependencies = [
+ "anchor-lang 0.20.1",
+ "anchor-spl 0.20.1",
+ "solana-program",
+ "spl-associated-token-account",
+ "spl-token",
+]
+
+[[package]]
 name = "cardinal-paid-claim-approver"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2521,6 +2534,7 @@ dependencies = [
  "mpl-candy-machine",
  "mpl-metaplex",
  "mpl-token-metadata",
+ "namespaces",
  "reqwest",
  "serde",
  "serde_json",
@@ -3345,6 +3359,20 @@ dependencies = [
  "quote",
  "syn",
  "synstructure",
+]
+
+[[package]]
+name = "namespaces"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74cfccb1ee0d17d628e3ff6b72973a3d73b4f018cbd9485f634609e25f4508b4"
+dependencies = [
+ "anchor-lang 0.20.1",
+ "anchor-spl 0.20.1",
+ "cardinal-certificate",
+ "metaplex-token-metadata",
+ "spl-associated-token-account",
+ "spl-token",
 ]
 
 [[package]]

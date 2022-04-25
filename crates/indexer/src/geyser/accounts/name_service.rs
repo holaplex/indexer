@@ -17,6 +17,7 @@ pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
     slot: u64,
+    write_version: u64,
     wallet: Pubkey,
     data: Vec<u8>,
 ) -> Result<()> {
@@ -34,26 +35,29 @@ pub(crate) async fn process(
                 .load::<TwitterHandle>(db)
         })
         .await
-        .context("failed to load token accounts!")?;
+        .context("failed to load twitter handle name services accounts!")?;
 
     let pubkey: String = key.to_string();
+    let write_version = i64::try_from(write_version)?;
 
     let values = TwitterHandle {
         address: Owned(pubkey.clone()),
         wallet_address: Owned(wallet.to_string()),
         twitter_handle: Owned(th.handle),
         slot: slot.try_into()?,
+        from_bonfida: true,
+        from_cardinal: false,
+        write_version,
     };
 
     match rows.get(0) {
-        Some(indexed) if incoming_slot > indexed.slot => {
+        Some(indexed) if (incoming_slot, write_version) > (indexed.slot, indexed.write_version) => {
             client
                 .db()
                 .run(move |db| {
-                    update(
-                        twitter_handle_name_services::table
-                            .filter(twitter_handle_name_services::address.eq(pubkey)),
-                    )
+                    update(twitter_handle_name_services::table.filter(
+                        twitter_handle_name_services::wallet_address.eq(wallet.to_string()),
+                    ))
                     .set(&values)
                     .execute(db)
                 })

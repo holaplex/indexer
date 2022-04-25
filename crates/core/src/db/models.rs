@@ -893,6 +893,12 @@ pub struct TwitterHandle<'a> {
     pub twitter_handle: Cow<'a, str>,
     /// Solana slot number
     pub slot: i64,
+    /// from bonfida
+    pub from_bonfida: bool,
+    /// from cardinal
+    pub from_cardinal: bool,
+    /// write version from solana
+    pub write_version: i64,
 }
 
 /// A row in the `metadata_collection_keys` table

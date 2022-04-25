@@ -47,5 +47,13 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
 
     let data: Vec<u8> = update.data[HEADER_LENGTH..].to_vec();
 
-    name_service::process(client, update.key, update.slot, wallet, data).await
+    name_service::process(
+        client,
+        update.key,
+        update.slot,
+        update.write_version,
+        wallet,
+        data,
+    )
+    .await
 }

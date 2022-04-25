@@ -93,6 +93,9 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         Message::AccountUpdate(update) if update.owner == pubkeys::tribeca_govern() => {
             programs::tribeca_govern::process(client, update).await
         },
+        Message::AccountUpdate(update) if update.owner == pubkeys::namespaces() => {
+            programs::namespaces::process(client, update).await
+        },
         Message::AccountUpdate(update) if update.owner == pubkeys::token_bonding() => {
             programs::token_bonding::process(client, update).await
         },

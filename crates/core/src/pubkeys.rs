@@ -34,6 +34,7 @@ mod ids {
         cardinal_paid_claim_approver,
         "pcaBwhJ1YHp7UDA7HASpQsRUmUNwzgYaLQto2kSj1fR"
     );
+    pubkeys!(namespaces, "nameXpT2PwZ2iA6DTNYTotTmiMYusBCYqwBLN2QgF4w");
     pubkeys!(
         goki_smart_wallet,
         "GokivDYuQXPZCWRkwMhdH2h91KpDQXBEmpgBgs55bnpH"
