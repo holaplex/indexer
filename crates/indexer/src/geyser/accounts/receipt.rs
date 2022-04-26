@@ -206,7 +206,7 @@ pub(crate) async fn process_bid_receipt(
             .transpose()?,
     };
 
-    client
+    let offer_event = client
         .db()
         .run(move |db| {
             let bid_receipt_exists = select(exists(
@@ -221,7 +221,7 @@ pub(crate) async fn process_bid_receipt(
                 .execute(db)?;
 
             if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
-                return Ok(());
+                return Ok(None);
             }
 
             db.build_transaction().read_write().run(|| {
@@ -264,11 +264,13 @@ pub(crate) async fn process_bid_receipt(
                     .execute(db)
                     .context("Failed to insert offer feed event wallet for metadata owner")?;
 
-                Result::<_>::Ok(())
+                Result::<_>::Ok(Some(feed_event_id))
             })
         })
         .await
         .context("Failed to insert bid receipt!")?;
-    client.dispatch_dialect_offer_event(key).await?;
+    if offer_event.is_some() {
+        client.dispatch_dialect_offer_event(key).await?;
+    }
     Ok(())
 }
