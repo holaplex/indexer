@@ -131,6 +131,7 @@ pub fn list(
                 metadatas::uri,
                 metadata_jsons::description,
                 metadata_jsons::image,
+                metadata_jsons::category,
             ),
             listing_receipts::price.nullable(),
         ))

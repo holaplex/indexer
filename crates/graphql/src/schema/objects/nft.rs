@@ -254,6 +254,7 @@ pub struct Nft {
     pub uri: String,
     pub description: String,
     pub image: String,
+    pub category: String,
 }
 
 impl From<models::Nft> for Nft {
@@ -267,6 +268,7 @@ impl From<models::Nft> for Nft {
             uri,
             description,
             image,
+            category
         }: models::Nft,
     ) -> Self {
         Self {
@@ -278,6 +280,7 @@ impl From<models::Nft> for Nft {
             uri,
             description: description.unwrap_or_else(String::new),
             image: image.unwrap_or_else(String::new),
+            category: category.unwrap_or_else(String::new)
         }
     }
 }
@@ -306,6 +309,10 @@ impl Nft {
 
     pub fn description(&self) -> &str {
         &self.description
+    }
+
+    pub fn category(&self) -> &str {
+        &self.category
     }
 
     #[graphql(arguments(width(description = r"Image width possible values are:
