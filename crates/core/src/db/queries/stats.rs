@@ -24,7 +24,8 @@ select
     mint,
     min(listing_price) filter (where listing_canceled_at is null and listing_purchase_receipt is null)::bigint as floor,
     round(avg(purchase_price))::bigint as average,
-    sum(purchase_price) filter (where ($2 - purchased_at) < interval '24 hr')::bigint as volume_24hr
+    sum(purchase_price) filter (where ($2 - purchased_at) < interval '24 hr')::bigint as volume_24hr,
+    sum(purchase_price)::bigint as volume_total
 
 from (select lr.auction_house as auction_house,
         lr.price as listing_price, pr.price as purchase_price,

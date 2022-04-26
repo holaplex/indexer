@@ -57,6 +57,46 @@ impl<'a> TryFrom<models::MetadataAttribute<'a>> for NftAttribute {
 }
 
 #[derive(Debug, Clone)]
+/// An NFT file
+pub struct NftFile {
+    pub metadata_address: String,
+    pub uri: String,
+    pub file_type: String,
+}
+
+#[graphql_object(Context = AppContext)]
+impl NftFile {
+    pub fn metadata_address(&self) -> &str {
+        &self.metadata_address
+    }
+
+    pub fn uri(&self) -> &str {
+        &self.uri
+    }
+
+    pub fn file_type(&self) -> &str {
+        &self.file_type
+    }
+}
+
+impl<'a> From<models::MetadataFile<'a>> for NftFile {
+    fn from(
+        models::MetadataFile {
+            metadata_address,
+            uri,
+            file_type,
+            ..
+        }: models::MetadataFile,
+    ) -> Self {
+        Self {
+            metadata_address: metadata_address.into_owned(),
+            uri: uri.into_owned(),
+            file_type: file_type.into_owned(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 /// An NFT creator
 pub struct NftCreator {
     pub address: String,
@@ -164,10 +204,10 @@ impl NftOwner {
     }
 }
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 pub struct NftActivity {
     pub address: String,
-    pub metadata: String,
+    pub metadata: PublicKey<Nft>,
     pub auction_house: String,
     pub price: U64,
     pub created_at: DateTime<Utc>,
@@ -191,13 +231,51 @@ impl TryFrom<models::NftActivity> for NftActivity {
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             address,
-            metadata,
+            metadata: metadata.into(),
             auction_house,
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
             wallets,
             activity_type,
         })
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl NftActivity {
+    fn address(&self) -> &str {
+        &self.address
+    }
+
+    fn metadata(&self) -> &PublicKey<Nft> {
+        &self.metadata
+    }
+
+    fn auction_house(&self) -> &str {
+        &self.auction_house
+    }
+
+    fn price(&self) -> U64 {
+        self.price
+    }
+
+    fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    fn wallets(&self) -> &Vec<String> {
+        &self.wallets
+    }
+
+    fn activity_type(&self) -> &str {
+        &self.activity_type
+    }
+
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
+        ctx.nft_loader
+            .load(self.metadata.clone())
+            .await
+            .map_err(Into::into)
     }
 }
 
@@ -209,8 +287,10 @@ pub struct Nft {
     pub seller_fee_basis_points: i32,
     pub mint_address: String,
     pub primary_sale_happened: bool,
+    pub uri: String,
     pub description: String,
     pub image: String,
+    pub category: String,
 }
 
 impl From<models::Nft> for Nft {
@@ -221,8 +301,10 @@ impl From<models::Nft> for Nft {
             seller_fee_basis_points,
             mint_address,
             primary_sale_happened,
+            uri,
             description,
             image,
+            category,
         }: models::Nft,
     ) -> Self {
         Self {
@@ -231,8 +313,10 @@ impl From<models::Nft> for Nft {
             seller_fee_basis_points,
             mint_address,
             primary_sale_happened,
+            uri,
             description: description.unwrap_or_else(String::new),
             image: image.unwrap_or_else(String::new),
+            category: category.unwrap_or_else(String::new),
         }
     }
 }
@@ -261,6 +345,10 @@ impl Nft {
 
     pub fn description(&self) -> &str {
         &self.description
+    }
+
+    pub fn category(&self) -> &str {
+        &self.category
     }
 
     #[graphql(arguments(width(description = r"Image width possible values are:
@@ -334,6 +422,13 @@ If no value is provided, it will return XSmall")))]
 
     pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<BidReceipt>> {
         ctx.bid_receipts_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn files(&self, ctx: &AppContext) -> FieldResult<Vec<NftFile>> {
+        ctx.nft_files_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)

@@ -3,12 +3,14 @@ use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
     bonding_change::EnrichedBondingChange,
+    chart::PriceChart,
     creator::Creator,
     denylist::Denylist,
+    feed_event::FeedEvent,
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::{Nft, NftCount, NftCreator},
+    nft::{Nft, NftActivity, NftCount, NftCreator},
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
@@ -37,9 +39,69 @@ impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
 
 #[graphql_object(Context = AppContext)]
 impl QueryRoot {
+    #[graphql(
+        description = "Query feed events for a wallet. Returns events related to the specified user and events for the wallets the user follows.",
+        arguments(
+            wallet(description = "A user wallet public key"),
+            limit(description = "The query record limit"),
+            offset(description = "The query record offset")
+        )
+    )]
+    fn feed_events(
+        &self,
+        ctx: &AppContext,
+        wallet: PublicKey<Wallet>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<FeedEvent>> {
+        let conn = ctx.shared.db.get().context("failed to connect to db")?;
+
+        let feed_events =
+            queries::feed_event::list(&conn, wallet, limit.try_into()?, offset.try_into()?)?;
+
+        feed_events
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
     #[graphql(arguments(creators(description = "creators of nfts"),))]
     fn nft_counts(&self, creators: Vec<PublicKey<NftCreator>>) -> FieldResult<NftCount> {
         Ok(NftCount::new(creators))
+    }
+    #[graphql(arguments(
+        auction_housese(description = "List of auction houses"),
+        start_date(description = "Start date for which we want to get the average price"),
+        end_date(description = "End date for which we want to get the average price")
+    ))]
+    pub async fn charts(
+        &self,
+        _context: &AppContext,
+        auction_houses: Vec<PublicKey<AuctionHouse>>,
+        start_date: DateTime<Utc>,
+        end_date: DateTime<Utc>,
+    ) -> FieldResult<PriceChart> {
+        Ok(PriceChart {
+            auction_houses,
+            start_date,
+            end_date,
+        })
+    }
+
+    #[graphql(arguments(auction_housese(description = "List of auction houses"),))]
+    pub async fn activities(
+        &self,
+        context: &AppContext,
+        auction_houses: Vec<PublicKey<AuctionHouse>>,
+    ) -> FieldResult<Vec<NftActivity>> {
+        let conn = context.shared.db.get()?;
+        let rows = queries::activities::list(&conn, auction_houses)?;
+
+        rows.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     async fn profile(
@@ -155,7 +217,7 @@ impl QueryRoot {
             .map(Into::into)
             .collect();
 
-        let rows = queries::graph_connection::list(&conn, from, to, limit, offset)?;
+        let rows = queries::graph_connection::connections(&conn, from, to, limit, offset)?;
 
         rows.into_iter()
             .map(TryInto::try_into)
@@ -275,8 +337,10 @@ impl QueryRoot {
                 metadatas::seller_fee_basis_points,
                 metadatas::mint_address,
                 metadatas::primary_sale_happened,
+                metadatas::uri,
                 metadata_jsons::description,
                 metadata_jsons::image,
+                metadata_jsons::category,
             ))
             .limit(1)
             .load(&conn)

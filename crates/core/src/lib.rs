@@ -21,6 +21,7 @@ pub extern crate chrono;
 pub extern crate clap;
 pub extern crate num_cpus;
 pub extern crate url;
+pub extern crate uuid;
 
 #[cfg(feature = "assets")]
 pub mod assets;
