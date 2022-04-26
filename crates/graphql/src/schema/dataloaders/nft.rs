@@ -212,6 +212,7 @@ impl TryBatchFn<PublicKey<Nft>, Option<Nft>> for Batcher {
                 metadatas::uri,
                 metadata_jsons::description,
                 metadata_jsons::image,
+                metadata_jsons::category,
             ))
             .load(&conn)
             .context("Failed to load NFTs")?;
