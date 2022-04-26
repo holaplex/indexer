@@ -8,15 +8,11 @@ use indexer_core::{
             PurchaseReceipt as DbPurchaseReceipt,
         },
         select,
-<<<<<<< HEAD
         tables::{
             bid_receipts, current_metadata_owners, feed_event_wallets, feed_events, listing_events,
             listing_receipts, metadatas, offer_events, purchase_events, purchase_receipts,
         },
         Error as DbError,
-=======
-        tables::{bid_receipts, listing_receipts, purchase_receipts},
->>>>>>> 52bd232a09755f20e78414d62f893216b93dcf82
     },
     prelude::*,
     util,
@@ -223,7 +219,6 @@ pub(crate) async fn process_bid_receipt(
                 .do_update()
                 .set(&row)
                 .execute(db)?;
-<<<<<<< HEAD
 
             if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
                 return Ok(());
@@ -271,12 +266,6 @@ pub(crate) async fn process_bid_receipt(
 
                 Result::<_>::Ok(())
             })
-=======
-            if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
-                return Result::<_>::Ok(());
-            }
-            Result::<_>::Ok(())
->>>>>>> 52bd232a09755f20e78414d62f893216b93dcf82
         })
         .await
         .context("Failed to insert bid receipt!")?;
