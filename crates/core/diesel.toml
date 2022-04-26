@@ -7,9 +7,7 @@ import_types = [
   "diesel::sql_types::*",
   "diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery}",
   """crate::db::custom_types::{\
-    ListingEventLifecycle as Listingeventlifecycle, \
     Mode, \
-    OfferEventLifecycle as Offereventlifecycle, \
     SettingType as Settingtype, \
     TokenStandard as Token_standard, \
   }""",
