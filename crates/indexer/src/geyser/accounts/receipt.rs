@@ -74,7 +74,7 @@ pub(crate) async fn process_listing_receipt(
 
                 let listing_event = insert_into(listing_events::table)
                     .values(&ListingEvent {
-                        feed_event_id: Owned(feed_event_id),
+                        feed_event_id,
                         lifecycle: ListingEventLifecycleEnum::Created,
                         listing_receipt_address: row.address,
                     })
@@ -87,7 +87,7 @@ pub(crate) async fn process_listing_receipt(
                 insert_into(feed_event_wallets::table)
                     .values(&FeedEventWallet {
                         wallet_address: row.seller,
-                        feed_event_id: Owned(feed_event_id),
+                        feed_event_id,
                     })
                     .execute(db)
                     .context("Failed to insert listing feed event wallet")?;
@@ -146,7 +146,7 @@ pub(crate) async fn process_purchase_receipt(
 
                 insert_into(purchase_events::table)
                     .values(&PurchaseEvent {
-                        feed_event_id: Owned(feed_event_id),
+                        feed_event_id,
                         purchase_receipt_address: row.address,
                     })
                     .execute(db)
@@ -155,7 +155,7 @@ pub(crate) async fn process_purchase_receipt(
                 insert_into(feed_event_wallets::table)
                     .values(&FeedEventWallet {
                         wallet_address: row.seller,
-                        feed_event_id: Owned(feed_event_id),
+                        feed_event_id,
                     })
                     .execute(db)
                     .context("Failed to insert purchase feed event wallet for seller")?;
@@ -163,7 +163,7 @@ pub(crate) async fn process_purchase_receipt(
                 insert_into(feed_event_wallets::table)
                     .values(&FeedEventWallet {
                         wallet_address: row.buyer,
-                        feed_event_id: Owned(feed_event_id),
+                        feed_event_id,
                     })
                     .execute(db)
                     .context("Failed to insert purchase feed event wallet for buyer")?;
@@ -242,7 +242,7 @@ pub(crate) async fn process_bid_receipt(
 
                 insert_into(offer_events::table)
                     .values(&OfferEvent {
-                        feed_event_id: Owned(feed_event_id),
+                        feed_event_id,
                         lifecycle: OfferEventLifecycleEnum::Created,
                         bid_receipt_address: row.address,
                     })
@@ -252,7 +252,7 @@ pub(crate) async fn process_bid_receipt(
                 insert_into(feed_event_wallets::table)
                     .values(&FeedEventWallet {
                         wallet_address: row.buyer,
-                        feed_event_id: Owned(feed_event_id),
+                        feed_event_id,
                     })
                     .execute(db)
                     .context("Failed to insert offer feed event wallet for buyer")?;
@@ -260,7 +260,7 @@ pub(crate) async fn process_bid_receipt(
                 insert_into(feed_event_wallets::table)
                     .values(&FeedEventWallet {
                         wallet_address: Owned(metadata_owner),
-                        feed_event_id: Owned(feed_event_id),
+                        feed_event_id,
                     })
                     .execute(db)
                     .context("Failed to insert offer feed event wallet for metadata owner")?;

@@ -210,7 +210,7 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
                 None,
                 None,
             ) => Ok(Self::Mint(MintEvent {
-                feed_event_id: id.into_owned().to_string(),
+                feed_event_id: id.to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
                 metadata_address: metadata_address.into_owned().into(),
             })),
@@ -225,7 +225,7 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
                 None,
                 None,
             ) => Ok(Self::Offer(OfferEvent {
-                feed_event_id: id.into_owned().to_string(),
+                feed_event_id: id.to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
                 bid_receipt_address: bid_receipt_address.into_owned().into(),
                 lifecycle: lifecycle.to_string(),
@@ -241,7 +241,7 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
                 None,
                 None,
             ) => Ok(Self::Listing(ListingEvent {
-                feed_event_id: id.into_owned().to_string(),
+                feed_event_id: id.to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
                 listing_receipt_address: listing_receipt_address.into_owned().into(),
                 lifecycle: lifecycle.to_string(),
@@ -256,7 +256,7 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
                 }),
                 None,
             ) => Ok(Self::Purchase(PurchaseEvent {
-                feed_event_id: id.into_owned().to_string(),
+                feed_event_id: id.to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
                 purchase_receipt_address: purchase_receipt_address.into_owned().into(),
             })),
@@ -270,7 +270,7 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
                     ..
                 }),
             ) => Ok(Self::Follow(FollowEvent {
-                feed_event_id: id.into_owned().to_string(),
+                feed_event_id: id.to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
                 graph_connection_address: graph_connection_address.into_owned().into(),
             })),

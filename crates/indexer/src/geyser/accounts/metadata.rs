@@ -83,11 +83,11 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
                     .execute(db)
                     .context("failed to insert metadata creators")?;
 
-                if let Some(id) = feed_event_id {
+                if let Some(feed_event_id) = feed_event_id {
                     insert_into(feed_event_wallets::table)
                         .values(&FeedEventWallet {
                             wallet_address: row.creator_address,
-                            feed_event_id: Owned(id),
+                            feed_event_id,
                         })
                         .on_conflict((
                             feed_event_wallets::wallet_address,
@@ -146,7 +146,7 @@ async fn insert_with_event(
 
                     insert_into(mint_events::table)
                         .values(&MintEvent {
-                            feed_event_id: Owned(feed_event_id),
+                            feed_event_id,
                             metadata_address: Owned(addr),
                         })
                         .execute(db)
