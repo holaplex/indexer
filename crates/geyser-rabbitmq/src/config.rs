@@ -12,7 +12,6 @@ pub struct Config {
     amqp: Amqp,
     jobs: Jobs,
 
-    #[serde(default)]
     metrics: Metrics,
 
     accounts: Accounts,
@@ -39,7 +38,7 @@ pub struct Jobs {
     pub blocking: Option<usize>,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Metrics {
     pub config: Option<String>,
