@@ -5,7 +5,7 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Bid, Listing},
     listing_receipt::ListingReceipt,
-    nft::{Nft, NftActivity, NftAttribute, NftCreator, NftOwner},
+    nft::{Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
     profile::TwitterProfile,
     purchase_receipt::PurchaseReceipt,
     stats::{MarketStats, MintStats},
@@ -14,7 +14,7 @@ use objects::{
 };
 use scalars::{markers::StoreConfig, PublicKey};
 
-use super::{objects::nft::NftFile, prelude::*};
+use super::prelude::*;
 
 #[derive(Clone)]
 pub struct AppContext {

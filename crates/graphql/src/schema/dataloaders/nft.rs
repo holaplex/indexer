@@ -1,7 +1,7 @@
 use indexer_core::db::{queries, tables::files};
 use objects::{
     listing_receipt::ListingReceipt,
-    nft::{Nft, NftActivity, NftAttribute, NftCreator, NftOwner},
+    nft::{Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
     purchase_receipt::PurchaseReceipt,
 };
 use scalars::PublicKey;
@@ -11,7 +11,6 @@ use tables::{
 };
 
 use super::prelude::*;
-use crate::schema::objects::nft::NftFile;
 
 #[async_trait]
 impl TryBatchFn<PublicKey<Nft>, Vec<NftAttribute>> for Batcher {

@@ -24,7 +24,7 @@ use crate::{
 
 /// join of event tables into a single event type
 pub type Columns<'a> = (
-    models::FeedEvent<'a>,
+    models::FeedEvent,
     Option<models::MintEvent<'a>>,
     Option<models::OfferEvent<'a>>,
     Option<models::ListingEvent<'a>>,

@@ -6,6 +6,7 @@ use std::borrow::Cow;
 
 use chrono::NaiveDateTime;
 use diesel::sql_types::{Array, Bool, Int4, Int8, Nullable, Text, Timestamp, VarChar};
+use uuid::Uuid;
 
 #[allow(clippy::wildcard_imports)]
 use super::schema::*;
@@ -447,7 +448,7 @@ pub struct MetadataAttribute<'a> {
     /// Attribute trait type
     pub trait_type: Option<Cow<'a, str>>,
     /// Attribute generated id
-    pub id: Cow<'a, uuid::Uuid>,
+    pub id: Uuid,
     /// Address of metadata first verified creator
     pub first_verified_creator: Option<Cow<'a, str>>,
 }
@@ -462,7 +463,7 @@ pub struct MetadataFile<'a> {
     /// File type
     pub file_type: Cow<'a, str>,
     /// File generated id
-    pub id: Cow<'a, uuid::Uuid>,
+    pub id: Uuid,
 }
 
 /// A row in the `metadata_collections` table
@@ -1744,11 +1745,11 @@ pub struct StoreCreatorCount<'a> {
     pub nfts: i64,
 }
 /// A row in the `feed_events` table
-#[derive(Debug, Clone, Queryable, Insertable)]
+#[derive(Debug, Clone, Copy, Queryable, Insertable)]
 #[table_name = "feed_events"]
-pub struct FeedEvent<'a> {
+pub struct FeedEvent {
     /// generated id
-    pub id: Cow<'a, uuid::Uuid>,
+    pub id: Uuid,
     /// generated created_at
     pub created_at: NaiveDateTime,
 }
@@ -1760,7 +1761,7 @@ pub struct FeedEventWallet<'a> {
     /// a wallet associated to the event
     pub wallet_address: Cow<'a, str>,
     /// foreign key to `feed_events`
-    pub feed_event_id: Cow<'a, uuid::Uuid>,
+    pub feed_event_id: Uuid,
 }
 
 /// A row in the `mint_events` table
@@ -1770,7 +1771,7 @@ pub struct MintEvent<'a> {
     /// foreign key to `metadatas` address
     pub metadata_address: Cow<'a, str>,
     /// foreign key to `feed_events`
-    pub feed_event_id: Cow<'a, uuid::Uuid>,
+    pub feed_event_id: Uuid,
 }
 
 /// A row in the `offer_events` table
@@ -1780,7 +1781,7 @@ pub struct OfferEvent<'a> {
     /// foreign key to `bid_recipts` address
     pub bid_receipt_address: Cow<'a, str>,
     /// foreign key to `feed_events`
-    pub feed_event_id: Cow<'a, uuid::Uuid>,
+    pub feed_event_id: Uuid,
     ///  enum of offer lifecycle
     pub lifecycle: OfferEventLifecycleEnum,
 }
@@ -1792,7 +1793,7 @@ pub struct ListingEvent<'a> {
     /// foreign key to `listing_receipts` address
     pub listing_receipt_address: Cow<'a, str>,
     /// foreign key to `feed_events`
-    pub feed_event_id: Cow<'a, uuid::Uuid>,
+    pub feed_event_id: Uuid,
     /// enum of listing lifecycle
     pub lifecycle: ListingEventLifecycleEnum,
 }
@@ -1804,7 +1805,7 @@ pub struct PurchaseEvent<'a> {
     /// foreign key to `purchase_receipts` address
     pub purchase_receipt_address: Cow<'a, str>,
     /// foreign key to `feed_events`
-    pub feed_event_id: Cow<'a, uuid::Uuid>,
+    pub feed_event_id: Uuid,
 }
 
 /// A row in the `follow_events` table
@@ -1814,5 +1815,5 @@ pub struct FollowEvent<'a> {
     /// foreign key to `graph_connections` address
     pub graph_connection_address: Cow<'a, str>,
     /// foreign key to `feed_events`
-    pub feed_event_id: Cow<'a, uuid::Uuid>,
+    pub feed_event_id: Uuid,
 }

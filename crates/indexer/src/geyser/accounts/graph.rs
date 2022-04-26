@@ -48,7 +48,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Connecti
 
                 insert_into(follow_events::table)
                     .values(&FollowEvent {
-                        feed_event_id: Owned(feed_event_id),
+                        feed_event_id,
                         graph_connection_address: row.address,
                     })
                     .execute(db)
@@ -57,7 +57,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Connecti
                 insert_into(feed_event_wallets::table)
                     .values(&FeedEventWallet {
                         wallet_address: row.to_account,
-                        feed_event_id: Owned(feed_event_id),
+                        feed_event_id,
                     })
                     .execute(db)
                     .context("Failed to insert follow feed event wallet")?;

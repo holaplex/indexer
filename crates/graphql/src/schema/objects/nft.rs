@@ -79,22 +79,20 @@ impl NftFile {
     }
 }
 
-impl<'a> TryFrom<models::MetadataFile<'a>> for NftFile {
-    type Error = Error;
-
-    fn try_from(
+impl<'a> From<models::MetadataFile<'a>> for NftFile {
+    fn from(
         models::MetadataFile {
             metadata_address,
             uri,
             file_type,
             ..
         }: models::MetadataFile,
-    ) -> Result<Self> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             metadata_address: metadata_address.into_owned(),
             uri: uri.into_owned(),
             file_type: file_type.into_owned(),
-        })
+        }
     }
 }
 
