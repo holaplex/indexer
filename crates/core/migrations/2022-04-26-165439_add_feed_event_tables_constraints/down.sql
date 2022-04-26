@@ -1,5 +1,0 @@
-alter table offer_events
-  drop constraint uc_offer_events_bid_receipt_address_lifecycle;
-
-alter table listing_events
-  drop constraint uc_listing_events_listing_receipt_address_lifecycle;
