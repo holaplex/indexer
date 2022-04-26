@@ -9,6 +9,7 @@ pub struct MintStats {
     pub floor: Option<U64>,
     pub average: Option<U64>,
     pub volume_24hr: Option<U64>,
+    pub volume_total: Option<U64>,
 }
 
 impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
@@ -21,6 +22,7 @@ impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
             floor,
             average,
             volume_24hr,
+            volume_total,
         }: models::MintStats,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -29,6 +31,7 @@ impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
             floor: floor.map(TryInto::try_into).transpose()?,
             average: average.map(TryInto::try_into).transpose()?,
             volume_24hr: volume_24hr.map(TryInto::try_into).transpose()?,
+            volume_total: volume_total.map(TryInto::try_into).transpose()?,
         })
     }
 }

@@ -878,6 +878,9 @@ pub struct MintStats<'a> {
     /// 24-hour volume for this token
     #[sql_type = "Nullable<Int8>"]
     pub volume_24hr: Option<i64>,
+    /// Total volume for this token
+    #[sql_type = "Nullable<Int8>"]
+    pub volume_total: Option<i64>,
 }
 
 /// A join of `graph_connections` and `twitter_handle_name_services` for connections that include twitter handle of wallets
@@ -898,6 +901,18 @@ pub struct TwitterEnrichedGraphConnection {
     /// The twitter handle of the to_account
     #[sql_type = "Nullable<Text>"]
     pub to_twitter_handle: Option<String>,
+}
+
+/// A row in a `charts` query, representing requested price data on a particualar date
+#[derive(Debug, Clone, Copy, QueryableByName)]
+pub struct PricePoint {
+    /// The requested price on a date
+    #[sql_type = "Int8"]
+    pub price: i64,
+
+    /// The date for which the price was requested
+    #[sql_type = "Timestamp"]
+    pub date: NaiveDateTime,
 }
 
 /// A row in a `metadatas::count_by_marketplace` query, representing stats for
@@ -1686,7 +1701,6 @@ pub struct InsBufferBundleInsKey<'a> {
     /// True if the `pubkey` can be loaded as a read-write account.
     pub is_writable: bool,
 }
-
 /// A row in the `bonding_change` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]

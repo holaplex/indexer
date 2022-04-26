@@ -1,4 +1,4 @@
-use indexer_core::db::{queries, tables::files};
+use indexer_core::db::queries;
 use objects::{
     listing_receipt::ListingReceipt,
     nft::{Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
@@ -6,8 +6,8 @@ use objects::{
 };
 use scalars::PublicKey;
 use tables::{
-    attributes, current_metadata_owners, listing_receipts, metadata_creators, metadata_jsons,
-    metadatas, purchase_receipts, twitter_handle_name_services,
+    attributes, current_metadata_owners, files, listing_receipts, metadata_creators,
+    metadata_jsons, metadatas, purchase_receipts, twitter_handle_name_services,
 };
 
 use super::prelude::*;

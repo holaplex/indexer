@@ -42,9 +42,9 @@ pub struct AppContext {
     pub bid_receipt_loader: Loader<PublicKey<BidReceipt>, Option<BidReceipt>>,
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
     pub collection_count_loader: Loader<PublicKey<StoreCreator>, Option<i32>>,
+    pub nft_loader: Loader<PublicKey<Nft>, Option<Nft>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
     pub twitter_profile_loader: Loader<String, Option<TwitterProfile>, TwitterBatcher>,
-    pub nft_loader: Loader<PublicKey<Nft>, Option<Nft>>,
 }
 
 impl juniper::Context for AppContext {}

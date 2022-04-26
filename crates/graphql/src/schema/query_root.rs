@@ -3,13 +3,14 @@ use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
     bonding_change::EnrichedBondingChange,
+    chart::PriceChart,
     creator::Creator,
     denylist::Denylist,
     feed_event::FeedEvent,
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::{Nft, NftCount, NftCreator},
+    nft::{Nft, NftActivity, NftCount, NftCreator},
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
@@ -68,6 +69,39 @@ impl QueryRoot {
     #[graphql(arguments(creators(description = "creators of nfts"),))]
     fn nft_counts(&self, creators: Vec<PublicKey<NftCreator>>) -> FieldResult<NftCount> {
         Ok(NftCount::new(creators))
+    }
+    #[graphql(arguments(
+        auction_housese(description = "List of auction houses"),
+        start_date(description = "Start date for which we want to get the average price"),
+        end_date(description = "End date for which we want to get the average price")
+    ))]
+    pub async fn charts(
+        &self,
+        _context: &AppContext,
+        auction_houses: Vec<PublicKey<AuctionHouse>>,
+        start_date: DateTime<Utc>,
+        end_date: DateTime<Utc>,
+    ) -> FieldResult<PriceChart> {
+        Ok(PriceChart {
+            auction_houses,
+            start_date,
+            end_date,
+        })
+    }
+
+    #[graphql(arguments(auction_housese(description = "List of auction houses"),))]
+    pub async fn activities(
+        &self,
+        context: &AppContext,
+        auction_houses: Vec<PublicKey<AuctionHouse>>,
+    ) -> FieldResult<Vec<NftActivity>> {
+        let conn = context.shared.db.get()?;
+        let rows = queries::activities::list(&conn, auction_houses)?;
+
+        rows.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     async fn profile(

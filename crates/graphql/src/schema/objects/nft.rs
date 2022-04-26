@@ -204,10 +204,10 @@ impl NftOwner {
     }
 }
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 pub struct NftActivity {
     pub address: String,
-    pub metadata: String,
+    pub metadata: PublicKey<Nft>,
     pub auction_house: String,
     pub price: U64,
     pub created_at: DateTime<Utc>,
@@ -231,13 +231,51 @@ impl TryFrom<models::NftActivity> for NftActivity {
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             address,
-            metadata,
+            metadata: metadata.into(),
             auction_house,
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
             wallets,
             activity_type,
         })
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl NftActivity {
+    fn address(&self) -> &str {
+        &self.address
+    }
+
+    fn metadata(&self) -> &PublicKey<Nft> {
+        &self.metadata
+    }
+
+    fn auction_house(&self) -> &str {
+        &self.auction_house
+    }
+
+    fn price(&self) -> U64 {
+        self.price
+    }
+
+    fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    fn wallets(&self) -> &Vec<String> {
+        &self.wallets
+    }
+
+    fn activity_type(&self) -> &str {
+        &self.activity_type
+    }
+
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
+        ctx.nft_loader
+            .load(self.metadata.clone())
+            .await
+            .map_err(Into::into)
     }
 }
 
