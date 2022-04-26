@@ -251,6 +251,7 @@ pub struct Nft {
     pub seller_fee_basis_points: i32,
     pub mint_address: String,
     pub primary_sale_happened: bool,
+    pub uri: String,
     pub description: String,
     pub image: String,
 }
@@ -263,6 +264,7 @@ impl From<models::Nft> for Nft {
             seller_fee_basis_points,
             mint_address,
             primary_sale_happened,
+            uri,
             description,
             image,
         }: models::Nft,
@@ -273,6 +275,7 @@ impl From<models::Nft> for Nft {
             seller_fee_basis_points,
             mint_address,
             primary_sale_happened,
+            uri,
             description: description.unwrap_or_else(String::new),
             image: image.unwrap_or_else(String::new),
         }

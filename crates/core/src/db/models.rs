@@ -247,6 +247,10 @@ pub struct Nft {
     #[sql_type = "Bool"]
     pub primary_sale_happened: bool,
 
+    /// Metadata metadata_json uri
+    #[sql_type = "Text"]
+    pub uri: String,
+
     // Table metadata_json
     /// Metadata description
     #[sql_type = "Nullable<Text>"]
@@ -318,6 +322,10 @@ pub struct SampleNft {
     /// True if this item is in the secondary market.  Immutable once set.
     #[sql_type = "Bool"]
     pub primary_sale_happened: bool,
+
+    /// uri for metadata_json
+    #[sql_type = "Text"]
+    pub uri: String,
 
     // Table metadata_json
     /// Metadata description

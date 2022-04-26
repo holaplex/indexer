@@ -275,6 +275,7 @@ impl QueryRoot {
                 metadatas::seller_fee_basis_points,
                 metadatas::mint_address,
                 metadatas::primary_sale_happened,
+                metadatas::uri,
                 metadata_jsons::description,
                 metadata_jsons::image,
             ))
