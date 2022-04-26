@@ -6,8 +6,8 @@ use objects::{
 };
 use scalars::PublicKey;
 use tables::{
-    attributes, current_metadata_owners, listing_receipts, metadata_creators, metadatas,
-    purchase_receipts, twitter_handle_name_services,
+    attributes, current_metadata_owners, listing_receipts, metadata_creators, metadata_jsons,
+    metadatas, purchase_receipts, twitter_handle_name_services,
 };
 
 use super::prelude::*;
@@ -165,6 +165,38 @@ impl TryBatchFn<PublicKey<Nft>, Vec<NftActivity>> for Batcher {
         Ok(rows
             .into_iter()
             .map(|activity| (activity.metadata.clone(), activity.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<Nft>, Option<Nft>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Nft>],
+    ) -> TryBatchMap<PublicKey<Nft>, Option<Nft>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::Nft> = metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .filter(metadatas::address.eq(any(addresses)))
+            .select((
+                metadatas::address,
+                metadatas::name,
+                metadatas::seller_fee_basis_points,
+                metadatas::mint_address,
+                metadatas::primary_sale_happened,
+                metadata_jsons::description,
+                metadata_jsons::image,
+            ))
+            .load(&conn)
+            .context("Failed to load NFTs")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|nft| (nft.address.clone(), nft.try_into()))
             .batch(addresses))
     }
 }

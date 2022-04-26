@@ -1,20 +1,71 @@
-use scalars::U64;
+use objects::nft::Nft;
+use scalars::{PublicKey, U64};
 
 use super::prelude::*;
 
-#[derive(Debug, Clone, GraphQLObject)]
-#[graphql(description = "auction house bid receipt")]
+#[derive(Debug, Clone)]
 pub struct BidReceipt {
     pub address: String,
     pub trade_state: String,
     pub buyer: String,
-    pub metadata: String,
+    pub metadata: PublicKey<Nft>,
     pub auction_house: String,
     pub price: U64,
     pub trade_state_bump: i32,
     pub token_account: Option<String>,
     pub created_at: DateTime<Utc>,
     pub canceled_at: Option<DateTime<Utc>>,
+}
+
+#[graphql_object(Context = AppContext)]
+#[graphql(description = "Auction house bid receipt")]
+impl BidReceipt {
+    fn address(&self) -> &str {
+        &self.address
+    }
+
+    fn trade_state(&self) -> &str {
+        &self.trade_state
+    }
+
+    fn buyer(&self) -> &str {
+        &self.buyer
+    }
+
+    fn metadata(&self) -> &PublicKey<Nft> {
+        &self.metadata
+    }
+
+    fn auction_house(&self) -> &str {
+        &self.auction_house
+    }
+
+    fn price(&self) -> U64 {
+        self.price
+    }
+
+    fn trade_state_bump(&self) -> i32 {
+        self.trade_state_bump
+    }
+
+    fn token_account(&self) -> &Option<String> {
+        &self.token_account
+    }
+
+    fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    fn canceled_at(&self) -> Option<DateTime<Utc>> {
+        self.canceled_at
+    }
+
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
+        ctx.nft_loader
+            .load(self.metadata.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 impl<'a> TryFrom<models::BidReceipt<'a>> for BidReceipt {
@@ -42,7 +93,7 @@ impl<'a> TryFrom<models::BidReceipt<'a>> for BidReceipt {
             address: address.into_owned(),
             trade_state: trade_state.into_owned(),
             buyer: buyer.into_owned(),
-            metadata: metadata.into_owned(),
+            metadata: metadata.into_owned().into(),
             price: price.try_into()?,
             token_account: token_account.map(Cow::into_owned),
             auction_house: auction_house.into_owned(),

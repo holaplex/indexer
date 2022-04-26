@@ -31,7 +31,7 @@ SELECT gc.address AS connection_address, from_account, to_account, fth.twitter_h
 ///
 /// # Errors
 /// This function fails if the underlying query fails to execute.
-pub fn list(
+pub fn connections(
     conn: &Connection,
     from: impl ToSql<Array<Text>, Pg>,
     to: impl ToSql<Array<Text>, Pg>,
@@ -44,5 +44,28 @@ pub fn list(
         .bind(limit)
         .bind(offset)
         .load(conn)
-        .context("failed to load twitter enriched graph connections")
+        .context("failed to load twitter enriched graph connections by parameters")
+}
+
+const LIST_QUERY: &str = r"
+SELECT gc.address AS connection_address, from_account, to_account, fth.twitter_handle AS from_twitter_handle, tth.twitter_handle AS to_twitter_handle
+    FROM graph_connections gc
+    LEFT JOIN twitter_handle_name_services fth ON gc.from_account = fth.wallet_address
+    LEFT JOIN twitter_handle_name_services tth ON gc.to_account = tth.wallet_address
+    WHERE gc.address = ANY($1);
+ -- $1: addresses::text[]
+ ";
+
+/// Return connections from connection addresses
+///
+/// # Errors
+/// This function fails if the underlying query fails to execute.
+pub fn list(
+    conn: &Connection,
+    addresses: impl ToSql<Array<Text>, Pg>,
+) -> Result<Vec<TwitterEnrichedGraphConnection>> {
+    sql_query(LIST_QUERY)
+        .bind(addresses)
+        .load(conn)
+        .context("failed to load twitter enriched graph connections by addresses")
 }

@@ -4,18 +4,44 @@ use std::io::Write;
 
 use diesel::{
     deserialize::{self, FromSql},
-    not_none,
     pg::Pg,
-    serialize::{self, IsNull, Output, ToSql},
+    serialize::{self, Output, ToSql},
     AsExpression, FromSqlRow, SqlType,
 };
+
+fn to_bytes<T: std::fmt::Display, W: Write, N: FnOnce(&T) -> bool>(
+    val: &T,
+    mut out: W,
+    is_null: N,
+) -> serialize::Result {
+    use diesel::serialize::IsNull;
+
+    out.write_fmt(format_args!("{}", val))?;
+
+    Ok(if is_null(val) {
+        IsNull::Yes
+    } else {
+        IsNull::No
+    })
+}
+
+fn from_bytes<T: std::str::FromStr>(bytes: Option<&[u8]>) -> deserialize::Result<T>
+where
+    T::Err: Into<Box<dyn std::error::Error + Send + Sync>>,
+{
+    std::str::from_utf8(diesel::not_none!(bytes))?
+        .parse()
+        .map_err(Into::into)
+}
 
 #[derive(SqlType, Debug, Clone, Copy)]
 #[postgres(type_name = "settingtype")]
 /// Represents database 'settingtype' type
 pub struct SettingType;
 
-#[derive(Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy)]
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
 #[sql_type = "SettingType"]
 /// `EndSettingType` enum in `EndSettings`
 pub enum EndSettingType {
@@ -28,21 +54,13 @@ pub enum EndSettingType {
 
 impl ToSql<SettingType, Pg> for EndSettingType {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
-        match *self {
-            EndSettingType::Date => out.write_all(b"Date")?,
-            EndSettingType::Amount => out.write_all(b"Amount")?,
-        }
-        Ok(IsNull::No)
+        to_bytes(self, out, |_| false)
     }
 }
 
 impl FromSql<SettingType, Pg> for EndSettingType {
     fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
-        match not_none!(bytes) {
-            b"date" => Ok(EndSettingType::Date),
-            b"amount" => Ok(EndSettingType::Amount),
-            _ => Err("Unrecognized enum variant".into()),
-        }
+        from_bytes(bytes)
     }
 }
 
@@ -51,7 +69,9 @@ impl FromSql<SettingType, Pg> for EndSettingType {
 /// Represents database 'mode' type
 pub struct Mode;
 
-#[derive(Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy)]
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
 #[sql_type = "Mode"]
 /// `WhitelistMintMode` enum in `WhitelistSettings`
 pub enum WhitelistMintMode {
@@ -63,21 +83,13 @@ pub enum WhitelistMintMode {
 
 impl ToSql<Mode, Pg> for WhitelistMintMode {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
-        match *self {
-            WhitelistMintMode::BurnEveryTime => out.write_all(b"BurnEveryTime")?,
-            WhitelistMintMode::NeverBurn => out.write_all(b"NeverBurn")?,
-        }
-        Ok(IsNull::No)
+        to_bytes(self, out, |_| false)
     }
 }
 
 impl FromSql<Mode, Pg> for WhitelistMintMode {
     fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
-        match not_none!(bytes) {
-            b"BurnEveryTime" => Ok(WhitelistMintMode::BurnEveryTime),
-            b"NeverBurn" => Ok(WhitelistMintMode::NeverBurn),
-            _ => Err("Unrecognized enum variant".into()),
-        }
+        from_bytes(bytes)
     }
 }
 
@@ -86,7 +98,9 @@ impl FromSql<Mode, Pg> for WhitelistMintMode {
 /// Represents database `token_standard` type
 pub struct TokenStandard;
 
-#[derive(Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy)]
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
 #[sql_type = "TokenStandard"]
 /// `TokenStandard` enum in `Metadata` struct
 pub enum TokenStandardEnum {
@@ -102,24 +116,72 @@ pub enum TokenStandardEnum {
 
 impl ToSql<TokenStandard, Pg> for TokenStandardEnum {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
-        match *self {
-            TokenStandardEnum::NonFungible => out.write_all(b"NonFungible")?,
-            TokenStandardEnum::FungibleAsset => out.write_all(b"FungibleAsset")?,
-            TokenStandardEnum::Fungible => out.write_all(b"Fungible")?,
-            TokenStandardEnum::NonFungibleEdition => out.write_all(b"NonFungibleEdition")?,
-        }
-        Ok(IsNull::No)
+        to_bytes(self, out, |_| false)
     }
 }
 
 impl FromSql<TokenStandard, Pg> for TokenStandardEnum {
     fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
-        match not_none!(bytes) {
-            b"NonFungible" => Ok(TokenStandardEnum::NonFungible),
-            b"FungibleAsset" => Ok(TokenStandardEnum::FungibleAsset),
-            b"Fungible" => Ok(TokenStandardEnum::Fungible),
-            b"NonFungibleEdition" => Ok(TokenStandardEnum::NonFungibleEdition),
-            _ => Err("invalid enum entry".into()),
-        }
+        from_bytes(bytes)
+    }
+}
+
+/// An offer event lifecycle
+#[derive(SqlType, Debug, Clone, Copy)]
+#[postgres(type_name = "offereventlifecycle")]
+/// Represents database `offereventlifecycle` type
+pub struct OfferEventLifecycle;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "OfferEventLifecycle"]
+/// `OfferEventLifecycle` enum in `OfferEvents` struct
+pub enum OfferEventLifecycleEnum {
+    /// An offer was made on NFT
+    Created,
+    /// An offer was cancelled on NFT
+    Cancelled,
+}
+
+impl ToSql<OfferEventLifecycle, Pg> for OfferEventLifecycleEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<OfferEventLifecycle, Pg> for OfferEventLifecycleEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}
+
+/// A listing event lifecycle
+#[derive(SqlType, Debug, Clone, Copy)]
+#[postgres(type_name = "listingeventlifecycle")]
+/// Represents database `listingeventlifecycle` type
+pub struct ListingEventLifecycle;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "ListingEventLifecycle"]
+/// `OfferEventLifecycle` enum in `OfferEvents` struct
+pub enum ListingEventLifecycleEnum {
+    /// A listing was created
+    Created,
+    /// A listing was cancelled
+    Cancelled,
+}
+
+impl ToSql<ListingEventLifecycle, Pg> for ListingEventLifecycleEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<ListingEventLifecycle, Pg> for ListingEventLifecycleEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
     }
 }
