@@ -25,7 +25,6 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                         metadatas.seller_fee_basis_points AS seller_fee_basis_points,
                         metadatas.mint_address AS mint_address,
                         metadatas.primary_sale_happened AS primary_sale_happened,
-                        metadatas.uri AS uri,
                         metadata_jsons.description AS description,
                         metadata_jsons.image AS image,
                         store_creators.creator_address AS creator_address
@@ -51,7 +50,6 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                      seller_fee_basis_points,
                      mint_address,
                      primary_sale_happened,
-                     uri,
                      description,
                      image,
                  }| {
@@ -63,7 +61,6 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                             seller_fee_basis_points,
                             mint_address,
                             primary_sale_happened,
-                            uri,
                             description,
                             image,
                         }

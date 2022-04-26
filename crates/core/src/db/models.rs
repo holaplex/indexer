@@ -246,10 +246,6 @@ pub struct Nft {
     /// True if this item is in the secondary market.  Immutable once set.
     #[sql_type = "Bool"]
     pub primary_sale_happened: bool,
-    
-    /// Metadata metadata_json uri
-    #[sql_type = "Text"]
-    pub uri: String,
 
     // Table metadata_json
     /// Metadata description
@@ -322,10 +318,6 @@ pub struct SampleNft {
     /// True if this item is in the secondary market.  Immutable once set.
     #[sql_type = "Bool"]
     pub primary_sale_happened: bool,
-
-    /// uri for metadata_json
-    #[sql_type = "Text"]
-    pub uri: String,
     
     // Table metadata_json
     /// Metadata description
@@ -447,6 +439,20 @@ pub struct MetadataAttribute<'a> {
     pub id: Cow<'a, uuid::Uuid>,
     /// Address of metadata first verified creator
     pub first_verified_creator: Option<Cow<'a, str>>,
+}
+
+/// A row in the `files` table
+#[derive(Debug, Clone, Queryable)]
+pub struct MetadataFile<'a> {
+    /// Metadata address
+    pub metadata_address: Cow<'a, str>,
+    /// File uri
+    pub uri: Cow<'a, str>,
+    /// File type
+    pub file_type: Cow<'a, str>,
+    /// File generated id
+    pub id: Cow<'a, uuid::Uuid>,
+
 }
 
 /// A row in the `metadata_collections` table
