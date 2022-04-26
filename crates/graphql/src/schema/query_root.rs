@@ -251,6 +251,7 @@ impl QueryRoot {
                 metadatas::primary_sale_happened,
                 metadata_jsons::description,
                 metadata_jsons::image,
+                metadata_jsons::category,
             ))
             .limit(1)
             .load(&conn)

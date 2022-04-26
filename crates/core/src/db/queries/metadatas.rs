@@ -130,6 +130,7 @@ pub fn list(
                 metadatas::primary_sale_happened,
                 metadata_jsons::description,
                 metadata_jsons::image,
+                metadata_jsons::category,
             ),
             listing_receipts::price.nullable(),
         ))

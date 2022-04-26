@@ -88,6 +88,7 @@ impl TryBatchFn<PublicKey<Listing>, Vec<(usize, Nft)>> for Batcher {
                     metadatas::primary_sale_happened,
                     metadata_jsons::description,
                     metadata_jsons::image,
+                    metadata_jsons::category,
                 ),
             ))
             .load(&conn)
