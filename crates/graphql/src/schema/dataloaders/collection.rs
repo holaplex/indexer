@@ -54,6 +54,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                      uri,
                      description,
                      image,
+                     category,
                  }| {
                     (
                         creator_address,
@@ -66,6 +67,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                             uri,
                             description,
                             image,
+                            category,
                         }
                         .try_into(),
                     )

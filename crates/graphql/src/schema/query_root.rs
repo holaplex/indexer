@@ -306,6 +306,7 @@ impl QueryRoot {
                 metadatas::uri,
                 metadata_jsons::description,
                 metadata_jsons::image,
+                metadata_jsons::category,
             ))
             .limit(1)
             .load(&conn)

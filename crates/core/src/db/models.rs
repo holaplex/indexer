@@ -263,6 +263,10 @@ pub struct Nft {
     /// Metadata Image url
     #[sql_type = "Nullable<Text>"]
     pub image: Option<String>,
+
+    /// Metadata Category
+    #[sql_type = "Nullable<Text>"]
+    pub category: Option<String>,
 }
 
 /// Union of `listing_receipts` and `purchase_receipts` for an `NFTActivity`
@@ -339,6 +343,10 @@ pub struct SampleNft {
     /// Metadata Image url
     #[sql_type = "Nullable<Text>"]
     pub image: Option<String>,
+
+    /// Metadata category
+    #[sql_type = "Nullable<Text>"]
+    pub category: Option<String>,
 }
 
 /// Join record for the RPC getListings query
