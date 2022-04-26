@@ -1,4 +1,5 @@
 //! Basic implementation of RPC-over-AMQP.
+#![allow(clippy::unit_arg)] // for <() as Into<Return>>::into()
 
 use std::future::Future;
 
@@ -19,6 +20,8 @@ use serde_value::Value;
 use crate::{Error, Result};
 
 mod client;
+#[cfg(feature = "geyser-rpc")]
+pub mod geyser;
 mod server;
 
 pub use client::Client;
@@ -35,8 +38,8 @@ impl<T: Serialize> From<T> for Return {
     }
 }
 
-/// An RPC interface, providing an exchange and handler
-pub trait Rpc: Sized {
+/// An RPC interface, providing an exchange and client
+pub trait Rpc {
     /// ID hint for the exchange to which consumers should bind
     const ID: &'static str;
 
@@ -46,14 +49,20 @@ pub trait Rpc: Sized {
     /// The type of a client proxy for marshalling call and return types
     type Proxy: From<Client<Self>>;
 
-    /// Handler method for parsing an RPC call and producing a return
-    fn handle(&self, args: Self::Args) -> Return;
-
     /// Construct a client for this interface
     #[must_use]
     fn client() -> Self::Proxy {
         Client::new().into()
     }
+}
+
+/// An RPC interface that is also a valid server handler
+pub trait Handler: Sized {
+    /// The interface to which this handler is compliant
+    type Rpc: Rpc;
+
+    /// Handler method for parsing an RPC call and producing a return
+    fn handle(&self, args: <Self::Rpc as Rpc>::Args) -> Return;
 
     /// Construct a server for this interface
     #[must_use]
@@ -63,7 +72,7 @@ pub trait Rpc: Sized {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-enum Message<R: Rpc> {
+enum Message<R: Rpc + ?Sized> {
     Call(R::Args),
     Ret(Value),
 }
@@ -76,7 +85,7 @@ struct RpcQueue {
 
 impl RpcQueue {
     #[inline]
-    async fn new<R: Rpc>(
+    async fn new<R: Rpc + ?Sized>(
         conn: &Connection,
         routing_key: &str,
         opts: QueueDeclareOptions,

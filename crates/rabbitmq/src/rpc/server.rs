@@ -8,24 +8,24 @@ use lapin::{
     BasicProperties, Connection,
 };
 
-use super::{check_confirm, handle_delivery, Message, Rpc, RpcError, RpcQueue};
+use super::{check_confirm, handle_delivery, Handler, Message, RpcError, RpcQueue};
 use crate::{serialize, tag, Result};
 
 /// A server consumer for responding to RPC calls
 #[derive(Debug)]
-pub struct Server<R> {
+pub struct Server<H> {
     name: String,
-    rpc: R,
+    handler: H,
 }
 
-impl<R> Server<R> {
+impl<H> Server<H> {
     /// Construct a new server using the given RPC listener and server name
-    pub fn new(name: String, rpc: R) -> Self {
-        Self { name, rpc }
+    pub fn new(name: String, handler: H) -> Self {
+        Self { name, handler }
     }
 }
 
-impl<R: Rpc> Server<R> {
+impl<H: Handler> Server<H> {
     /// Listen for incoming messages on the given connection
     ///
     /// # Errors
@@ -36,7 +36,7 @@ impl<R: Rpc> Server<R> {
             chan,
             exchange,
             queue,
-        } = RpcQueue::new::<R>(conn, &self.name, QueueDeclareOptions {
+        } = RpcQueue::new::<H::Rpc>(conn, &self.name, QueueDeclareOptions {
             passive: false,
             durable: true,
             exclusive: false,
@@ -85,15 +85,16 @@ impl<R: Rpc> Server<R> {
                     ));
                 };
 
-                let ret =
-                    if let Message::<R>::Call(args) = serialize::deserialize(Cursor::new(data))? {
-                        self.rpc.handle(args)
-                    } else {
-                        return Err(RpcError::Ignored("message body was not Call"));
-                    };
+                let ret = if let Message::<H::Rpc>::Call(args) =
+                    serialize::deserialize(Cursor::new(data))?
+                {
+                    self.handler.handle(args)
+                } else {
+                    return Err(RpcError::Ignored("message body was not Call"));
+                };
 
                 let mut payload = vec![];
-                serialize::serialize(&mut payload, &Message::<R>::Ret(ret.0?))?;
+                serialize::serialize(&mut payload, &Message::<H::Rpc>::Ret(ret.0?))?;
 
                 let confirm = chan
                     .basic_publish(
