@@ -24,7 +24,8 @@ create table offer_events (
   lifecycle text check (lifecycle IN ('Created', 'Cancelled')) not null,
   primary key (feed_event_id),
   foreign key (feed_event_id) references feed_events (id),
-  foreign key (bid_receipt_address) references bid_receipts (address)
+  foreign key (bid_receipt_address) references bid_receipts (address),
+  constraint uc_offer_events_bid_receipt_address_lifecycle UNIQUE (bid_receipt_address, lifecycle)
 );
 
 create table listing_events (
@@ -33,7 +34,8 @@ create table listing_events (
   lifecycle text check (lifecycle IN ('Created', 'Cancelled')) not null,
   primary key (feed_event_id),
   foreign key (feed_event_id) references feed_events (id),
-  foreign key (listing_receipt_address) references listing_receipts (address)
+  foreign key (listing_receipt_address) references listing_receipts (address),
+  constraint uc_listing_events_listing_receipt_address_lifecycle UNIQUE (listing_receipt_address, lifecycle)
 );
 
 create table purchase_events (
