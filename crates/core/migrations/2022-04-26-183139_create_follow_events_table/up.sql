@@ -3,7 +3,8 @@ create table follow_events (
   feed_event_id uuid not null,
   primary key (feed_event_id),
   foreign key (feed_event_id) references feed_events (id),
-  foreign key (graph_connection_address) references graph_connections (address)
+  foreign key (graph_connection_address) references graph_connections (address),
+  constraint uc_follow_events_graph_connection_address unique (graph_connection_address)
 );
 
 create index if not exists follow_events_graph_connection_address_idx on 
