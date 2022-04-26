@@ -18,12 +18,6 @@ use mpl_token_metadata::state::{Collection, Metadata as MetadataAccount, TokenSt
 use super::Client;
 use crate::prelude::*;
 
-#[derive(Clone, Copy)]
-enum FeedEventId {
-    Skipped,
-    Inserted(Uuid),
-}
-
 pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount) -> Result<()> {
     let addr = bs58::encode(key).into_string();
     let (edition_pda_key, _bump) = find_edition(meta.mint);
@@ -89,7 +83,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
                     .execute(db)
                     .context("failed to insert metadata creators")?;
 
-                if let FeedEventId::Inserted(id) = feed_event_id {
+                if let Some(id) = feed_event_id {
                     insert_into(feed_event_wallets::table)
                         .values(&FeedEventWallet {
                             wallet_address: row.creator_address,
@@ -121,7 +115,7 @@ async fn insert_with_event(
     client: &Client,
     addr: String,
     row: Metadata<'static>,
-) -> Result<FeedEventId> {
+) -> Result<Option<Uuid>> {
     client
         .db()
         .run({
@@ -140,7 +134,7 @@ async fn insert_with_event(
                     .context("Failed to insert metadata")?;
 
                 if Ok(true) == metadata_exists {
-                    return Ok(FeedEventId::Skipped);
+                    return Ok(None);
                 }
 
                 db.build_transaction().read_write().run(|| {
@@ -158,7 +152,7 @@ async fn insert_with_event(
                         .execute(db)
                         .context("Failed to insert mint event")?;
 
-                    Result::<_>::Ok(FeedEventId::Inserted(feed_event_id))
+                    Result::<_>::Ok(Some(feed_event_id))
                 })
             }
         })
