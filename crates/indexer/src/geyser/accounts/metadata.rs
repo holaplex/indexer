@@ -20,7 +20,7 @@ use crate::prelude::*;
 
 #[derive(Clone, Copy)]
 enum FeedEventId {
-    Existing,
+    Skipped,
     Inserted(Uuid),
 }
 
@@ -126,6 +126,11 @@ async fn insert_with_event(
         .db()
         .run({
             move |db| {
+                let metadata_exists = select(exists(
+                    metadatas::table.filter(metadatas::address.eq(addr.clone())),
+                ))
+                .get_result::<bool>(db);
+
                 insert_into(metadatas::table)
                     .values(&row)
                     .on_conflict(metadatas::address)
@@ -134,16 +139,11 @@ async fn insert_with_event(
                     .execute(db)
                     .context("Failed to insert metadata")?;
 
+                if Ok(true) == metadata_exists {
+                    return Ok(FeedEventId::Skipped);
+                }
+
                 db.build_transaction().read_write().run(|| {
-                    let mint_event_exists = select(exists(
-                        mint_events::table.filter(mint_events::metadata_address.eq(addr.clone())),
-                    ))
-                    .get_result::<bool>(db);
-
-                    if Ok(true) == mint_event_exists {
-                        return Ok(FeedEventId::Existing);
-                    }
-
                     let feed_event_id = insert_into(feed_events::table)
                         .default_values()
                         .returning(feed_events::id)

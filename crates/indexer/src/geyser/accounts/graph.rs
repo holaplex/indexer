@@ -23,6 +23,11 @@ pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Connecti
     client
         .db()
         .run(move |db| {
+            let graph_connection_exists = select(exists(
+                graph_connections::table.filter(graph_connections::address.eq(row.address.clone())),
+            ))
+            .get_result::<bool>(db);
+
             insert_into(graph_connections::table)
                 .values(&row)
                 .on_conflict(graph_connections::address)
@@ -30,17 +35,11 @@ pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Connecti
                 .set(&row)
                 .execute(db)?;
 
+            if Ok(true) == graph_connection_exists {
+                return Ok(());
+            }
+
             db.build_transaction().read_write().run(|| {
-                let follow_event_exists = select(exists(
-                    follow_events::table
-                        .filter(follow_events::graph_connection_address.eq(row.address.clone())),
-                ))
-                .get_result::<bool>(db);
-
-                if Ok(true) == follow_event_exists {
-                    return Ok(());
-                }
-
                 let feed_event_id = insert_into(feed_events::table)
                     .default_values()
                     .returning(feed_events::id)
@@ -61,15 +60,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Connecti
                         feed_event_id: Owned(feed_event_id),
                     })
                     .execute(db)
-                    .context("Failed to insert follow feed event wallet for followed")?;
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: row.from_account,
-                        feed_event_id: Owned(feed_event_id),
-                    })
-                    .execute(db)
-                    .context("Failed to insert follow feed event wallet for the follower")?;
+                    .context("Failed to insert follow feed event wallet")?;
 
                 Result::<_>::Ok(())
             })

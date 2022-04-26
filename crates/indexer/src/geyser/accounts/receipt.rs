@@ -12,6 +12,7 @@ use indexer_core::{
             bid_receipts, current_metadata_owners, feed_event_wallets, feed_events, listing_events,
             listing_receipts, metadatas, offer_events, purchase_events, purchase_receipts,
         },
+        Error as DbError,
     },
     prelude::*,
     util,
@@ -48,6 +49,11 @@ pub(crate) async fn process_listing_receipt(
     client
         .db()
         .run(move |db| {
+            let listing_receipt_exists = select(exists(
+                listing_receipts::table.filter(listing_receipts::address.eq(row.address.clone())),
+            ))
+            .get_result::<bool>(db);
+
             insert_into(listing_receipts::table)
                 .values(&row)
                 .on_conflict(listing_receipts::address)
@@ -55,31 +61,28 @@ pub(crate) async fn process_listing_receipt(
                 .set(&row)
                 .execute(db)?;
 
+            if Ok(true) == listing_receipt_exists || row.purchase_receipt.is_some() {
+                return Ok(());
+            }
+
             db.build_transaction().read_write().run(|| {
-                let listing_mint_event_exists = select(exists(
-                    listing_events::table
-                        .filter(listing_events::listing_receipt_address.eq(row.address.clone())),
-                ))
-                .get_result::<bool>(db);
-
-                if Ok(true) == listing_mint_event_exists || row.purchase_receipt.is_some() {
-                    return Ok(());
-                }
-
                 let feed_event_id = insert_into(feed_events::table)
                     .default_values()
                     .returning(feed_events::id)
                     .get_result::<Uuid>(db)
                     .context("Failed to insert feed event")?;
 
-                insert_into(listing_events::table)
+                let listing_event = insert_into(listing_events::table)
                     .values(&ListingEvent {
                         feed_event_id: Owned(feed_event_id),
                         lifecycle: ListingEventLifecycleEnum::Created,
                         listing_receipt_address: row.address,
                     })
-                    .execute(db)
-                    .context("failed to insert listing created event")?;
+                    .execute(db);
+
+                if Err(DbError::RollbackTransaction) == listing_event {
+                    return Ok(());
+                }
 
                 insert_into(feed_event_wallets::table)
                     .values(&FeedEventWallet {
@@ -119,24 +122,22 @@ pub(crate) async fn process_purchase_receipt(
     client
         .db()
         .run(move |db| {
+            let purchase_receipt_exists = select(exists(
+                purchase_receipts::table.filter(purchase_receipts::address.eq(row.address.clone())),
+            ))
+            .get_result::<bool>(db);
+
             insert_into(purchase_receipts::table)
                 .values(&row)
                 .on_conflict(purchase_receipts::address)
                 .do_update()
                 .set(&row)
                 .execute(db)?;
+            if Ok(true) == purchase_receipt_exists {
+                return Ok(());
+            }
 
             db.build_transaction().read_write().run(|| {
-                let purchase_event_exists = select(exists(
-                    purchase_events::table
-                        .filter(purchase_events::purchase_receipt_address.eq(row.address.clone())),
-                ))
-                .get_result::<bool>(db);
-
-                if Ok(true) == purchase_event_exists {
-                    return Ok(());
-                }
-
                 let feed_event_id = insert_into(feed_events::table)
                     .default_values()
                     .returning(feed_events::id)
@@ -208,6 +209,11 @@ pub(crate) async fn process_bid_receipt(
     client
         .db()
         .run(move |db| {
+            let bid_receipt_exists = select(exists(
+                bid_receipts::table.filter(bid_receipts::address.eq(row.address.clone())),
+            ))
+            .get_result::<bool>(db);
+
             insert_into(bid_receipts::table)
                 .values(&row)
                 .on_conflict(bid_receipts::address)
@@ -215,17 +221,11 @@ pub(crate) async fn process_bid_receipt(
                 .set(&row)
                 .execute(db)?;
 
+            if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
+                return Ok(());
+            }
+
             db.build_transaction().read_write().run(|| {
-                let offer_event_exists = select(exists(
-                    offer_events::table
-                        .filter(offer_events::bid_receipt_address.eq(row.address.clone())),
-                ))
-                .get_result::<bool>(db);
-
-                if Ok(true) == offer_event_exists || row.purchase_receipt.is_some() {
-                    return Ok(());
-                }
-
                 let metadata_owner: String = current_metadata_owners::table
                     .inner_join(
                         metadatas::table
