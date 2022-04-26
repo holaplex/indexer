@@ -14,7 +14,7 @@ use objects::{
 };
 use scalars::{markers::StoreConfig, PublicKey};
 
-use super::prelude::*;
+use super::{objects::nft::NftFile, prelude::*};
 
 #[derive(Clone)]
 pub struct AppContext {
@@ -28,6 +28,7 @@ pub struct AppContext {
     pub market_stats_loader: Loader<PublicKey<StoreConfig>, Option<MarketStats>>,
     pub mint_stats_loader: Loader<PublicKey<AuctionHouse>, Option<MintStats>>,
     pub nft_attributes_loader: Loader<PublicKey<Nft>, Vec<NftAttribute>>,
+    pub nft_files_loader: Loader<PublicKey<Nft>, Vec<NftFile>>,
     pub nft_creators_loader: Loader<PublicKey<Nft>, Vec<NftCreator>>,
     pub nft_owner_loader: Loader<PublicKey<Nft>, Option<NftOwner>>,
     pub nft_activities_loader: Loader<PublicKey<Nft>, Vec<NftActivity>>,
@@ -61,6 +62,7 @@ impl AppContext {
             market_stats_loader: Loader::new(batcher.clone()),
             mint_stats_loader: Loader::new(batcher.clone()),
             nft_attributes_loader: Loader::new(batcher.clone()),
+            nft_files_loader: Loader::new(batcher.clone()),
             nft_creators_loader: Loader::new(batcher.clone()),
             nft_owner_loader: Loader::new(batcher.clone()),
             graph_connection_loader: Loader::new(batcher.clone()),

@@ -1,4 +1,4 @@
-use indexer_core::db::queries;
+use indexer_core::db::{queries, tables::files};
 use objects::{
     listing_receipt::ListingReceipt,
     nft::{Nft, NftActivity, NftAttribute, NftCreator, NftOwner},
@@ -11,6 +11,7 @@ use tables::{
 };
 
 use super::prelude::*;
+use crate::schema::objects::nft::NftFile;
 
 #[async_trait]
 impl TryBatchFn<PublicKey<Nft>, Vec<NftAttribute>> for Batcher {
@@ -170,6 +171,26 @@ impl TryBatchFn<PublicKey<Nft>, Vec<NftActivity>> for Batcher {
 }
 
 #[async_trait]
+impl TryBatchFn<PublicKey<Nft>, Vec<NftFile>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Nft>],
+    ) -> TryBatchMap<PublicKey<Nft>, Vec<NftFile>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::MetadataFile> = files::table
+            .filter(files::metadata_address.eq(any(addresses)))
+            .load(&conn)
+            .context("Failed to load NFT files")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|a| (a.metadata_address.clone(), a.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
 impl TryBatchFn<PublicKey<Nft>, Option<Nft>> for Batcher {
     async fn load(
         &mut self,
@@ -188,6 +209,7 @@ impl TryBatchFn<PublicKey<Nft>, Option<Nft>> for Batcher {
                 metadatas::seller_fee_basis_points,
                 metadatas::mint_address,
                 metadatas::primary_sale_happened,
+                metadatas::uri,
                 metadata_jsons::description,
                 metadata_jsons::image,
             ))

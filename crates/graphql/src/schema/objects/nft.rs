@@ -57,6 +57,48 @@ impl<'a> TryFrom<models::MetadataAttribute<'a>> for NftAttribute {
 }
 
 #[derive(Debug, Clone)]
+/// An NFT file
+pub struct NftFile {
+    pub metadata_address: String,
+    pub uri: String,
+    pub file_type: String,
+}
+
+#[graphql_object(Context = AppContext)]
+impl NftFile {
+    pub fn metadata_address(&self) -> &str {
+        &self.metadata_address
+    }
+
+    pub fn uri(&self) -> &str {
+        &self.uri
+    }
+
+    pub fn file_type(&self) -> &str {
+        &self.file_type
+    }
+}
+
+impl<'a> TryFrom<models::MetadataFile<'a>> for NftFile {
+    type Error = Error;
+
+    fn try_from(
+        models::MetadataFile {
+            metadata_address,
+            uri,
+            file_type,
+            ..
+        }: models::MetadataFile,
+    ) -> Result<Self> {
+        Ok(Self {
+            metadata_address: metadata_address.into_owned(),
+            uri: uri.into_owned(),
+            file_type: file_type.into_owned(),
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
 /// An NFT creator
 pub struct NftCreator {
     pub address: String,
@@ -209,6 +251,7 @@ pub struct Nft {
     pub seller_fee_basis_points: i32,
     pub mint_address: String,
     pub primary_sale_happened: bool,
+    pub uri: String,
     pub description: String,
     pub image: String,
 }
@@ -221,6 +264,7 @@ impl From<models::Nft> for Nft {
             seller_fee_basis_points,
             mint_address,
             primary_sale_happened,
+            uri,
             description,
             image,
         }: models::Nft,
@@ -231,6 +275,7 @@ impl From<models::Nft> for Nft {
             seller_fee_basis_points,
             mint_address,
             primary_sale_happened,
+            uri,
             description: description.unwrap_or_else(String::new),
             image: image.unwrap_or_else(String::new),
         }
@@ -334,6 +379,13 @@ If no value is provided, it will return XSmall")))]
 
     pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<BidReceipt>> {
         ctx.bid_receipts_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn files(&self, ctx: &AppContext) -> FieldResult<Vec<NftFile>> {
+        ctx.nft_files_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
