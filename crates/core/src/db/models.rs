@@ -318,7 +318,7 @@ pub struct SampleNft {
     /// True if this item is in the secondary market.  Immutable once set.
     #[sql_type = "Bool"]
     pub primary_sale_happened: bool,
-    
+
     // Table metadata_json
     /// Metadata description
     #[sql_type = "Nullable<Text>"]
@@ -452,7 +452,6 @@ pub struct MetadataFile<'a> {
     pub file_type: Cow<'a, str>,
     /// File generated id
     pub id: Cow<'a, uuid::Uuid>,
-
 }
 
 /// A row in the `metadata_collections` table

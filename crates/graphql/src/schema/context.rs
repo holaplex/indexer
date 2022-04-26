@@ -13,7 +13,7 @@ use objects::{
 };
 use scalars::{markers::StoreConfig, PublicKey};
 
-use super::{prelude::*, objects::nft::NftFile};
+use super::{objects::nft::NftFile, prelude::*};
 
 #[derive(Clone)]
 pub struct AppContext {

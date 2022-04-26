@@ -19,9 +19,9 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                 "SELECT sample_metadatas.creator_address, sample_metadatas.address, sample_metadatas.name, sample_metadatas.seller_fee_basis_points, sample_metadatas.mint_address, sample_metadatas.primary_sale_happened, sample_metadatas.uri, sample_metadatas.description, sample_metadatas.image
                 FROM store_creators
                 JOIN LATERAL (
-                    SELECT 
-                        metadatas.address AS address, 
-                        metadatas.name AS name, 
+                    SELECT
+                        metadatas.address AS address,
+                        metadatas.name AS name,
                         metadatas.seller_fee_basis_points AS seller_fee_basis_points,
                         metadatas.mint_address AS mint_address,
                         metadatas.primary_sale_happened AS primary_sale_happened,

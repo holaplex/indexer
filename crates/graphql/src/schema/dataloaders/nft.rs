@@ -10,9 +10,8 @@ use tables::{
     purchase_receipts, twitter_handle_name_services,
 };
 
-use crate::schema::objects::nft::NftFile;
-
 use super::prelude::*;
+use crate::schema::objects::nft::NftFile;
 
 #[async_trait]
 impl TryBatchFn<PublicKey<Nft>, Vec<NftAttribute>> for Batcher {
