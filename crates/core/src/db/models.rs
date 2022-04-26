@@ -9,7 +9,10 @@ use diesel::sql_types::{Array, Bool, Int4, Int8, Nullable, Text, Timestamp, VarC
 
 #[allow(clippy::wildcard_imports)]
 use super::schema::*;
-use crate::db::custom_types::{EndSettingType, TokenStandardEnum, WhitelistMintMode};
+use crate::db::custom_types::{
+    EndSettingType, ListingEventLifecycleEnum, OfferEventLifecycleEnum, TokenStandardEnum,
+    WhitelistMintMode,
+};
 
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
@@ -1739,4 +1742,77 @@ pub struct StoreCreatorCount<'a> {
     /// Number of NFTs creatred by this store_creator
     #[sql_type = "Int8"]
     pub nfts: i64,
+}
+/// A row in the `feed_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "feed_events"]
+pub struct FeedEvent<'a> {
+    /// generated id
+    pub id: Cow<'a, uuid::Uuid>,
+    /// generated created_at
+    pub created_at: NaiveDateTime,
+}
+
+/// A row in the `feed_event_wallets` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "feed_event_wallets"]
+pub struct FeedEventWallet<'a> {
+    /// a wallet associated to the event
+    pub wallet_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
+}
+
+/// A row in the `mint_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "mint_events"]
+pub struct MintEvent<'a> {
+    /// foreign key to `metadatas` address
+    pub metadata_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
+}
+
+/// A row in the `offer_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "offer_events"]
+pub struct OfferEvent<'a> {
+    /// foreign key to `bid_recipts` address
+    pub bid_receipt_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
+    ///  enum of offer lifecycle
+    pub lifecycle: OfferEventLifecycleEnum,
+}
+
+/// A row in the `listing_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "listing_events"]
+pub struct ListingEvent<'a> {
+    /// foreign key to `listing_receipts` address
+    pub listing_receipt_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
+    /// enum of listing lifecycle
+    pub lifecycle: ListingEventLifecycleEnum,
+}
+
+/// A row in the `purchase_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "purchase_events"]
+pub struct PurchaseEvent<'a> {
+    /// foreign key to `purchase_receipts` address
+    pub purchase_receipt_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
+}
+
+/// A row in the `follow_events` table
+#[derive(Debug, Clone, Queryable, Insertable)]
+#[table_name = "follow_events"]
+pub struct FollowEvent<'a> {
+    /// foreign key to `graph_connections` address
+    pub graph_connection_address: Cow<'a, str>,
+    /// foreign key to `feed_events`
+    pub feed_event_id: Cow<'a, uuid::Uuid>,
 }
