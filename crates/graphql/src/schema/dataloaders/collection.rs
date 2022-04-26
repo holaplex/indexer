@@ -16,7 +16,6 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
         let conn = self.db()?;
 
         let rows: Vec<models::SampleNft> = sql_query(
-<<<<<<< HEAD
                 "SELECT sample_metadatas.creator_address, sample_metadatas.address, sample_metadatas.name, sample_metadatas.seller_fee_basis_points, sample_metadatas.mint_address, sample_metadatas.primary_sale_happened, sample_metadatas.uri, sample_metadatas.description, sample_metadatas.image
                 FROM store_creators
                 JOIN LATERAL (
@@ -30,12 +29,6 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                         metadata_jsons.description AS description,
                         metadata_jsons.image AS image,
                         store_creators.creator_address AS creator_address
-=======
-                "SELECT sample_metadatas.creator_address, sample_metadatas.address, sample_metadatas.name, sample_metadatas.seller_fee_basis_points, sample_metadatas.mint_address, sample_metadatas.primary_sale_happened, sample_metadatas.description, sample_metadatas.image, sample_metadatas.category
-                FROM store_creators
-                JOIN LATERAL (
-                    SELECT metadatas.address AS address, metadatas.name AS name, metadatas.seller_fee_basis_points AS seller_fee_basis_points, metadatas.mint_address AS mint_address, metadatas.primary_sale_happened AS primary_sale_happened, metadata_jsons.description AS description, metadata_jsons.image AS image, store_creators.creator_address AS creator_address, metadata_jsons.category AS category
->>>>>>> d726b0c... add category
                     FROM metadatas
                     INNER JOIN metadata_jsons ON (metadatas.address = metadata_jsons.metadata_address)
                     INNER JOIN metadata_creators ON (metadatas.address = metadata_creators.metadata_address)
@@ -61,7 +54,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                      uri,
                      description,
                      image,
-                     category
+                     category,
                  }| {
                     (
                         creator_address,
@@ -74,7 +67,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                             uri,
                             description,
                             image,
-                            category
+                            category,
                         }
                         .try_into(),
                     )

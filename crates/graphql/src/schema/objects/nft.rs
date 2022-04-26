@@ -268,7 +268,7 @@ impl From<models::Nft> for Nft {
             uri,
             description,
             image,
-            category
+            category,
         }: models::Nft,
     ) -> Self {
         Self {
@@ -280,7 +280,7 @@ impl From<models::Nft> for Nft {
             uri,
             description: description.unwrap_or_else(String::new),
             image: image.unwrap_or_else(String::new),
-            category: category.unwrap_or_else(String::new)
+            category: category.unwrap_or_else(String::new),
         }
     }
 }

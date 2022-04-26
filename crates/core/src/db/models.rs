@@ -346,7 +346,6 @@ pub struct SampleNft {
     /// Metadata category
     #[sql_type = "Nullable<Text>"]
     pub category: Option<String>,
-    
 }
 
 /// Join record for the RPC getListings query
