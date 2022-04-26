@@ -3,7 +3,8 @@ create table purchase_events (
   feed_event_id uuid not null,
   primary key (feed_event_id),
   foreign key (feed_event_id) references feed_events (id),
-  foreign key (purchase_receipt_address) references purchase_receipts (address)
+  foreign key (purchase_receipt_address) references purchase_receipts (address),
+  constraint uc_purchase_events_purchase_receipt_address unique (purchase_receipt_address)
 );
 
 create index if not exists purchase_events_purchase_receipt_address_idx on 

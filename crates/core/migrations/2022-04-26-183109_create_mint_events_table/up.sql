@@ -3,7 +3,7 @@ create table mint_events (
   feed_event_id uuid not null,
   primary key (feed_event_id),
   foreign key (feed_event_id) references feed_events (id),
-  foreign key (metadata_address) references metadatas (address)
+  constraint uc_mint_events_metadata_address unique (metadata_address)
 );
 
 create index if not exists mint_events_metadata_address_idx on 

@@ -1138,7 +1138,6 @@ joinable!(follow_events -> graph_connections (graph_connection_address));
 joinable!(listing_events -> feed_events (feed_event_id));
 joinable!(listing_events -> listing_receipts (listing_receipt_address));
 joinable!(mint_events -> feed_events (feed_event_id));
-joinable!(mint_events -> metadatas (metadata_address));
 joinable!(offer_events -> bid_receipts (bid_receipt_address));
 joinable!(offer_events -> feed_events (feed_event_id));
 joinable!(purchase_events -> feed_events (feed_event_id));
