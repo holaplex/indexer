@@ -1,11 +1,11 @@
-use std::{panic::AssertUnwindSafe, sync::Arc};
+use std::{panic::AssertUnwindSafe, sync::Arc, time::Duration};
 
 use indexer_core::prelude::*;
 use indexer_rabbitmq::http_indexer;
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
 
-use crate::db::Pool;
+use crate::{db::Pool, reqwest};
 
 struct HttpProducers {
     metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
@@ -40,8 +40,8 @@ struct DialectEvent {
 /// Wrapper for handling networking logic
 pub struct Client {
     db: AssertUnwindSafe<Pool>,
-    http: HttpProducers,
-    dialect_push: reqwest::Client,
+    http: reqwest::Client,
+    http_prod: HttpProducers,
 }
 
 impl Client {
@@ -58,8 +58,8 @@ impl Client {
     ) -> Result<Arc<Self>> {
         Ok(Arc::new(Self {
             db: AssertUnwindSafe(db),
-            dialect_push: reqwest::Client::new(),
-            http: HttpProducers {
+            http: reqwest::Client::new(Duration::from_millis(500))?,
+            http_prod: HttpProducers {
                 metadata_json: http_indexer::Producer::new(conn, meta_queue)
                     .await
                     .context("Couldn't create AMQP metadata JSON producer")?,
@@ -87,7 +87,7 @@ impl Client {
         first_verified_creator: Option<Pubkey>,
         uri: String,
     ) -> Result<(), indexer_rabbitmq::Error> {
-        self.http
+        self.http_prod
             .metadata_json
             .write(http_indexer::MetadataJson {
                 meta_address,
@@ -107,7 +107,7 @@ impl Client {
         config_address: Pubkey,
         uri: String,
     ) -> Result<(), indexer_rabbitmq::Error> {
-        self.http
+        self.http_prod
             .store_config
             .write(http_indexer::StoreConfig {
                 config_address,
@@ -120,10 +120,7 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if the underlying POST request results in an error.
-    pub async fn dispatch_dialect_offer_event(
-        &self,
-        bid_receipt_address: Pubkey,
-    ) -> Result<(), reqwest::Error> {
+    pub async fn dispatch_dialect_offer_event(&self, bid_receipt_address: Pubkey) -> Result<()> {
         let msg = DialectEvent {
             event_type: DialectEventType::NftMakeOffer,
             data: DialectEventData::DialectOfferEventData(DialectOfferEventData {
@@ -131,7 +128,7 @@ impl Client {
             }),
         };
 
-        self.dialect_push.post("").json(&msg).send().await?;
+        self.http.run(|h| h.post("").json(&msg).send()).await?;
 
         Ok(())
     }
