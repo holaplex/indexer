@@ -6,7 +6,6 @@ use diesel::{
     deserialize::{self, FromSql},
     pg::Pg,
     serialize::{self, Output, ToSql},
-    sql_types::Text,
     AsExpression, FromSqlRow, SqlType,
 };
 
@@ -127,10 +126,16 @@ impl FromSql<TokenStandard, Pg> for TokenStandardEnum {
     }
 }
 
+/// An offer event lifecycle
+#[derive(SqlType, Debug, Clone, Copy)]
+#[postgres(type_name = "offereventlifecycle")]
+/// Represents database `offereventlifecycle` type
+pub struct OfferEventLifecycle;
+
 #[derive(
     Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
 )]
-#[sql_type = "Text"]
+#[sql_type = "OfferEventLifecycle"]
 /// `OfferEventLifecycle` enum in `OfferEvents` struct
 pub enum OfferEventLifecycleEnum {
     /// An offer was made on NFT
@@ -139,22 +144,28 @@ pub enum OfferEventLifecycleEnum {
     Cancelled,
 }
 
-impl ToSql<Text, Pg> for OfferEventLifecycleEnum {
+impl ToSql<OfferEventLifecycle, Pg> for OfferEventLifecycleEnum {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
         to_bytes(self, out, |_| false)
     }
 }
 
-impl FromSql<Text, Pg> for OfferEventLifecycleEnum {
+impl FromSql<OfferEventLifecycle, Pg> for OfferEventLifecycleEnum {
     fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
         from_bytes(bytes)
     }
 }
 
+/// A listing event lifecycle
+#[derive(SqlType, Debug, Clone, Copy)]
+#[postgres(type_name = "listingeventlifecycle")]
+/// Represents database `listingeventlifecycle` type
+pub struct ListingEventLifecycle;
+
 #[derive(
     Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
 )]
-#[sql_type = "Text"]
+#[sql_type = "ListingEventLifecycle"]
 /// `OfferEventLifecycle` enum in `OfferEvents` struct
 pub enum ListingEventLifecycleEnum {
     /// A listing was created
@@ -163,13 +174,13 @@ pub enum ListingEventLifecycleEnum {
     Cancelled,
 }
 
-impl ToSql<Text, Pg> for ListingEventLifecycleEnum {
+impl ToSql<ListingEventLifecycle, Pg> for ListingEventLifecycleEnum {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
         to_bytes(self, out, |_| false)
     }
 }
 
-impl FromSql<Text, Pg> for ListingEventLifecycleEnum {
+impl FromSql<ListingEventLifecycle, Pg> for ListingEventLifecycleEnum {
     fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
         from_bytes(bytes)
     }
