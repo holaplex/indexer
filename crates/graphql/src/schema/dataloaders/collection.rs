@@ -16,7 +16,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
         let conn = self.db()?;
 
         let rows: Vec<models::SampleNft> = sql_query(
-                "SELECT sample_metadatas.creator_address, sample_metadatas.address, sample_metadatas.name, sample_metadatas.seller_fee_basis_points, sample_metadatas.mint_address, sample_metadatas.primary_sale_happened, sample_metadatas.uri, sample_metadatas.description, sample_metadatas.image
+                "SELECT sample_metadatas.creator_address, sample_metadatas.address, sample_metadatas.name, sample_metadatas.seller_fee_basis_points, sample_metadatas.mint_address, sample_metadatas.primary_sale_happened, sample_metadatas.uri, sample_metadatas.description, sample_metadatas.image, sample_metadatas.category
                 FROM store_creators
                 JOIN LATERAL (
                     SELECT
@@ -28,6 +28,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                         metadatas.uri AS uri,
                         metadata_jsons.description AS description,
                         metadata_jsons.image AS image,
+                        metadata_jsons.category AS category,
                         store_creators.creator_address AS creator_address
                     FROM metadatas
                     INNER JOIN metadata_jsons ON (metadatas.address = metadata_jsons.metadata_address)

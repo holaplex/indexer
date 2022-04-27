@@ -1,4 +1,6 @@
-use objects::{auction_house::AuctionHouse, nft::Nft, wallet::Wallet};
+use objects::{
+    auction_house::AuctionHouse, nft::Nft, purchase_receipt::PurchaseReceipt, wallet::Wallet,
+};
 use scalars::{PublicKey, U64};
 
 use super::prelude::*;
@@ -15,7 +17,7 @@ pub struct ListingReceipt {
     pub created_at: DateTime<Utc>,
     pub canceled_at: Option<DateTime<Utc>>,
     pub bookkeeper: PublicKey<Wallet>,
-    pub purchase_receipt: Option<String>,
+    pub purchase_receipt: Option<PublicKey<PurchaseReceipt>>,
     pub token_size: i32,
     pub bump: i32,
 }
@@ -59,6 +61,22 @@ impl ListingReceipt {
         self.canceled_at
     }
 
+    fn bookkeeper(&self) -> &PublicKey<Wallet> {
+        &self.bookkeeper
+    }
+
+    fn purchase_receipt(&self) -> &Option<PublicKey<PurchaseReceipt>> {
+        &self.purchase_receipt
+    }
+
+    fn token_size(&self) -> i32 {
+        self.token_size
+    }
+
+    fn bump(&self) -> i32 {
+        self.bump
+    }
+
     pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_loader
             .load(self.metadata.clone())
@@ -98,7 +116,7 @@ impl<'a> TryFrom<models::ListingReceipt<'a>> for ListingReceipt {
             created_at: DateTime::from_utc(created_at, Utc),
             canceled_at: canceled_at.map(|c| DateTime::from_utc(c, Utc)),
             bookkeeper: bookkeeper.into_owned().into(),
-            purchase_receipt: purchase_receipt.map(Cow::into_owned),
+            purchase_receipt: purchase_receipt.map(|pr| pr.into_owned().into()),
             token_size: token_size.try_into()?,
             bump: bump.into(),
         })
