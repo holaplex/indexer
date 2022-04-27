@@ -3,20 +3,13 @@ use indexer_core::{
     db::{insert_into, models::TwitterHandle, tables::twitter_handle_name_services, update},
     prelude::*,
 };
-use serde::{Deserialize, Serialize};
 
 use super::Client;
-use crate::prelude::*;
+use crate::{prelude::*, search_dispatch::TwitterHandleDocument};
 
 #[derive(BorshDeserialize, PartialEq, Debug, Clone)]
 struct TwitterHandleAndRegistry {
     registry_key: [u8; 32],
-    handle: String,
-}
-
-#[derive(Deserialize, Serialize)]
-struct TwitterHandleDocument {
-    owner: String,
     handle: String,
 }
 
@@ -39,11 +32,8 @@ pub(crate) async fn process(
     };
 
     client
-        .dispatch_upsert_document(
-            key.to_string(),
-            "name_service".to_string(),
-            serde_json::to_value(&document).context("failed to upcast twitter handle document")?,
-        )
+        .search()
+        .upsert_twitter_handle(key, document)
         .await
         .context("Failed to dispatch upsert twitter handle document job")?;
 
