@@ -43,7 +43,7 @@ from listing_receipts lr
 where lr.auction_house = ANY($1)
 ) as auction_house_stats
 group by auction_house, mint;
- -- $1: auction house addresses::text[]
+ -- $1: auction_house_addresses::text[]
  -- $2: now::timestamp";
 
 /// Load per-mint statistics for the given auction house address
@@ -72,7 +72,7 @@ from store_creators sc
 
 where sc.store_config_address = any($1) and mc.verified
 group by sc.store_config_address;
- -- $1: store config addresses::text[]";
+ -- $1: store_config_addresses::text[]";
 
 /// Count the number of items in a marketplace
 ///
@@ -94,7 +94,8 @@ select
     mint,
     min(listing_price) filter (where listing_canceled_at is null and listing_purchase_receipt is null)::bigint as floor,
     round(avg(purchase_price))::bigint as average,
-    sum(purchase_price) filter (where ($3 - purchased_at) < interval '24 hr')::bigint as volume_24hr
+    sum(purchase_price) filter (where ($3 - purchased_at) < interval '24 hr')::bigint as volume_24hr,
+    sum(purchase_price)::bigint as volume_total
 
 from (
     select lr.auction_house as auction_house,
@@ -120,7 +121,7 @@ where lr.auction_house = ANY($1)
     and mc.verified
 ) as collection_stats
 group by auction_house, mint;
- -- $1: auction house addresses::text[]
+ -- $1: auction_house_addresses::text[]
  -- $2: creator::text
  -- $3: now::timestamp";
 
