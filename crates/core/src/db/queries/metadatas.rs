@@ -12,8 +12,8 @@ use crate::{
         any,
         models::{Nft, NftActivity},
         tables::{
-            attributes, bid_receipts, current_metadata_owners, listing_receipts, metadata_creators,
-            metadata_jsons, metadatas,
+            attributes, bid_receipts, current_metadata_owners, listing_receipts,
+            metadata_collection_keys, metadata_creators, metadata_jsons, metadatas,
         },
         Connection,
     },
@@ -41,6 +41,8 @@ pub struct ListQueryOptions {
     pub attributes: Option<Vec<AttributeFilter>>,
     /// nft listed with auction house
     pub listed: Option<Vec<String>>,
+    /// nft in a specific colleciton
+    pub collection: Option<String>,
     /// limit to apply to query
     pub limit: i64,
     /// offset to apply to query
@@ -60,6 +62,7 @@ pub fn list(
         offerers,
         attributes,
         listed,
+        collection,
         limit,
         offset,
     }: ListQueryOptions,
@@ -79,6 +82,10 @@ pub fn list(
             listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)),
         )
         .left_outer_join(bid_receipts::table.on(metadatas::address.eq(bid_receipts::metadata)))
+        .left_outer_join(
+            metadata_collection_keys::table
+                .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
+        )
         .into_boxed();
 
     if let Some(attributes) = attributes {
@@ -101,6 +108,10 @@ pub fn list(
     if let Some(creators) = creators {
         query = query.filter(metadata_creators::creator_address.eq(any(creators)));
         query = query.filter(metadata_creators::verified.eq(true));
+    }
+
+    if let Some(collection) = collection {
+        query = query.filter(metadata_collection_keys::collection_address.eq(collection));
     }
 
     if let Some(owners) = owners {
