@@ -49,5 +49,7 @@ pub mod http_indexer;
 pub mod producer;
 mod queue_type;
 mod serialize;
+#[cfg(feature = "suffix")]
+pub mod suffix;
 
 pub use queue_type::QueueType;

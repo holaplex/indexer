@@ -6,6 +6,7 @@ use std::sync::{
 use indexer_rabbitmq::{
     geyser::{Message, Producer, QueueType, StartupType},
     lapin::{Connection, ConnectionProperties},
+    suffix::Suffix,
 };
 use smol::{
     channel,
@@ -61,7 +62,11 @@ impl Inner {
         )
         .await?;
 
-        Producer::new(&conn, QueueType::new(amqp.network, startup_type, None)).await
+        Producer::new(
+            &conn,
+            QueueType::new(amqp.network, startup_type, &Suffix::Production)?,
+        )
+        .await
     }
 
     async fn connect<'a>(

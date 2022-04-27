@@ -6,7 +6,11 @@ use std::{marker::PhantomData, time::Duration};
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
 
-use crate::queue_type::{Binding, QueueProps, RetryProps};
+use crate::{
+    queue_type::{Binding, QueueProps, RetryProps},
+    suffix::Suffix,
+    Result,
+};
 
 /// AMQP configuration for HTTP indexers
 #[derive(Debug)]
@@ -78,24 +82,23 @@ impl Entity for StoreConfig {
 }
 
 impl<E: Entity> QueueType<E> {
-    /// Construct a new queue configuration given an optional queue suffix
-    #[must_use]
-    pub fn new(sender: &str, id: Option<&str>) -> Self {
+    /// Construct a new queue configuration given a sender ID and queue suffix
+    /// configuration
+    ///
+    /// # Errors
+    /// This function fails if the given queue suffix is invalid.
+    pub fn new(sender: &str, suffix: &Suffix) -> Result<Self> {
         let exchange = format!("{}.{}.http", sender, E::ID);
-        let mut queue = format!("{}.indexer", exchange);
+        let queue = suffix.format(format!("{}.indexer", exchange))?;
 
-        if let Some(id) = id {
-            queue = format!("{}.{}", queue, id);
-        }
-
-        Self {
+        Ok(Self {
             props: QueueProps {
                 exchange,
                 queue,
                 binding: Binding::Fanout,
                 prefetch: 1024,
                 max_len_bytes: 100 * 1024 * 1024, // 100 MiB
-                auto_delete: id.is_some() || cfg!(debug_assertions),
+                auto_delete: suffix.is_debug(),
                 retry: Some(RetryProps {
                     max_tries: 8,
                     delay_hint: Duration::from_secs(2),
@@ -103,7 +106,7 @@ impl<E: Entity> QueueType<E> {
                 }),
             },
             _p: PhantomData::default(),
-        }
+        })
     }
 }
 
