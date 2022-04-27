@@ -276,7 +276,7 @@ impl QueryRoot {
             offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed: listed.map(|a| a.into_iter().map(Into::into).collect()),
-            collection: collection.map(|a| a.into()),
+            collection: collection.map(Into::into),
             limit: limit.into(),
             offset: offset.into(),
         };
