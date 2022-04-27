@@ -9,21 +9,19 @@ use crate::prelude::*;
 
 /// A schemaless Meilisearch document
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct Document<T: serde::Serialize> {
+pub struct Document {
     id: String,
     #[serde(flatten)]
-    body: T,
+    body: serde_json::Value,
 }
 
-impl<T: serde::Serialize> From<search_indexer::Document<T>> for Document<T> {
-    fn from(search_indexer::Document { id, body }: search_indexer::Document<T>) -> Self {
+impl From<search_indexer::Document> for Document {
+    fn from(search_indexer::Document { id, body }: search_indexer::Document) -> Self {
         Self { id, body }
     }
 }
 
-impl<T: serde::Serialize + std::fmt::Debug + serde::de::DeserializeOwned>
-    meilisearch_sdk::document::Document for Document<T>
-{
+impl meilisearch_sdk::document::Document for Document {
     type UIDType = String;
 
     fn get_uid(&self) -> &String {

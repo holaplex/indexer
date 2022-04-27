@@ -13,12 +13,12 @@ use crate::{
 
 /// Message data for a document upsert request
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Document<T: Serialize> {
+pub struct Document {
     /// The unique ID of the document
     pub id: String,
     /// The body of the document
     #[serde(flatten)]
-    pub body: T,
+    pub body: Value,
 }
 
 /// Message data for a search index job
@@ -31,7 +31,7 @@ pub enum Message {
         index: String,
         /// MeiliSearch Document
         /// contains primary key and content
-        document: Document<Value>,
+        document: Document,
     },
 }
 

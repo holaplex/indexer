@@ -2,9 +2,8 @@ use std::{sync::Arc, time::Duration};
 
 use indexer_core::{assets::AssetProxyArgs, clap};
 use indexer_rabbitmq::search_indexer;
-use serde_json::Value;
 
-use crate::{db::Pool, prelude::*, reqwest};
+use crate::{db::Pool, prelude::*, reqwest, search_dispatch};
 
 /// Common arguments for internal HTTP indexer usage
 #[derive(Debug, clap::Args)]
@@ -24,7 +23,7 @@ pub struct Client {
     db: Pool,
     http: reqwest::Client,
     asset_proxy: AssetProxyArgs,
-    search_prod: search_indexer::Producer,
+    search: search_dispatch::Client,
 }
 
 impl Client {
@@ -50,9 +49,7 @@ impl Client {
             db,
             http: reqwest::Client::new(timeout)?,
             asset_proxy,
-            search_prod: search_indexer::Producer::new(conn, search_queue)
-                .await
-                .context("Couldn't create AMQP search producer")?,
+            search: search_dispatch::Client::new(conn, search_queue).await?,
         }))
     }
 
@@ -68,27 +65,15 @@ impl Client {
         &self.http
     }
 
+    /// Get a reference to the search index dispatcher
+    pub fn search(&self) -> &search_dispatch::Client {
+        &self.search
+    }
+
     /// Get a reference to the asset proxy arguments, used by
     /// [`proxy_url`](indexer_core::assets::proxy_url)
     #[inline]
     pub fn proxy_args(&self) -> &AssetProxyArgs {
         &self.asset_proxy
-    }
-
-    /// Dispatch an AMQP message to the Search indexer to index documents
-    /// # Errors
-    /// This function fails if the AMQP payload cannot be sent.
-    pub async fn dispatch_upsert_document(
-        &self,
-        id: String,
-        index: String,
-        body: Value,
-    ) -> Result<(), indexer_rabbitmq::Error> {
-        self.search_prod
-            .write(search_indexer::Message::Upsert {
-                index,
-                document: search_indexer::Document { id, body },
-            })
-            .await
     }
 }

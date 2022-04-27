@@ -58,13 +58,7 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if the HTTP call returns an error
-    pub async fn upsert_documents<
-        T: serde::Serialize + std::fmt::Debug + serde::de::DeserializeOwned,
-    >(
-        &self,
-        idx: String,
-        docs: &[super::Document<T>],
-    ) -> Result<Task> {
+    pub async fn upsert_documents(&self, idx: String, docs: &[super::Document]) -> Result<Task> {
         self.meili
             .index(idx)
             .add_or_replace(docs, None)

@@ -17,6 +17,7 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 default = []
 geyser = [
   "reqwest-client",
+  "search-dispatch",
   "serde_json",
   "solana-program",
   "indexer-rabbitmq/geyser",
@@ -28,6 +29,7 @@ http = [
   "base64",
   "cid",
   "reqwest-client",
+  "search-dispatch",
   "serde_json",
   "indexer-rabbitmq/http-indexer",
   "indexer-rabbitmq/search-indexer",
@@ -38,6 +40,9 @@ reqwest-client = [
 search = [
   "indexer-rabbitmq/search-indexer",
   "meilisearch-sdk",
+]
+search-dispatch = [
+  "serde_json",
 ]
 
 [[bin]]

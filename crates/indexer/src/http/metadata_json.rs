@@ -16,10 +16,10 @@ use indexer_core::{
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use super::Client;
-use crate::prelude::*;
+use crate::{prelude::*, search_dispatch::MetadataDocument};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct File {
@@ -551,22 +551,26 @@ async fn dispatch_metadata_document(
     client: &Client,
     addr: String,
     image: &str,
-    content: Value,
+    raw: Value,
 ) -> Result<()> {
-    let id = AssetIdentifier::new(&Url::parse(image).context("Couldn't parse asset URL")?);
+    let image = Url::parse(image)
+        .ok()
+        .and_then(|u| {
+            let id = AssetIdentifier::new(&u);
 
-    let image_url = proxy_url(client.proxy_args(), &id, Some(("width", "400")))?
-        .map_or_else(|| image.to_string(), |u| u.to_string());
+            proxy_url(client.proxy_args(), &id, Some(("width", "400")))
+                .map(|o| o.map(|u| u.to_string()))
+                .transpose()
+        })
+        .unwrap_or_else(|| Ok(image.to_owned()))?;
 
-    let mut document: Value = content.clone();
-    *document
-        .get_mut("image")
-        .context("failed to get image key")? = json!(image_url);
+    let document = MetadataDocument { image, raw };
 
     client
-        .dispatch_upsert_document(addr, "metadatas".to_string(), document)
+        .search()
+        .upsert_metadata(addr, document)
         .await
-        .context("Failed to dispatch upsert metadata json document job")?;
+        .context("Failed to dispatch metadata JSON document job")?;
 
     Ok(())
 }

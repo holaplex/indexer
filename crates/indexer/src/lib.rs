@@ -20,6 +20,8 @@ pub mod legacy_storefronts;
 pub(crate) mod reqwest;
 #[cfg(feature = "search")]
 pub mod search;
+#[cfg(feature = "search-dispatch")]
+pub(crate) mod search_dispatch;
 pub(crate) mod util;
 
 pub use runtime::*;
