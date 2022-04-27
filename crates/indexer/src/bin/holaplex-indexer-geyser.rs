@@ -2,7 +2,7 @@ use std::{collections::HashSet, sync::Arc};
 
 use holaplex_indexer::geyser::{Client, IgnoreType};
 use indexer_core::{clap, prelude::*};
-use indexer_rabbitmq::{geyser, http_indexer};
+use indexer_rabbitmq::{geyser, http_indexer, suffix::Suffix};
 
 #[derive(Debug, clap::Parser)]
 struct Args {
@@ -25,11 +25,8 @@ struct Args {
     #[clap(long, env, use_value_delimiter(true))]
     ignore_on_startup: Option<Vec<IgnoreType>>,
 
-    /// An optional suffix for the AMQP queue ID
-    ///
-    /// For debug builds a value must be provided here to avoid interfering with
-    /// the indexer.
-    queue_suffix: Option<String>,
+    #[clap(flatten)]
+    queue_suffix: Suffix,
 }
 
 fn main() {
@@ -43,23 +40,22 @@ fn main() {
          },
          params,
          db| async move {
-            if cfg!(debug_assertions) && queue_suffix.is_none() {
-                bail!("Debug builds must specify a RabbitMQ queue suffix!");
-            }
-
-            let sender = queue_suffix.clone().unwrap_or_else(|| network.to_string());
+            let sender = match queue_suffix {
+                Suffix::Debug(ref s) => s.clone(),
+                _ => network.to_string(),
+            };
 
             let conn = holaplex_indexer::amqp_connect(amqp_url, env!("CARGO_BIN_NAME")).await?;
             let client = Client::new_rc(
                 db,
                 &conn,
-                http_indexer::QueueType::new(&sender, queue_suffix.as_deref()),
-                http_indexer::QueueType::new(&sender, queue_suffix.as_deref()),
+                http_indexer::QueueType::new(&sender, &queue_suffix)?,
+                http_indexer::QueueType::new(&sender, &queue_suffix)?,
             )
             .await
             .context("Failed to construct Client")?;
 
-            let queue_type = geyser::QueueType::new(network, startup, queue_suffix.as_deref());
+            let queue_type = geyser::QueueType::new(network, startup, &queue_suffix)?;
             let consumer = geyser::Consumer::new(&conn, queue_type.clone(), "geyser-consumer")
                 .await
                 .context("Failed to create queue consumer")?;

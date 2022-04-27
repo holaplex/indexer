@@ -14,13 +14,15 @@ keywords = ["solana", "metaplex", "holaplex", "web3", "rabbitmq"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [features]
+consumer = ["suffix"]
 default = ["consumer"]
-producer = []
-consumer = []
-geyser = ["solana-sdk"]
-http-indexer = []
+geyser = ["solana-sdk", "suffix"]
+http-indexer = ["suffix"]
+producer = ["suffix"]
+suffix = ["clap"]
 
 [dependencies]
+clap = { version = "3.1.12", default-features = false, features = ["env", "std"], optional = true }
 futures-util = "0.3.19"
 lapin = "2.0.3"
 log = "0.4.14"
