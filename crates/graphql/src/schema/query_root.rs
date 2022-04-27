@@ -252,10 +252,16 @@ impl QueryRoot {
         >,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
         #[graphql(description = "Filter on listed")] listed: Option<Vec<PublicKey<AuctionHouse>>>,
+        #[graphql(description = "Filter on a collection")] collection: Option<PublicKey<Nft>>,
         #[graphql(description = "Limit for query")] limit: i32,
         #[graphql(description = "Offset for query")] offset: i32,
     ) -> FieldResult<Vec<Nft>> {
-        if owners.is_none() && creators.is_none() && listed.is_none() && offerers.is_none() {
+        if collection.is_none()
+            && owners.is_none()
+            && creators.is_none()
+            && listed.is_none()
+            && offerers.is_none()
+        {
             return Err(FieldError::new(
                 "No filter provided! Please provide at least one of the filters",
                 graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, offerers: Vec<PublicKey>, listed: Vec<PublicKey>" }),
@@ -270,6 +276,7 @@ impl QueryRoot {
             offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed: listed.map(|a| a.into_iter().map(Into::into).collect()),
+            collection: collection.map(Into::into),
             limit: limit.into(),
             offset: offset.into(),
         };
