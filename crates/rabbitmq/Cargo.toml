@@ -17,7 +17,7 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 consumer = ["suffix"]
 default = ["consumer"]
 geyser = ["solana-sdk", "suffix"]
-http-indexer = ["suffix"]
+http-indexer = ["solana-sdk", "suffix"]
 producer = ["suffix"]
 suffix = ["clap"]
 
