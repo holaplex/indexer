@@ -6,7 +6,11 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 pub use solana_sdk::pubkey::Pubkey;
 
-use crate::queue_type::{Binding, QueueInfo, QueueProps, RetryProps};
+use crate::{
+    queue_type::{Binding, QueueInfo, QueueProps, RetryProps},
+    suffix::Suffix,
+    Result,
+};
 
 /// Message data for an account update
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -91,41 +95,37 @@ impl StartupType {
 
 impl QueueType {
     /// Construct a new queue configuration given the network this validator is
-    /// connected to and an optional queue suffix
-    #[must_use]
-    pub fn new(network: Network, startup_type: StartupType, id: Option<&str>) -> Self {
+    /// connected to and queue suffix configuration
+    ///
+    /// # Errors
+    /// This function fails if the given queue suffix is invalid.
+    pub fn new(network: Network, startup_type: StartupType, suffix: &Suffix) -> Result<Self> {
         let exchange = format!("{}{}.accounts", network, match startup_type {
             StartupType::Normal => "",
             StartupType::Startup => ".startup",
             StartupType::All => ".startup-all",
         });
-        let mut queue = format!("{}.indexer", exchange);
+        let queue = suffix.format(format!("{}.indexer", exchange))?;
 
-        if let Some(id) = id {
-            queue = format!("{}.{}", queue, id);
-        }
-
-        let auto_delete = id.is_some() || cfg!(debug_assertions);
-
-        Self {
+        Ok(Self {
             props: QueueProps {
                 exchange,
                 queue,
                 binding: Binding::Fanout,
                 prefetch: 4096,
-                max_len_bytes: if auto_delete || matches!(startup_type, StartupType::Normal) {
+                max_len_bytes: if suffix.is_debug() || matches!(startup_type, StartupType::Normal) {
                     100 * 1024 * 1024 // 100 MiB
                 } else {
                     8 * 1024 * 1024 * 1024 // 8 GiB
                 },
-                auto_delete,
+                auto_delete: suffix.is_debug(),
                 retry: Some(RetryProps {
                     max_tries: 3,
                     delay_hint: Duration::from_millis(500),
                     max_delay: Duration::from_secs(10 * 60),
                 }),
             },
-        }
+        })
     }
 }
 

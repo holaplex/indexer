@@ -29,6 +29,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                         metadata_jsons.description AS description,
                         metadata_jsons.image AS image,
                         metadata_jsons.category AS category,
+                        metadata_jsons.model AS model,
                         store_creators.creator_address AS creator_address
                     FROM metadatas
                     INNER JOIN metadata_jsons ON (metadatas.address = metadata_jsons.metadata_address)
@@ -56,6 +57,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                      description,
                      image,
                      category,
+                     model,
                  }| {
                     (
                         creator_address,
@@ -69,6 +71,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                             description,
                             image,
                             category,
+                            model,
                         }
                         .try_into(),
                     )

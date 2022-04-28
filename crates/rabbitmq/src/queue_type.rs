@@ -108,7 +108,10 @@ impl<'a> QueueInfo<'a> {
     pub(crate) async fn publish(self, chan: &Channel, data: &[u8]) -> Result<PublisherConfirm> {
         chan.basic_publish(
             self.0.exchange.as_ref(),
-            self.0.queue.as_ref(),
+            match self.0.binding {
+                Binding::Fanout => "",
+                Binding::Direct(ref s) => s,
+            },
             BasicPublishOptions::default(),
             data,
             BasicProperties::default(),

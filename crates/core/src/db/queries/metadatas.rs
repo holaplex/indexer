@@ -12,8 +12,8 @@ use crate::{
         any,
         models::{Nft, NftActivity},
         tables::{
-            attributes, bid_receipts, current_metadata_owners, listing_receipts, metadata_creators,
-            metadata_jsons, metadatas,
+            attributes, bid_receipts, current_metadata_owners, listing_receipts,
+            metadata_collection_keys, metadata_creators, metadata_jsons, metadatas,
         },
         Connection,
     },
@@ -41,11 +41,27 @@ pub struct ListQueryOptions {
     pub attributes: Option<Vec<AttributeFilter>>,
     /// nft listed with auction house
     pub listed: Option<Vec<String>>,
+    /// nft in a specific colleciton
+    pub collection: Option<String>,
     /// limit to apply to query
     pub limit: i64,
     /// offset to apply to query
     pub offset: i64,
 }
+
+/// The column set for an NFT
+pub type NftColumns = (
+    metadatas::address,
+    metadatas::name,
+    metadatas::seller_fee_basis_points,
+    metadatas::mint_address,
+    metadatas::primary_sale_happened,
+    metadatas::uri,
+    metadata_jsons::description,
+    metadata_jsons::image,
+    metadata_jsons::category,
+    metadata_jsons::model,
+);
 
 /// Handles queries for NFTs
 ///
@@ -60,6 +76,7 @@ pub fn list(
         offerers,
         attributes,
         listed,
+        collection,
         limit,
         offset,
     }: ListQueryOptions,
@@ -79,6 +96,10 @@ pub fn list(
             listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)),
         )
         .left_outer_join(bid_receipts::table.on(metadatas::address.eq(bid_receipts::metadata)))
+        .left_outer_join(
+            metadata_collection_keys::table
+                .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
+        )
         .into_boxed();
 
     if let Some(attributes) = attributes {
@@ -103,6 +124,10 @@ pub fn list(
         query = query.filter(metadata_creators::verified.eq(true));
     }
 
+    if let Some(collection) = collection {
+        query = query.filter(metadata_collection_keys::collection_address.eq(collection));
+    }
+
     if let Some(owners) = owners {
         query = query.filter(current_metadata_owners::owner_address.eq(any(owners)));
     }
@@ -121,20 +146,7 @@ pub fn list(
     let rows: Vec<(Nft, Option<i64>)> = query
         .filter(listing_receipts::purchase_receipt.is_null())
         .filter(listing_receipts::canceled_at.is_null())
-        .select((
-            (
-                metadatas::address,
-                metadatas::name,
-                metadatas::seller_fee_basis_points,
-                metadatas::mint_address,
-                metadatas::primary_sale_happened,
-                metadatas::uri,
-                metadata_jsons::description,
-                metadata_jsons::image,
-                metadata_jsons::category,
-            ),
-            listing_receipts::price.nullable(),
-        ))
+        .select((NftColumns::default(), listing_receipts::price.nullable()))
         .distinct()
         .order((listing_receipts::price.asc(), metadatas::name.asc()))
         .limit(limit)
