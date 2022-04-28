@@ -79,7 +79,9 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
                         metadata_creators::metadata_address,
                         metadata_creators::creator_address,
                     ))
-                    .do_nothing()
+                    .do_update()
+                    // TODO: why aren't we setting other fields here??
+                    .set(metadata_creators::verified.eq(row.verified))
                     .execute(db)
                     .context("failed to insert metadata creators")?;
 
