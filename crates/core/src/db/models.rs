@@ -267,6 +267,10 @@ pub struct Nft {
     /// Metadata Category
     #[sql_type = "Nullable<Text>"]
     pub category: Option<String>,
+
+    /// Hint for what model the indexer parsed this NFT with
+    #[sql_type = "Nullable<Text>"]
+    pub model: Option<String>,
 }
 
 /// Union of `listing_receipts` and `purchase_receipts` for an `NFTActivity`
@@ -347,6 +351,10 @@ pub struct SampleNft {
     /// Metadata category
     #[sql_type = "Nullable<Text>"]
     pub category: Option<String>,
+
+    /// Hint for what model the indexer parsed this NFT with
+    #[sql_type = "Nullable<Text>"]
+    pub model: Option<String>,
 }
 
 /// Join record for the RPC getListings query

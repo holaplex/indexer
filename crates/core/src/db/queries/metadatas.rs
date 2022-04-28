@@ -49,6 +49,20 @@ pub struct ListQueryOptions {
     pub offset: i64,
 }
 
+/// The column set for an NFT
+pub type NftColumns = (
+    metadatas::address,
+    metadatas::name,
+    metadatas::seller_fee_basis_points,
+    metadatas::mint_address,
+    metadatas::primary_sale_happened,
+    metadatas::uri,
+    metadata_jsons::description,
+    metadata_jsons::image,
+    metadata_jsons::category,
+    metadata_jsons::model,
+);
+
 /// Handles queries for NFTs
 ///
 /// # Errors
@@ -132,20 +146,7 @@ pub fn list(
     let rows: Vec<(Nft, Option<i64>)> = query
         .filter(listing_receipts::purchase_receipt.is_null())
         .filter(listing_receipts::canceled_at.is_null())
-        .select((
-            (
-                metadatas::address,
-                metadatas::name,
-                metadatas::seller_fee_basis_points,
-                metadatas::mint_address,
-                metadatas::primary_sale_happened,
-                metadatas::uri,
-                metadata_jsons::description,
-                metadata_jsons::image,
-                metadata_jsons::category,
-            ),
-            listing_receipts::price.nullable(),
-        ))
+        .select((NftColumns::default(), listing_receipts::price.nullable()))
         .distinct()
         .order((listing_receipts::price.asc(), metadatas::name.asc()))
         .limit(limit)

@@ -291,6 +291,7 @@ pub struct Nft {
     pub description: String,
     pub image: String,
     pub category: String,
+    pub model: Option<String>,
 }
 
 impl From<models::Nft> for Nft {
@@ -305,6 +306,7 @@ impl From<models::Nft> for Nft {
             description,
             image,
             category,
+            model,
         }: models::Nft,
     ) -> Self {
         Self {
@@ -317,6 +319,7 @@ impl From<models::Nft> for Nft {
             description: description.unwrap_or_else(String::new),
             image: image.unwrap_or_else(String::new),
             category: category.unwrap_or_else(String::new),
+            model,
         }
     }
 }
@@ -349,6 +352,17 @@ impl Nft {
 
     pub fn category(&self) -> &str {
         &self.category
+    }
+
+    /// The JSON parser with which the NFT was processed by the indexer
+    ///
+    /// - `"full"` indicates the full Metaplex standard-compliant parser was
+    ///   used.
+    /// - `"minimal"` (provided with an optional description of an error)
+    ///   indicates the full model failed to parse and a more lenient fallback
+    ///   parser with fewer fields was used instead.
+    pub fn parser(&self) -> Option<&str> {
+        self.model.as_deref()
     }
 
     #[graphql(arguments(width(description = r"Image width possible values are:

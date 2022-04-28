@@ -30,6 +30,7 @@ impl clap::Args for Suffix {
         .arg(
             Arg::new("SUFFIX")
                 .takes_value(true)
+                .allow_invalid_utf8(true)
                 .required(false)
                 .help("An optional debug queue suffix")
                 .conflicts_with("STAGING"),

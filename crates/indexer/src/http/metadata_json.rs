@@ -104,7 +104,10 @@ struct MetadataJsonMinimal {
 
 enum MetadataJsonResult {
     Full(MetadataJson),
-    Minimal(MetadataJsonMinimal),
+    Minimal {
+        value: MetadataJsonMinimal,
+        full_err: serde_json::Error,
+    },
 }
 
 async fn fetch_json(
@@ -132,28 +135,34 @@ async fn fetch_json(
         indexer_core::util::duration_hhmmssfff(end_time - start_time)
     );
 
-    if let Ok(full) = serde_json::from_slice(&bytes).map_err(|e| {
-        debug!(
-            "Failed to parse full metadata JSON for {:?}: {:?}",
-            url.as_str(),
-            e
-        );
-    }) {
-        Ok(MetadataJsonResult::Full(full))
-    } else if let Ok(min) = serde_json::from_slice(&bytes).map_err(|e| {
-        debug!(
-            "Failed to parse minimal metadata JSON for {:?}: {:?}",
-            url.as_str(),
-            e
-        );
-    }) {
-        Ok(MetadataJsonResult::Minimal(min))
-    } else {
-        Err(anyhow!(
-            "Failed to parse JSON response from {:?}",
-            url.as_str()
-        ))
-    }
+    let full_err;
+    match serde_json::from_slice(&bytes) {
+        Ok(f) => return Ok(MetadataJsonResult::Full(f)),
+        Err(e) => {
+            debug!(
+                "Failed to parse full metadata JSON for {:?}: {:?}",
+                url.as_str(),
+                e
+            );
+            full_err = e;
+        },
+    };
+
+    match serde_json::from_slice(&bytes) {
+        Ok(value) => return Ok(MetadataJsonResult::Minimal { value, full_err }),
+        Err(e) => {
+            debug!(
+                "Failed to parse minimal metadata JSON for {:?}: {:?}",
+                url.as_str(),
+                e
+            );
+        },
+    };
+
+    Err(anyhow!(
+        "Failed to parse JSON response from {:?}",
+        url.as_str()
+    ))
 }
 
 async fn try_locate_json(
@@ -299,6 +308,7 @@ async fn process_minimal(
     addr: String,
     json: MetadataJsonMinimal,
     fingerprint: Vec<u8>,
+    full_err: serde_json::Error,
 ) -> Result<()> {
     fn to_opt_string(v: &Value) -> Option<Cow<'static, str>> {
         v.as_str().map(|s| Owned(s.to_owned())).or_else(|| {
@@ -333,7 +343,7 @@ async fn process_minimal(
         external_url: to_opt_string(&external_url),
         category: to_opt_string(&category),
         raw_content: Owned(raw_content),
-        model: Some(Borrowed("minimal")),
+        model: Some(Owned(format!("minimal ({})", full_err))),
     };
 
     client
@@ -473,7 +483,8 @@ pub async fn process<'a>(
                     metadata_jsons::table.filter(
                         metadata_jsons::metadata_address
                             .eq(addr)
-                            .and(metadata_jsons::fingerprint.eq(any(possible_fingerprints))),
+                            .and(metadata_jsons::fingerprint.eq(any(possible_fingerprints)))
+                            .and(metadata_jsons::model.ne("minimal")),
                     ),
                 ))
                 .get_result(db)
@@ -508,8 +519,8 @@ pub async fn process<'a>(
             MetadataJsonResult::Full(f) => {
                 process_full(client, addr, first_verified_creator, f, fingerprint).await?;
             },
-            MetadataJsonResult::Minimal(m) => {
-                process_minimal(client, addr, m, fingerprint).await?;
+            MetadataJsonResult::Minimal { value, full_err } => {
+                process_minimal(client, addr, value, fingerprint, full_err).await?;
             },
         }
     }
