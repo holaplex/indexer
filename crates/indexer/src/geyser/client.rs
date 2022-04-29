@@ -23,6 +23,7 @@ enum DialectEventType {
 #[derive(Serialize, Deserialize)]
 struct DialectOfferEventData {
     bid_receipt_address: String,
+    metadata_address: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -120,11 +121,12 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if the underlying POST request results in an error.
-    pub async fn dispatch_dialect_offer_event(&self, bid_receipt_address: Pubkey) -> Result<()> {
+    pub async fn dispatch_dialect_offer_event(&self, bid_receipt_address: Pubkey, metadata_address: Pubkey) -> Result<()> {
         let msg = DialectEvent {
             event_type: DialectEventType::NftMakeOffer,
             data: DialectEventData::DialectOfferEventData(DialectOfferEventData {
                 bid_receipt_address: bid_receipt_address.to_string(),
+                metadata_address: metadata_address.to_string(),
             }),
         };
 

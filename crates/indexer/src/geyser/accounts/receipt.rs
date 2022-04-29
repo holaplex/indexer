@@ -272,7 +272,7 @@ pub(crate) async fn process_bid_receipt(
         .context("Failed to insert bid receipt!")?;
 
     if offer_event.is_some() {
-        client.dispatch_dialect_offer_event(key).await?;
+        client.dispatch_dialect_offer_event(key, bid_receipt.metadata).await?;
     }
 
     Ok(())
