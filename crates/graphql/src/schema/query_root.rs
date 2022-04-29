@@ -179,7 +179,7 @@ impl QueryRoot {
             .select(bid_receipts::all_columns)
             .filter(bid_receipts::canceled_at.is_null())
             .filter(bid_receipts::purchase_receipt.is_null())
-            .filter(bid_receipts::metadata.eq(address))
+            .filter(bid_receipts::address.eq(address))
             .first(&conn)
             .optional()
             .context("Failed to load bid_receipts")?;
