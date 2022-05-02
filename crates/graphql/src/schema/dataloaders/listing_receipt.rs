@@ -14,8 +14,6 @@ impl TryBatchFn<PublicKey<ListingReceipt>, Option<ListingReceipt>> for Batcher {
 
         let rows: Vec<models::ListingReceipt> = listing_receipts::table
             .select(listing_receipts::all_columns)
-            .filter(listing_receipts::canceled_at.is_null())
-            .filter(listing_receipts::purchase_receipt.is_null())
             .filter(listing_receipts::address.eq(any(addresses)))
             .load(&conn)
             .context("Failed to load listing receipts")?;
