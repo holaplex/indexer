@@ -251,7 +251,9 @@ impl QueryRoot {
             Vec<PublicKey<Wallet>>,
         >,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
-        #[graphql(description = "Filter on listed")] listed: Option<Vec<PublicKey<AuctionHouse>>>,
+        #[graphql(description = "Filter only listed nfts")] listed: Option<bool>,
+        #[graphql(description = "Filter nfts associated to the list of auction houses")]
+        auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
         #[graphql(description = "Filter on a collection")] collection: Option<PublicKey<Nft>>,
         #[graphql(description = "Limit for query")] limit: i32,
         #[graphql(description = "Offset for query")] offset: i32,
@@ -259,12 +261,12 @@ impl QueryRoot {
         if collection.is_none()
             && owners.is_none()
             && creators.is_none()
-            && listed.is_none()
+            && auction_houses.is_none()
             && offerers.is_none()
         {
             return Err(FieldError::new(
                 "No filter provided! Please provide at least one of the filters",
-                graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, offerers: Vec<PublicKey>, listed: Vec<PublicKey>" }),
+                graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, offerers: Vec<PublicKey>, auction_houses: Vec<PublicKey>" }),
             ));
         }
 
@@ -275,7 +277,8 @@ impl QueryRoot {
             creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
             offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
-            listed: listed.map(|a| a.into_iter().map(Into::into).collect()),
+            listed,
+            auction_houses: auction_houses.map(|a| a.into_iter().map(Into::into).collect()),
             collection: collection.map(Into::into),
             limit: limit.into(),
             offset: offset.into(),
