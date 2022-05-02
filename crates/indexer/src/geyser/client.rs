@@ -1,10 +1,11 @@
-use std::{panic::AssertUnwindSafe, sync::Arc};
+use std::{panic::AssertUnwindSafe, sync::Arc, time::Duration};
 
-use indexer_core::prelude::*;
+use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::http_indexer;
+use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
 
-use crate::db::Pool;
+use crate::{db::Pool, reqwest};
 
 struct HttpProducers {
     metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
@@ -14,12 +15,48 @@ struct HttpProducers {
 impl std::panic::UnwindSafe for HttpProducers {}
 impl std::panic::RefUnwindSafe for HttpProducers {}
 
+/// Common arguments for Geyser indexer usage
+#[derive(Debug, clap::Parser)]
+pub struct Args {
+    /// Dialect API key
+    #[clap(long, env)]
+    dialect_api_key: String,
+
+    /// Dialect API endpoint
+    #[clap(long, env)]
+    dialect_api_endpoint: String,
+}
+
+#[derive(Serialize, Deserialize)]
+enum DialectEventType {
+    NftMakeOffer,
+}
+
+#[derive(Serialize, Deserialize)]
+struct DialectOfferEventData {
+    bid_receipt_address: String,
+    metadata_address: String,
+}
+
+#[derive(Serialize, Deserialize)]
+enum DialectEventData {
+    DialectOfferEventData(DialectOfferEventData),
+}
+#[derive(Serialize, Deserialize)]
+struct DialectEvent {
+    event_type: DialectEventType,
+    data: DialectEventData,
+}
+
 // RpcClient doesn't implement Debug for some reason
 #[allow(missing_debug_implementations)]
 /// Wrapper for handling networking logic
 pub struct Client {
     db: AssertUnwindSafe<Pool>,
-    http: HttpProducers,
+    http: reqwest::Client,
+    http_prod: HttpProducers,
+    dialect_api_endpoint: String,
+    dialect_api_key: String,
 }
 
 impl Client {
@@ -33,10 +70,15 @@ impl Client {
         conn: &indexer_rabbitmq::lapin::Connection,
         meta_queue: http_indexer::QueueType<http_indexer::MetadataJson>,
         store_cfg_queue: http_indexer::QueueType<http_indexer::StoreConfig>,
+        Args {
+            dialect_api_endpoint,
+            dialect_api_key,
+        }: Args,
     ) -> Result<Arc<Self>> {
         Ok(Arc::new(Self {
             db: AssertUnwindSafe(db),
-            http: HttpProducers {
+            http: reqwest::Client::new(Duration::from_millis(500))?,
+            http_prod: HttpProducers {
                 metadata_json: http_indexer::Producer::new(conn, meta_queue)
                     .await
                     .context("Couldn't create AMQP metadata JSON producer")?,
@@ -44,6 +86,8 @@ impl Client {
                     .await
                     .context("Couldn't create AMQP store config producer")?,
             },
+            dialect_api_endpoint,
+            dialect_api_key,
         }))
     }
 
@@ -64,7 +108,7 @@ impl Client {
         first_verified_creator: Option<Pubkey>,
         uri: String,
     ) -> Result<(), indexer_rabbitmq::Error> {
-        self.http
+        self.http_prod
             .metadata_json
             .write(http_indexer::MetadataJson {
                 meta_address,
@@ -84,12 +128,41 @@ impl Client {
         config_address: Pubkey,
         uri: String,
     ) -> Result<(), indexer_rabbitmq::Error> {
-        self.http
+        self.http_prod
             .store_config
             .write(http_indexer::StoreConfig {
                 config_address,
                 uri,
             })
             .await
+    }
+
+    /// Dispatch a POST request to Dialect
+    ///
+    /// # Errors
+    /// This function fails if the underlying POST request results in an error.
+    pub async fn dispatch_dialect_offer_event(
+        &self,
+        bid_receipt_address: Pubkey,
+        metadata_address: Pubkey,
+    ) -> Result<()> {
+        let msg = DialectEvent {
+            event_type: DialectEventType::NftMakeOffer,
+            data: DialectEventData::DialectOfferEventData(DialectOfferEventData {
+                bid_receipt_address: bid_receipt_address.to_string(),
+                metadata_address: metadata_address.to_string(),
+            }),
+        };
+
+        self.http
+            .run(|h| {
+                h.post(&self.dialect_api_endpoint)
+                    .basic_auth("holaplex", Some(&self.dialect_api_key))
+                    .json(&msg)
+                    .send()
+            })
+            .await?;
+
+        Ok(())
     }
 }

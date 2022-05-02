@@ -6,7 +6,7 @@ mod programs;
 
 use std::{collections::HashSet, sync::Arc};
 
-pub use client::Client;
+pub use client::{Args as ClientArgs, Client};
 use indexer_core::pubkeys;
 pub(self) use indexer_rabbitmq::geyser::AccountUpdate;
 use indexer_rabbitmq::geyser::Message;

@@ -16,6 +16,8 @@ pub mod geyser;
 pub mod http;
 #[cfg(feature = "http")]
 pub mod legacy_storefronts;
+#[cfg(feature = "reqwest-client")]
+pub(crate) mod reqwest;
 pub(crate) mod util;
 
 pub use runtime::*;
