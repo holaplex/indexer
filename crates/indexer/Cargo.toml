@@ -17,8 +17,8 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 default = []
 geyser = [
   "reqwest-client",
-  "solana-program",
   "serde_json",
+  "solana-program",
   "indexer-rabbitmq/geyser",
   "indexer-rabbitmq/http-indexer",
   "indexer-rabbitmq/producer",

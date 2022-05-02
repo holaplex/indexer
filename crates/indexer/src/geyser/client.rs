@@ -1,6 +1,6 @@
 use std::{panic::AssertUnwindSafe, sync::Arc, time::Duration};
 
-use indexer_core::prelude::*;
+use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::http_indexer;
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
@@ -14,6 +14,18 @@ struct HttpProducers {
 
 impl std::panic::UnwindSafe for HttpProducers {}
 impl std::panic::RefUnwindSafe for HttpProducers {}
+
+/// Common arguments for Geyser indexer usage
+#[derive(Debug, clap::Parser)]
+pub struct Args {
+    /// Dialect API key
+    #[clap(long, env)]
+    dialect_api_key: String,
+
+    /// Dialect API endpoint
+    #[clap(long, env)]
+    dialect_api_endpoint: String,
+}
 
 #[derive(Serialize, Deserialize)]
 enum DialectEventType {
@@ -43,6 +55,8 @@ pub struct Client {
     db: AssertUnwindSafe<Pool>,
     http: reqwest::Client,
     http_prod: HttpProducers,
+    dialect_api_endpoint: String,
+    dialect_api_key: String,
 }
 
 impl Client {
@@ -56,6 +70,10 @@ impl Client {
         conn: &indexer_rabbitmq::lapin::Connection,
         meta_queue: http_indexer::QueueType<http_indexer::MetadataJson>,
         store_cfg_queue: http_indexer::QueueType<http_indexer::StoreConfig>,
+        Args {
+            dialect_api_endpoint,
+            dialect_api_key,
+        }: Args,
     ) -> Result<Arc<Self>> {
         Ok(Arc::new(Self {
             db: AssertUnwindSafe(db),
@@ -68,6 +86,8 @@ impl Client {
                     .await
                     .context("Couldn't create AMQP store config producer")?,
             },
+            dialect_api_endpoint,
+            dialect_api_key,
         }))
     }
 
@@ -121,7 +141,11 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if the underlying POST request results in an error.
-    pub async fn dispatch_dialect_offer_event(&self, bid_receipt_address: Pubkey, metadata_address: Pubkey) -> Result<()> {
+    pub async fn dispatch_dialect_offer_event(
+        &self,
+        bid_receipt_address: Pubkey,
+        metadata_address: Pubkey,
+    ) -> Result<()> {
         let msg = DialectEvent {
             event_type: DialectEventType::NftMakeOffer,
             data: DialectEventData::DialectOfferEventData(DialectOfferEventData {
@@ -130,7 +154,14 @@ impl Client {
             }),
         };
 
-        self.http.run(|h| h.post("").json(&msg).send()).await?;
+        self.http
+            .run(|h| {
+                h.post(&self.dialect_api_endpoint)
+                    .basic_auth("holaplex", Some(&self.dialect_api_key))
+                    .json(&msg)
+                    .send()
+            })
+            .await?;
 
         Ok(())
     }
