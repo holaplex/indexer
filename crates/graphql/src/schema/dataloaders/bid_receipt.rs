@@ -38,8 +38,6 @@ impl TryBatchFn<PublicKey<BidReceipt>, Option<BidReceipt>> for Batcher {
 
         let rows: Vec<models::BidReceipt> = bid_receipts::table
             .select(bid_receipts::all_columns)
-            .filter(bid_receipts::canceled_at.is_null())
-            .filter(bid_receipts::purchase_receipt.is_null())
             .filter(bid_receipts::address.eq(any(addresses)))
             .load(&conn)
             .context("Failed to load bid receipts")?;
