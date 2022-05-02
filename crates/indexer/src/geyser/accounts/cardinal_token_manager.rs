@@ -13,6 +13,7 @@ use indexer_core::{
         },
     },
     prelude::*,
+    util,
 };
 
 use super::Client;
@@ -129,7 +130,7 @@ async fn store_claim_event(
         amount: token_manager.amount.try_into()?,
         kind: token_manager.kind.try_into()?,
         state: token_manager.state.try_into()?,
-        state_changed_at: NaiveDateTime::from_timestamp(token_manager.state_changed_at, 0),
+        state_changed_at: util::unix_timestamp(token_manager.state_changed_at)?,
         invalidation_type: token_manager.invalidation_type.try_into()?,
         recipient_token_account: Owned(
             bs58::encode(token_manager.recipient_token_account).into_string(),
@@ -252,7 +253,7 @@ pub(crate) async fn process(
         amount: token_manager.amount.try_into()?,
         kind: token_manager.kind.into(),
         state: token_manager.state.into(),
-        state_changed_at: NaiveDateTime::from_timestamp(token_manager.state_changed_at, 0),
+        state_changed_at: util::unix_timestamp(token_manager.state_changed_at)?,
         invalidation_type: token_manager.invalidation_type.into(),
         recipient_token_account: Owned(
             bs58::encode(token_manager.recipient_token_account).into_string(),
