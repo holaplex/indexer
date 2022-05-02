@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use indexer_core::{db::queries::stats, prelude::*};
 use itertools::Itertools;
-use objects::{auction_house::AuctionHouse, profile::TwitterProfile, stats::MintStats};
+use objects::{
+    auction_house::AuctionHouse, chart::PriceChart, profile::TwitterProfile, stats::MintStats,
+};
 use scalars::PublicKey;
 use tables::{attributes, metadata_creators};
 
@@ -76,6 +78,25 @@ impl Creator {
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
+    }
+
+    #[graphql(arguments(
+        auction_houses(description = "List of auction houses"),
+        start_date(description = "Start date for which we want to get the average price"),
+        end_date(description = "End date for which we want to get the average price")
+    ))]
+    pub async fn charts(
+        &self,
+        auction_houses: Vec<PublicKey<AuctionHouse>>,
+        start_date: DateTime<Utc>,
+        end_date: DateTime<Utc>,
+    ) -> FieldResult<PriceChart> {
+        Ok(PriceChart {
+            auction_houses,
+            creators: vec![self.address.clone().into()],
+            start_date,
+            end_date,
+        })
     }
 
     pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {

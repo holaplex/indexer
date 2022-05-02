@@ -116,7 +116,8 @@ impl QueryRoot {
         Ok(NftCount::new(creators))
     }
     #[graphql(arguments(
-        auction_housese(description = "List of auction houses"),
+        auction_houses(description = "List of auction houses"),
+        creators(description = "List of creators"),
         start_date(description = "Start date for which we want to get the average price"),
         end_date(description = "End date for which we want to get the average price")
     ))]
@@ -124,11 +125,13 @@ impl QueryRoot {
         &self,
         _context: &AppContext,
         auction_houses: Vec<PublicKey<AuctionHouse>>,
+        creators: Vec<PublicKey<Creator>>,
         start_date: DateTime<Utc>,
         end_date: DateTime<Utc>,
     ) -> FieldResult<PriceChart> {
         Ok(PriceChart {
             auction_houses,
+            creators,
             start_date,
             end_date,
         })
