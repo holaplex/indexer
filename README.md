@@ -88,9 +88,7 @@ configured according to the environment variables above.
 ## Running the Indexer Cluster
 
 The indexer consists of four services run by two binaries and a Geyser plugin.
-All services are connected via a common RabbitMQ node, which needs the
-[`delayed-message-exchange`](https://github.com/rabbitmq/rabbitmq-delayed-message-exchange)
-plugin installed.
+All services are connected via a common RabbitMQ node.
 
 ### Geyser plugin setup
 
