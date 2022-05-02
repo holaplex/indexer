@@ -1,6 +1,7 @@
 //! RabbitMQ transport components for `holaplex-indexer`.
 
 #![deny(
+    clippy::disallowed_method,
     clippy::suspicious,
     clippy::style,
     missing_debug_implementations,
