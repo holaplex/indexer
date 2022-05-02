@@ -2,6 +2,7 @@ use cardinal_time_invalidator::state::TimeInvalidator as TimeInvalidatorAccount;
 use indexer_core::{
     db::{insert_into, models::CardinalTimeInvalidator, tables::cardinal_time_invalidators},
     prelude::*,
+    util,
 };
 
 use super::Client;
@@ -24,7 +25,8 @@ pub(crate) async fn process(
         time_invalidator_collector: Owned(bs58::encode(time_invalidator.collector).into_string()),
         time_invalidator_expiration: time_invalidator
             .expiration
-            .map(|e| NaiveDateTime::from_timestamp(e, 0)),
+            .map(util::unix_timestamp)
+            .transpose()?,
         time_invalidator_duration_seconds: time_invalidator.duration_seconds,
         time_invalidator_extension_payment_amount: time_invalidator
             .extension_payment_amount
@@ -39,7 +41,8 @@ pub(crate) async fn process(
             .transpose()?,
         time_invalidator_max_expiration: time_invalidator
             .max_expiration
-            .map(|e| NaiveDateTime::from_timestamp(e, 0)),
+            .map(util::unix_timestamp)
+            .transpose()?,
         time_invalidator_disable_partial_extension: time_invalidator
             .disable_partial_extension
             .map(TryFrom::try_from)
