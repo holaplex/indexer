@@ -85,19 +85,6 @@ impl Creator {
         start_date(description = "Start date for which we want to get the average price"),
         end_date(description = "End date for which we want to get the average price")
     ))]
-    pub async fn charts(
-        &self,
-        auction_houses: Vec<PublicKey<AuctionHouse>>,
-        start_date: DateTime<Utc>,
-        end_date: DateTime<Utc>,
-    ) -> FieldResult<PriceChart> {
-        Ok(PriceChart {
-            auction_houses,
-            creators: vec![self.address.clone().into()],
-            start_date,
-            end_date,
-        })
-    }
 
     pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
         let conn = context.shared.db.get()?;
