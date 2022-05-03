@@ -54,6 +54,9 @@ mod runtime {
         thread_count: Option<usize>,
 
         #[clap(flatten)]
+        db: db::ConnectArgs,
+
+        #[clap(flatten)]
         extra: T,
     }
 
@@ -75,11 +78,12 @@ mod runtime {
 
             let Opts {
                 thread_count,
+                db,
                 extra,
             } = opts;
 
             let db = Pool::new(
-                db::connect(db::ConnectMode::Write).context("Failed to connect to Postgres")?,
+                db::connect(db, db::ConnectMode::Write).context("Failed to connect to Postgres")?,
             );
 
             let rt = {

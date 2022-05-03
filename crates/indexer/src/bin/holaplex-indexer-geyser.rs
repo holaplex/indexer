@@ -4,7 +4,7 @@ use holaplex_indexer::geyser::{Client, ClientArgs, IgnoreType};
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::{geyser, http_indexer, suffix::Suffix};
 
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, clap::Args)]
 struct Args {
     /// The address of an AMQP server to connect to
     #[clap(long, env)]

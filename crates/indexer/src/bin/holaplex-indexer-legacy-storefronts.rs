@@ -1,6 +1,6 @@
 use indexer_core::{clap, prelude::*};
 
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, clap::Args)]
 struct Args {
     #[clap(long, env)]
     arweave_url: String,
