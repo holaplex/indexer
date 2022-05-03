@@ -34,7 +34,7 @@ impl From<models::TwitterEnrichedGraphConnection> for GraphConnection {
             from_twitter_handle,
             to_twitter_handle,
             connected_at: _,
-            disconnected_at: _
+            disconnected_at: _,
         }: models::TwitterEnrichedGraphConnection,
     ) -> Self {
         Self {
