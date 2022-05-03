@@ -16,7 +16,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
         let conn = self.db()?;
 
         let rows: Vec<models::SampleNft> = sql_query(
-            "SELECT DISTINCT ON (sample_metadatas.address) 
+            "SELECT DISTINCT ON (sample_metadatas.address)
                     sample_metadatas.creator_address,
                     sample_metadatas.address,
                     sample_metadatas.name,
