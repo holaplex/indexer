@@ -7,7 +7,7 @@ use crate::prelude::*;
 const COLLECTION_PDA_SIZE: usize = 8 + 64;
 
 pub async fn process_collection_pda(client: &Client, update: AccountUpdate) -> Result<()> {
-    let collection_pda: CollectionPDA = CollectionPDA::deserialize(&mut update.data.as_slice())
+    let collection_pda: CollectionPDA = CollectionPDA::try_deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize collection pda")?;
 
     candy_machine::process_collection_pda(client, update.key, collection_pda).await
