@@ -4,7 +4,7 @@ use crossbeam::queue::SegQueue;
 use indexer_core::{clap, hash::HashMap};
 use meilisearch_sdk::client::Client as MeiliClient;
 use tokio::{
-    sync::{mpsc, RwLock},
+    sync::{mpsc, oneshot, RwLock},
     task,
 };
 
@@ -44,7 +44,10 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if the Meilisearch database cannot be initialized.
-    pub async fn new_rc(db: Pool, args: Args) -> Result<(Arc<Self>, task::JoinHandle<()>)> {
+    pub async fn new_rc(
+        db: Pool,
+        args: Args,
+    ) -> Result<(Arc<Self>, task::JoinHandle<()>, oneshot::Sender<()>)> {
         let Args {
             meili_url,
             meili_key,
@@ -64,6 +67,7 @@ impl Client {
             .context("failed to create name service index")?;
 
         let (trigger_upsert, upsert_rx) = mpsc::channel(1);
+        let (stop_tx, stop_rx) = oneshot::channel();
 
         let arc_self = Arc::new(Self {
             db,
@@ -76,9 +80,10 @@ impl Client {
             meili.clone(),
             upsert_interval,
             upsert_rx,
+            stop_rx,
         ));
 
-        Ok((arc_self, upsert_task))
+        Ok((arc_self, upsert_task, stop_tx))
     }
 
     async fn run_upserts(
@@ -86,10 +91,17 @@ impl Client {
         meili: MeiliClient,
         interval: Duration,
         mut rx: mpsc::Receiver<()>,
+        mut stop_rx: oneshot::Receiver<()>,
     ) {
         loop {
-            match self.try_run_upserts(meili.clone(), interval, &mut rx).await {
-                Ok(()) => warn!("Meilisearch upsert task stopped early"),
+            match self
+                .try_run_upserts(meili.clone(), interval, &mut rx, &mut stop_rx)
+                .await
+            {
+                Ok(()) => {
+                    info!("Shutting down Meilisearch upsert task");
+                    break;
+                },
                 Err(e) => {
                     error!("Meilisearch upsert task crashed: {:?}", e);
                 },
@@ -104,31 +116,50 @@ impl Client {
         meili: MeiliClient,
         interval: Duration,
         rx: &mut mpsc::Receiver<()>,
+        mut stop_rx: &mut oneshot::Receiver<()>,
     ) -> Result<()> {
+        enum Event {
+            Rx(Option<()>),
+            Stop(Result<(), oneshot::error::RecvError>),
+            Tick(tokio::time::Instant),
+        }
+
         let mut timer = tokio::time::interval(interval);
         timer.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
-        loop {
+        let mut go = true;
+        let mut lock_if_stopping = None;
+
+        while go {
             let evt = tokio::select! {
-                e = rx.recv() => e,
-                _ = timer.tick() => Some(()),
+                o = rx.recv() => Event::Rx(o),
+                r = &mut stop_rx => Event::Stop(r),
+                i = timer.tick() => Event::Tick(i),
             };
 
-            if let Some(()) = evt {
-                // TODO: parse any event info if we need to pass it in
+            go &= match evt {
+                Event::Rx(Some(())) | Event::Tick(_) => true,
+                Event::Rx(None) | Event::Stop(Ok(())) => false,
+                Event::Stop(Err(e)) => {
+                    // Stoplight broke, stop anyway
+                    error!("Failed to read upsert stop signal: {}", e);
+                    false
+                },
+            };
+
+            let mut lock = self.upsert_queue.write().await;
+
+            if go && lock.len() == 0 {
+                continue;
+            }
+
+            let queue = std::mem::take(&mut *lock);
+
+            if go {
+                std::mem::drop(lock);
             } else {
-                break Ok(());
-            };
-
-            let queue = {
-                let mut lock = self.upsert_queue.write().await;
-
-                if lock.len() == 0 {
-                    continue;
-                }
-
-                std::mem::take(&mut *lock)
-            };
+                lock_if_stopping = Some(lock);
+            }
 
             debug!("Ticking document upsert for {} document(s)...", queue.len());
 
@@ -146,6 +177,13 @@ impl Client {
                     .context("Meilisearch API call failed")?;
             }
         }
+
+        debug_assert!(lock_if_stopping.is_some());
+
+        rx.close();
+        stop_rx.close();
+
+        Ok(())
     }
 
     /// Get a reference to the database

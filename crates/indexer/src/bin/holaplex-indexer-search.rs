@@ -37,7 +37,7 @@ fn main() {
                     .await
                     .context("Failed to create queue consumer")?;
 
-            let (client, client_task) = Client::new_rc(db, client)
+            let (client, upsert_task, stop_upsert) = Client::new_rc(db, client)
                 .await
                 .context("Failed to construct Client")?;
 
@@ -48,11 +48,14 @@ fn main() {
                 })
                 .await;
 
-            client_task.abort();
-            client_task
-                .await
-                .map_err(|e| error!("Join for upsert task failed: {}", e))
-                .ok();
+            if let Err(()) = stop_upsert.send(()) {
+                error!("Failed to stop upsert task");
+                upsert_task.abort();
+            }
+
+            if let Err(e) = upsert_task.await {
+                error!("Join for upsert task failed: {}", e);
+            }
 
             ret
         },
