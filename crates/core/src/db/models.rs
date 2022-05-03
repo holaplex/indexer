@@ -702,23 +702,18 @@ pub struct StoreCreator<'a> {
 }
 
 /// A row in the `graph_connections` table
-#[derive(Debug, Clone, QueryableByName, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct GraphConnection<'a> {
     /// Graph Program account address
-    #[sql_type = "VarChar"]
     pub address: Cow<'a, str>,
     /// Graph Connection 'from' account address
-    #[sql_type = "VarChar"]
     pub from_account: Cow<'a, str>,
     /// Graph Connection 'to' account address
-    #[sql_type = "VarChar"]
     pub to_account: Cow<'a, str>,
     /// Graph Connection 'connected_at'
-    #[sql_type = "Timestamp"]
     pub connected_at: NaiveDateTime,
     /// Graph Connection 'disconnected_at'
-    #[sql_type = "Nullable<Timestamp>"]
     pub disconnected_at: Option<NaiveDateTime>,
 }
 
@@ -912,6 +907,12 @@ pub struct TwitterEnrichedGraphConnection {
     /// The to_account of the connection
     #[sql_type = "VarChar"]
     pub to_account: String,
+    /// Graph Connection 'connected_at'
+    #[sql_type = "Timestamp"]
+    pub connected_at: NaiveDateTime,
+    /// Graph Connection 'disconnected_at'
+    #[sql_type = "Nullable<Timestamp>"]
+    pub disconnected_at: Option<NaiveDateTime>,
     /// The twitter handle of the from_account
     #[sql_type = "Nullable<Text>"]
     pub from_twitter_handle: Option<String>,
