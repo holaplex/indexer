@@ -16,7 +16,7 @@ mod ids {
     pubkeys!(token, "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
     pubkeys!(auction_house, "hausS13jsjafwWwGqZTUQRmWyvyxn9EQpqMwV1PBBmk");
     pubkeys!(candy_machine, "cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ");
-    pubkeys!(graph_program, "grphSXQnjAoPXSG5p1aJ7ZFw2A1akqP3pkXvjfbSJef");
+    pubkeys!(graph_program, "grphAFGNvCjLKHeEmPNa91eGJChcUhrdaYYharcZCTQ");
     pubkeys!(name_service, "namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX");
     pubkeys!(
         cardinal_token_manager,
