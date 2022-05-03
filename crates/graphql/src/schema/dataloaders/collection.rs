@@ -46,7 +46,6 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                     INNER JOIN metadata_jsons ON (metadatas.address = metadata_jsons.metadata_address)
                     INNER JOIN metadata_creators ON (metadatas.address = metadata_creators.metadata_address)
                     WHERE metadata_creators.creator_address = store_creators.creator_address
-                    ORDER BY metadatas.address DESC
                     LIMIT 3
                 ) AS sample_metadatas ON true
                 WHERE store_creators.creator_address = ANY($1);",
