@@ -58,9 +58,9 @@ tokio-reactor-trait = "1.1.0"
 borsh = "0.9.3"
 
 # Solana & Metaplex
-anchor-lang = "~0.20.1"
-anchor-lang-v0-22-1 = { package = "anchor-lang", version = "0.22.1" }
-anchor-lang-v0-21-0 = { package = "anchor-lang", version = "0.21.0" }
+anchor-lang-v0-20 = { package = "anchor-lang", version = "0.20.1" }
+anchor-lang-v0-21 = { package = "anchor-lang", version = "0.21.0" }
+anchor-lang-v0-22 = { package = "anchor-lang", version = "0.22.1" }
 metaplex = { version = "0.0.1", features = ["no-entrypoint"] }
 metaplex-auction = { version = "0.0.1", features = ["no-entrypoint"] }
 metaplex-token-metadata = { version = "0.0.1", features = ["no-entrypoint"] }

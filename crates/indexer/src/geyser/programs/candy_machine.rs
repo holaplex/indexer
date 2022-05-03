@@ -1,4 +1,4 @@
-use anchor_lang_v0_21_0::{AccountDeserialize, AnchorDeserialize};
+use anchor_lang_v0_21::{AccountDeserialize, AnchorDeserialize};
 use mpl_candy_machine::{CandyMachine, CollectionPDA, ConfigLine, CONFIG_LINE_SIZE};
 
 use super::{accounts::candy_machine, AccountUpdate, Client};

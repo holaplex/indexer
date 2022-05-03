@@ -1,4 +1,4 @@
-use anchor_lang_v0_22_1::AccountDeserialize;
+use anchor_lang_v0_22::AccountDeserialize;
 use tribeca_locked_voter::{Escrow, Locker, LockerWhitelistEntry};
 
 use super::{accounts::locked_voter, AccountUpdate, Client};

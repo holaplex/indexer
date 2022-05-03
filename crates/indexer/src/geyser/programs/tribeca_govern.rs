@@ -1,4 +1,4 @@
-use anchor_lang_v0_22_1::AccountDeserialize;
+use anchor_lang_v0_22::AccountDeserialize;
 use tribeca_govern::{Governor, Proposal, ProposalMeta, Vote};
 
 use super::{accounts::govern, AccountUpdate, Client};
