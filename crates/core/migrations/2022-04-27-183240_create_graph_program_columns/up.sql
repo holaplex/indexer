@@ -1,5 +1,5 @@
 alter table graph_connections
-add column connected_at timestamp
+add column connected_at timestamp,
 add column disconnected_at timestamp;
 
 update graph_connections
