@@ -35,6 +35,9 @@ struct Opts {
     #[clap(flatten)]
     server: ServerOpts,
 
+    #[clap(flatten)]
+    db: db::ConnectArgs,
+
     #[clap(long, env)]
     twitter_bearer_token: Option<String>,
 
@@ -103,6 +106,7 @@ fn main() {
     indexer_core::run(|| {
         let Opts {
             server,
+            db,
             twitter_bearer_token,
             asset_proxy,
         } = Opts::parse();
@@ -114,7 +118,7 @@ fn main() {
 
         // TODO: db_ty indicates if any actions that mutate the database can be run
         let (db, _db_ty) =
-            db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
+            db::connect(db, db::ConnectMode::Read).context("Failed to connect to Postgres")?;
         let db = Arc::new(db);
 
         let shared = web::Data::new(SharedData {

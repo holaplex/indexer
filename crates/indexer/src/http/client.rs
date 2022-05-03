@@ -5,7 +5,7 @@ use indexer_core::{assets::AssetProxyArgs, clap};
 use crate::{db::Pool, prelude::*, reqwest};
 
 /// Common arguments for internal HTTP indexer usage
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, clap::Args)]
 #[allow(missing_copy_implementations)]
 pub struct Args {
     #[clap(flatten)]

@@ -75,7 +75,7 @@ fn dotenv(name: impl AsRef<Path>) -> Result<Option<PathBuf>, dotenv::Error> {
 }
 
 /// Common options for all server crates.
-#[derive(Debug, Clone, Copy, clap::Parser)]
+#[derive(Debug, Clone, Copy, clap::Args)]
 pub struct ServerOpts {
     /// The address to bind to
     #[clap(long = "addr", default_value = "0.0.0.0:3000", env)]

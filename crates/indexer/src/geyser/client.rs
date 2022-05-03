@@ -16,15 +16,15 @@ impl std::panic::UnwindSafe for HttpProducers {}
 impl std::panic::RefUnwindSafe for HttpProducers {}
 
 /// Common arguments for Geyser indexer usage
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, clap::Args)]
 pub struct Args {
-    /// Dialect API key
-    #[clap(long, env)]
-    dialect_api_key: String,
-
     /// Dialect API endpoint
-    #[clap(long, env)]
-    dialect_api_endpoint: String,
+    #[clap(long, env, requires("dialect-api-key"))]
+    dialect_api_endpoint: Option<String>,
+
+    /// Dialect API key
+    #[clap(long, env, requires("dialect-api-endpoint"))]
+    dialect_api_key: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -55,8 +55,8 @@ pub struct Client {
     db: AssertUnwindSafe<Pool>,
     http: reqwest::Client,
     http_prod: HttpProducers,
-    dialect_api_endpoint: String,
-    dialect_api_key: String,
+    dialect_api_endpoint: Option<String>,
+    dialect_api_key: Option<String>,
 }
 
 impl Client {
@@ -75,6 +75,10 @@ impl Client {
             dialect_api_key,
         }: Args,
     ) -> Result<Arc<Self>> {
+        if dialect_api_endpoint.is_none() {
+            warn!("Disabling Dialect integration");
+        }
+
         Ok(Arc::new(Self {
             db: AssertUnwindSafe(db),
             http: reqwest::Client::new(Duration::from_millis(500))?,
@@ -146,6 +150,18 @@ impl Client {
         bid_receipt_address: Pubkey,
         metadata_address: Pubkey,
     ) -> Result<()> {
+        let (endpoint, key) =
+            if let (Some(e), Some(k)) = (&self.dialect_api_endpoint, &self.dialect_api_key) {
+                (e, k)
+            } else {
+                trace!(
+                    "Dialect API args not present, skipping dispatch of bid {} on nft {}",
+                    bid_receipt_address,
+                    metadata_address
+                );
+                return Ok(());
+            };
+
         let msg = DialectEvent {
             event_type: DialectEventType::NftMakeOffer,
             data: DialectEventData::DialectOfferEventData(DialectOfferEventData {
@@ -156,8 +172,8 @@ impl Client {
 
         self.http
             .run(|h| {
-                h.post(&self.dialect_api_endpoint)
-                    .basic_auth("holaplex", Some(&self.dialect_api_key))
+                h.post(endpoint)
+                    .basic_auth("holaplex", Some(key))
                     .json(&msg)
                     .send()
             })
