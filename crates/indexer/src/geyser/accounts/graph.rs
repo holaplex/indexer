@@ -27,7 +27,7 @@ pub(crate) async fn process(
         disconnected_at: account_data
             .disconnected_at
             .map(util::unix_timestamp)
-            .transpose()?
+            .transpose()?,
     };
 
     client
