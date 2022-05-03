@@ -42,7 +42,7 @@ impl From<models::TwitterEnrichedGraphConnection> for GraphConnection {
             address: connection_address,
             from: Wallet::new(from_account.into(), from_twitter_handle),
             to: Wallet::new(to_account.into(), to_twitter_handle),
-            connected_at: Utc.from_local_datetime(&connected_at).unwrap(),
+            connected_at: DateTime::from_utc(connected_at, Utc),
         }
     }
 }
