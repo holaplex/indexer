@@ -98,10 +98,7 @@ impl Client {
                 .try_run_upserts(meili.clone(), interval, &mut rx, &mut stop_rx)
                 .await
             {
-                Ok(()) => {
-                    info!("Shutting down Meilisearch upsert task");
-                    break;
-                },
+                Ok(()) => break,
                 Err(e) => {
                     error!("Meilisearch upsert task crashed: {:?}", e);
                 },
@@ -127,35 +124,35 @@ impl Client {
         let mut timer = tokio::time::interval(interval);
         timer.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
-        let mut go = true;
         let mut lock_if_stopping = None;
 
-        while go {
+        let stop_reason = loop {
             let evt = tokio::select! {
                 o = rx.recv() => Event::Rx(o),
                 r = &mut stop_rx => Event::Stop(r),
                 i = timer.tick() => Event::Tick(i),
             };
 
-            go &= match evt {
-                Event::Rx(Some(())) | Event::Tick(_) => true,
-                Event::Rx(None) | Event::Stop(Ok(())) => false,
+            let stop_reason = match evt {
+                Event::Rx(Some(())) | Event::Tick(_) => None,
+                Event::Rx(None) => Some("trigger event source closed"),
+                Event::Stop(Ok(())) => Some("stop signal received"),
                 Event::Stop(Err(e)) => {
                     // Stoplight broke, stop anyway
                     error!("Failed to read upsert stop signal: {}", e);
-                    false
+                    Some("error occurred reading stop signal")
                 },
             };
 
             let mut lock = self.upsert_queue.write().await;
 
-            if go && lock.len() == 0 {
+            if stop_reason.is_none() && lock.len() == 0 {
                 continue;
             }
 
             let queue = std::mem::take(&mut *lock);
 
-            if go {
+            if stop_reason.is_none() {
                 std::mem::drop(lock);
             } else {
                 lock_if_stopping = Some(lock);
@@ -176,7 +173,13 @@ impl Client {
                     .await
                     .context("Meilisearch API call failed")?;
             }
-        }
+
+            if let Some(reason) = stop_reason {
+                break reason;
+            }
+        };
+
+        info!("Stopping upsert worker: {}", stop_reason);
 
         debug_assert!(lock_if_stopping.is_some());
 
