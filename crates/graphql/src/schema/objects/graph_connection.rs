@@ -8,6 +8,7 @@ pub struct GraphConnection {
     pub address: String,
     pub from: Wallet,
     pub to: Wallet,
+    pub connected_at: DateTime<Utc>,
 }
 
 #[graphql_object(Context = AppContext)]
@@ -33,7 +34,7 @@ impl From<models::TwitterEnrichedGraphConnection> for GraphConnection {
             to_account,
             from_twitter_handle,
             to_twitter_handle,
-            connected_at: _,
+            connected_at,
             disconnected_at: _,
         }: models::TwitterEnrichedGraphConnection,
     ) -> Self {
@@ -41,6 +42,7 @@ impl From<models::TwitterEnrichedGraphConnection> for GraphConnection {
             address: connection_address,
             from: Wallet::new(from_account.into(), from_twitter_handle),
             to: Wallet::new(to_account.into(), to_twitter_handle),
+            connected_at: Utc.from_local_datetime(&connected_at).unwrap(),
         }
     }
 }
