@@ -40,7 +40,7 @@ impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
 #[graphql_object(Context = AppContext)]
 impl QueryRoot {
     #[graphql(
-        description = "Query feed events for a wallet. Returns events related to the specified user and events for the wallets the user follows.",
+        description = "Returns events for the wallets the user is following using the graph_program.",
         arguments(
             wallet(description = "A user wallet public key"),
             limit(description = "The query record limit"),

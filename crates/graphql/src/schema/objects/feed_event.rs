@@ -2,7 +2,7 @@ use indexer_core::db::{models, queries};
 use juniper::GraphQLUnion;
 use objects::{
     bid_receipt::BidReceipt, graph_connection::GraphConnection, listing_receipt::ListingReceipt,
-    nft::Nft, purchase_receipt::PurchaseReceipt,
+    nft::Nft, profile::TwitterProfile, purchase_receipt::PurchaseReceipt,
 };
 
 use super::prelude::*;
@@ -12,6 +12,8 @@ use crate::schema::scalars::PublicKey;
 pub struct MintEvent {
     created_at: DateTime<Utc>,
     feed_event_id: String,
+    twitter_handle: Option<String>,
+    wallet_address: String,
     metadata_address: PublicKey<Nft>,
 }
 
@@ -19,6 +21,8 @@ pub struct MintEvent {
 pub struct FollowEvent {
     created_at: DateTime<Utc>,
     feed_event_id: String,
+    twitter_handle: Option<String>,
+    wallet_address: String,
     graph_connection_address: PublicKey<GraphConnection>,
 }
 
@@ -26,6 +30,22 @@ pub struct FollowEvent {
 impl FollowEvent {
     fn created_at(&self) -> DateTime<Utc> {
         self.created_at
+    }
+
+    fn wallet_address(&self) -> &str {
+        &self.wallet_address
+    }
+
+    pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
+        let twitter_handle = match self.twitter_handle {
+            Some(ref t) => t.clone(),
+            None => return Ok(None),
+        };
+
+        ctx.twitter_profile_loader
+            .load(twitter_handle)
+            .await
+            .map_err(Into::into)
     }
 
     fn feed_event_id(&self) -> &str {
@@ -48,6 +68,8 @@ impl FollowEvent {
 pub struct PurchaseEvent {
     created_at: DateTime<Utc>,
     feed_event_id: String,
+    twitter_handle: Option<String>,
+    wallet_address: String,
     purchase_receipt_address: PublicKey<PurchaseReceipt>,
 }
 
@@ -55,6 +77,22 @@ pub struct PurchaseEvent {
 impl PurchaseEvent {
     fn created_at(&self) -> DateTime<Utc> {
         self.created_at
+    }
+
+    fn wallet_address(&self) -> &str {
+        &self.wallet_address
+    }
+
+    pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
+        let twitter_handle = match self.twitter_handle {
+            Some(ref t) => t.clone(),
+            None => return Ok(None),
+        };
+
+        ctx.twitter_profile_loader
+            .load(twitter_handle)
+            .await
+            .map_err(Into::into)
     }
 
     fn feed_event_id(&self) -> &str {
@@ -77,8 +115,9 @@ impl PurchaseEvent {
 pub struct OfferEvent {
     created_at: DateTime<Utc>,
     feed_event_id: String,
+    twitter_handle: Option<String>,
+    wallet_address: String,
     bid_receipt_address: PublicKey<BidReceipt>,
-    // TODO: Make graphql scalar for the enum
     lifecycle: String,
 }
 
@@ -86,6 +125,22 @@ pub struct OfferEvent {
 impl OfferEvent {
     fn created_at(&self) -> DateTime<Utc> {
         self.created_at
+    }
+
+    fn wallet_address(&self) -> &str {
+        &self.wallet_address
+    }
+
+    pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
+        let twitter_handle = match self.twitter_handle {
+            Some(ref t) => t.clone(),
+            None => return Ok(None),
+        };
+
+        ctx.twitter_profile_loader
+            .load(twitter_handle)
+            .await
+            .map_err(Into::into)
     }
 
     fn feed_event_id(&self) -> &str {
@@ -113,7 +168,8 @@ pub struct ListingEvent {
     created_at: DateTime<Utc>,
     feed_event_id: String,
     listing_receipt_address: PublicKey<ListingReceipt>,
-    // TODO: Make graphql scalar for the enum
+    twitter_handle: Option<String>,
+    wallet_address: String,
     lifecycle: String,
 }
 
@@ -121,6 +177,22 @@ pub struct ListingEvent {
 impl ListingEvent {
     fn created_at(&self) -> DateTime<Utc> {
         self.created_at
+    }
+
+    fn wallet_address(&self) -> &str {
+        &self.wallet_address
+    }
+
+    pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
+        let twitter_handle = match self.twitter_handle {
+            Some(ref t) => t.clone(),
+            None => return Ok(None),
+        };
+
+        ctx.twitter_profile_loader
+            .load(twitter_handle)
+            .await
+            .map_err(Into::into)
     }
 
     fn feed_event_id(&self) -> &str {
@@ -147,6 +219,22 @@ impl ListingEvent {
 impl MintEvent {
     fn created_at(&self) -> DateTime<Utc> {
         self.created_at
+    }
+
+    fn wallet_address(&self) -> &str {
+        &self.wallet_address
+    }
+
+    pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
+        let twitter_handle = match self.twitter_handle {
+            Some(ref t) => t.clone(),
+            None => return Ok(None),
+        };
+
+        ctx.twitter_profile_loader
+            .load(twitter_handle)
+            .await
+            .map_err(Into::into)
     }
 
     fn feed_event_id(&self) -> &str {
@@ -187,6 +275,8 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
     fn try_from(
         (
             models::FeedEvent { id, created_at },
+            wallet_address,
+            twitter_handle,
             mint_event,
             offer_event,
             listing_event,
@@ -213,6 +303,8 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
                 feed_event_id: id.to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
                 metadata_address: metadata_address.into_owned().into(),
+                twitter_handle,
+                wallet_address,
             })),
             (
                 None,
@@ -229,6 +321,8 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
                 created_at: DateTime::from_utc(created_at, Utc),
                 bid_receipt_address: bid_receipt_address.into_owned().into(),
                 lifecycle: lifecycle.to_string(),
+                twitter_handle,
+                wallet_address,
             })),
             (
                 None,
@@ -245,6 +339,8 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
                 created_at: DateTime::from_utc(created_at, Utc),
                 listing_receipt_address: listing_receipt_address.into_owned().into(),
                 lifecycle: lifecycle.to_string(),
+                twitter_handle,
+                wallet_address,
             })),
             (
                 None,
@@ -259,6 +355,8 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
                 feed_event_id: id.to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
                 purchase_receipt_address: purchase_receipt_address.into_owned().into(),
+                twitter_handle,
+                wallet_address,
             })),
             (
                 None,
@@ -273,6 +371,8 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
                 feed_event_id: id.to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
                 graph_connection_address: graph_connection_address.into_owned().into(),
+                twitter_handle,
+                wallet_address,
             })),
             _ => {
                 debug!("feed_event_id: {}", id);
