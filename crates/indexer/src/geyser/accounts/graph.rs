@@ -7,6 +7,7 @@ use indexer_core::{
         tables::{feed_event_wallets, feed_events, follow_events, graph_connections},
     },
     prelude::*,
+    util,
     uuid::Uuid,
 };
 
@@ -22,10 +23,8 @@ pub(crate) async fn process(
         address: Owned(bs58::encode(key).into_string()),
         from_account: Owned(bs58::encode(account_data.from).into_string()),
         to_account: Owned(bs58::encode(account_data.to).into_string()),
-        connected_at: NaiveDateTime::from_timestamp(account_data.connected_at, 0),
-        disconnected_at: account_data
-            .disconnected_at
-            .map(|disconnected| NaiveDateTime::from_timestamp(disconnected, 0)),
+        connected_at: util::unix_timestamp(account_data.connected_at)?,
+        disconnected_at: account_data.disconnected_at.map(util::unix_timestamp).transpose()?
     };
 
     client
