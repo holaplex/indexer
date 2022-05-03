@@ -1,4 +1,4 @@
-use indexer_core::db::queries;
+use indexer_core::db::{models, queries};
 use objects::{
     auction_house::AuctionHouse, listing::Bid, nft::NftCreator, profile::TwitterProfile,
 };
@@ -11,6 +11,20 @@ use super::prelude::*;
 pub struct Wallet {
     pub address: PublicKey<Wallet>,
     pub twitter_handle: Option<String>,
+}
+
+impl From<(models::WalletTotal, Option<String>)> for Wallet {
+    fn from(
+        (models::WalletTotal { address, .. }, twitter_handle): (
+            models::WalletTotal,
+            Option<String>,
+        ),
+    ) -> Self {
+        Self {
+            address: address.into(),
+            twitter_handle,
+        }
+    }
 }
 
 impl Wallet {

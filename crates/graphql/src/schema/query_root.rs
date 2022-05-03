@@ -1,4 +1,4 @@
-use indexer_core::db::queries;
+use indexer_core::db::{queries, tables::twitter_handle_name_services};
 use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
@@ -17,8 +17,8 @@ use objects::{
 };
 use scalars::PublicKey;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, bid_receipts, metadata_jsons, metadatas,
-    store_config_jsons, storefronts,
+    auction_caches, auction_datas, auction_datas_ext, bid_receipts, graph_connections,
+    metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
 };
 
 use super::prelude::*;
@@ -39,6 +39,51 @@ impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
 
 #[graphql_object(Context = AppContext)]
 impl QueryRoot {
+    #[graphql(
+        description = "Recommend wallets to follow.",
+        arguments(
+            wallet(description = "A user wallet public key"),
+            limit(description = "The query record limit"),
+            offset(description = "The query record offset")
+        )
+    )]
+    fn follow_wallets(
+        &self,
+        ctx: &AppContext,
+        wallet: Option<PublicKey<Wallet>>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<Wallet>> {
+        let conn = ctx.shared.db.get().context("failed to connect to db")?;
+
+        let mut query = wallet_totals::table
+            .left_join(
+                twitter_handle_name_services::table
+                    .on(wallet_totals::address.eq(twitter_handle_name_services::wallet_address)),
+            )
+            .select((
+                (wallet_totals::all_columns),
+                twitter_handle_name_services::twitter_handle.nullable(),
+            ))
+            .order(wallet_totals::followers.desc())
+            .limit(limit.try_into()?)
+            .offset(offset.try_into()?)
+            .into_boxed();
+
+        if let Some(wallet) = wallet {
+            let following_query = graph_connections::table
+                .select(graph_connections::to_account)
+                .filter(graph_connections::from_account.eq(wallet));
+
+            query = query.filter(wallet_totals::address.eq(any(following_query)));
+        }
+
+        let rows: Vec<(models::WalletTotal, Option<String>)> =
+            query.load(&conn).context("Failed to load wallet totals")?;
+
+        Ok(rows.into_iter().map(Into::into).collect())
+    }
+
     #[graphql(
         description = "Returns events for the wallets the user is following using the graph_program.",
         arguments(

@@ -22,10 +22,12 @@ use crate::{
     error::prelude::*,
 };
 
-/// join of event tables into a single event type
+/// join of event tables into a single event type enriched with twitter info for source wallet
 pub type Columns<'a> = (
     models::FeedEvent,
+    // source wallet address for the event
     String,
+    // twitter handle of the source wallet if available
     Option<String>,
     Option<models::MintEvent<'a>>,
     Option<models::OfferEvent<'a>>,

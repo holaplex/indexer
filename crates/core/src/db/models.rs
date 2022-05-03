@@ -1847,3 +1847,14 @@ pub struct FollowEvent<'a> {
     /// foreign key to `feed_events`
     pub feed_event_id: Uuid,
 }
+
+/// A row in the `wallet_totals` table
+#[derive(Debug, Clone, Queryable)]
+pub struct WalletTotal {
+    /// wallet address
+    pub address: String,
+    /// wallet follwers
+    pub followers: i64,
+    /// wallet following
+    pub following: i64,
+}

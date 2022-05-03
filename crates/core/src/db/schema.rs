@@ -1126,8 +1126,8 @@ table! {
 
     wallet_totals (address) {
         address -> Varchar,
-        following -> Nullable<Int8>,
-        follwers -> Nullable<Int8>,
+        following -> Int8,
+        followers -> Int8,
     }
 }
 
