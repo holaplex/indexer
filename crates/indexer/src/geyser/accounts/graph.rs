@@ -24,7 +24,10 @@ pub(crate) async fn process(
         from_account: Owned(bs58::encode(account_data.from).into_string()),
         to_account: Owned(bs58::encode(account_data.to).into_string()),
         connected_at: util::unix_timestamp(account_data.connected_at)?,
-        disconnected_at: account_data.disconnected_at.map(util::unix_timestamp).transpose()?
+        disconnected_at: account_data
+            .disconnected_at
+            .map(util::unix_timestamp)
+            .transpose()?
     };
 
     client
