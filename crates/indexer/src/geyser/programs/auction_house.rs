@@ -1,4 +1,4 @@
-use anchor_lang::AccountDeserialize;
+use anchor_lang_v0_20::AccountDeserialize;
 use mpl_auction_house::{
     receipt::{
         BidReceipt, ListingReceipt, PurchaseReceipt, BID_RECEIPT_SIZE, LISTING_RECEIPT_SIZE,

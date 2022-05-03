@@ -1,4 +1,4 @@
-use anchor_lang_v0_22_1::AccountDeserialize;
+use anchor_lang_v0_22::AccountDeserialize;
 use graph_program::state::Connection;
 
 use super::{accounts::graph, AccountUpdate, Client};

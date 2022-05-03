@@ -1,4 +1,4 @@
-use anchor_lang_v0_22_1::AccountDeserialize;
+use anchor_lang_v0_22::AccountDeserialize;
 use spl_token_bonding::state::TokenBondingV0;
 
 use super::{accounts::bonding_change, AccountUpdate, Client};

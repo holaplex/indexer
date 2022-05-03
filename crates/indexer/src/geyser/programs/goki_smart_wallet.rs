@@ -1,4 +1,4 @@
-use anchor_lang_v0_22_1::AccountDeserialize;
+use anchor_lang_v0_22::AccountDeserialize;
 use goki_smart_wallet::{InstructionBuffer, SmartWallet, SubaccountInfo, Transaction};
 
 use super::{accounts::smart_wallet, AccountUpdate, Client};
