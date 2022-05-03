@@ -37,15 +37,24 @@ fn main() {
                     .await
                     .context("Failed to create queue consumer")?;
 
-            let client = Client::new_rc(db, client)
+            let (client, client_task) = Client::new_rc(db, client)
                 .await
                 .context("Failed to construct Client")?;
 
-            holaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
-                let client = client.clone();
-                async move { holaplex_indexer::search::process_message(m, &*client).await }
-            })
-            .await
+            let ret =
+                holaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
+                    let client = client.clone();
+                    async move { holaplex_indexer::search::process_message(m, &*client).await }
+                })
+                .await;
+
+            client_task.abort();
+            client_task
+                .await
+                .map_err(|e| error!("Join for upsert task failed: {}", e))
+                .ok();
+
+            ret
         },
     );
 }

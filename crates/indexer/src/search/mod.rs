@@ -36,7 +36,9 @@ impl meilisearch_sdk::document::Document for Document {
 pub async fn process_message(msg: Message, client: &Client) -> Result<()> {
     match msg {
         Message::Upsert { index, document } => {
-            client.upsert_documents(index, &[document.into()]).await?;
+            client
+                .upsert_documents(index, Some(document.into()))
+                .await?;
 
             Ok(())
         },
