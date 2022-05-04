@@ -77,6 +77,8 @@ impl Client {
     ) -> Result<Arc<Self>> {
         if dialect_api_endpoint.is_none() {
             warn!("Disabling Dialect integration");
+        } else {
+            debug!("Dialect integration enabled");
         }
 
         Ok(Arc::new(Self {
@@ -170,7 +172,14 @@ impl Client {
             }),
         };
 
-        self.http
+        trace!(
+            "Dispatching {} to Dialect at {:?}",
+            serde_json::to_string_pretty(&msg).unwrap_or_else(|e| format!("{:?}", e)),
+            endpoint
+        );
+
+        let res = self
+            .http
             .run(|h| {
                 h.post(endpoint)
                     .basic_auth("holaplex", Some(key))
@@ -178,6 +187,8 @@ impl Client {
                     .send()
             })
             .await?;
+
+        trace!("Dialect dispatch responded with {:?}", res.status());
 
         Ok(())
     }
