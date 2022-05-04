@@ -56,7 +56,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Connecti
 
                 insert_into(feed_event_wallets::table)
                     .values(&FeedEventWallet {
-                        wallet_address: row.to_account,
+                        wallet_address: row.from_account,
                         feed_event_id,
                     })
                     .execute(db)
