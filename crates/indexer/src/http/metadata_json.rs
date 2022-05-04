@@ -119,7 +119,8 @@ async fn fetch_json(
     let url = url.context("Failed to create asset URL")?;
 
     let bytes = client
-        .http(|h| {
+        .http()
+        .run(|h| {
             let url = url.clone();
             async move { h.get(url).send().await?.bytes().await }
         })

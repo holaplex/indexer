@@ -527,6 +527,8 @@ table! {
         address -> Varchar,
         from_account -> Varchar,
         to_account -> Varchar,
+        connected_at -> Timestamp,
+        disconnected_at -> Nullable<Timestamp>,
     }
 }
 
@@ -1124,6 +1126,18 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    wallet_totals (address) {
+        address -> Varchar,
+        following -> Int8,
+        followers -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     whitelisted_creators (address) {
         address -> Varchar,
         creator_address -> Varchar,
@@ -1218,5 +1232,6 @@ allow_tables_to_appear_in_same_query!(
     tx_instruction_keys,
     tx_instructions,
     votes,
+    wallet_totals,
     whitelisted_creators,
 );

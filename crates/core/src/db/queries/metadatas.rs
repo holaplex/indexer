@@ -11,6 +11,7 @@ use crate::{
     db::{
         any,
         models::{Nft, NftActivity},
+        not,
         tables::{
             attributes, bid_receipts, current_metadata_owners, listing_receipts,
             metadata_collection_keys, metadata_creators, metadata_jsons, metadatas,
@@ -33,14 +34,16 @@ pub struct AttributeFilter {
 pub struct ListQueryOptions {
     /// nft owners
     pub owners: Option<Vec<String>>,
+    /// auction houses
+    pub auction_houses: Option<Vec<String>>,
     /// nft creators
     pub creators: Option<Vec<String>>,
     /// offerers who provided offers on nft
     pub offerers: Option<Vec<String>>,
     /// nft attributes
     pub attributes: Option<Vec<AttributeFilter>>,
-    /// nft listed with auction house
-    pub listed: Option<Vec<String>>,
+    /// nfts listed for sale
+    pub listed: Option<bool>,
     /// nft in a specific colleciton
     pub collection: Option<String>,
     /// limit to apply to query
@@ -73,6 +76,7 @@ pub fn list(
     ListQueryOptions {
         owners,
         creators,
+        auction_houses,
         offerers,
         attributes,
         listed,
@@ -81,6 +85,8 @@ pub fn list(
         offset,
     }: ListQueryOptions,
 ) -> Result<Vec<Nft>> {
+    let listed = listed.unwrap_or(false);
+
     let mut query = metadatas::table
         .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
@@ -100,7 +106,15 @@ pub fn list(
             metadata_collection_keys::table
                 .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
         )
+        .distinct()
+        .select((NftColumns::default(), listing_receipts::price.nullable()))
+        .order_by((listing_receipts::price.asc(), metadatas::name.asc()))
         .into_boxed();
+
+    if let Some(auction_houses) = auction_houses {
+        query = query.filter(listing_receipts::auction_house.eq(any(auction_houses)));
+        query = query.or_filter(listing_receipts::auction_house.is_null());
+    }
 
     if let Some(attributes) = attributes {
         query =
@@ -139,16 +153,13 @@ pub fn list(
             .filter(bid_receipts::canceled_at.is_null());
     }
 
-    if let Some(listed) = listed {
-        query = query.filter(listing_receipts::auction_house.eq(any(listed)));
+    if listed {
+        query = query.filter(not(listing_receipts::price.is_null()));
     }
 
     let rows: Vec<(Nft, Option<i64>)> = query
         .filter(listing_receipts::purchase_receipt.is_null())
         .filter(listing_receipts::canceled_at.is_null())
-        .select((NftColumns::default(), listing_receipts::price.nullable()))
-        .distinct()
-        .order((listing_receipts::price.asc(), metadatas::name.asc()))
         .limit(limit)
         .offset(offset)
         .load(conn)

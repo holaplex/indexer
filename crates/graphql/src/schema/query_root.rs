@@ -1,4 +1,4 @@
-use indexer_core::db::queries;
+use indexer_core::db::{queries, tables::twitter_handle_name_services};
 use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
@@ -17,8 +17,8 @@ use objects::{
 };
 use scalars::PublicKey;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, bid_receipts, metadata_jsons, metadatas,
-    store_config_jsons, storefronts,
+    auction_caches, auction_datas, auction_datas_ext, bid_receipts, graph_connections,
+    metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
 };
 
 use super::prelude::*;
@@ -40,7 +40,52 @@ impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
 #[graphql_object(Context = AppContext)]
 impl QueryRoot {
     #[graphql(
-        description = "Query feed events for a wallet. Returns events related to the specified user and events for the wallets the user follows.",
+        description = "Recommend wallets to follow.",
+        arguments(
+            wallet(description = "A user wallet public key"),
+            limit(description = "The query record limit"),
+            offset(description = "The query record offset")
+        )
+    )]
+    fn follow_wallets(
+        &self,
+        ctx: &AppContext,
+        wallet: Option<PublicKey<Wallet>>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<Wallet>> {
+        let conn = ctx.shared.db.get().context("failed to connect to db")?;
+
+        let mut query = wallet_totals::table
+            .left_join(
+                twitter_handle_name_services::table
+                    .on(wallet_totals::address.eq(twitter_handle_name_services::wallet_address)),
+            )
+            .select((
+                (wallet_totals::all_columns),
+                twitter_handle_name_services::twitter_handle.nullable(),
+            ))
+            .order(wallet_totals::followers.desc())
+            .limit(limit.try_into()?)
+            .offset(offset.try_into()?)
+            .into_boxed();
+
+        if let Some(wallet) = wallet {
+            let following_query = graph_connections::table
+                .select(graph_connections::to_account)
+                .filter(graph_connections::from_account.eq(wallet));
+
+            query = query.filter(wallet_totals::address.eq(any(following_query)));
+        }
+
+        let rows: Vec<(models::WalletTotal, Option<String>)> =
+            query.load(&conn).context("Failed to load wallet totals")?;
+
+        Ok(rows.into_iter().map(Into::into).collect())
+    }
+
+    #[graphql(
+        description = "Returns events for the wallets the user is following using the graph_program.",
         arguments(
             wallet(description = "A user wallet public key"),
             limit(description = "The query record limit"),
@@ -251,7 +296,9 @@ impl QueryRoot {
             Vec<PublicKey<Wallet>>,
         >,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
-        #[graphql(description = "Filter on listed")] listed: Option<Vec<PublicKey<AuctionHouse>>>,
+        #[graphql(description = "Filter only listed nfts")] listed: Option<bool>,
+        #[graphql(description = "Filter nfts associated to the list of auction houses")]
+        auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
         #[graphql(description = "Filter on a collection")] collection: Option<PublicKey<Nft>>,
         #[graphql(description = "Limit for query")] limit: i32,
         #[graphql(description = "Offset for query")] offset: i32,
@@ -259,12 +306,12 @@ impl QueryRoot {
         if collection.is_none()
             && owners.is_none()
             && creators.is_none()
-            && listed.is_none()
+            && auction_houses.is_none()
             && offerers.is_none()
         {
             return Err(FieldError::new(
                 "No filter provided! Please provide at least one of the filters",
-                graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, offerers: Vec<PublicKey>, listed: Vec<PublicKey>" }),
+                graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, offerers: Vec<PublicKey>, auction_houses: Vec<PublicKey>" }),
             ));
         }
 
@@ -275,7 +322,8 @@ impl QueryRoot {
             creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
             offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
-            listed: listed.map(|a| a.into_iter().map(Into::into).collect()),
+            listed,
+            auction_houses: auction_houses.map(|a| a.into_iter().map(Into::into).collect()),
             collection: collection.map(Into::into),
             limit: limit.into(),
             offset: offset.into(),

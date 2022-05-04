@@ -1,10 +1,10 @@
 use std::{collections::HashSet, sync::Arc};
 
-use holaplex_indexer::geyser::{Client, IgnoreType};
+use holaplex_indexer::geyser::{Client, ClientArgs, IgnoreType};
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::{geyser, http_indexer, suffix::Suffix};
 
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, clap::Args)]
 struct Args {
     /// The address of an AMQP server to connect to
     #[clap(long, env)]
@@ -27,6 +27,9 @@ struct Args {
 
     #[clap(flatten)]
     queue_suffix: Suffix,
+
+    #[clap(flatten)]
+    client: ClientArgs,
 }
 
 fn main() {
@@ -37,6 +40,7 @@ fn main() {
              startup,
              ignore_on_startup,
              queue_suffix,
+             client,
          },
          params,
          db| async move {
@@ -51,6 +55,7 @@ fn main() {
                 &conn,
                 http_indexer::QueueType::new(&sender, &queue_suffix)?,
                 http_indexer::QueueType::new(&sender, &queue_suffix)?,
+                client,
             )
             .await
             .context("Failed to construct Client")?;

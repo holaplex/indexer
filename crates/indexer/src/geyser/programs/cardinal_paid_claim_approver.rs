@@ -1,5 +1,5 @@
 use ::cardinal_paid_claim_approver::state::PaidClaimApprover;
-use anchor_lang_v0_22_1::{AccountDeserialize, Discriminator};
+use anchor_lang_v0_22::{AccountDeserialize, Discriminator};
 
 use super::{accounts::cardinal_paid_claim_approver, AccountUpdate, Client};
 use crate::prelude::*;

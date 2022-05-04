@@ -2,12 +2,11 @@ name: Kubernetes deployment (dev)
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ dev, master ]
 
 jobs:
   build:
     name: Building and Pushing Image
-    if: ${{ !contains(github.event.head_commit.message, '#k8s') }}
     runs-on: ubuntu-20.04
 
     steps:
@@ -34,7 +33,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push Geyser consumer to Amazon ECR (dev)
+      - name: Build, tag, and push Geyser consumer image
         id: build-geyser-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -49,7 +48,7 @@ jobs:
           docker push $image_tag
           echo "::set-output name=image::$image_tag"
 
-      - name: Build, tag, and push HTTP consumer to Amazon ECR (dev)
+      - name: Build, tag, and push HTTP consumer image
         id: build-http-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -64,7 +63,7 @@ jobs:
           docker push $image_tag
           echo "::set-output name=image::$image_tag"
 
-      - name: Build, tag, and push GraphQL to Amazon ECR (dev)
+      - name: Build, tag, and push GraphQL image
         id: build-graphql-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -79,28 +78,32 @@ jobs:
           docker push $image_tag
           echo "::set-output name=image::$image_tag"
 
-      - name: Update deployments image versions (dev)
-        run: |
-            git_hash=$(git rev-parse --short "$GITHUB_SHA")
-            app=geyser-consumer
-            deployment_path="./k8s/${GITHUB_REF##*/}/app"
-            deployment_file="$deployment_path/$app.yaml"
-            version=$(cat $deployment_file | grep -i image\: | awk {'print $2'} | cut -d: -f2)
-            echo "Updating ${app} deployment with new image tag"
-            sed -i "s/$version/$app-${GITHUB_REF##*/}-$git_hash/" $deployment_file
-            app=http-consumer
-            deployment_file="$deployment_path/$app.yaml"
-            version=$(cat $deployment_file | grep -i image\: | awk {'print $2'} | cut -d: -f2)
-            echo "Updating ${app} deployment with new image tag"
-            sed -i "s/$version/$app-${GITHUB_REF##*/}-$git_hash/" $deployment_file
-            app=graphql
-            deployment_file="$deployment_path/$app.yaml"
-            version=$(cat $deployment_file | grep -i image\: | awk {'print $2'} | cut -d: -f2)
-            echo "Updating ${app} deployment with new image tag"
-            sed -i "s/$version/$app-${GITHUB_REF##*/}-$git_hash/" $deployment_file
-
-      - name: Commit and push changes
-        uses: devops-infra/action-commit-push@master
+      - name: Triggering deployment manifest update in kubes repository (main)
+        if: github.ref == 'refs/heads/master'
+        uses: actions/github-script@v6
+        env:
+          BRANCH: ${{ github.ref_name }}
         with:
-          github_token: ${{ secrets.ACTIONS_TOKEN}}
-          commit_message: Updated deployment image version
+          github-token: ${{ secrets.ACTIONS_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'holaplex',
+              repo: 'kubes',
+              workflow_id: 'indexer.yaml',
+              ref: main
+            })
+
+      - name: Triggering deployment manifest update in kubes repository (dev)
+        if: github.ref == 'refs/heads/dev'
+        uses: actions/github-script@v6
+        env:
+          BRANCH: ${{ github.ref_name }}
+        with:
+          github-token: ${{ secrets.ACTIONS_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'holaplex',
+              repo: 'kubes',
+              workflow_id: 'indexer.yaml',
+              ref: process.env.BRANCH
+            })

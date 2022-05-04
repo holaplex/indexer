@@ -1,6 +1,7 @@
 //! Binary for running the write half of the indexer.
 
 #![deny(
+    clippy::disallowed_method,
     clippy::suspicious,
     clippy::style,
     missing_debug_implementations,
@@ -15,6 +16,8 @@ pub mod geyser;
 pub mod http;
 #[cfg(feature = "http")]
 pub mod legacy_storefronts;
+#[cfg(feature = "reqwest-client")]
+pub(crate) mod reqwest;
 pub(crate) mod util;
 
 pub use runtime::*;
@@ -51,6 +54,9 @@ mod runtime {
         thread_count: Option<usize>,
 
         #[clap(flatten)]
+        db: db::ConnectArgs,
+
+        #[clap(flatten)]
         extra: T,
     }
 
@@ -72,11 +78,12 @@ mod runtime {
 
             let Opts {
                 thread_count,
+                db,
                 extra,
             } = opts;
 
             let db = Pool::new(
-                db::connect(db::ConnectMode::Write).context("Failed to connect to Postgres")?,
+                db::connect(db, db::ConnectMode::Write).context("Failed to connect to Postgres")?,
             );
 
             let rt = {

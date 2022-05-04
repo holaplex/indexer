@@ -1,4 +1,4 @@
-use anchor_lang_v0_21_0::{AccountDeserialize, AnchorDeserialize};
+use anchor_lang_v0_21::{AccountDeserialize, AnchorDeserialize};
 use mpl_candy_machine::{CandyMachine, CollectionPDA, ConfigLine, CONFIG_LINE_SIZE};
 
 use super::{accounts::candy_machine, AccountUpdate, Client};
@@ -7,7 +7,7 @@ use crate::prelude::*;
 const COLLECTION_PDA_SIZE: usize = 8 + 64;
 
 pub async fn process_collection_pda(client: &Client, update: AccountUpdate) -> Result<()> {
-    let collection_pda: CollectionPDA = CollectionPDA::deserialize(&mut update.data.as_slice())
+    let collection_pda: CollectionPDA = CollectionPDA::try_deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize collection pda")?;
 
     candy_machine::process_collection_pda(client, update.key, collection_pda).await

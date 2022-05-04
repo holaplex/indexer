@@ -1,6 +1,7 @@
 //! Core components for the `holaplex-indexer` family of crates.
 
 #![deny(
+    clippy::disallowed_method,
     clippy::suspicious,
     clippy::style,
     missing_debug_implementations,
@@ -74,7 +75,7 @@ fn dotenv(name: impl AsRef<Path>) -> Result<Option<PathBuf>, dotenv::Error> {
 }
 
 /// Common options for all server crates.
-#[derive(Debug, Clone, Copy, clap::Parser)]
+#[derive(Debug, Clone, Copy, clap::Args)]
 pub struct ServerOpts {
     /// The address to bind to
     #[clap(long = "addr", default_value = "0.0.0.0:3000", env)]

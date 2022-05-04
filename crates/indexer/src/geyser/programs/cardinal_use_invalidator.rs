@@ -1,5 +1,5 @@
 use ::cardinal_use_invalidator::state::UseInvalidator;
-use anchor_lang_v0_22_1::{AccountDeserialize, Discriminator};
+use anchor_lang_v0_22::{AccountDeserialize, Discriminator};
 
 use super::{accounts::cardinal_use_invalidator, AccountUpdate, Client};
 use crate::prelude::*;

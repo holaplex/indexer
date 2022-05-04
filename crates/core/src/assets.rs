@@ -199,7 +199,7 @@ mod cdn {
     }
 
     /// Common arguments for binaries using [`proxy_url`]
-    #[derive(Debug, Clone, clap::Parser)]
+    #[derive(Debug, Clone, clap::Args)]
     pub struct AssetProxyArgs {
         /// Endpoint for Holaplex asset CDN
         #[clap(long, env)]

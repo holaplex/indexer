@@ -1,5 +1,5 @@
 use ::cardinal_token_manager::state::TokenManager;
-use anchor_lang_v0_22_1::{AccountDeserialize, Discriminator};
+use anchor_lang_v0_22::{AccountDeserialize, Discriminator};
 
 use super::{accounts::cardinal_token_manager, AccountUpdate, Client};
 use crate::prelude::*;
