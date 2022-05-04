@@ -2,7 +2,6 @@ use std::{panic::AssertUnwindSafe, sync::Arc, time::Duration};
 
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::http_indexer;
-use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{db::Pool, reqwest};
@@ -27,25 +26,14 @@ pub struct Args {
     dialect_api_key: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
-enum DialectEventType {
-    NftMakeOffer,
-}
-
-#[derive(Serialize, Deserialize)]
-struct DialectOfferEventData {
-    bid_receipt_address: String,
-    metadata_address: String,
-}
-
-#[derive(Serialize, Deserialize)]
-enum DialectEventData {
-    DialectOfferEventData(DialectOfferEventData),
-}
-#[derive(Serialize, Deserialize)]
-struct DialectEvent {
-    event_type: DialectEventType,
-    data: DialectEventData,
+#[derive(Debug, serde::Serialize)]
+#[serde(tag = "type", content = "data", rename_all = "SCREAMING_SNAKE_CASE")]
+enum DialectEvent {
+    #[serde(rename_all = "camelCase")]
+    NftMakeOffer {
+        bid_receipt_address: String,
+        metadata_address: String,
+    },
 }
 
 // RpcClient doesn't implement Debug for some reason
@@ -164,12 +152,9 @@ impl Client {
                 return Ok(());
             };
 
-        let msg = DialectEvent {
-            event_type: DialectEventType::NftMakeOffer,
-            data: DialectEventData::DialectOfferEventData(DialectOfferEventData {
-                bid_receipt_address: bid_receipt_address.to_string(),
-                metadata_address: metadata_address.to_string(),
-            }),
+        let msg = DialectEvent::NftMakeOffer {
+            bid_receipt_address: bid_receipt_address.to_string(),
+            metadata_address: metadata_address.to_string(),
         };
 
         trace!(
