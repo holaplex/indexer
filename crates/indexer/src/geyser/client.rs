@@ -173,7 +173,18 @@ impl Client {
             })
             .await?;
 
-        trace!("Dialect dispatch responded with {:?}", res.status());
+        if res.status().is_success() {
+            trace!(
+                "Dialect dispatch responded with {} ({:?})",
+                res.status(),
+                res.text().await
+            );
+        } else {
+            warn!(
+                "Dialect dispatch responded with non-success code {}",
+                res.status()
+            );
+        }
 
         Ok(())
     }
