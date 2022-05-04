@@ -24,6 +24,10 @@ impl GraphConnection {
     pub fn to(&self) -> &Wallet {
         &self.to
     }
+
+    pub fn connected_at(&self) -> &DateTime<Utc> {
+        &self.connected_at
+    }
 }
 
 impl From<models::TwitterEnrichedGraphConnection> for GraphConnection {
