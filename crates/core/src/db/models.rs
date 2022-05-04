@@ -711,6 +711,10 @@ pub struct GraphConnection<'a> {
     pub from_account: Cow<'a, str>,
     /// Graph Connection 'to' account address
     pub to_account: Cow<'a, str>,
+    /// Graph Connection 'connected_at'
+    pub connected_at: NaiveDateTime,
+    /// Graph Connection 'disconnected_at'
+    pub disconnected_at: Option<NaiveDateTime>,
 }
 
 /// A row in the `candy_machines` table
@@ -903,6 +907,12 @@ pub struct TwitterEnrichedGraphConnection {
     /// The to_account of the connection
     #[sql_type = "VarChar"]
     pub to_account: String,
+    /// Graph Connection 'connected_at'
+    #[sql_type = "Timestamp"]
+    pub connected_at: NaiveDateTime,
+    /// Graph Connection 'disconnected_at'
+    #[sql_type = "Nullable<Timestamp>"]
+    pub disconnected_at: Option<NaiveDateTime>,
     /// The twitter handle of the from_account
     #[sql_type = "Nullable<Text>"]
     pub from_twitter_handle: Option<String>,

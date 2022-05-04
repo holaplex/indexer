@@ -61,6 +61,7 @@ borsh = "0.9.3"
 anchor-lang-v0-20 = { package = "anchor-lang", version = "0.20.1" }
 anchor-lang-v0-21 = { package = "anchor-lang", version = "0.21.0" }
 anchor-lang-v0-22 = { package = "anchor-lang", version = "0.22.1" }
+anchor-lang-v0-24 = { package = "anchor-lang", version = "0.24.2" }
 metaplex = { version = "0.0.1", features = ["no-entrypoint"] }
 metaplex-auction = { version = "0.0.1", features = ["no-entrypoint"] }
 metaplex-token-metadata = { version = "0.0.1", features = ["no-entrypoint"] }
@@ -97,7 +98,7 @@ rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
 
 [dependencies.graph_program]
 git = "https://github.com/holaplex/graph-program.git"
-rev = "709a8768a7f71df2aba48cf9862835877a036e08"
+rev = "fed1261e68c524a0389b7b41e00c89623e7c3abc"
 
 # Workspace dependencies
 [dependencies.indexer-core]

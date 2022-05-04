@@ -14,11 +14,11 @@ use crate::{
 };
 
 const CONNECTIONS_QUERY: &str = r"
-SELECT gc.address AS connection_address, from_account, to_account, fth.twitter_handle AS from_twitter_handle, tth.twitter_handle AS to_twitter_handle
+SELECT gc.address AS connection_address, from_account, to_account, connected_at, disconnected_at, fth.twitter_handle AS from_twitter_handle, tth.twitter_handle AS to_twitter_handle
     FROM graph_connections gc
     LEFT JOIN twitter_handle_name_services fth ON gc.from_account = fth.wallet_address
     LEFT JOIN twitter_handle_name_services tth ON gc.to_account = tth.wallet_address
-    WHERE ($1 = '{}' OR from_account = ANY($1)) AND ($2 = '{}' OR to_account = ANY($2))
+    WHERE ($1 = '{}' OR from_account = ANY($1)) AND ($2 = '{}' OR to_account = ANY($2)) AND disconnected_at is null
     ORDER BY connection_address
     LIMIT $3 OFFSET $4;
  -- $1: from::text[]
@@ -48,11 +48,11 @@ pub fn connections(
 }
 
 const LIST_QUERY: &str = r"
-SELECT gc.address AS connection_address, from_account, to_account, fth.twitter_handle AS from_twitter_handle, tth.twitter_handle AS to_twitter_handle
+SELECT gc.address AS connection_address, from_account, to_account, connected_at, disconnected_at, fth.twitter_handle AS from_twitter_handle, tth.twitter_handle AS to_twitter_handle
     FROM graph_connections gc
     LEFT JOIN twitter_handle_name_services fth ON gc.from_account = fth.wallet_address
     LEFT JOIN twitter_handle_name_services tth ON gc.to_account = tth.wallet_address
-    WHERE gc.address = ANY($1);
+    WHERE gc.address = ANY($1) AND gc.disconnected_at is null;
  -- $1: addresses::text[]
  ";
 

@@ -1,4 +1,4 @@
-use graph_program::state::Connection;
+use graph_program::state::ConnectionV2;
 use indexer_core::{
     db::{
         insert_into,
@@ -7,17 +7,27 @@ use indexer_core::{
         tables::{feed_event_wallets, feed_events, follow_events, graph_connections},
     },
     prelude::*,
+    util,
     uuid::Uuid,
 };
 
 use super::Client;
 use crate::prelude::*;
 
-pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Connection) -> Result<()> {
+pub(crate) async fn process(
+    client: &Client,
+    key: Pubkey,
+    account_data: ConnectionV2,
+) -> Result<()> {
     let row = DbGraphConnection {
         address: Owned(bs58::encode(key).into_string()),
         from_account: Owned(bs58::encode(account_data.from).into_string()),
         to_account: Owned(bs58::encode(account_data.to).into_string()),
+        connected_at: util::unix_timestamp(account_data.connected_at)?,
+        disconnected_at: account_data
+            .disconnected_at
+            .map(util::unix_timestamp)
+            .transpose()?,
     };
 
     client

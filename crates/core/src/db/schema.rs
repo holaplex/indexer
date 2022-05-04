@@ -527,6 +527,8 @@ table! {
         address -> Varchar,
         from_account -> Varchar,
         to_account -> Varchar,
+        connected_at -> Timestamp,
+        disconnected_at -> Nullable<Timestamp>,
     }
 }
 
