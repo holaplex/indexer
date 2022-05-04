@@ -161,7 +161,6 @@ impl TryBatchFn<PublicKey<Nft>, Vec<NftActivity>> for Batcher {
         let conn = self.db()?;
 
         let rows = queries::metadatas::activities(&conn, addresses)?;
-
         Ok(rows
             .into_iter()
             .map(|activity| (activity.metadata.clone(), activity.try_into()))

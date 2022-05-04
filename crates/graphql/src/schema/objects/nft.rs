@@ -4,7 +4,7 @@ use indexer_core::{
 };
 use objects::{
     auction_house::AuctionHouse, bid_receipt::BidReceipt, listing_receipt::ListingReceipt,
-    profile::TwitterProfile, purchase_receipt::PurchaseReceipt,
+    profile::TwitterProfile, purchase_receipt::PurchaseReceipt, wallet::Wallet
 };
 use reqwest::Url;
 use scalars::{PublicKey, U64};
@@ -211,7 +211,7 @@ pub struct NftActivity {
     pub auction_house: String,
     pub price: U64,
     pub created_at: DateTime<Utc>,
-    pub wallets: Vec<String>,
+    pub wallets: Vec<Wallet>,
     pub activity_type: String,
 }
 
@@ -235,7 +235,15 @@ impl TryFrom<models::NftActivity> for NftActivity {
             auction_house,
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
-            wallets,
+            wallets: wallets
+                .into_iter()
+                .map(|w| {
+                    Wallet::new(
+                        w.get(0).unwrap().clone().into(),
+                        w.get(1).clone().map(|s| s.to_string()),
+                    )
+                })
+                .collect(),
             activity_type,
         })
     }
@@ -263,7 +271,7 @@ impl NftActivity {
         self.created_at
     }
 
-    fn wallets(&self) -> &Vec<String> {
+    fn wallets(&self) -> &Vec<Wallet> {
         &self.wallets
     }
 

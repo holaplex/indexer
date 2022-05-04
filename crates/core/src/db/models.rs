@@ -279,8 +279,8 @@ pub struct NftActivity {
     pub created_at: NaiveDateTime,
 
     /// The wallet address asociated to the activity [seller, buyer]
-    #[sql_type = "Array<VarChar>"]
-    pub wallets: Vec<String>,
+    #[sql_type = "Array<Array<VarChar>>"]
+    pub wallets: Vec<Vec<String>>,
 
     /// Listing/Purchase created time
     #[sql_type = "Text"]

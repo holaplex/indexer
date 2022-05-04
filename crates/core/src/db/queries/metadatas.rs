@@ -190,8 +190,10 @@ pub fn activities(
     conn: &Connection,
     addresses: impl ToSql<Array<Text>, Pg>,
 ) -> Result<Vec<NftActivity>> {
-    diesel::sql_query(ACTIVITES_QUERY)
+    let query = diesel::sql_query(ACTIVITES_QUERY)
         .bind(addresses)
         .load(conn)
-        .context("Failed to load nft(s) activities")
+        .context("Failed to load nft(s) activities");
+    println!("Activities Query: {:?}", query);
+    query
 }
