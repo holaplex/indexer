@@ -17,7 +17,6 @@ pub struct Document {
     /// The unique ID of the document
     pub id: String,
     /// The body of the document
-    #[serde(flatten)]
     pub body: Value,
 }
 

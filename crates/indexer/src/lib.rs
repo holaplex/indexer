@@ -214,6 +214,7 @@ mod runtime {
         conn: indexer_rabbitmq::lapin::Connection,
         consumer: Consumer<Q>,
         queue_type: Q,
+        grace_period: StdDuration,
         process: impl Fn(Q::Message) -> F + Send + Sync + Clone + 'static,
     ) -> Result<()>
     where
@@ -310,10 +311,14 @@ mod runtime {
             info!("Waiting for additional jobs to finish...");
         }
 
-        while let Some(()) = q_tasks.next().await {}
+        while let Some(()) = tokio::select! {
+            t = q_tasks.next() => t,
+            _ = tokio::time::sleep(grace_period) => None,
+        } {}
 
         std::mem::drop(stop_tx);
 
+        // NB: this shouldn't need the grace period because we abort the task
         dl_task
             .await
             .map_err(|e| {

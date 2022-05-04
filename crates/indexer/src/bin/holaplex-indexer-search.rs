@@ -41,20 +41,39 @@ fn main() {
                 .await
                 .context("Failed to construct Client")?;
 
-            let ret =
-                holaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
+            let ret = holaplex_indexer::amqp_consume(
+                &params,
+                conn,
+                consumer,
+                queue_type,
+                StdDuration::from_millis(500),
+                move |m| {
                     let client = client.clone();
                     async move { holaplex_indexer::search::process_message(m, &*client).await }
-                })
-                .await;
+                },
+            )
+            .await;
 
             if let Err(()) = stop_upsert.send(()) {
                 error!("Failed to stop upsert task");
                 upsert_task.abort();
             }
 
-            if let Err(e) = upsert_task.await {
-                error!("Join for upsert task failed: {}", e);
+            if let Err(e) = tokio::select! {
+                r = upsert_task => r.context("Join for upsert task failed"),
+                _ = tokio::time::sleep(
+                    StdDuration::from_secs(
+                        if cfg!(debug_assertions) {
+                            5
+                        } else {
+                            30
+                        }
+                    )
+                ) => {
+                    Err(anyhow!("Timed out waiting for upsert worker"))
+                },
+            } {
+                error!("{:?}", e);
             }
 
             ret

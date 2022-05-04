@@ -144,6 +144,7 @@ impl Client {
                 },
             };
 
+            debug_assert!(lock_if_stopping.is_none());
             let mut lock = self.upsert_queue.write().await;
 
             if stop_reason.is_none() && lock.len() == 0 {
@@ -167,6 +168,12 @@ impl Client {
                 });
 
             for (idx, docs) in map {
+                debug!(
+                    "{} document(s) in upsert queue flagged for {:?}",
+                    docs.len(),
+                    idx
+                );
+
                 meili
                     .index(idx)
                     .add_or_replace(&*docs, None)
@@ -208,10 +215,13 @@ impl Client {
         std::iter::repeat(idx).zip(docs).for_each(|p| q.push(p));
 
         if q.len() >= self.upsert_batch {
-            self.trigger_upsert
-                .send(())
-                .await
-                .context("Failed to trigger upsert")?;
+            use mpsc::error::TrySendError;
+
+            match self.trigger_upsert.try_send(()) {
+                // TrySendError::Full means an upsert has already been triggered
+                Ok(()) | Err(TrySendError::Full(())) => (),
+                Err(e) => return Err(e).context("Failed to trigger upsert")?,
+            }
         }
 
         Ok(())
