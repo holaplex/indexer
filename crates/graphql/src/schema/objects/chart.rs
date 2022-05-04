@@ -7,7 +7,7 @@ use super::prelude::*;
 #[derive(Debug, Clone)]
 pub struct PriceChart {
     pub auction_houses: Vec<PublicKey<AuctionHouse>>,
-    pub creators: Vec<PublicKey<Creator>>,
+    pub creators: Option<Vec<PublicKey<Creator>>>,
     pub start_date: DateTime<Utc>,
     pub end_date: DateTime<Utc>,
 }
@@ -53,8 +53,8 @@ impl PriceChart {
         let conn = ctx.shared.db.get()?;
         let rows = charts::average_prices(
             &conn,
-            &self.auction_houses,
             &self.creators,
+            &self.auction_houses,
             self.start_date.naive_utc(),
             self.end_date.naive_utc(),
         )?;

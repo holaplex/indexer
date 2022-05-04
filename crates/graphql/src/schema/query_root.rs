@@ -117,7 +117,7 @@ impl QueryRoot {
     }
     #[graphql(arguments(
         auction_houses(description = "List of auction houses"),
-        creators(description = "List of creators"),
+        creators(description = "Optional list of creators"),
         start_date(description = "Start date for which we want to get the average price"),
         end_date(description = "End date for which we want to get the average price")
     ))]
@@ -125,7 +125,7 @@ impl QueryRoot {
         &self,
         _context: &AppContext,
         auction_houses: Vec<PublicKey<AuctionHouse>>,
-        creators: Vec<PublicKey<Creator>>,
+        creators: Option<Vec<PublicKey<Creator>>>,
         start_date: DateTime<Utc>,
         end_date: DateTime<Utc>,
     ) -> FieldResult<PriceChart> {

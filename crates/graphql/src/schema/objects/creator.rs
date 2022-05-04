@@ -2,9 +2,7 @@ use std::collections::HashMap;
 
 use indexer_core::{db::queries::stats, prelude::*};
 use itertools::Itertools;
-use objects::{
-    auction_house::AuctionHouse, profile::TwitterProfile, stats::MintStats,
-};
+use objects::{auction_house::AuctionHouse, profile::TwitterProfile, stats::MintStats};
 use scalars::PublicKey;
 use tables::{attributes, metadata_creators};
 

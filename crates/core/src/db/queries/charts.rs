@@ -6,7 +6,7 @@ use diesel::{
     pg::Pg,
     prelude::*,
     serialize::ToSql,
-    sql_types::{Array, Text, Timestamp},
+    sql_types::{Array, Nullable, Text, Timestamp},
 };
 
 use crate::{
@@ -25,7 +25,7 @@ left join (
     on lr.metadata = md.address
     inner join metadata_creators mc
     on md.address = mc.metadata_address
-    where lr.auction_house = ANY($1) and mc.creator_address = ANY($2) and lr.created_at >= $3 and lr.created_at <= $4 and lr.canceled_at is null and lr.purchase_receipt is null
+    where lr.auction_house = ANY($1) and ($2 is null OR mc.creator_address = ANY($2)) and lr.created_at >= $3 and lr.created_at <= $4 and lr.canceled_at is null and lr.purchase_receipt is null
 ) as i
 on i.created_at_day = series
 group by date
@@ -42,7 +42,7 @@ order by date asc;
 pub fn floor_prices(
     conn: &Connection,
     auction_houses: impl ToSql<Array<Text>, Pg>,
-    creators: impl ToSql<Array<Text>, Pg>,
+    creators: impl ToSql<Nullable<Array<Text>>, Pg>,
     start_date: NaiveDateTime,
     end_date: NaiveDateTime,
 ) -> Result<Vec<PricePoint>> {
@@ -66,7 +66,7 @@ left join (
     on pr.metadata = md.address
     inner join metadata_creators mc
     on md.address = mc.metadata_address
-        where pr.auction_house = ANY($1) and mc.creator_address = ANY($2) and pr.created_at >= $3 and pr.created_at <= $4
+        where pr.auction_house = ANY($1) and ($2 is null OR mc.creator_address = ANY($2)) and pr.created_at >= $3 and pr.created_at <= $4
 ) as i
 on i.created_at_day = series
 group by date
@@ -82,7 +82,7 @@ order by date asc;
 /// This function fails if the underlying SQL query returns an error
 pub fn average_prices(
     conn: &Connection,
-    creators: impl ToSql<Array<Text>, Pg>,
+    creators: impl ToSql<Nullable<Array<Text>>, Pg>,
     auction_houses: impl ToSql<Array<Text>, Pg>,
     start_date: NaiveDateTime,
     end_date: NaiveDateTime,
@@ -107,7 +107,7 @@ left join (
     on pr.metadata = md.address
     inner join metadata_creators mc
     on md.address = mc.metadata_address
-        where pr.auction_house = ANY($1) and mc.creator_address = ANY($2) and pr.created_at >= $3 and pr.created_at <= $4
+        where pr.auction_house = ANY($1) and ($2 is null OR mc.creator_address = ANY($2)) and pr.created_at >= $3 and pr.created_at <= $4
 ) as i
 on i.created_at_day = series
 group by date
@@ -124,7 +124,7 @@ order by date asc;
 pub fn total_volume_prices(
     conn: &Connection,
     auction_houses: impl ToSql<Array<Text>, Pg>,
-    creators: impl ToSql<Array<Text>, Pg>,
+    creators: impl ToSql<Nullable<Array<Text>>, Pg>,
     start_date: NaiveDateTime,
     end_date: NaiveDateTime,
 ) -> Result<Vec<PricePoint>> {

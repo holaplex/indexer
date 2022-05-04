@@ -13,12 +13,18 @@ use crate::{
     error::Result,
 };
 
+// TODO: Add indexes on purchase_receipts for seller and buyer for joins
 const ACTIVITES_QUERY: &str = r"
-    SELECT address, metadata, auction_house, price, created_at, array[seller::text] as wallets, 'listing' as activity_type
-    FROM listing_receipts WHERE auction_house = ANY($1)
+    SELECT listing_receipts.address as address, metadata, auction_house, price, created_at, array[[seller, twitter_handle_name_services.twitter_handle]] as wallets, 'listing' as activity_type
+        FROM listing_receipts
+        LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listing_receipts.seller)
+        WHERE auction_house = ANY($1)
     UNION
-    SELECT address, metadata, auction_house, price, created_at, array[seller::text, buyer::text] as wallets, 'purchase' as activity_type
-        FROM purchase_receipts WHERE auction_house = ANY($1)
+    SELECT purchase_receipts.address as address, metadata, auction_house, price, created_at, array[[seller, sth.twitter_handle], [buyer, bth.twitter_handle]] as wallets, 'purchase' as activity_type
+        FROM purchase_receipts
+        LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchase_receipts.seller)
+        LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchase_receipts.buyer)
+        WHERE auction_house = ANY($1)
     ORDER BY created_at DESC;
  -- $1: auction_houses::text[]";
 
