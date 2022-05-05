@@ -15,21 +15,21 @@ insert into wallet_totals (address, following, followers)
     from ( select distinct on (address) address from (select from_account as address from graph_connections union select to_account as address from graph_connections) w) wallets;
 
 CREATE OR REPLACE FUNCTION wallet_totals_graph_connection_inserted()
-  RETURNS TRIGGER 
+  RETURNS TRIGGER
   AS
 $$
 BEGIN
-  INSERT INTO wallet_totals (address, following, followers) 
+  INSERT INTO wallet_totals (address, following, followers)
     VALUES (NEW.from_account, 1, 0)
-    ON CONFLICT (address) DO UPDATE 
+    ON CONFLICT (address) DO UPDATE
       SET following = following + 1;
 
-  INSERT INTO wallet_totals (address, following, followers) 
+  INSERT INTO wallet_totals (address, following, followers)
     VALUES (NEW.to_account, 0, 1)
-    ON CONFLICT (address) DO UPDATE 
+    ON CONFLICT (address) DO UPDATE
       SET followers = followers + 1;
 
-	RETURN NULL;
+  RETURN NULL;
 END;
 $$ LANGUAGE PLPGSQL;
 
