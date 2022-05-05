@@ -90,7 +90,7 @@ jobs:
               owner: 'holaplex',
               repo: 'kubes',
               workflow_id: 'indexer.yaml',
-              ref: main
+              ref: 'main'
             })
 
       - name: Triggering deployment manifest update in kubes repository (dev)

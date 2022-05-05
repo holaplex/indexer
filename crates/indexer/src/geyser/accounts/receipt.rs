@@ -275,6 +275,8 @@ pub(crate) async fn process_bid_receipt(
         client
             .dispatch_dialect_offer_event(key, bid_receipt.metadata)
             .await?;
+    } else {
+        trace!("Skipping Dialect dispatch for offer");
     }
 
     Ok(())
