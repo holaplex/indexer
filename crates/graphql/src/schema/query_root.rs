@@ -137,14 +137,18 @@ impl QueryRoot {
         })
     }
 
-    #[graphql(arguments(auction_housese(description = "List of auction houses"),))]
+    #[graphql(arguments(
+        auction_housese(description = "List of auction houses"),
+        creators(description = "Optional list of creators"),
+    ))]
     pub async fn activities(
         &self,
         context: &AppContext,
         auction_houses: Vec<PublicKey<AuctionHouse>>,
+        creators: Option<Vec<PublicKey<Creator>>>,
     ) -> FieldResult<Vec<NftActivity>> {
         let conn = context.shared.db.get()?;
-        let rows = queries::activities::list(&conn, auction_houses)?;
+        let rows = queries::activities::list(&conn, auction_houses, creators)?;
 
         rows.into_iter()
             .map(TryInto::try_into)
