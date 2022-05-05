@@ -1,6 +1,6 @@
 use holaplex_indexer::http::{Client, ClientArgs};
 use indexer_core::{clap, prelude::*};
-use indexer_rabbitmq::http_indexer;
+use indexer_rabbitmq::{http_indexer, search_indexer, suffix::Suffix};
 
 #[derive(Debug, clap::Args)]
 struct Args {
@@ -17,7 +17,7 @@ struct Args {
     entity: http_indexer::EntityId,
 
     #[clap(flatten)]
-    queue_suffix: indexer_rabbitmq::suffix::Suffix,
+    queue_suffix: Suffix,
 
     #[clap(flatten)]
     client: ClientArgs,
@@ -50,17 +50,36 @@ async fn run<E: Send + holaplex_indexer::http::Process + 'static>(
         client,
     } = args;
 
+    let receiver = match queue_suffix {
+        Suffix::Debug(ref s) => s.clone(),
+        _ => sender.clone(),
+    };
+
     let conn = holaplex_indexer::amqp_connect(amqp_url, env!("CARGO_BIN_NAME")).await?;
-    let client = Client::new_rc(db, client).context("Failed to construct Client")?;
+    let client = Client::new_rc(
+        db,
+        &conn,
+        client,
+        search_indexer::QueueType::new(&receiver, &queue_suffix)?,
+    )
+    .await
+    .context("Failed to construct Client")?;
 
     let queue_type = http_indexer::QueueType::<E>::new(&sender, &queue_suffix)?;
     let consumer = http_indexer::Consumer::new(&conn, queue_type.clone(), "http-consumer")
         .await
         .context("Failed to create queue consumer")?;
 
-    holaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
-        let client = client.clone();
-        async move { m.process(&client).await }
-    })
+    holaplex_indexer::amqp_consume(
+        &params,
+        conn,
+        consumer,
+        queue_type,
+        StdDuration::from_millis(500),
+        move |m| {
+            let client = client.clone();
+            async move { m.process(&client).await }
+        },
+    )
     .await
 }

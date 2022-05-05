@@ -18,6 +18,10 @@ pub mod http;
 pub mod legacy_storefronts;
 #[cfg(feature = "reqwest-client")]
 pub(crate) mod reqwest;
+#[cfg(feature = "search")]
+pub mod search;
+#[cfg(feature = "search-dispatch")]
+pub(crate) mod search_dispatch;
 pub(crate) mod util;
 
 pub use runtime::*;
@@ -31,7 +35,7 @@ pub mod prelude {
 mod runtime {
     use std::{fmt::Debug, future::Future};
 
-    use futures_util::{FutureExt, StreamExt};
+    use futures_util::{stream::FuturesUnordered, FutureExt, StreamExt};
     use indexer_core::{
         clap,
         clap::{Args, Parser},
@@ -133,6 +137,66 @@ mod runtime {
         .context("Failed to connect to the AMQP server")
     }
 
+    enum StopType {
+        Hangup,
+        Stopped,
+    }
+
+    async fn consume_one<Q: QueueType, F: Future<Output = Result<()>>>(
+        worker_id: usize,
+        mut consumer: Consumer<Q>,
+        process: impl Fn(Q::Message) -> F,
+        mut stop_rx: broadcast::Receiver<()>,
+    ) -> Result<StopType>
+    where
+        Q::Message: Debug + for<'de> serde::Deserialize<'de>,
+    {
+        enum Delivery<T> {
+            Message(Option<(T, lapin::acker::Acker)>),
+            Stop,
+        }
+
+        // Ideally T would be ! but ! is unstable.
+        fn handle_stop<T>(r: Result<(), RecvError>) -> Result<Delivery<T>> {
+            match r {
+                Ok(()) | Err(RecvError::Closed) => Ok(Delivery::Stop),
+                Err(e) => Err(e).context("Error receiving stop signal"),
+            }
+        }
+
+        loop {
+            let del = tokio::select! {
+                r = consumer.read() => {
+                    Delivery::Message(r.context("Failed to read AMQP message")?)
+                },
+                r = stop_rx.recv() => handle_stop(r)?,
+            };
+
+            let (msg, acker) = match del {
+                Delivery::Message(Some(d)) => d,
+                Delivery::Message(None) => break Ok(StopType::Hangup),
+                Delivery::Stop => break Ok(StopType::Stopped),
+            };
+
+            trace!("Worker {}: {:?}", worker_id, msg);
+
+            match process(msg).await {
+                Ok(()) => acker
+                    .ack(BasicAckOptions::default())
+                    .await
+                    .context("Failed to send ACK for delivery")?,
+                Err(e) => {
+                    warn!("Failed to process message: {:?}", e);
+
+                    acker
+                        .reject(BasicRejectOptions { requeue: false })
+                        .await
+                        .context("Failed to send NAK for delivery")?;
+                },
+            }
+        }
+    }
+
     /// Consume messages from an AMQP consumer until the connection closes
     ///
     /// # Errors
@@ -150,71 +214,12 @@ mod runtime {
         conn: indexer_rabbitmq::lapin::Connection,
         consumer: Consumer<Q>,
         queue_type: Q,
+        grace_period: StdDuration,
         process: impl Fn(Q::Message) -> F + Send + Sync + Clone + 'static,
     ) -> Result<()>
     where
         Q::Message: Debug + Send + for<'a> serde::Deserialize<'a>,
     {
-        enum StopType {
-            Hangup,
-            Stopped,
-        }
-
-        async fn consume_one<Q: QueueType, F: Future<Output = Result<()>>>(
-            worker_id: usize,
-            mut consumer: Consumer<Q>,
-            process: impl Fn(Q::Message) -> F,
-            mut stop_rx: broadcast::Receiver<()>,
-        ) -> Result<StopType>
-        where
-            Q::Message: Debug + for<'de> serde::Deserialize<'de>,
-        {
-            // Ideally T would be ! but ! is unstable.
-            enum Delivery<T> {
-                Message(Option<(T, lapin::acker::Acker)>),
-                Stop,
-            }
-
-            fn handle_stop<T>(r: Result<(), RecvError>) -> Result<Delivery<T>> {
-                match r {
-                    Ok(()) | Err(RecvError::Closed) => Ok(Delivery::Stop),
-                    Err(e) => Err(e).context("Error receiving stop signal"),
-                }
-            }
-
-            loop {
-                let del = tokio::select! {
-                    r = consumer.read() => {
-                        Delivery::Message(r.context("Failed to read AMQP message")?)
-                    },
-                    r = stop_rx.recv() => handle_stop(r)?,
-                };
-
-                let (msg, acker) = match del {
-                    Delivery::Message(Some(d)) => d,
-                    Delivery::Message(None) => break Ok(StopType::Hangup),
-                    Delivery::Stop => break Ok(StopType::Stopped),
-                };
-
-                trace!("Worker {}: {:?}", worker_id, msg);
-
-                match process(msg).await {
-                    Ok(()) => acker
-                        .ack(BasicAckOptions::default())
-                        .await
-                        .context("Failed to send ACK for delivery")?,
-                    Err(e) => {
-                        warn!("Failed to process message: {:?}", e);
-
-                        acker
-                            .reject(BasicRejectOptions { requeue: false })
-                            .await
-                            .context("Failed to send NAK for delivery")?;
-                    },
-                }
-            }
-        }
-
         let Params { concurrency } = *params;
 
         let dl_task = tokio::spawn(indexer_rabbitmq::dl_consumer::run(
@@ -240,9 +245,64 @@ mod runtime {
                     Err(e) => error!("Worker terminated unexpectedly: {:?}", e),
                 })
             })
-            .collect::<futures_util::stream::FuturesUnordered<_>>();
+            .collect::<FuturesUnordered<_>>();
 
-        q_tasks.next().await; // Everything past this point is graceful failure
+        let signal;
+
+        #[cfg(unix)]
+        {
+            use tokio::signal::unix::SignalKind;
+
+            let mut stream = [
+                SignalKind::hangup(),
+                SignalKind::interrupt(),
+                SignalKind::quit(),
+                SignalKind::terminate(),
+            ]
+            .into_iter()
+            .map(|k| {
+                tokio::signal::unix::signal(k)
+                    .with_context(|| format!("Failed to hook signal {:?}", k))
+                    .map(|mut s| async move {
+                        s.recv().await;
+                        Result::<_>::Ok(k)
+                    })
+            })
+            .collect::<Result<FuturesUnordered<_>>>()?;
+
+            signal = async move { stream.next().await.transpose() }
+        }
+
+        #[cfg(not(unix))]
+        {
+            use std::fmt;
+
+            use futures_util::TryFutureExt;
+
+            struct CtrlC;
+
+            impl fmt::Debug for CtrlC {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    f.write_str("^C")
+                }
+            }
+
+            signal = tokio::signal::ctrl_c().map_ok(|()| Some(CtrlC));
+        }
+
+        let signal = tokio::select! {
+            _ = q_tasks.next() => Ok(None),
+            s = signal => s,
+        }
+        .context("Failed to wait for stop signal")?;
+
+        //////// Everything past this point is graceful failure! ////////
+
+        if let Some(signal) = signal {
+            warn!("{:?} received, shutting down...", signal);
+        } else {
+            warn!("Worker terminated unexpectedly, shutting down...");
+        }
 
         stop_tx.send(()).unwrap();
         dl_task.abort();
@@ -251,13 +311,21 @@ mod runtime {
             info!("Waiting for additional jobs to finish...");
         }
 
-        while let Some(()) = q_tasks.next().await {}
+        while let Some(()) = tokio::select! {
+            t = q_tasks.next() => t,
+            _ = tokio::time::sleep(grace_period) => None,
+        } {}
 
         std::mem::drop(stop_tx);
 
+        // NB: this shouldn't need the grace period because we abort the task
         dl_task
             .await
-            .map_err(|e| error!("DLX consumer cleanup failed: {:?}", e))
+            .map_err(|e| {
+                if !e.is_cancelled() {
+                    error!("DLX consumer cleanup failed: {:?}", e);
+                }
+            })
             .unwrap_or(());
 
         Ok(())

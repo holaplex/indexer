@@ -40,6 +40,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
             TokenStandard::NonFungibleEdition => TokenStandardEnum::NonFungibleEdition,
         }),
     };
+
     let first_verified_creator: Option<Pubkey> = meta
         .data
         .creators

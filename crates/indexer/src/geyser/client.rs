@@ -1,18 +1,15 @@
-use std::{panic::AssertUnwindSafe, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
-use indexer_core::{clap, prelude::*};
-use indexer_rabbitmq::http_indexer;
+use indexer_core::clap;
+use indexer_rabbitmq::{http_indexer, search_indexer};
 use solana_sdk::pubkey::Pubkey;
 
-use crate::{db::Pool, reqwest};
+use crate::{db::Pool, prelude::*, reqwest, search_dispatch};
 
 struct HttpProducers {
     metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
     store_config: http_indexer::Producer<http_indexer::StoreConfig>,
 }
-
-impl std::panic::UnwindSafe for HttpProducers {}
-impl std::panic::RefUnwindSafe for HttpProducers {}
 
 /// Common arguments for Geyser indexer usage
 #[derive(Debug, clap::Args)]
@@ -40,9 +37,10 @@ enum DialectEvent {
 #[allow(missing_debug_implementations)]
 /// Wrapper for handling networking logic
 pub struct Client {
-    db: AssertUnwindSafe<Pool>,
+    db: Pool,
     http: reqwest::Client,
     http_prod: HttpProducers,
+    search: search_dispatch::Client,
     dialect_api_endpoint: Option<String>,
     dialect_api_key: Option<String>,
 }
@@ -58,6 +56,7 @@ impl Client {
         conn: &indexer_rabbitmq::lapin::Connection,
         meta_queue: http_indexer::QueueType<http_indexer::MetadataJson>,
         store_cfg_queue: http_indexer::QueueType<http_indexer::StoreConfig>,
+        search_queue: search_indexer::QueueType,
         Args {
             dialect_api_endpoint,
             dialect_api_key,
@@ -70,7 +69,7 @@ impl Client {
         }
 
         Ok(Arc::new(Self {
-            db: AssertUnwindSafe(db),
+            db,
             http: reqwest::Client::new(Duration::from_millis(500))?,
             http_prod: HttpProducers {
                 metadata_json: http_indexer::Producer::new(conn, meta_queue)
@@ -80,6 +79,7 @@ impl Client {
                     .await
                     .context("Couldn't create AMQP store config producer")?,
             },
+            search: search_dispatch::Client::new(conn, search_queue).await?,
             dialect_api_endpoint,
             dialect_api_key,
         }))
@@ -89,6 +89,12 @@ impl Client {
     #[must_use]
     pub fn db(&self) -> &Pool {
         &self.db
+    }
+
+    /// Get a reference to the search index dispatcher
+    #[must_use]
+    pub fn search(&self) -> &search_dispatch::Client {
+        &self.search
     }
 
     /// Dispatch an AMQP message to the HTTP indexer to request off-chain
@@ -171,7 +177,8 @@ impl Client {
                     .json(&msg)
                     .send()
             })
-            .await?;
+            .await
+            .context("Dialect dispatch call failed")?;
 
         if res.status().is_success() {
             trace!(
@@ -181,8 +188,9 @@ impl Client {
             );
         } else {
             warn!(
-                "Dialect dispatch responded with non-success code {}",
-                res.status()
+                "Dialect dispatch responded with non-success code {} ({:?})",
+                res.status(),
+                res.text().await
             );
         }
 

@@ -1,7 +1,7 @@
 use std::fmt::{self, Debug, Display};
 
 use indexer_core::{
-    assets::{proxy_url_hinted, AssetHint, AssetIdentifier},
+    assets::{proxy_url, proxy_url_hinted, AssetHint, AssetIdentifier},
     db::{
         insert_into,
         models::{
@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::Client;
-use crate::prelude::*;
+use crate::{prelude::*, search_dispatch::MetadataDocument};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct File {
@@ -248,6 +248,10 @@ async fn process_full(
     let raw_content: Value =
         serde_json::value::to_value(&json).context("Failed to upcast metadata JSON")?;
 
+    dispatch_metadata_document(client, addr.clone(), raw_content.clone())
+        .await
+        .context("Failed to dispatch upsert metadata document job")?;
+
     let MetadataJson {
         description,
         image,
@@ -323,6 +327,10 @@ async fn process_minimal(
 
     let raw_content: Value =
         serde_json::value::to_value(&json).context("Failed to upcast minimal metadata JSON")?;
+
+    dispatch_metadata_document(client, addr.clone(), raw_content.clone())
+        .await
+        .context("Failed to dispatch upsert metadata document job")?;
 
     let MetadataJsonMinimal {
         name: _,
@@ -525,6 +533,37 @@ pub async fn process<'a>(
             },
         }
     }
+
+    Ok(())
+}
+
+async fn dispatch_metadata_document(client: &Client, addr: String, raw: Value) -> Result<()> {
+    let mut raw = if let Value::Object(m) = raw {
+        m
+    } else {
+        bail!("Metadata JSON content was not an object");
+    };
+
+    if let Some(url) = raw
+        .get("image")
+        .and_then(Value::as_str)
+        .and_then(|i| Url::parse(i).ok())
+        .and_then(|u| {
+            let id = AssetIdentifier::new(&u);
+
+            proxy_url(client.proxy_args(), &id, Some(("width", "400")))
+                .map(|o| o.map(|u| u.to_string()))
+                .transpose()
+        })
+    {
+        raw.insert("image".into(), url?.into());
+    }
+
+    client
+        .search()
+        .upsert_metadata(addr, MetadataDocument(raw))
+        .await
+        .context("Failed to dispatch metadata JSON document job")?;
 
     Ok(())
 }

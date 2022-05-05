@@ -5,7 +5,7 @@ use indexer_core::{
 };
 
 use super::Client;
-use crate::prelude::*;
+use crate::{prelude::*, search_dispatch::TwitterHandleDocument};
 
 #[derive(BorshDeserialize, PartialEq, Debug, Clone)]
 struct TwitterHandleAndRegistry {
@@ -25,6 +25,17 @@ pub(crate) async fn process(
         .context("failed to deserialize registry key and handle!")?;
 
     let incoming_slot: i64 = slot.try_into()?;
+
+    let document = TwitterHandleDocument {
+        owner: wallet.to_string(),
+        handle: th.clone().handle,
+    };
+
+    client
+        .search()
+        .upsert_twitter_handle(key, document)
+        .await
+        .context("Failed to dispatch upsert twitter handle document job")?;
 
     let rows = client
         .db()
