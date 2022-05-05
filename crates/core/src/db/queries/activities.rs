@@ -13,7 +13,6 @@ use crate::{
     error::Result,
 };
 
-// TODO: Add indexes on purchase_receipts for seller and buyer for joins
 const ACTIVITES_QUERY: &str = r"
     SELECT listing_receipts.address as address, metadata, auction_house, price, created_at,
     array[seller] as wallets,
