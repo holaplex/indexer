@@ -169,12 +169,18 @@ pub fn list(
 }
 
 const ACTIVITES_QUERY: &str = r"
-    SELECT listing_receipts.address as address, metadata, auction_house, price, auction_house, created_at, array[[seller, twitter_handle_name_services.twitter_handle]] as wallets, 'listing' as activity_type
+    SELECT listing_receipts.address as address, metadata, auction_house, price, auction_house, created_at,
+    array[seller] as wallets,
+    array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
+    'listing' as activity_type
         FROM listing_receipts
         LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listing_receipts.seller)
         WHERE metadata = ANY($1)
     UNION
-    SELECT purchase_receipts.address as address, metadata, auction_house, price, auction_house, created_at, array[[seller, sth.twitter_handle], [buyer, bth.twitter_handle]] as wallets, 'purchase' as activity_type
+    SELECT purchase_receipts.address as address, metadata, auction_house, price, auction_house, created_at,
+    array[seller, buyer] as wallets,
+    array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
+    'purchase' as activity_type
         FROM purchase_receipts
         LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchase_receipts.seller)
         LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchase_receipts.buyer)
@@ -190,10 +196,8 @@ pub fn activities(
     conn: &Connection,
     addresses: impl ToSql<Array<Text>, Pg>,
 ) -> Result<Vec<NftActivity>> {
-    let query = diesel::sql_query(ACTIVITES_QUERY)
+    diesel::sql_query(ACTIVITES_QUERY)
         .bind(addresses)
         .load(conn)
-        .context("Failed to load nft(s) activities");
-    println!("Activities Query: {:?}", query);
-    query
+        .context("Failed to load nft(s) activities")
 }

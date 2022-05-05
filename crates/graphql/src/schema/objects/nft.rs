@@ -4,7 +4,7 @@ use indexer_core::{
 };
 use objects::{
     auction_house::AuctionHouse, bid_receipt::BidReceipt, listing_receipt::ListingReceipt,
-    profile::TwitterProfile, purchase_receipt::PurchaseReceipt, wallet::Wallet
+    profile::TwitterProfile, purchase_receipt::PurchaseReceipt, wallet::Wallet,
 };
 use reqwest::Url;
 use scalars::{PublicKey, U64};
@@ -226,6 +226,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
             price,
             created_at,
             wallets,
+            wallet_twitter_handles,
             activity_type,
         }: models::NftActivity,
     ) -> Result<Self, Self::Error> {
@@ -235,15 +236,20 @@ impl TryFrom<models::NftActivity> for NftActivity {
             auction_house,
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
-            wallets: wallets
-                .into_iter()
-                .map(|w| {
-                    Wallet::new(
-                        w.get(0).unwrap().clone().into(),
-                        w.get(1).clone().map(|s| s.to_string()),
-                    )
-                })
-                .collect(),
+            wallets: |wallets: Vec<String>,
+                      wallet_twitter_handles: Vec<Option<String>>|
+             -> Vec<Wallet> {
+                let mut result = Vec::new();
+                wallets.into_iter().enumerate().for_each(|(i, w)| {
+                    result.push(Wallet::new(
+                        w.clone().into(),
+                        wallet_twitter_handles
+                            .get(i)
+                            .map(|s| s.clone().unwrap_or_default()),
+                    ))
+                });
+                result
+            }(wallets, wallet_twitter_handles),
             activity_type,
         })
     }
