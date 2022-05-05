@@ -151,24 +151,6 @@ pub struct MetadataCreator<'a> {
     pub position: Option<i32>,
 }
 
-/// A row in the `token_accounts` table
-/// helpful for tracking exchanges of tokens
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
-#[diesel(treat_none_as_null = true)]
-pub struct TokenAccount<'a> {
-    /// The address of this account
-    pub address: Cow<'a, str>,
-    /// The mint address of the token
-    pub mint_address: Cow<'a, str>,
-    /// The owner token
-    pub owner_address: Cow<'a, str>,
-    /// The amount of the token, often 1
-    pub amount: i64,
-    /// Solana slot number
-    /// The period of time for which each leader ingests transactions and produces a block.
-    pub slot: Option<i64>,
-}
-
 /// A row in the `metadatas` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
