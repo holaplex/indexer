@@ -82,8 +82,8 @@ impl Entity for StoreConfig {
 }
 
 impl<E: Entity> QueueType<E> {
-    /// Construct a new queue configuration given a sender ID and queue suffix
-    /// configuration
+    /// Construct a new queue configuration given the expected sender and
+    /// queue suffix configuration
     ///
     /// # Errors
     /// This function fails if the given queue suffix is invalid.

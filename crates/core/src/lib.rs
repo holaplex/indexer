@@ -36,9 +36,12 @@ pub mod util;
 
 /// Commonly used utilities
 pub mod prelude {
-    pub use std::borrow::{
-        Cow,
-        Cow::{Borrowed, Owned},
+    pub use std::{
+        borrow::{
+            Cow,
+            Cow::{Borrowed, Owned},
+        },
+        time::Duration as StdDuration,
     };
 
     pub use chrono::{self, prelude::*};

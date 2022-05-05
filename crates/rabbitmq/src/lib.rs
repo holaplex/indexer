@@ -49,6 +49,8 @@ pub mod http_indexer;
 #[cfg(feature = "producer")]
 pub mod producer;
 mod queue_type;
+#[cfg(feature = "search-indexer")]
+pub mod search_indexer;
 mod serialize;
 #[cfg(feature = "suffix")]
 pub mod suffix;

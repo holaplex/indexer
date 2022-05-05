@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 pub use solana_sdk::pubkey::Pubkey;
 
 use crate::{
-    queue_type::{Binding, QueueInfo, QueueProps, RetryProps},
+    queue_type::{Binding, QueueProps, RetryProps},
     suffix::Suffix,
     Result,
 };
@@ -133,7 +133,7 @@ impl crate::QueueType for QueueType {
     type Message = Message;
 
     #[inline]
-    fn info(&self) -> QueueInfo {
+    fn info(&self) -> crate::queue_type::QueueInfo {
         (&self.props).into()
     }
 }

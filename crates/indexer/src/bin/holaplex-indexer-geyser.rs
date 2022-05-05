@@ -2,7 +2,7 @@ use std::{collections::HashSet, sync::Arc};
 
 use holaplex_indexer::geyser::{Client, ClientArgs, IgnoreType};
 use indexer_core::{clap, prelude::*};
-use indexer_rabbitmq::{geyser, http_indexer, suffix::Suffix};
+use indexer_rabbitmq::{geyser, http_indexer, search_indexer, suffix::Suffix};
 
 #[derive(Debug, clap::Args)]
 struct Args {
@@ -44,7 +44,7 @@ fn main() {
          },
          params,
          db| async move {
-            let sender = match queue_suffix {
+            let receiver = match queue_suffix {
                 Suffix::Debug(ref s) => s.clone(),
                 _ => network.to_string(),
             };
@@ -53,8 +53,9 @@ fn main() {
             let client = Client::new_rc(
                 db,
                 &conn,
-                http_indexer::QueueType::new(&sender, &queue_suffix)?,
-                http_indexer::QueueType::new(&sender, &queue_suffix)?,
+                http_indexer::QueueType::new(&receiver, &queue_suffix)?,
+                http_indexer::QueueType::new(&receiver, &queue_suffix)?,
+                search_indexer::QueueType::new(&receiver, &queue_suffix)?,
                 client,
             )
             .await
@@ -72,14 +73,22 @@ fn main() {
                     .collect::<HashSet<_>>(),
             );
 
-            holaplex_indexer::amqp_consume(&params, conn, consumer, queue_type, move |m| {
-                let client = client.clone();
-                let ignore_on_startup = ignore_on_startup.clone();
+            holaplex_indexer::amqp_consume(
+                &params,
+                conn,
+                consumer,
+                queue_type,
+                StdDuration::from_millis(100),
+                move |m| {
+                    let client = client.clone();
+                    let ignore_on_startup = ignore_on_startup.clone();
 
-                async move {
-                    holaplex_indexer::geyser::process_message(m, &*client, ignore_on_startup).await
-                }
-            })
+                    async move {
+                        holaplex_indexer::geyser::process_message(m, &*client, ignore_on_startup)
+                            .await
+                    }
+                },
+            )
             .await
         },
     );
