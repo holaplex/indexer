@@ -127,6 +127,8 @@ impl Client {
         let mut lock_if_stopping = None;
 
         let stop_reason = loop {
+            use futures_util::StreamExt;
+
             let evt = tokio::select! {
                 o = rx.recv() => Event::Rx(o),
                 r = &mut stop_rx => Event::Stop(r),
@@ -167,18 +169,21 @@ impl Client {
                     h
                 });
 
-            for (idx, docs) in map {
+            let mut futures = futures_util::stream::FuturesUnordered::new();
+
+            for (idx, docs) in &map {
                 debug!(
                     "{} document(s) in upsert queue flagged for {:?}",
                     docs.len(),
                     idx
                 );
 
-                meili
-                    .index(idx)
-                    .add_or_replace(&*docs, None)
-                    .await
-                    .context("Meilisearch API call failed")?;
+                let meili = meili.clone();
+                futures.push(async move { meili.index(idx).add_or_replace(&*docs, None).await });
+            }
+
+            while let Some(res) = futures.next().await {
+                res.context("Meilisearch API call failed")?;
             }
 
             if let Some(reason) = stop_reason {
