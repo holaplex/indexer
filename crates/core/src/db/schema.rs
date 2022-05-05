@@ -1021,35 +1021,6 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    temp_attributes (id) {
-        metadata_address -> Varchar,
-        value -> Nullable<Text>,
-        trait_type -> Nullable<Text>,
-        id -> Uuid,
-        first_verified_creator -> Nullable<Varchar>,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
-
-    token_accounts (address) {
-        address -> Varchar,
-        mint_address -> Varchar,
-        owner_address -> Varchar,
-        amount -> Int8,
-        updated_at -> Timestamp,
-        slot -> Nullable<Int8>,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
-
     transactions (address) {
         address -> Varchar,
         smart_wallet -> Varchar,
@@ -1225,8 +1196,6 @@ allow_tables_to_appear_in_same_query!(
     storefronts,
     stores,
     sub_account_infos,
-    temp_attributes,
-    token_accounts,
     transactions,
     twitter_handle_name_services,
     tx_instruction_keys,
