@@ -248,14 +248,9 @@ async fn process_full(
     let raw_content: Value =
         serde_json::value::to_value(&json).context("Failed to upcast metadata JSON")?;
 
-    dispatch_metadata_document(
-        client,
-        addr.clone(),
-        json.image.as_ref().context("failed to get image value")?,
-        raw_content.clone(),
-    )
-    .await
-    .context("failed to dispatch upsert metadata document job")?;
+    dispatch_metadata_document(client, addr.clone(), raw_content.clone())
+        .await
+        .context("Failed to dispatch upsert metadata document job")?;
 
     let MetadataJson {
         description,
@@ -333,14 +328,9 @@ async fn process_minimal(
     let raw_content: Value =
         serde_json::value::to_value(&json).context("Failed to upcast minimal metadata JSON")?;
 
-    dispatch_metadata_document(
-        client,
-        addr.clone(),
-        &json.image.to_string(),
-        raw_content.clone(),
-    )
-    .await
-    .context("failed to dispatch upsert metadata document job")?;
+    dispatch_metadata_document(client, addr.clone(), raw_content.clone())
+        .await
+        .context("Failed to dispatch upsert metadata document job")?;
 
     let MetadataJsonMinimal {
         name: _,
@@ -547,14 +537,17 @@ pub async fn process<'a>(
     Ok(())
 }
 
-async fn dispatch_metadata_document(
-    client: &Client,
-    addr: String,
-    image: &str,
-    raw: Value,
-) -> Result<()> {
-    let image = Url::parse(image)
-        .ok()
+async fn dispatch_metadata_document(client: &Client, addr: String, raw: Value) -> Result<()> {
+    let mut raw = if let Value::Object(m) = raw {
+        m
+    } else {
+        bail!("Metadata JSON content was not an object");
+    };
+
+    if let Some(url) = raw
+        .get("image")
+        .and_then(Value::as_str)
+        .and_then(|i| Url::parse(i).ok())
         .and_then(|u| {
             let id = AssetIdentifier::new(&u);
 
@@ -562,13 +555,13 @@ async fn dispatch_metadata_document(
                 .map(|o| o.map(|u| u.to_string()))
                 .transpose()
         })
-        .unwrap_or_else(|| Ok(image.to_owned()))?;
-
-    let document = MetadataDocument { image, raw };
+    {
+        raw.insert("image".into(), url?.into());
+    }
 
     client
         .search()
-        .upsert_metadata(addr, document)
+        .upsert_metadata(addr, MetadataDocument(raw))
         .await
         .context("Failed to dispatch metadata JSON document job")?;
 
