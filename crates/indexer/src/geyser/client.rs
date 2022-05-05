@@ -177,7 +177,8 @@ impl Client {
                     .json(&msg)
                     .send()
             })
-            .await?;
+            .await
+            .context("Dialect dispatch call failed")?;
 
         if res.status().is_success() {
             trace!(
@@ -187,8 +188,9 @@ impl Client {
             );
         } else {
             warn!(
-                "Dialect dispatch responded with non-success code {}",
-                res.status()
+                "Dialect dispatch responded with non-success code {} ({:?})",
+                res.status(),
+                res.text().await
             );
         }
 
