@@ -270,6 +270,7 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
             sel: &InstructionSelector,
             msg: &SanitizedMessage,
             prod: &Sender,
+            metrics: &Metrics,
         ) -> StdResult<(), anyhow::Error> {
             // TODO: no clue if this is right.
             let program = *msg
@@ -301,16 +302,23 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
             })
             .await;
 
+            metrics.sends.log();
+
             Ok(())
         }
 
         let metrics = self.metrics.as_ref().ok_or_else(uninit(None))?;
+        let ins_sel = self.ins_sel.as_ref().ok_or_else(uninit(&metrics.errs))?;
+
+        if ins_sel.is_empty() {
+            return Ok(());
+        }
 
         smol::block_on(async {
+            metrics.recvs.log();
+
             match transaction {
                 ReplicaTransactionInfoVersions::V0_0_1(tx) => {
-                    let ins_sel = self.ins_sel.as_ref().ok_or_else(uninit(&metrics.errs))?;
-
                     if matches!(tx.transaction_status_meta.status, Err(..)) {
                         return Ok(());
                     }
@@ -325,7 +333,7 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                             .flatten()
                             .flat_map(|i| i.instructions.iter()),
                     ) {
-                        process_instruction(ins, ins_sel, msg, prod)
+                        process_instruction(ins, ins_sel, msg, prod, metrics)
                             .await
                             .map_err(|e| {
                                 debug!("Error processing instruction: {:?}", e);
@@ -338,5 +346,17 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
 
             Ok(())
         })
+    }
+
+    fn account_data_notifications_enabled(&self) -> bool {
+        true
+    }
+
+    fn transaction_notifications_enabled(&self) -> bool {
+        !self
+            .ins_sel
+            .as_ref()
+            .expect("Plugin isn't initialized yet!")
+            .is_empty()
     }
 }

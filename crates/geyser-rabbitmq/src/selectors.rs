@@ -52,6 +52,11 @@ impl InstructionSelector {
     }
 
     #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.programs.is_empty()
+    }
+
+    #[inline]
     pub fn is_selected(&self, _ins: &CompiledInstruction, pgm: &Pubkey, _accts: &[Pubkey]) -> bool {
         self.programs.contains(pgm)
     }
