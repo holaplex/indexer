@@ -90,6 +90,14 @@ impl Marketplace {
             .map_err(Into::into)
     }
 
+    pub async fn auction_houses(&self, context: &AppContext) -> FieldResult<Vec<AuctionHouse>> {
+        context
+            .auction_houses_loader
+            .load(self.config_address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
     pub async fn creators(&self, context: &AppContext) -> FieldResult<Vec<StoreCreator>> {
         context
             .store_creator_loader
