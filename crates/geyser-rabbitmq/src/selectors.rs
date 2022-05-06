@@ -1,5 +1,4 @@
-use std::collections::HashSet;
-
+use hashbrown::HashSet;
 use indexer_rabbitmq::geyser::StartupType;
 use solana_program::instruction::CompiledInstruction;
 
@@ -8,7 +7,7 @@ use crate::{interface::ReplicaAccountInfo, prelude::*};
 
 #[derive(Debug)]
 pub struct AccountSelector {
-    owners: HashSet<Box<[u8]>>,
+    owners: HashSet<[u8; 32]>,
     startup: Option<bool>,
 }
 
@@ -18,10 +17,7 @@ impl AccountSelector {
 
         let owners = owners
             .into_iter()
-            .map(|s| {
-                s.parse()
-                    .map(|k: Pubkey| k.to_bytes().to_vec().into_boxed_slice())
-            })
+            .map(|s| s.parse().map(Pubkey::to_bytes))
             .collect::<Result<_, _>>()
             .context("Failed to parse account owner keys")?;
 

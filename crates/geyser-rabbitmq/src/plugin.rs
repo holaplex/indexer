@@ -1,5 +1,6 @@
-use std::{collections::HashSet, env, sync::Arc};
+use std::{env, sync::Arc};
 
+use hashbrown::HashSet;
 use indexer_rabbitmq::geyser::{AccountUpdate, Message};
 use solana_program::{
     instruction::CompiledInstruction, message::SanitizedMessage, program_pack::Pack,
