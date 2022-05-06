@@ -15,10 +15,8 @@ pub struct Config {
     #[serde(default)]
     metrics: Metrics,
 
-    #[serde(default)]
     accounts: Accounts,
 
-    #[serde(default)]
     instruction_programs: HashSet<String>,
 }
 
@@ -47,10 +45,9 @@ pub struct Metrics {
     pub config: Option<String>,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Accounts {
-    #[serde(default)]
     pub owners: HashSet<String>,
 
     /// Filter for changing how to interpret the `is_startup` flag.
@@ -59,7 +56,6 @@ pub struct Accounts {
     ///  - `None`: Ignore the `is_startup` flag and send all updates.
     ///  - `Some(true)`: Only send updates when `is_startup` is `true`.
     ///  - `Some(false)`: Only send updates when `is_startup` is `false`.
-    #[serde(default)]
     pub startup: Option<bool>,
 }
 
