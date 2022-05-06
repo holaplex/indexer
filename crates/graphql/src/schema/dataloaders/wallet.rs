@@ -48,7 +48,7 @@ impl TryBatchFn<String, Option<TwitterProfile>> for TwitterBatcher {
                 Ok(users) => {
                     Either::Left(users.into_iter().map(|u| (u.screen_name.clone(), Ok(u))))
                 },
-                Err(e) => Either::Right(keys.iter().map(move |key| (key.clone(), Err(e.clone())))),
+                Err(e) => Either::Right(keys.iter().cloned().zip(std::iter::repeat(Err(e)))),
             })
             .map(|(k, user)| {
                 (
