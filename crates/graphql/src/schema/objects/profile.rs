@@ -37,24 +37,24 @@ impl From<TwitterUserProfileResponse> for TwitterProfile {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct TwitterProfilePictureResponse {
     pub data: TwitterProfilePicture,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct TwitterProfilePicture {
     pub profile_image_url: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct TwitterShowResponse {
     pub screen_name: String,
     pub profile_image_url_https: String,
     pub profile_banner_url: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct TwitterUserProfileResponse {
     pub screen_name: String,
     pub description: String,
