@@ -236,20 +236,11 @@ impl TryFrom<models::NftActivity> for NftActivity {
             auction_house,
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
-            wallets: |wallets: Vec<String>,
-                      wallet_twitter_handles: Vec<Option<String>>|
-             -> Vec<Wallet> {
-                let mut result = Vec::new();
-                wallets.into_iter().enumerate().for_each(|(i, w)| {
-                    result.push(Wallet::new(
-                        w.clone().into(),
-                        wallet_twitter_handles
-                            .get(i)
-                            .map(|s| s.clone().unwrap_or_default()),
-                    ))
-                });
-                result
-            }(wallets, wallet_twitter_handles),
+            wallets: wallets
+                .into_iter()
+                .zip(wallet_twitter_handles.into_iter())
+                .map(|(address, twitter_handle)| Wallet::new(address.into(), twitter_handle))
+                .collect(),
             activity_type,
         })
     }
