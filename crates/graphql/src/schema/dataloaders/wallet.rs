@@ -45,13 +45,10 @@ impl TryBatchFn<String, Option<TwitterProfile>> for TwitterBatcher {
             .into_iter()
             .zip(chunked_screen_names)
             .flat_map(|(result, keys)| match result {
-                Ok(users) => Either::Left(
-                    users
-                        .into_iter()
-                        .zip(keys)
-                        .map(|(user, key)| (key, Ok(user))),
-                ),
-                Err(e) => Either::Right(keys.iter().map(move |key| (key, Err(e.clone())))),
+                Ok(users) => {
+                    Either::Left(users.into_iter().map(|u| (u.screen_name.clone(), Ok(u))))
+                },
+                Err(e) => Either::Right(keys.iter().cloned().zip(std::iter::repeat(Err(e)))),
             })
             .map(|(k, user)| {
                 (
