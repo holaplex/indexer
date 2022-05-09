@@ -1,5 +1,4 @@
 use futures_util::future::join_all;
-use itertools::Either;
 use objects::profile::{TwitterProfile, TwitterUserProfileResponse};
 
 use super::prelude::*;
@@ -44,19 +43,9 @@ impl TryBatchFn<String, Option<TwitterProfile>> for TwitterBatcher {
         Ok(twitter_users
             .into_iter()
             .zip(chunked_screen_names)
-            .flat_map(|(result, keys)| match result {
-                Ok(users) => {
-                    Either::Left(users.into_iter().map(|u| (u.screen_name.clone(), Ok(u))))
-                },
-                Err(e) => Either::Right(keys.iter().cloned().zip(std::iter::repeat(Err(e)))),
-            })
-            .map(|(k, user)| {
-                (
-                    k,
-                    user.context("failed to load user profile")
-                        .and_then(|u| u.try_into().context("failed to convert to twitter profile")),
-                )
-            })
+            .filter_map(|(result, _)| result.ok())
+            .flatten()
+            .map(|u| (u.screen_name.clone(), u.try_into()))
             .batch(screen_names))
     }
 }
