@@ -15,6 +15,10 @@ use crate::prelude::*;
 pub struct Creator {
     pub address: String,
 }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct AuctionHouse {
+    pub address: String,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Metadata {
@@ -55,7 +59,7 @@ struct SettingUri {
     creators: Option<Vec<Creator>>,
     #[serde(flatten)]
     extra: HashMap<String, serde_json::Value>,
-    auction_houses: Option<Vec<String>>,
+    auction_houses: Option<Vec<AuctionHouse>>,
 }
 
 pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Result<()> {

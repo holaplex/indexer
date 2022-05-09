@@ -1,6 +1,6 @@
 use indexer_core::db::tables::store_auction_houses;
 use objects::auction_house::AuctionHouse;
-use scalars::{PublicKey, markers::StoreConfig};
+use scalars::{markers::StoreConfig, PublicKey};
 use tables::auction_houses;
 
 use super::prelude::*;
@@ -25,7 +25,6 @@ impl TryBatchFn<PublicKey<AuctionHouse>, Option<AuctionHouse>> for Batcher {
     }
 }
 
-
 #[async_trait]
 impl TryBatchFn<PublicKey<StoreConfig>, Vec<AuctionHouse>> for Batcher {
     async fn load(
@@ -36,9 +35,10 @@ impl TryBatchFn<PublicKey<StoreConfig>, Vec<AuctionHouse>> for Batcher {
 
         let rows: Vec<(String, models::AuctionHouse)> = store_auction_houses::table
             .filter(store_auction_houses::store_config_address.eq(any(addresses)))
-            .inner_join(auction_houses::table.on(
-                auction_houses::address.eq(store_auction_houses::auction_house_address),
-            ))
+            .inner_join(
+                auction_houses::table
+                    .on(auction_houses::address.eq(store_auction_houses::auction_house_address)),
+            )
             .select((
                 store_auction_houses::store_config_address,
                 (auction_houses::all_columns),
