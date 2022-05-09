@@ -447,6 +447,8 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(description = "Search term")] term: String,
+        #[graphql(description = "Query limit")] limit: i32,
+        #[graphql(description = "Query offset")] offset: i32,
     ) -> FieldResult<Vec<MetadataJson>> {
         let search = &context.shared.search;
 
@@ -454,6 +456,8 @@ impl QueryRoot {
             .index("metadatas")
             .search()
             .with_query(&term)
+            .with_offset(offset.try_into()?)
+            .with_limit(limit.try_into()?)
             .execute::<serde_json::value::Value>()
             .await
             .context("failed to load search result")?
@@ -492,6 +496,8 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(description = "Search term")] term: String,
+        #[graphql(description = "Query limit")] limit: i32,
+        #[graphql(description = "Query offset")] offset: i32,
     ) -> FieldResult<Vec<Wallet>> {
         let search = &context.shared.search;
 
@@ -499,6 +505,8 @@ impl QueryRoot {
             .index("name_service")
             .search()
             .with_query(&term)
+            .with_offset(offset.try_into()?)
+            .with_limit(limit.try_into()?)
             .execute::<serde_json::value::Value>()
             .await
             .context("failed to load search result")?

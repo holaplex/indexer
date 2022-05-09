@@ -2843,6 +2843,7 @@ dependencies = [
  "dataloader",
  "derive_more",
  "futures-util",
+ "holaplex-indexer",
  "holaplex-indexer-core",
  "itertools",
  "juniper",
