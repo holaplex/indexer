@@ -1,5 +1,3 @@
-use std::string::ToString;
-
 use indexer_core::db::{queries, tables::twitter_handle_name_services};
 use objects::{
     auction_house::AuctionHouse,
