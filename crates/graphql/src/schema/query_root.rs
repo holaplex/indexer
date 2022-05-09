@@ -10,12 +10,13 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::{Nft, NftActivity, NftCount, NftCreator},
+    nft::{MetadataJson, Nft, NftActivity, NftAttribute, NftCount, NftCreator},
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
 use scalars::PublicKey;
+use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, bid_receipts, graph_connections,
     metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
@@ -439,6 +440,88 @@ impl QueryRoot {
             .context("Failed to load store config JSON")?;
 
         Ok(rows.pop().map(Into::into))
+    }
+
+    #[graphql(description = "returns metadata_jsons matching the term")]
+    async fn metadata_json(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Search term")] term: String,
+    ) -> FieldResult<Vec<MetadataJson>> {
+        let search = &context.shared.search;
+
+        let result = search
+            .index("metadatas")
+            .search()
+            .with_query(&term)
+            .execute::<serde_json::value::Value>()
+            .await
+            .context("failed to load search result")?
+            .hits;
+
+        debug!("{:?}", result);
+        Ok(result
+            .into_iter()
+            .map(|r| {
+                let value = r.result;
+                MetadataJson {
+                    address: value.get("id").unwrap_or(&Value::Null).to_string(),
+                    name: value.get("name").unwrap_or(&Value::Null).to_string(),
+                    image: value.get("image").unwrap_or(&Value::Null).to_string(),
+                    description: value.get("description").unwrap_or(&Value::Null).to_string(),
+                    category: value.get("categorty").unwrap_or(&Value::Null).to_string(),
+                    attributes: value
+                        .get("attributes")
+                        .unwrap_or(&Value::Null)
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|a| NftAttribute {
+                            metadata_address: value.get("id").unwrap_or(&Value::Null).to_string(),
+                            value: a.get("value").unwrap_or(&Value::Null).to_string(),
+                            trait_type: a.get("trait_type").unwrap_or(&Value::Null).to_string(),
+                        })
+                        .collect(),
+                }
+            })
+            .collect::<Vec<MetadataJson>>())
+    }
+
+    #[graphql(description = "returns profiles matching the search term")]
+    async fn profiles(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Search term")] term: String,
+    ) -> FieldResult<Vec<Wallet>> {
+        let search = &context.shared.search;
+
+        let result = search
+            .index("name_service")
+            .search()
+            .with_query(&term)
+            .execute::<serde_json::value::Value>()
+            .await
+            .context("failed to load search result")?
+            .hits;
+
+        debug!("{:?}", result);
+
+        Ok(result
+            .into_iter()
+            .map(|r| {
+                let value = r.result;
+                Wallet {
+                    address: value
+                        .get("owner")
+                        .unwrap_or(&Value::Null)
+                        .as_str()
+                        .unwrap()
+                        .to_string()
+                        .into(),
+                    twitter_handle: value.get("handle").map(|h| h.as_str().unwrap().to_string()),
+                }
+            })
+            .collect::<Vec<Wallet>>())
     }
 
     fn denylist() -> Denylist {

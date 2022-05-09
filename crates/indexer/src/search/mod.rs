@@ -4,6 +4,7 @@ mod client;
 
 pub use client::{Args as ClientArgs, Client};
 use indexer_rabbitmq::search_indexer::{self, Message};
+pub use meilisearch_sdk::client::Client as MeiliClient;
 
 use crate::prelude::*;
 

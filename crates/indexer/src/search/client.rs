@@ -44,6 +44,7 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if the Meilisearch database cannot be initialized.
+
     pub async fn new_rc(
         db: Pool,
         args: Args,
@@ -84,6 +85,17 @@ impl Client {
         ));
 
         Ok((arc_self, upsert_task, stop_tx))
+    }
+
+    #[must_use]
+    pub fn meili_client(args: Args) -> MeiliClient {
+        let Args {
+            meili_url,
+            meili_key,
+            ..
+        } = args;
+
+        MeiliClient::new(meili_url, meili_key)
     }
 
     async fn run_upserts(

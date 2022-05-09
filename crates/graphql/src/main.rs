@@ -13,6 +13,7 @@ use std::sync::Arc;
 
 use actix_cors::Cors;
 use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer};
+use holaplex_indexer::search::{Client, ClientArgs, MeiliClient};
 use indexer_core::{
     assets::AssetProxyArgs,
     chrono::{Duration, Local},
@@ -43,6 +44,9 @@ struct Opts {
 
     #[clap(flatten)]
     asset_proxy: AssetProxyArgs,
+
+    #[clap(flatten)]
+    search: ClientArgs,
 }
 
 struct GraphiqlData {
@@ -59,6 +63,7 @@ pub(crate) struct SharedData {
     pub db: Arc<Pool>,
     pub asset_proxy: AssetProxyArgs,
     pub twitter_bearer_token: String,
+    pub search: Arc<MeiliClient>,
 }
 
 #[allow(clippy::unused_async)]
@@ -109,6 +114,7 @@ fn main() {
             db,
             twitter_bearer_token,
             asset_proxy,
+            search,
         } = Opts::parse();
 
         let (addr,) = server.into_parts();
@@ -121,11 +127,14 @@ fn main() {
             db::connect(db, db::ConnectMode::Read).context("Failed to connect to Postgres")?;
         let db = Arc::new(db);
 
+        let search = Arc::new(Client::meili_client(search));
+
         let shared = web::Data::new(SharedData {
             schema: schema::create(),
             db,
             asset_proxy,
             twitter_bearer_token,
+            search,
         });
 
         let version_extension = "/v1";

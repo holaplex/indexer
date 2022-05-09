@@ -484,3 +484,40 @@ impl NftCount {
         Ok(count.try_into()?)
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct MetadataJson {
+    pub address: String,
+    pub name: String,
+    pub image: String,
+    pub description: String,
+    pub category: String,
+    pub attributes: Vec<NftAttribute>,
+}
+
+#[graphql_object(Context = AppContext)]
+impl MetadataJson {
+    pub fn address(&self) -> &str {
+        &self.address
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn image(&self) -> &str {
+        &self.image
+    }
+
+    pub fn description(&self) -> &str {
+        &self.description
+    }
+
+    pub fn category(&self) -> &str {
+        &self.category
+    }
+
+    pub fn attributes(&self) -> Vec<NftAttribute> {
+        self.attributes.clone()
+    }
+}
