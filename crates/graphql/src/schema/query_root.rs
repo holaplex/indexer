@@ -12,7 +12,7 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::{MetadataJson, Nft, NftActivity, NftAttribute, NftCount, NftCreator},
+    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator},
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
@@ -454,7 +454,7 @@ impl QueryRoot {
     ) -> FieldResult<Vec<MetadataJson>> {
         let search = &context.shared.search;
 
-        let result = search
+        let query_result = search
             .index("metadatas")
             .search()
             .with_query(&term)
@@ -465,60 +465,9 @@ impl QueryRoot {
             .context("failed to load search result")?
             .hits;
 
-        Ok(result
+        Ok(query_result
             .into_iter()
-            .map(|r| {
-                let values = r.result;
-                MetadataJson {
-                    address: values
-                        .get("id")
-                        .and_then(Value::as_str)
-                        .map(ToString::to_string)
-                        .unwrap_or_default(),
-                    name: values
-                        .get("name")
-                        .and_then(Value::as_str)
-                        .map(ToString::to_string)
-                        .unwrap_or_default(),
-                    image: values
-                        .get("image")
-                        .and_then(Value::as_str)
-                        .map(ToString::to_string)
-                        .unwrap_or_default(),
-                    description: values
-                        .get("description")
-                        .and_then(Value::as_str)
-                        .map(ToString::to_string)
-                        .unwrap_or_default(),
-                    category: values
-                        .get("category")
-                        .and_then(Value::as_str)
-                        .map(ToString::to_string)
-                        .unwrap_or_default(),
-                    attributes: values
-                        .get("attributes")
-                        .and_then(Value::as_array)
-                        .map(|v| {
-                            v.iter()
-                                .map(|a| NftAttribute {
-                                    metadata_address: values
-                                        .get("id")
-                                        .map(ToString::to_string)
-                                        .unwrap_or_default(),
-                                    value: a
-                                        .get("value")
-                                        .map(ToString::to_string)
-                                        .unwrap_or_default(),
-                                    trait_type: a
-                                        .get("trait_type")
-                                        .map(ToString::to_string)
-                                        .unwrap_or_default(),
-                                })
-                                .collect::<Vec<NftAttribute>>()
-                        })
-                        .unwrap_or_default(),
-                }
-            })
+            .map(|r| r.result.into())
             .collect::<Vec<MetadataJson>>())
     }
 
@@ -532,7 +481,7 @@ impl QueryRoot {
     ) -> FieldResult<Vec<Wallet>> {
         let search = &context.shared.search;
 
-        let result = search
+        let query_result = search
             .index("name_service")
             .search()
             .with_query(&term)
@@ -543,9 +492,7 @@ impl QueryRoot {
             .context("failed to load search result")?
             .hits;
 
-        debug!("{:?}", result);
-
-        Ok(result
+        Ok(query_result
             .into_iter()
             .map(|r| {
                 let value = r.result;

@@ -8,6 +8,7 @@ use objects::{
 };
 use reqwest::Url;
 use scalars::{PublicKey, U64};
+use serde_json::Value;
 
 use super::prelude::*;
 
@@ -487,37 +488,70 @@ impl NftCount {
 
 #[derive(Debug, Clone)]
 pub struct MetadataJson {
-    pub address: String,
-    pub name: String,
-    pub image: String,
-    pub description: String,
-    pub category: String,
-    pub attributes: Vec<NftAttribute>,
+    pub address: Option<String>,
+    pub name: Option<String>,
+    pub image: Option<String>,
+    pub description: Option<String>,
+    pub category: Option<String>,
+    pub attributes: Option<Vec<NftAttribute>>,
+}
+
+impl From<serde_json::Value> for MetadataJson {
+    fn from(value: serde_json::Value) -> Self {
+        Self {
+            address: value.get("id").and_then(Value::as_str).map(Into::into),
+            name: value.get("name").and_then(Value::as_str).map(Into::into),
+            image: value.get("image").and_then(Value::as_str).map(Into::into),
+            description: value
+                .get("description")
+                .and_then(Value::as_str)
+                .map(Into::into),
+            category: value
+                .get("category")
+                .and_then(Value::as_str)
+                .map(Into::into),
+            attributes: value.get("attributes").and_then(Value::as_array).map(|v| {
+                v.iter()
+                    .map(|a| NftAttribute {
+                        metadata_address: value
+                            .get("id")
+                            .map(ToString::to_string)
+                            .unwrap_or_default(),
+                        value: a.get("value").map(ToString::to_string).unwrap_or_default(),
+                        trait_type: a
+                            .get("trait_type")
+                            .map(ToString::to_string)
+                            .unwrap_or_default(),
+                    })
+                    .collect::<Vec<NftAttribute>>()
+            }),
+        }
+    }
 }
 
 #[graphql_object(Context = AppContext)]
 impl MetadataJson {
-    pub fn address(&self) -> &str {
-        &self.address
+    pub fn address(&self) -> Option<&str> {
+        self.address.as_deref()
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
     }
 
-    pub fn image(&self) -> &str {
-        &self.image
+    pub fn image(&self) -> Option<&str> {
+        self.image.as_deref()
     }
 
-    pub fn description(&self) -> &str {
-        &self.description
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
     }
 
-    pub fn category(&self) -> &str {
-        &self.category
+    pub fn category(&self) -> Option<&str> {
+        self.category.as_deref()
     }
 
-    pub fn attributes(&self) -> Vec<NftAttribute> {
-        self.attributes.clone()
+    pub fn attributes(&self) -> Option<&Vec<NftAttribute>> {
+        self.attributes.as_ref()
     }
 }

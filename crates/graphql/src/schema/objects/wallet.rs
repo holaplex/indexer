@@ -102,8 +102,8 @@ impl Wallet {
         &self.address
     }
 
-    pub fn twitter_handle(&self) -> Option<String> {
-        self.twitter_handle.clone()
+    pub fn twitter_handle(&self) -> Option<&str> {
+        self.twitter_handle.as_deref()
     }
 
     pub fn bids(&self, ctx: &AppContext) -> FieldResult<Vec<Bid>> {

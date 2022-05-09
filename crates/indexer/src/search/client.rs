@@ -38,7 +38,6 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if the Meilisearch database cannot be initialized.
-
     pub async fn new_rc(
         db: Pool,
         args: Args,
