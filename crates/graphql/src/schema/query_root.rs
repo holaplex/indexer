@@ -536,6 +536,7 @@ impl QueryRoot {
             .map(|r| r.result.into())
             .collect::<Vec<Wallet>>())
     }
+
     #[graphql(description = "A marketplace")]
     fn marketplaces(
         &self,
