@@ -515,12 +515,18 @@ impl From<serde_json::Value> for MetadataJson {
                     .map(|a| NftAttribute {
                         metadata_address: value
                             .get("id")
-                            .map(ToString::to_string)
+                            .and_then(Value::as_str)
+                            .map(Into::into)
                             .unwrap_or_default(),
-                        value: a.get("value").map(ToString::to_string).unwrap_or_default(),
+                        value: a
+                            .get("value")
+                            .and_then(Value::as_str)
+                            .map(Into::into)
+                            .unwrap_or_default(),
                         trait_type: a
                             .get("trait_type")
-                            .map(ToString::to_string)
+                            .and_then(Value::as_str)
+                            .map(Into::into)
                             .unwrap_or_default(),
                     })
                     .collect::<Vec<NftAttribute>>()

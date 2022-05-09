@@ -460,9 +460,9 @@ impl QueryRoot {
             .with_query(&term)
             .with_offset(offset.try_into()?)
             .with_limit(limit.try_into()?)
-            .execute::<serde_json::value::Value>()
+            .execute::<Value>()
             .await
-            .context("failed to load search result")?
+            .context("failed to load search result for metadata json")?
             .hits;
 
         Ok(query_result
@@ -489,24 +489,12 @@ impl QueryRoot {
             .with_limit(limit.try_into()?)
             .execute::<Value>()
             .await
-            .context("failed to load search result")?
+            .context("failed to load search result for twitter handle")?
             .hits;
 
         Ok(query_result
             .into_iter()
-            .map(|r| {
-                let value = r.result;
-                Wallet {
-                    address: value
-                        .get("owner")
-                        .and_then(Value::as_str)
-                        .map_or_else(|| String::new().into(), |s| s.to_string().into()),
-                    twitter_handle: value
-                        .get("handle")
-                        .and_then(Value::as_str)
-                        .map(ToString::to_string),
-                }
-            })
+            .map(|r| r.result.into())
             .collect::<Vec<Wallet>>())
     }
 
