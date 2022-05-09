@@ -20,6 +20,7 @@ use indexer_core::{
     clap::Parser,
     db,
     db::Pool,
+    meilisearch,
     prelude::*,
     util::duration_hhmmssfff,
     ServerOpts,
@@ -43,6 +44,9 @@ struct Opts {
 
     #[clap(flatten)]
     asset_proxy: AssetProxyArgs,
+
+    #[clap(flatten)]
+    search: meilisearch::Args,
 }
 
 struct GraphiqlData {
@@ -59,6 +63,7 @@ pub(crate) struct SharedData {
     pub db: Arc<Pool>,
     pub asset_proxy: AssetProxyArgs,
     pub twitter_bearer_token: String,
+    pub search: meilisearch::client::Client,
 }
 
 #[allow(clippy::unused_async)]
@@ -109,6 +114,7 @@ fn main() {
             db,
             twitter_bearer_token,
             asset_proxy,
+            search,
         } = Opts::parse();
 
         let (addr,) = server.into_parts();
@@ -120,12 +126,14 @@ fn main() {
         let (db, _db_ty) =
             db::connect(db, db::ConnectMode::Read).context("Failed to connect to Postgres")?;
         let db = Arc::new(db);
+        let search = search.into_client();
 
         let shared = web::Data::new(SharedData {
             schema: schema::create(),
             db,
             asset_proxy,
             twitter_bearer_token,
+            search,
         });
 
         let version_extension = "/v1";

@@ -34,3 +34,4 @@ md5 = "0.7.0"
 package = "holaplex-indexer-core"
 version = "=0.1.0"
 path = "../core"
+features = ["meilisearch"]

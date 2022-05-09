@@ -36,6 +36,21 @@ impl Wallet {
     }
 }
 
+impl From<serde_json::Value> for Wallet {
+    fn from(value: serde_json::Value) -> Self {
+        Self {
+            address: value
+                .get("owner")
+                .and_then(serde_json::Value::as_str)
+                .map_or_else(|| String::new().into(), |s| s.to_string().into()),
+            twitter_handle: value
+                .get("handle")
+                .and_then(serde_json::Value::as_str)
+                .map(Into::into),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct WalletNftCount {
     wallet: PublicKey<Wallet>,
@@ -100,6 +115,10 @@ impl WalletNftCount {
 impl Wallet {
     pub fn address(&self) -> &PublicKey<Wallet> {
         &self.address
+    }
+
+    pub fn twitter_handle(&self) -> Option<&str> {
+        self.twitter_handle.as_deref()
     }
 
     pub fn bids(&self, ctx: &AppContext) -> FieldResult<Vec<Bid>> {

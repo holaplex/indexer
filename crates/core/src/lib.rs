@@ -30,6 +30,8 @@ pub mod assets;
 pub mod db;
 pub mod error;
 pub mod hash;
+#[cfg(feature = "meilisearch")]
+pub mod meilisearch;
 #[cfg(feature = "solana")]
 pub mod pubkeys;
 pub mod util;

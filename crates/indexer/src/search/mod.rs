@@ -3,6 +3,7 @@
 mod client;
 
 pub use client::{Args as ClientArgs, Client};
+use indexer_core::meilisearch;
 use indexer_rabbitmq::search_indexer::{self, Message};
 
 use crate::prelude::*;
@@ -21,7 +22,7 @@ impl From<search_indexer::Document> for Document {
     }
 }
 
-impl meilisearch_sdk::document::Document for Document {
+impl meilisearch::document::Document for Document {
     type UIDType = String;
 
     fn get_uid(&self) -> &String {
