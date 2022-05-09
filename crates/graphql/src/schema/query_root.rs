@@ -1,3 +1,5 @@
+use std::string::ToString;
+
 use indexer_core::db::{queries, tables::twitter_handle_name_services};
 use objects::{
     auction_house::AuctionHouse,
@@ -443,7 +445,7 @@ impl QueryRoot {
     }
 
     #[graphql(description = "returns metadata_jsons matching the term")]
-    async fn metadata_json(
+    async fn metadata_jsons(
         &self,
         context: &AppContext,
         #[graphql(description = "Search term")] term: String,
@@ -463,29 +465,58 @@ impl QueryRoot {
             .context("failed to load search result")?
             .hits;
 
-        debug!("{:?}", result);
         Ok(result
             .into_iter()
             .map(|r| {
-                let value = r.result;
+                let values = r.result;
                 MetadataJson {
-                    address: value.get("id").unwrap_or(&Value::Null).to_string(),
-                    name: value.get("name").unwrap_or(&Value::Null).to_string(),
-                    image: value.get("image").unwrap_or(&Value::Null).to_string(),
-                    description: value.get("description").unwrap_or(&Value::Null).to_string(),
-                    category: value.get("categorty").unwrap_or(&Value::Null).to_string(),
-                    attributes: value
+                    address: values
+                        .get("id")
+                        .and_then(Value::as_str)
+                        .map(ToString::to_string)
+                        .unwrap_or_default(),
+                    name: values
+                        .get("name")
+                        .and_then(Value::as_str)
+                        .map(ToString::to_string)
+                        .unwrap_or_default(),
+                    image: values
+                        .get("image")
+                        .and_then(Value::as_str)
+                        .map(ToString::to_string)
+                        .unwrap_or_default(),
+                    description: values
+                        .get("description")
+                        .and_then(Value::as_str)
+                        .map(ToString::to_string)
+                        .unwrap_or_default(),
+                    category: values
+                        .get("category")
+                        .and_then(Value::as_str)
+                        .map(ToString::to_string)
+                        .unwrap_or_default(),
+                    attributes: values
                         .get("attributes")
-                        .unwrap_or(&Value::Null)
-                        .as_array()
-                        .unwrap()
-                        .iter()
-                        .map(|a| NftAttribute {
-                            metadata_address: value.get("id").unwrap_or(&Value::Null).to_string(),
-                            value: a.get("value").unwrap_or(&Value::Null).to_string(),
-                            trait_type: a.get("trait_type").unwrap_or(&Value::Null).to_string(),
+                        .and_then(Value::as_array)
+                        .map(|v| {
+                            v.iter()
+                                .map(|a| NftAttribute {
+                                    metadata_address: values
+                                        .get("id")
+                                        .map(ToString::to_string)
+                                        .unwrap_or_default(),
+                                    value: a
+                                        .get("value")
+                                        .map(ToString::to_string)
+                                        .unwrap_or_default(),
+                                    trait_type: a
+                                        .get("trait_type")
+                                        .map(ToString::to_string)
+                                        .unwrap_or_default(),
+                                })
+                                .collect::<Vec<NftAttribute>>()
                         })
-                        .collect(),
+                        .unwrap_or_default(),
                 }
             })
             .collect::<Vec<MetadataJson>>())
@@ -507,7 +538,7 @@ impl QueryRoot {
             .with_query(&term)
             .with_offset(offset.try_into()?)
             .with_limit(limit.try_into()?)
-            .execute::<serde_json::value::Value>()
+            .execute::<Value>()
             .await
             .context("failed to load search result")?
             .hits;
@@ -521,12 +552,12 @@ impl QueryRoot {
                 Wallet {
                     address: value
                         .get("owner")
-                        .unwrap_or(&Value::Null)
-                        .as_str()
-                        .unwrap()
-                        .to_string()
-                        .into(),
-                    twitter_handle: value.get("handle").map(|h| h.as_str().unwrap().to_string()),
+                        .and_then(Value::as_str)
+                        .map_or_else(|| String::new().into(), |s| s.to_string().into()),
+                    twitter_handle: value
+                        .get("handle")
+                        .and_then(Value::as_str)
+                        .map(ToString::to_string),
                 }
             })
             .collect::<Vec<Wallet>>())

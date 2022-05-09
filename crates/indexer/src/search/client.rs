@@ -87,6 +87,10 @@ impl Client {
         Ok((arc_self, upsert_task, stop_tx))
     }
 
+    /// Construct a `MeiliSearch` client
+    ///
+    /// # Errors
+    /// This function fails if the Meilisearch database cannot be initialized.
     #[must_use]
     pub fn meili_client(args: Args) -> MeiliClient {
         let Args {
