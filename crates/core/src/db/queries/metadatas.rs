@@ -138,8 +138,21 @@ pub fn list(
         query = query.filter(metadata_creators::verified.eq(true));
     }
 
-    if let Some(collection) = collection {
-        query = query.filter(metadata_collection_keys::collection_address.eq(collection));
+    if collection.is_some() {
+        let rows = metadatas::table
+            .inner_join(
+                metadata_collection_keys::table
+                    .on(metadatas::address.eq(metadata_collection_keys::collection_address)),
+            )
+            .distinct()
+            .select(metadatas::mint_address)
+            .load::<String>(conn)
+            .context("failed to load mint_address of collection")?;
+        let mint_address = rows
+            .get(0)
+            .context("failed to get mint_address of a collection")?
+            .to_string();
+        query = query.filter(metadata_collection_keys::collection_address.eq(mint_address));
     }
 
     if let Some(owners) = owners {

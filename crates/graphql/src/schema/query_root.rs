@@ -4,6 +4,7 @@ use objects::{
     bid_receipt::BidReceipt,
     bonding_change::EnrichedBondingChange,
     chart::PriceChart,
+    collection::Collection,
     creator::Creator,
     denylist::Denylist,
     feed_event::FeedEvent,
@@ -440,6 +441,35 @@ impl QueryRoot {
             .context("Failed to load store config JSON")?;
 
         Ok(rows.pop().map(Into::into))
+    }
+
+    #[graphql(description = "A collection")]
+    fn collection(&self, context: &AppContext, address: PublicKey<Nft>) -> FieldResult<Collection> {
+        let conn = context.shared.db.get()?;
+
+        let collections = queries::collection::load_with_collection_address(&conn, vec![address])
+            .context("failed to load collection")?;
+
+        let c = collections
+            .get(0)
+            .context("failed to get collection")?
+            .clone();
+
+        Ok(c.into())
+    }
+
+    #[graphql(description = "Collections")]
+    fn collections(
+        &self,
+        context: &AppContext,
+        addresses: Vec<PublicKey<Nft>>,
+    ) -> FieldResult<Vec<Collection>> {
+        let conn = context.shared.db.get()?;
+
+        let collections = queries::collection::load_with_collection_address(&conn, addresses)
+            .context("failed to load collection")?;
+
+        Ok(collections.into_iter().map(Into::into).collect())
     }
 
     #[graphql(description = "returns metadata_jsons matching the term")]
