@@ -483,20 +483,21 @@ pub async fn process<'a>(
     let possible_fingerprints: Vec<_> = id.fingerprints().map(Cow::into_owned).collect();
     let addr = bs58::encode(meta_key).into_string();
 
-    let is_present = client
+    let existing_json = client
         .db()
         .run({
             let addr = addr.clone();
             move |db| {
-                select(exists(
-                    metadata_jsons::table.filter(
+                metadata_jsons::table
+                    .filter(
                         metadata_jsons::metadata_address
                             .eq(addr)
                             .and(metadata_jsons::fingerprint.eq(any(possible_fingerprints)))
                             .and(metadata_jsons::model.ne("minimal")),
-                    ),
-                ))
-                .get_result(db)
+                    )
+                    .select(metadata_jsons::raw_content)
+                    .first::<Value>(db)
+                    .optional()
             }
         })
         .await
@@ -505,7 +506,7 @@ pub async fn process<'a>(
     let first_verified_creator =
         first_verified_creator.map(|address| bs58::encode(address).into_string());
 
-    if is_present {
+    if let Some(json) = existing_json {
         debug!("Skipping already-indexed metadata JSON for {}", meta_key);
 
         // NOTE: For future reference, this introduces a situation with non-
@@ -516,7 +517,9 @@ pub async fn process<'a>(
         //       If the second job subsequently succeeds, then this reprocess
         //       function will be called by the first job and the first
         //       verified creator will be updated to an out-of-date value.
-        reprocess_attributes(client, addr, first_verified_creator).await?;
+        reprocess_attributes(client, addr.clone(), first_verified_creator).await?;
+
+        dispatch_metadata_document(client, addr, json).await?;
 
         return Ok(());
     }
