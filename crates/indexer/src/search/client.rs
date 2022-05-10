@@ -1,8 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use crossbeam::queue::SegQueue;
-use indexer_core::{clap, hash::HashMap};
-use meilisearch_sdk::client::Client as MeiliClient;
+use indexer_core::{clap, hash::HashMap, meilisearch, meilisearch::client::Client as MeiliClient};
 use tokio::{
     sync::{mpsc, oneshot, RwLock},
     task,
@@ -13,14 +12,6 @@ use crate::{db::Pool, prelude::*};
 /// Common arguments for internal search indexer usage
 #[derive(Debug, clap::Parser)]
 pub struct Args {
-    /// Meilisearch database endpoint
-    #[clap(long, env)]
-    meili_url: String,
-
-    /// Meilisearch database API key
-    #[clap(long, env)]
-    meili_key: String,
-
     /// Maximum number of documents to cache for upsert for a single index
     #[clap(long, env, default_value_t = 1000)]
     upsert_batch: usize,
@@ -28,6 +19,9 @@ pub struct Args {
     /// Maximum commit interval between upserts, in seconds
     #[clap(long, env, default_value_t = 30.0)]
     upsert_interval: f64,
+
+    #[clap(flatten)]
+    meili: meilisearch::Args,
 }
 
 /// Wrapper for handling network logic
@@ -49,13 +43,12 @@ impl Client {
         args: Args,
     ) -> Result<(Arc<Self>, task::JoinHandle<()>, oneshot::Sender<()>)> {
         let Args {
-            meili_url,
-            meili_key,
             upsert_batch,
             upsert_interval,
+            meili,
         } = args;
 
-        let meili = MeiliClient::new(meili_url, meili_key);
+        let meili = meili.into_client();
         let upsert_interval = Duration::from_secs_f64(upsert_interval);
 
         create_index(meili.clone(), "metadatas", "id")
