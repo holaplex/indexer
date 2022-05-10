@@ -138,12 +138,13 @@ pub fn list(
         query = query.filter(metadata_creators::verified.eq(true));
     }
 
-    if collection.is_some() {
+    if let Some(collection) = collection {
         let rows = metadatas::table
             .inner_join(
                 metadata_collection_keys::table
-                    .on(metadatas::address.eq(metadata_collection_keys::collection_address)),
+                    .on(metadatas::mint_address.eq(metadata_collection_keys::collection_address)),
             )
+            .filter(metadatas::address.eq(collection))
             .distinct()
             .select(metadatas::mint_address)
             .load::<String>(conn)
