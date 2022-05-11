@@ -121,7 +121,7 @@ where
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
-pub fn created<W: AsExpression<Text>, C: ToSql<Text, Pg>>(
+pub fn created<W: AsExpression<Text>>(
     conn: &Connection,
     wallet: W,
 ) -> Result<i64>
@@ -135,7 +135,7 @@ where
             >,
         >,
 {
-    let mut query = metadatas::table
+    let query = metadatas::table
         .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
         )
