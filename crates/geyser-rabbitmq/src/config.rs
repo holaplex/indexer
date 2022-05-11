@@ -36,6 +36,9 @@ pub struct Amqp {
 #[serde(rename_all = "camelCase")]
 pub struct Jobs {
     pub limit: usize,
+
+    #[serde(default)]
+    pub blocking: Option<usize>,
 }
 
 #[derive(Debug, Default, Deserialize)]

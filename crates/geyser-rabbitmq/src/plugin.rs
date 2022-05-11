@@ -1,5 +1,6 @@
 use std::{env, sync::Arc};
 
+use anyhow::Context;
 use hashbrown::HashSet;
 use indexer_rabbitmq::geyser::{AccountUpdate, Message};
 use solana_program::{
@@ -27,25 +28,41 @@ use crate::{
     sender::Sender,
 };
 
+const UNINIT: &str = "RabbitMQ plugin not initialized yet!";
+
 #[inline]
 fn custom_err<'a, E: Into<Box<dyn std::error::Error + Send + Sync + 'static>>>(
     counter: &'a Counter,
 ) -> impl FnOnce(E) -> GeyserPluginError + 'a {
     |e| {
-        counter.log();
+        counter.log(1);
         GeyserPluginError::Custom(e.into())
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct Inner {
+    rt: tokio::runtime::Runtime,
+    producer: Sender,
+    acct_sel: AccountSelector,
+    ins_sel: InstructionSelector,
+    metrics: Arc<Metrics>,
+    token_addresses: HashSet<Pubkey>,
+}
+
+impl Inner {
+    pub fn spawn<F: std::future::Future<Output = anyhow::Result<()>> + Send + 'static>(
+        self: &Arc<Self>,
+        f: impl FnOnce(Arc<Self>) -> F,
+    ) {
+        self.rt.spawn(f(Arc::clone(self)));
     }
 }
 
 /// An instance of the plugin
 #[derive(Debug, Default)]
-pub struct GeyserPluginRabbitMq {
-    producer: Option<Sender>,
-    acct_sel: Option<AccountSelector>,
-    ins_sel: Option<InstructionSelector>,
-    metrics: Option<Arc<Metrics>>,
-    token_addresses: HashSet<Pubkey>,
-}
+#[repr(transparent)]
+pub struct GeyserPluginRabbitMq(Option<Arc<Inner>>);
 
 #[derive(Deserialize)]
 struct TokenItem {
@@ -60,15 +77,35 @@ struct TokenList {
 impl GeyserPluginRabbitMq {
     const TOKEN_REG_URL: &'static str = "https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/solana.tokenlist.json";
 
-    fn load_token_reg() -> StdResult<HashSet<Pubkey>, anyhow::Error> {
-        // We use `smol` as an executor, and reqwest's async backend doesn't like that
-        let res: TokenList = reqwest::blocking::get(Self::TOKEN_REG_URL)?.json()?;
+    async fn load_token_reg() -> anyhow::Result<HashSet<Pubkey>> {
+        let res: TokenList = reqwest::get(Self::TOKEN_REG_URL)
+            .await
+            .context("HTTP request failed")?
+            .json()
+            .await
+            .context("Failed to parse response JSON")?;
 
         res.tokens
             .into_iter()
             .map(|TokenItem { address }| address.parse())
             .collect::<StdResult<_, _>>()
-            .map_err(Into::into)
+            .context("Failed to convert token list")
+    }
+
+    fn expect_inner(&self) -> &Arc<Inner> {
+        self.0.as_ref().expect(UNINIT)
+    }
+
+    #[inline]
+    fn with_inner<T>(
+        &self,
+        uninit: impl FnOnce() -> GeyserPluginError,
+        f: impl FnOnce(&Arc<Inner>) -> anyhow::Result<T>,
+    ) -> Result<T> {
+        match self.0 {
+            Some(ref inner) => f(inner).map_err(custom_err(&inner.metrics.errs)),
+            None => Err(uninit()),
+        }
     }
 }
 
@@ -117,11 +154,11 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                 .map_err(custom_err(&metrics.errs))?;
         }
 
-        let (amqp, jobs, metrics_conf, acct, ins) = Config::read(cfg)
+        let (amqp, jobs, metrics_conf, acct_sel, ins_sel) = Config::read(cfg)
             .and_then(Config::into_parts)
             .map_err(custom_err(&metrics.errs))?;
 
-        let startup_type = acct.startup();
+        let startup_type = acct_sel.startup();
 
         if let Some(config) = metrics_conf.config {
             const VAR: &str = "SOLANA_METRICS_CONFIG";
@@ -133,28 +170,41 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
             env::set_var(VAR, config);
         }
 
-        self.acct_sel = Some(acct);
-        self.ins_sel = Some(ins);
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .thread_name("geyser-rabbitmq")
+            .worker_threads(jobs.limit)
+            .max_blocking_threads(jobs.blocking.unwrap_or(jobs.limit))
+            .build()
+            .map_err(custom_err(&metrics.errs))?;
 
-        self.token_addresses = Self::load_token_reg().map_err(custom_err(&metrics.errs))?;
+        let (producer, token_addresses) = rt.block_on(async {
+            let producer = Sender::new(
+                amqp,
+                format!("geyser-rabbitmq-{}@{}", version, host),
+                startup_type,
+                Arc::clone(&metrics),
+            )
+            .await
+            .map_err(custom_err(&metrics.errs))?;
 
-        self.metrics = Some(Arc::clone(&metrics));
-
-        smol::block_on(async {
-            self.producer = Some(
-                Sender::new(
-                    amqp,
-                    format!("geyser-rabbitmq-{}@{}", version, host),
-                    &jobs,
-                    startup_type,
-                    Arc::clone(&metrics),
-                )
+            let tokens = Self::load_token_reg()
                 .await
-                .map_err(custom_err(&metrics.errs))?,
-            );
+                .map_err(custom_err(&metrics.errs))?;
 
-            Ok(())
-        })
+            Result::<_>::Ok((producer, tokens))
+        })?;
+
+        self.0 = Some(Arc::new(Inner {
+            rt,
+            producer,
+            acct_sel,
+            ins_sel,
+            metrics,
+            token_addresses,
+        }));
+
+        Ok(())
     }
 
     fn update_account(
@@ -163,89 +213,69 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
         slot: u64,
         is_startup: bool,
     ) -> Result<()> {
-        #[inline]
-        fn uninit<'a>(
-            counter: impl Into<Option<&'a Counter>> + 'a,
-        ) -> impl FnOnce() -> GeyserPluginError + 'a {
-            || {
-                counter.into().map(Counter::log);
+        self.with_inner(
+            || GeyserPluginError::AccountsUpdateError { msg: UNINIT.into() },
+            |this| {
+                this.metrics.recvs.log(1);
 
-                GeyserPluginError::AccountsUpdateError {
-                    msg: "RabbitMQ plugin not initialized yet!".into(),
-                }
-            }
-        }
-
-        smol::block_on(async {
-            let metrics = self.metrics.as_ref().ok_or_else(uninit(None))?;
-
-            metrics.recvs.log();
-
-            match account {
-                ReplicaAccountInfoVersions::V0_0_1(acct) => {
-                    if !self
-                        .acct_sel
-                        .as_ref()
-                        .ok_or_else(uninit(&metrics.errs))?
-                        .is_selected(acct, is_startup)
-                    {
-                        return Ok(());
-                    }
-
-                    let ReplicaAccountInfo {
-                        pubkey,
-                        lamports,
-                        owner,
-                        executable,
-                        rent_epoch,
-                        data,
-                        write_version,
-                    } = *acct;
-
-                    if owner == ids::token().as_ref()
-                        && data.len() == TokenAccount::get_packed_len()
-                    {
-                        let token_account = TokenAccount::unpack_from_slice(data);
-
-                        if let Ok(token_account) = token_account {
-                            if token_account.amount > 1
-                                || self.token_addresses.contains(&token_account.mint)
-                            {
-                                return Ok(());
-                            }
+                match account {
+                    ReplicaAccountInfoVersions::V0_0_1(acct) => {
+                        if !this.acct_sel.is_selected(acct, is_startup) {
+                            return Ok(());
                         }
-                    }
 
-                    let key = Pubkey::new_from_array(
-                        pubkey.try_into().map_err(custom_err(&metrics.errs))?,
-                    );
-                    let owner = Pubkey::new_from_array(
-                        owner.try_into().map_err(custom_err(&metrics.errs))?,
-                    );
-                    let data = data.to_owned();
-
-                    self.producer
-                        .as_ref()
-                        .ok_or_else(uninit(&metrics.errs))?
-                        .send(Message::AccountUpdate(AccountUpdate {
-                            key,
+                        let ReplicaAccountInfo {
+                            pubkey,
                             lamports,
                             owner,
                             executable,
                             rent_epoch,
                             data,
                             write_version,
-                            slot,
-                            is_startup,
-                        }))
-                        .await;
+                        } = *acct;
 
-                    metrics.sends.log();
-                },
-            }
+                        if owner == ids::token().as_ref()
+                            && data.len() == TokenAccount::get_packed_len()
+                        {
+                            let token_account = TokenAccount::unpack_from_slice(data);
 
-            Ok(())
-        })
+                            if let Ok(token_account) = token_account {
+                                if token_account.amount > 1
+                                    || this.token_addresses.contains(&token_account.mint)
+                                {
+                                    return Ok(());
+                                }
+                            }
+                        }
+
+                        let key = Pubkey::new_from_array(pubkey.try_into()?);
+                        let owner = Pubkey::new_from_array(owner.try_into()?);
+                        let data = data.to_owned();
+
+                        this.spawn(|this| async move {
+                            this.producer
+                                .send(Message::AccountUpdate(AccountUpdate {
+                                    key,
+                                    lamports,
+                                    owner,
+                                    executable,
+                                    rent_epoch,
+                                    data,
+                                    write_version,
+                                    slot,
+                                    is_startup,
+                                }))
+                                .await;
+                            this.metrics.sends.log(1);
+
+                            Ok(())
+                        });
+                    },
+                };
+
+                Ok(())
+            },
+        )
     }
 
     fn notify_transaction(
@@ -254,30 +284,19 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
         _slot: u64,
     ) -> Result<()> {
         #[inline]
-        fn uninit<'a>(
-            counter: impl Into<Option<&'a Counter>> + 'a,
-        ) -> impl FnOnce() -> GeyserPluginError + 'a {
-            || {
-                counter.into().map(Counter::log);
-
-                GeyserPluginError::Custom(anyhow!("RabbitMQ plugin not initialized yet!").into())
-            }
-        }
-
-        #[inline]
-        async fn process_instruction(
-            ins: &CompiledInstruction,
+        fn process_instruction(
             sel: &InstructionSelector,
+            ins: &CompiledInstruction,
             msg: &SanitizedMessage,
-            prod: &Sender,
-            metrics: &Metrics,
-        ) -> StdResult<(), anyhow::Error> {
-            // TODO: no clue if this is right.
+        ) -> anyhow::Result<Option<Message>> {
             let program = *msg
                 .get_account_key(ins.program_id_index as usize)
                 .ok_or_else(|| anyhow!("Couldn't get program ID for instruction"))?;
 
-            // TODO: ...or this.
+            if !sel.is_selected(&program) {
+                return Ok(None);
+            }
+
             let accounts = ins
                 .accounts
                 .iter()
@@ -289,63 +308,61 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                 })
                 .collect::<StdResult<Vec<_>, _>>()?;
 
-            if !sel.is_selected(ins, &program, &accounts) {
-                return Ok(());
-            }
-
             let data = ins.data.clone();
 
-            prod.send(Message::InstructionNotify {
+            Ok(Some(Message::InstructionNotify {
                 program,
                 data,
                 accounts,
-            })
-            .await;
-
-            metrics.sends.log();
-
-            Ok(())
+            }))
         }
 
-        let metrics = self.metrics.as_ref().ok_or_else(uninit(None))?;
-        let ins_sel = self.ins_sel.as_ref().ok_or_else(uninit(&metrics.errs))?;
+        self.with_inner(
+            || GeyserPluginError::Custom(anyhow!(UNINIT).into()),
+            |this| {
+                if this.ins_sel.is_empty() {
+                    return Ok(());
+                }
 
-        if ins_sel.is_empty() {
-            return Ok(());
-        }
+                this.metrics.recvs.log(1);
 
-        smol::block_on(async {
-            metrics.recvs.log();
+                match transaction {
+                    ReplicaTransactionInfoVersions::V0_0_1(tx) => {
+                        if matches!(tx.transaction_status_meta.status, Err(..)) {
+                            return Ok(());
+                        }
 
-            match transaction {
-                ReplicaTransactionInfoVersions::V0_0_1(tx) => {
-                    if matches!(tx.transaction_status_meta.status, Err(..)) {
-                        return Ok(());
-                    }
+                        let msg = tx.transaction.message();
 
-                    let prod = self.producer.as_ref().ok_or_else(uninit(&metrics.errs))?;
-                    let msg = tx.transaction.message();
+                        for ins in msg.instructions().iter().chain(
+                            tx.transaction_status_meta
+                                .inner_instructions
+                                .iter()
+                                .flatten()
+                                .flat_map(|i| i.instructions.iter()),
+                        ) {
+                            match process_instruction(&this.ins_sel, ins, msg) {
+                                Ok(Some(m)) => {
+                                    this.spawn(|this| async move {
+                                        this.producer.send(m).await;
+                                        this.metrics.sends.log(1);
 
-                    for ins in msg.instructions().iter().chain(
-                        tx.transaction_status_meta
-                            .inner_instructions
-                            .iter()
-                            .flatten()
-                            .flat_map(|i| i.instructions.iter()),
-                    ) {
-                        process_instruction(ins, ins_sel, msg, prod, metrics)
-                            .await
-                            .map_err(|e| {
-                                debug!("Error processing instruction: {:?}", e);
-                                metrics.errs.log();
-                            })
-                            .ok();
-                    }
-                },
-            }
+                                        Ok(())
+                                    });
+                                },
+                                Ok(None) => (),
+                                Err(e) => {
+                                    warn!("Error processing instruction: {:?}", e);
+                                    this.metrics.errs.log(1);
+                                },
+                            }
+                        }
+                    },
+                }
 
-            Ok(())
-        })
+                Ok(())
+            },
+        )
     }
 
     fn account_data_notifications_enabled(&self) -> bool {
@@ -353,10 +370,7 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
     }
 
     fn transaction_notifications_enabled(&self) -> bool {
-        !self
-            .ins_sel
-            .as_ref()
-            .expect("Plugin isn't initialized yet!")
-            .is_empty()
+        let this = self.expect_inner();
+        !this.ins_sel.is_empty()
     }
 }

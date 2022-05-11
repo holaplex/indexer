@@ -1,37 +1,48 @@
-use std::{
-    sync::{
-        atomic::{AtomicI64, Ordering},
-        Arc,
-    },
-    time::Duration,
-};
+use std::sync::Arc;
 
-use smol::{channel, Executor, Timer};
+use log::Level;
+use parking_lot::Mutex;
+use solana_metrics::counter::Counter as CounterInner;
 
-#[derive(Debug)]
-pub struct Counter(AtomicI64);
+// Despite being entirely atomic, Solana's counter still requires a mutable
+// borrow for the inc() method.  So we have to do this awful Mutex<Atomic>
+// pattern unless they change that.
+pub struct Counter(Mutex<CounterInner>, Level);
+
+// Solana's counter also doesn't implement Debug.
+impl std::fmt::Debug for Counter {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_tuple("Counter")
+            .field(&self.0.try_lock().map_or("<locked>", |c| c.name))
+            .field(&self.1)
+            .finish()
+    }
+}
 
 impl Counter {
     #[inline]
-    fn new() -> Self {
-        Self(AtomicI64::new(0))
+    fn new(name: &'static str, lvl: Level) -> Self {
+        let mut inner = CounterInner {
+            name,
+            counts: 0.into(),
+            times: 0.into(),
+            lastlog: 0.into(),
+            lograte: 0.into(),
+            metricsrate: 0.into(),
+        };
+
+        inner.init();
+        Self(Mutex::new(inner), lvl)
     }
 
-    pub fn log(&self) {
-        self.0.fetch_add(1, Ordering::SeqCst);
-    }
-
-    fn get(&self) -> i64 {
-        self.0.swap(0, Ordering::SeqCst)
+    pub fn log(&self, n: usize) {
+        self.0.lock().inc(self.1, n);
     }
 }
 
 #[derive(Debug)]
 pub struct Metrics {
-    _executor: Arc<Executor<'static>>,
-    _stop: channel::Sender<()>,
     pub sends: Counter,
-    pub fg_sends: Counter,
     pub recvs: Counter,
     pub errs: Counter,
     pub reconnects: Counter,
@@ -39,54 +50,11 @@ pub struct Metrics {
 
 impl Metrics {
     pub fn new_rc() -> Arc<Self> {
-        let executor = Arc::new(Executor::new());
-        let (stop_tx, stop_rx) = channel::bounded(1);
-
-        std::thread::spawn({
-            let executor = executor.clone();
-
-            move || smol::block_on(executor.run(stop_rx.recv()))
-        });
-
-        let this = Arc::new(Self {
-            _executor: executor.clone(),
-            _stop: stop_tx,
-            sends: Counter::new(),
-            fg_sends: Counter::new(),
-            recvs: Counter::new(),
-            errs: Counter::new(),
-            reconnects: Counter::new(),
-        });
-
-        executor
-            .spawn({
-                let this = Arc::clone(&this);
-
-                async move {
-                    loop {
-                        Timer::after(Duration::from_secs(30)).await;
-
-                        this.submit();
-                    }
-                }
-            })
-            .detach();
-
-        this
-    }
-
-    fn submit(&self) {
-        solana_metrics::datapoint_info!(
-            "geyser_rabbitmq",
-            ("msgs_sent", self.sends.get(), i64),
-            ("blocking_sends", self.fg_sends.get(), i64),
-            ("evts_recvd", self.recvs.get(), i64),
-        );
-
-        solana_metrics::datapoint_error!(
-            "geyser_rabbitmq",
-            ("errors", self.errs.get(), i64),
-            ("reconnects", self.reconnects.get(), i64),
-        );
+        Arc::new(Self {
+            sends: Counter::new("geyser_sends", Level::Info),
+            recvs: Counter::new("geyser_recvs", Level::Info),
+            errs: Counter::new("geyser_errs", Level::Error),
+            reconnects: Counter::new("geyser_reconnects", Level::Error),
+        })
     }
 }

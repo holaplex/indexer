@@ -1,6 +1,5 @@
 use hashbrown::HashSet;
 use indexer_rabbitmq::geyser::StartupType;
-use solana_program::instruction::CompiledInstruction;
 
 use super::config::Accounts;
 use crate::{interface::ReplicaAccountInfo, prelude::*};
@@ -57,7 +56,7 @@ impl InstructionSelector {
     }
 
     #[inline]
-    pub fn is_selected(&self, _ins: &CompiledInstruction, pgm: &Pubkey, _accts: &[Pubkey]) -> bool {
+    pub fn is_selected(&self, pgm: &Pubkey) -> bool {
         self.programs.contains(pgm)
     }
 }
