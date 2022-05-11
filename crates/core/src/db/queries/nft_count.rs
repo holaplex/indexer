@@ -121,10 +121,7 @@ where
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
-pub fn created<W: AsExpression<Text>>(
-    conn: &Connection,
-    wallet: W,
-) -> Result<i64>
+pub fn created<W: AsExpression<Text>>(conn: &Connection, wallet: W) -> Result<i64>
 where
     W::Expression: NonAggregate
         + QueryFragment<Pg>
