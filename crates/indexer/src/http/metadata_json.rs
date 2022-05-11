@@ -8,7 +8,6 @@ use indexer_core::{
             File as DbFile, MetadataAttributeWrite, MetadataCollection,
             MetadataJson as DbMetadataJson,
         },
-        select,
         tables::{attributes, files, metadata_collections, metadata_jsons},
         update, Connection,
     },
