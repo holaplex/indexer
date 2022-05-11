@@ -109,6 +109,14 @@ impl WalletNftCount {
 
         Ok(count.try_into()?)
     }
+
+    fn created(&self, context: &AppContext) -> FieldResult<i32> {
+        let conn = context.shared.db.get()?;
+
+        let count = queries::nft_count::created(&conn, &self.wallet)?;
+
+        Ok(count.try_into()?)
+    }
 }
 
 #[graphql_object(Context = AppContext)]
