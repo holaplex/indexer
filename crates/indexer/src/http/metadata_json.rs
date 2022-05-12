@@ -8,8 +8,10 @@ use indexer_core::{
             File as DbFile, MetadataAttributeWrite, MetadataCollection,
             MetadataJson as DbMetadataJson,
         },
-        select,
-        tables::{attributes, files, metadata_collections, metadata_jsons},
+        tables::{
+            attributes, files, metadata_collections, metadata_creators, metadata_jsons, metadatas,
+            twitter_handle_name_services,
+        },
         update, Connection,
     },
     hash::HashMap,
@@ -541,30 +543,67 @@ pub async fn process<'a>(
 }
 
 async fn dispatch_metadata_document(client: &Client, addr: String, raw: Value) -> Result<()> {
-    let mut raw = if let Value::Object(m) = raw {
+    let raw = if let Value::Object(m) = raw {
         m
     } else {
         bail!("Metadata JSON content was not an object");
     };
 
-    if let Some(url) = raw
-        .get("image")
-        .and_then(Value::as_str)
+    let image = raw.get("image").and_then(Value::as_str);
+
+    let image = image
         .and_then(|i| Url::parse(i).ok())
         .and_then(|u| {
             let id = AssetIdentifier::new(&u);
 
-            proxy_url(client.proxy_args(), &id, Some(("width", "400")))
+            proxy_url(client.proxy_args(), &id, Some(("width", "200")))
                 .map(|o| o.map(|u| u.to_string()))
                 .transpose()
         })
-    {
-        raw.insert("image".into(), url?.into());
-    }
+        .or_else(|| image.map(|s| Ok(s.into())))
+        .transpose()?;
+
+    let (name, mint_address, creator_address, creator_twitter_handle) = client
+        .db()
+        .run({
+            let addr = addr.clone();
+            move |db| {
+                let (name, mint_address) = metadatas::table
+                    .filter(metadatas::address.eq(&addr))
+                    .select((metadatas::name, metadatas::mint_address))
+                    .first(db)
+                    .context("failed to load mint and name for search doc")?;
+
+                let (creator_address, creator_twitter_handle) = metadata_creators::table
+                    .left_join(
+                        twitter_handle_name_services::table.on(metadata_creators::creator_address
+                            .eq(twitter_handle_name_services::wallet_address)),
+                    )
+                    .filter(metadata_creators::metadata_address.eq(&addr))
+                    .filter(metadata_creators::verified.eq(true))
+                    .filter(metadata_creators::position.eq(0))
+                    .select((
+                        metadata_creators::creator_address,
+                        twitter_handle_name_services::twitter_handle.nullable(),
+                    ))
+                    .first(db)
+                    .context("failed to load creators for search document")?;
+
+                Result::<_>::Ok((name, mint_address, creator_address, creator_twitter_handle))
+            }
+        })
+        .await
+        .context("failed to load search document data")?;
 
     client
         .search()
-        .upsert_metadata(addr, MetadataDocument(raw))
+        .upsert_metadata(addr, MetadataDocument {
+            name,
+            mint_address,
+            image,
+            creator_address,
+            creator_twitter_handle,
+        })
         .await
         .context("Failed to dispatch metadata JSON document job")?;
 

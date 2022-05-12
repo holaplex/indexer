@@ -117,6 +117,35 @@ where
         .context("failed to load owned nfts count")
 }
 
+/// Handles queries for created nfts count
+///
+/// # Errors
+/// returns an error when the underlying queries throw an error
+pub fn created<W: AsExpression<Text>>(conn: &Connection, wallet: W) -> Result<i64>
+where
+    W::Expression: NonAggregate
+        + QueryFragment<Pg>
+        + AppearsOnTable<
+            JoinOn<
+                Join<metadatas::table, metadata_creators::table, Inner>,
+                Eq<metadatas::address, metadata_creators::metadata_address>,
+            >,
+        >,
+{
+    let query = metadatas::table
+        .inner_join(
+            metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
+        )
+        .into_boxed();
+
+    query
+        .filter(metadata_creators::verified.eq(true))
+        .filter(metadata_creators::creator_address.eq(wallet))
+        .count()
+        .get_result(conn)
+        .context("failed to load created nfts count")
+}
+
 /// Handles queries for nfts count for a wallet with optional creators and auction house filters
 ///
 /// # Errors
