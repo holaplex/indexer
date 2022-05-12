@@ -9,11 +9,14 @@ pub struct TwitterHandleDocument {
     pub handle: String,
 }
 
-pub type MetadataRaw = serde_json::Map<String, serde_json::Value>;
-
 #[derive(Debug, Serialize)]
-#[repr(transparent)]
-pub struct MetadataDocument(pub MetadataRaw);
+pub struct MetadataDocument {
+    pub name: String,
+    pub mint_address: String,
+    pub image: Option<String>,
+    pub creator_address: String,
+    pub creator_twitter_handle: Option<String>,
+}
 
 #[derive(Debug)]
 pub struct Client {
