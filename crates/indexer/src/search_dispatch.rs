@@ -9,8 +9,6 @@ pub struct TwitterHandleDocument {
     pub handle: String,
 }
 
-pub type MetadataRaw = serde_json::Map<String, serde_json::Value>;
-
 #[derive(Debug, Serialize)]
 pub struct MetadataDocument {
     pub name: String,

@@ -543,7 +543,7 @@ pub async fn process<'a>(
 }
 
 async fn dispatch_metadata_document(client: &Client, addr: String, raw: Value) -> Result<()> {
-    let mut raw = if let Value::Object(m) = raw {
+    let raw = if let Value::Object(m) = raw {
         m
     } else {
         bail!("Metadata JSON content was not an object");
