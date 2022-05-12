@@ -76,9 +76,10 @@ impl QueryRoot {
             query = query.filter(not(wallet_totals::address.eq(any(following_query))));
         }
 
-        query = query.order(wallet_totals::followers.desc())
-        .limit(limit.try_into()?)
-        .offset(offset.try_into()?);
+        query = query
+            .order(wallet_totals::followers.desc())
+            .limit(limit.try_into()?)
+            .offset(offset.try_into()?);
 
         let rows: Vec<(models::WalletTotal, Option<String>)> =
             query.load(&conn).context("Failed to load wallet totals")?;
