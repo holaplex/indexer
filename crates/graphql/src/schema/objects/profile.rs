@@ -7,6 +7,7 @@ use super::prelude::*;
 pub struct TwitterProfile {
     pub handle: String,
     pub profile_image_url: String,
+    pub profile_image_url_highres: String,
     pub banner_image_url: String,
     pub description: String,
 }
@@ -19,20 +20,19 @@ pub struct Profile {
     pub banner_image_url: String,
 }
 
-impl From<TwitterUserProfileResponse> for TwitterProfile {
+impl From<(TwitterProfilePictureResponse, TwitterUserProfileResponse)> for TwitterProfile {
     fn from(
-        TwitterUserProfileResponse {
-            screen_name,
-            description,
-            profile_image_url_https,
-            profile_banner_url,
-        }: TwitterUserProfileResponse,
+        (twitter_profile_picture_response, twitter_user_profile_response): (
+            TwitterProfilePictureResponse,
+            TwitterUserProfileResponse,
+        ),
     ) -> Self {
         Self {
-            handle: screen_name,
-            profile_image_url: profile_image_url_https,
-            banner_image_url: profile_banner_url,
-            description,
+            handle: twitter_user_profile_response.screen_name,
+            profile_image_url: twitter_user_profile_response.profile_image_url_https,
+            profile_image_url_highres: twitter_profile_picture_response.data.profile_image_url,
+            banner_image_url: twitter_user_profile_response.profile_banner_url,
+            description: twitter_user_profile_response.description,
         }
     }
 }
