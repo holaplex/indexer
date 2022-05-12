@@ -443,21 +443,6 @@ impl QueryRoot {
         Ok(rows.pop().map(Into::into))
     }
 
-    #[graphql(description = "A collection")]
-    fn collection(&self, context: &AppContext, address: PublicKey<Nft>) -> FieldResult<Collection> {
-        let conn = context.shared.db.get()?;
-
-        let collections = queries::collection::load_with_collection_address(&conn, vec![address])
-            .context("failed to load collection")?;
-
-        let c = collections
-            .get(0)
-            .context("failed to get collection")?
-            .clone();
-
-        Ok(c.into())
-    }
-
     #[graphql(description = "Collections")]
     fn collections(
         &self,
