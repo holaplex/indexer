@@ -488,76 +488,69 @@ impl NftCount {
 
 #[derive(Debug, Clone)]
 pub struct MetadataJson {
-    pub address: Option<String>,
-    pub name: Option<String>,
+    pub address: String,
+    pub name: String,
+    pub mint_address: String,
     pub image: Option<String>,
-    pub description: Option<String>,
-    pub category: Option<String>,
-    pub attributes: Option<Vec<NftAttribute>>,
+    pub creator_address: String,
+    pub creator_twitter_handle: Option<String>,
 }
 
 impl From<serde_json::Value> for MetadataJson {
     fn from(value: serde_json::Value) -> Self {
         Self {
-            address: value.get("id").and_then(Value::as_str).map(Into::into),
-            name: value.get("name").and_then(Value::as_str).map(Into::into),
+            address: value
+                .get("id")
+                .and_then(Value::as_str)
+                .map(Into::into)
+                .unwrap_or_default(),
+            name: value
+                .get("name")
+                .and_then(Value::as_str)
+                .map(Into::into)
+                .unwrap_or_default(),
+            mint_address: value
+                .get("mint_address")
+                .and_then(Value::as_str)
+                .map(Into::into)
+                .unwrap_or_default(),
             image: value.get("image").and_then(Value::as_str).map(Into::into),
-            description: value
-                .get("description")
+            creator_address: value
+                .get("creator_address")
+                .and_then(Value::as_str)
+                .map(Into::into)
+                .unwrap_or_default(),
+            creator_twitter_handle: value
+                .get("creator_twitter_handle")
                 .and_then(Value::as_str)
                 .map(Into::into),
-            category: value
-                .get("category")
-                .and_then(Value::as_str)
-                .map(Into::into),
-            attributes: value.get("attributes").and_then(Value::as_array).map(|v| {
-                v.iter()
-                    .map(|a| NftAttribute {
-                        metadata_address: value
-                            .get("id")
-                            .and_then(Value::as_str)
-                            .map(Into::into)
-                            .unwrap_or_default(),
-                        value: a
-                            .get("value")
-                            .and_then(Value::as_str)
-                            .map(Into::into)
-                            .unwrap_or_default(),
-                        trait_type: a
-                            .get("trait_type")
-                            .and_then(Value::as_str)
-                            .map(Into::into)
-                            .unwrap_or_default(),
-                    })
-                    .collect::<Vec<NftAttribute>>()
-            }),
         }
     }
 }
 
 #[graphql_object(Context = AppContext)]
 impl MetadataJson {
-    pub fn address(&self) -> Option<&str> {
-        self.address.as_deref()
+    pub fn address(&self) -> &str {
+        &self.address
     }
 
-    pub fn name(&self) -> Option<&str> {
-        self.name.as_deref()
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn mint_address(&self) -> &str {
+        &self.mint_address
     }
 
     pub fn image(&self) -> Option<&str> {
         self.image.as_deref()
     }
 
-    pub fn description(&self) -> Option<&str> {
-        self.description.as_deref()
+    pub fn creator_address(&self) -> &str {
+        &self.creator_address
     }
 
-    pub fn category(&self) -> Option<&str> {
-        self.category.as_deref()
-    }
-
-    pub fn attributes(&self) -> Option<&Vec<NftAttribute>> {
-        self.attributes.as_ref()
+    pub fn creator_twitter_handle(&self) -> Option<&str> {
+        self.creator_twitter_handle.as_deref()
     }
 }
