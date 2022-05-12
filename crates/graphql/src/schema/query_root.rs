@@ -66,9 +66,6 @@ impl QueryRoot {
                 (wallet_totals::all_columns),
                 twitter_handle_name_services::twitter_handle.nullable(),
             ))
-            .order(wallet_totals::followers.desc())
-            .limit(limit.try_into()?)
-            .offset(offset.try_into()?)
             .into_boxed();
 
         if let Some(wallet) = wallet {
@@ -76,8 +73,12 @@ impl QueryRoot {
                 .select(graph_connections::to_account)
                 .filter(graph_connections::from_account.eq(wallet));
 
-            query = query.filter(wallet_totals::address.eq(any(following_query)));
+            query = query.filter(not(wallet_totals::address.eq(any(following_query))));
         }
+
+        query = query.order(wallet_totals::followers.desc())
+        .limit(limit.try_into()?)
+        .offset(offset.try_into()?);
 
         let rows: Vec<(models::WalletTotal, Option<String>)> =
             query.load(&conn).context("Failed to load wallet totals")?;
