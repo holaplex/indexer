@@ -111,11 +111,8 @@ impl Client {
         enum Event {
             Rx(Option<()>),
             Stop(Result<(), oneshot::error::RecvError>),
-            Tick(tokio::time::Instant),
+            Tick,
         }
-
-        let mut timer = tokio::time::interval(interval);
-        timer.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
         let mut lock_if_stopping = None;
 
@@ -125,11 +122,11 @@ impl Client {
             let evt = tokio::select! {
                 o = rx.recv() => Event::Rx(o),
                 r = &mut stop_rx => Event::Stop(r),
-                i = timer.tick() => Event::Tick(i),
+                () = tokio::time::sleep(interval) => Event::Tick,
             };
 
             let stop_reason = match evt {
-                Event::Rx(Some(())) | Event::Tick(_) => None,
+                Event::Rx(Some(())) | Event::Tick => None,
                 Event::Rx(None) => Some("trigger event source closed"),
                 Event::Stop(Ok(())) => Some("stop signal received"),
                 Event::Stop(Err(e)) => {
