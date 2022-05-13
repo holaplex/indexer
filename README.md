@@ -141,3 +141,17 @@ To launch the GraphQL server, simply run the following:
 ```sh
 $ cargo run --bin holaplex-indexer-graphql
 ```
+
+### Contributing
+
+Before pushing branch changes, identify code cleanup suggestions
+
+```
+cargo clippy --all --all-features
+```
+
+and format code
+
+```
+cargo fmt --all
+```
