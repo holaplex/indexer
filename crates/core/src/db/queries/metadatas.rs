@@ -154,12 +154,13 @@ pub fn list(
     }
 
     if listed {
-        query = query.filter(not(listing_receipts::price.is_null()));
+        query = query
+            .filter(not(listing_receipts::price.is_null()))
+            .filter(listing_receipts::purchase_receipt.is_null())
+            .filter(listing_receipts::canceled_at.is_null());
     }
 
     let rows: Vec<(Nft, Option<i64>)> = query
-        .filter(listing_receipts::purchase_receipt.is_null())
-        .filter(listing_receipts::canceled_at.is_null())
         .limit(limit)
         .offset(offset)
         .load(conn)
