@@ -12,6 +12,9 @@ pub struct Args {
     #[clap(flatten)]
     asset_proxy: AssetProxyArgs,
 
+    #[clap(flatten)]
+    search: search_dispatch::Args,
+
     /// HTTP request timeout, in seconds
     #[clap(long, env = "HTTP_INDEXER_TIMEOUT")]
     timeout: f64,
@@ -41,6 +44,7 @@ impl Client {
         let Args {
             asset_proxy,
             timeout,
+            search,
         } = args;
 
         let timeout = Duration::from_secs_f64(timeout);
@@ -49,7 +53,7 @@ impl Client {
             db,
             http: reqwest::Client::new(timeout)?,
             asset_proxy,
-            search: search_dispatch::Client::new(conn, search_queue).await?,
+            search: search_dispatch::Client::new(conn, search_queue, search).await?,
         }))
     }
 

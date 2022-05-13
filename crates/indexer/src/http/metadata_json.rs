@@ -250,7 +250,7 @@ async fn process_full(
     let raw_content: Value =
         serde_json::value::to_value(&json).context("Failed to upcast metadata JSON")?;
 
-    dispatch_metadata_document(client, addr.clone(), raw_content.clone())
+    dispatch_metadata_document(client, false, addr.clone(), raw_content.clone())
         .await
         .context("Failed to dispatch upsert metadata document job")?;
 
@@ -330,7 +330,7 @@ async fn process_minimal(
     let raw_content: Value =
         serde_json::value::to_value(&json).context("Failed to upcast minimal metadata JSON")?;
 
-    dispatch_metadata_document(client, addr.clone(), raw_content.clone())
+    dispatch_metadata_document(client, false, addr.clone(), raw_content.clone())
         .await
         .context("Failed to dispatch upsert metadata document job")?;
 
@@ -521,7 +521,7 @@ pub async fn process<'a>(
         //       verified creator will be updated to an out-of-date value.
         reprocess_attributes(client, addr.clone(), first_verified_creator).await?;
 
-        dispatch_metadata_document(client, addr, json).await?;
+        dispatch_metadata_document(client, true, addr, json).await?;
 
         return Ok(());
     }
@@ -542,7 +542,12 @@ pub async fn process<'a>(
     Ok(())
 }
 
-async fn dispatch_metadata_document(client: &Client, addr: String, raw: Value) -> Result<()> {
+async fn dispatch_metadata_document(
+    client: &Client,
+    is_for_backfill: bool,
+    addr: String,
+    raw: Value,
+) -> Result<()> {
     let raw = if let Value::Object(m) = raw {
         m
     } else {
@@ -597,7 +602,7 @@ async fn dispatch_metadata_document(client: &Client, addr: String, raw: Value) -
 
     client
         .search()
-        .upsert_metadata(addr, MetadataDocument {
+        .upsert_metadata(is_for_backfill, addr, MetadataDocument {
             name,
             mint_address,
             image,
