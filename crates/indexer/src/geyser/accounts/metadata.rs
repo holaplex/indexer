@@ -18,7 +18,12 @@ use mpl_token_metadata::state::{Collection, Metadata as MetadataAccount, TokenSt
 use super::Client;
 use crate::prelude::*;
 
-pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount) -> Result<()> {
+pub(crate) async fn process(
+    client: &Client,
+    key: Pubkey,
+    meta: MetadataAccount,
+    slot: u64,
+) -> Result<()> {
     let addr = bs58::encode(key).into_string();
     let (edition_pda_key, _bump) = find_edition(meta.mint);
     let row = Metadata {
@@ -39,6 +44,7 @@ pub(crate) async fn process(client: &Client, key: Pubkey, meta: MetadataAccount)
             TokenStandard::Fungible => TokenStandardEnum::Fungible,
             TokenStandard::NonFungibleEdition => TokenStandardEnum::NonFungibleEdition,
         }),
+        slot: Some(slot.try_into()?),
     };
 
     let first_verified_creator: Option<Pubkey> = meta

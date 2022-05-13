@@ -24,7 +24,7 @@ const MASTER_EDITION_V2: u8 = Key::MasterEditionV2 as u8;
 async fn process_metadata(client: &Client, update: AccountUpdate) -> Result<()> {
     // Deserializing using mpl_token_metadata crate
     if let Ok(metadata) = try_from_slice_checked(&update.data, Key::MetadataV1, MAX_METADATA_LEN) {
-        return metadata::process(client, update.key, metadata).await;
+        return metadata::process(client, update.key, metadata, update.slot).await;
     }
 
     // Deserializing using metaplex_token_metadata and changing the metaplex Metadata to mpl Metadata
@@ -59,14 +59,14 @@ async fn process_metadata(client: &Client, update: AccountUpdate) -> Result<()> 
         uses: None,
     };
 
-    metadata::process(client, update.key, metaplex_metadata).await
+    metadata::process(client, update.key, metaplex_metadata, update.slot).await
 }
 
 async fn process_edition(client: &Client, update: AccountUpdate) -> Result<()> {
     let edition: Edition = try_from_slice_checked(&update.data, Key::EditionV1, MAX_EDITION_LEN)
         .context("Failed to parse edition data")?;
 
-    edition::process(client, update.key, edition).await
+    edition::process(client, update.key, edition, update.slot).await
 }
 
 async fn process_master_edition_v1(client: &Client, update: AccountUpdate) -> Result<()> {
@@ -84,7 +84,7 @@ async fn process_master_edition_v1(client: &Client, update: AccountUpdate) -> Re
         max_supply,
     };
 
-    edition::process_master(client, update.key, master_edition).await
+    edition::process_master(client, update.key, master_edition, update.slot).await
 }
 
 async fn process_master_edition_v2(client: &Client, update: AccountUpdate) -> Result<()> {
@@ -92,7 +92,7 @@ async fn process_master_edition_v2(client: &Client, update: AccountUpdate) -> Re
         try_from_slice_checked(&update.data, Key::MasterEditionV2, MAX_MASTER_EDITION_LEN)
             .context("Failed to parse master edition v2 data")?;
 
-    edition::process_master(client, update.key, master_edition).await
+    edition::process_master(client, update.key, master_edition, update.slot).await
 }
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {

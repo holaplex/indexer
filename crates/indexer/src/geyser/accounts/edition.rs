@@ -15,6 +15,7 @@ pub(crate) async fn process(
     client: &Client,
     edition_key: Pubkey,
     edition: EditionAccount,
+    slot: u64,
 ) -> Result<()> {
     let row = Edition {
         address: Owned(bs58::encode(edition_key).into_string()),
@@ -23,6 +24,7 @@ pub(crate) async fn process(
             .edition
             .try_into()
             .context("Edition ID is too high to store")?,
+        slot: Some(slot.try_into()?),
     };
 
     client
@@ -45,6 +47,7 @@ pub(crate) async fn process_master(
     client: &Client,
     master_key: Pubkey,
     master_edition: MasterEditionV2Account,
+    slot: u64,
 ) -> Result<()> {
     let row = MasterEdition {
         address: Owned(bs58::encode(master_key).into_string()),
@@ -59,6 +62,7 @@ pub(crate) async fn process_master(
                     .context("Master edition max supply is too high to store")
             })
             .transpose()?,
+        slot: Some(slot.try_into()?),
     };
 
     client
