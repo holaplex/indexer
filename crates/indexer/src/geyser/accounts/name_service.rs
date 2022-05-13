@@ -31,12 +31,6 @@ pub(crate) async fn process(
         handle: th.clone().handle,
     };
 
-    client
-        .search()
-        .upsert_twitter_handle(key, document)
-        .await
-        .context("Failed to dispatch upsert twitter handle document job")?;
-
     let rows = client
         .db()
         .run(move |db| {
@@ -61,8 +55,12 @@ pub(crate) async fn process(
         write_version,
     };
 
+    let search_backfill;
+
     match rows.get(0) {
         Some(indexed) if (incoming_slot, write_version) > (indexed.slot, indexed.write_version) => {
+            search_backfill = Some(false);
+
             client
                 .db()
                 .run(move |db| {
@@ -75,8 +73,10 @@ pub(crate) async fn process(
                 .await
                 .context("failed to update twitter handle")?;
         },
-        Some(_) => (),
+        Some(_) => search_backfill = None,
         None => {
+            search_backfill = Some(true);
+
             client
                 .db()
                 .run(move |db| {
@@ -90,6 +90,14 @@ pub(crate) async fn process(
                 .await
                 .context("failed to insert twitter handle")?;
         },
+    }
+
+    if let Some(backfill) = search_backfill {
+        client
+            .search()
+            .upsert_twitter_handle(backfill, key, document)
+            .await
+            .context("Failed to dispatch upsert twitter handle document job")?;
     }
 
     Ok(())

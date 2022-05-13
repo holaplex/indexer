@@ -21,6 +21,9 @@ pub struct Args {
     /// Dialect API key
     #[clap(long, env, requires("dialect-api-endpoint"))]
     dialect_api_key: Option<String>,
+
+    #[clap(flatten)]
+    search: search_dispatch::Args,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -60,6 +63,7 @@ impl Client {
         Args {
             dialect_api_endpoint,
             dialect_api_key,
+            search,
         }: Args,
     ) -> Result<Arc<Self>> {
         if dialect_api_endpoint.is_none() {
@@ -79,7 +83,7 @@ impl Client {
                     .await
                     .context("Couldn't create AMQP store config producer")?,
             },
-            search: search_dispatch::Client::new(conn, search_queue).await?,
+            search: search_dispatch::Client::new(conn, search_queue, search).await?,
             dialect_api_endpoint,
             dialect_api_key,
         }))
