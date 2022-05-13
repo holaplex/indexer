@@ -1,18 +1,11 @@
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc,
-};
+use std::sync::Arc;
 
 use indexer_rabbitmq::{
     geyser::{Message, Producer, QueueType, StartupType},
     lapin::{Connection, ConnectionProperties},
     suffix::Suffix,
 };
-use smol::{
-    channel,
-    lock::{RwLock, RwLockUpgradableReadGuard, RwLockWriteGuard},
-    Executor,
-};
+use tokio::sync::{RwLock, RwLockReadGuard};
 
 use crate::{
     config,
@@ -20,9 +13,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-struct Inner {
-    background_count: AtomicUsize,
-
+pub struct Sender {
     amqp: config::Amqp,
     name: String,
     startup_type: StartupType,
@@ -30,8 +21,8 @@ struct Inner {
     metrics: Arc<Metrics>,
 }
 
-impl Inner {
-    async fn new(
+impl Sender {
+    pub async fn new(
         amqp: config::Amqp,
         name: String,
         startup_type: StartupType,
@@ -40,7 +31,6 @@ impl Inner {
         let producer = Self::create_producer(&amqp, name.as_ref(), startup_type).await?;
 
         Ok(Self {
-            background_count: AtomicUsize::new(0),
             amqp,
             name,
             startup_type,
@@ -58,7 +48,8 @@ impl Inner {
             &amqp.address,
             ConnectionProperties::default()
                 .with_connection_name(name.into())
-                .with_executor(smol_executor_trait::Smol),
+                .with_executor(tokio_executor_trait::Tokio::current())
+                .with_reactor(tokio_reactor_trait::Tokio),
         )
         .await?;
 
@@ -70,34 +61,37 @@ impl Inner {
     }
 
     async fn connect<'a>(
-        &self,
-        prod: RwLockUpgradableReadGuard<'a, Producer>,
-    ) -> Result<RwLockUpgradableReadGuard<'a, Producer>, indexer_rabbitmq::Error> {
-        let mut prod = RwLockUpgradableReadGuard::upgrade(prod).await;
+        &'a self,
+        prod: RwLockReadGuard<'a, Producer>,
+    ) -> Result<RwLockReadGuard<'a, Producer>, indexer_rabbitmq::Error> {
+        // Anti-deadlock safeguard - force the current reader to hand us their
+        // lock so we can make sure it's destroyed.
+        std::mem::drop(prod);
+        let mut prod = self.producer.write().await;
 
         *prod = Self::create_producer(&self.amqp, self.name.as_ref(), self.startup_type).await?;
 
-        Ok(RwLockWriteGuard::downgrade_to_upgradable(prod))
+        Ok(prod.downgrade())
     }
 
-    async fn send_internal(&self, msg: Message) {
+    pub async fn send(&self, msg: Message) {
         #[inline]
         fn log_err<E: std::fmt::Debug>(counter: &'_ Counter) -> impl FnOnce(E) + '_ {
             |err| {
-                counter.log();
+                counter.log(1);
                 log::error!("{:?}", err);
             }
         }
 
-        let metrics = self.metrics.as_ref();
-        let prod = self.producer.upgradable_read().await;
+        let metrics = &self.metrics;
+        let prod = self.producer.read().await;
 
         match prod.write(&msg).await.map_err(log_err(&metrics.errs)) {
             Ok(()) => return,
             Err(()) => (),
         }
 
-        metrics.reconnects.log();
+        metrics.reconnects.log(1);
         let prod = match self.connect(prod).await.map_err(log_err(&metrics.errs)) {
             Ok(p) => p,
             Err(()) => return,
@@ -105,65 +99,6 @@ impl Inner {
 
         match prod.write(&msg).await.map_err(log_err(&metrics.errs)) {
             Ok(()) | Err(()) => (), // Type-level assertion that we consumed the error
-        }
-    }
-
-    async fn send(self: Arc<Self>, msg: Message, backgrounded: bool) {
-        self.send_internal(msg).await;
-
-        if backgrounded {
-            assert!(self.background_count.fetch_sub(1, Ordering::SeqCst) > 0);
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Sender {
-    inner: Arc<Inner>,
-    executor: Arc<Executor<'static>>,
-    _stop: channel::Sender<()>,
-    limit: usize,
-}
-
-impl Sender {
-    pub async fn new(
-        amqp: config::Amqp,
-        name: String,
-        jobs: &config::Jobs,
-        startup_type: StartupType,
-        metrics: Arc<Metrics>,
-    ) -> Result<Self, indexer_rabbitmq::Error> {
-        let executor = Arc::new(Executor::new());
-        let (stop_tx, stop_rx) = channel::bounded(1);
-
-        std::thread::spawn({
-            let executor = executor.clone();
-
-            move || smol::block_on(executor.run(stop_rx.recv()))
-        });
-
-        Ok(Self {
-            inner: Arc::new(Inner::new(amqp, name, startup_type, metrics).await?),
-            executor,
-            _stop: stop_tx,
-            limit: jobs.limit,
-        })
-    }
-
-    pub async fn send(&self, msg: Message) {
-        let inner = Arc::clone(&self.inner);
-        let new_count =
-            inner
-                .background_count
-                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |c| {
-                    if c < self.limit { Some(c + 1) } else { None }
-                });
-
-        if new_count.is_ok() {
-            self.executor.spawn(inner.send(msg, true)).detach();
-        } else {
-            inner.metrics.fg_sends.log();
-            inner.send(msg, false).await;
         }
     }
 }

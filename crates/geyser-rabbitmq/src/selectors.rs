@@ -1,14 +1,12 @@
-use std::collections::HashSet;
-
+use hashbrown::HashSet;
 use indexer_rabbitmq::geyser::StartupType;
-use solana_program::instruction::CompiledInstruction;
 
 use super::config::Accounts;
 use crate::{interface::ReplicaAccountInfo, prelude::*};
 
 #[derive(Debug)]
 pub struct AccountSelector {
-    owners: HashSet<Box<[u8]>>,
+    owners: HashSet<[u8; 32]>,
     startup: Option<bool>,
 }
 
@@ -18,10 +16,7 @@ impl AccountSelector {
 
         let owners = owners
             .into_iter()
-            .map(|s| {
-                s.parse()
-                    .map(|k: Pubkey| k.to_bytes().to_vec().into_boxed_slice())
-            })
+            .map(|s| s.parse().map(Pubkey::to_bytes))
             .collect::<Result<_, _>>()
             .context("Failed to parse account owner keys")?;
 
@@ -56,7 +51,12 @@ impl InstructionSelector {
     }
 
     #[inline]
-    pub fn is_selected(&self, _ins: &CompiledInstruction, pgm: &Pubkey, _accts: &[Pubkey]) -> bool {
+    pub fn is_empty(&self) -> bool {
+        self.programs.is_empty()
+    }
+
+    #[inline]
+    pub fn is_selected(&self, pgm: &Pubkey) -> bool {
         self.programs.contains(pgm)
     }
 }
