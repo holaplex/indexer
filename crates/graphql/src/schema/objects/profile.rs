@@ -20,17 +20,16 @@ pub struct Profile {
     pub banner_image_url: String,
 }
 
-impl From<(TwitterProfilePictureResponse, TwitterUserProfileResponse)> for TwitterProfile {
-    fn from(
-        (twitter_profile_picture_response, twitter_user_profile_response): (
-            TwitterProfilePictureResponse,
-            TwitterUserProfileResponse,
-        ),
-    ) -> Self {
+impl From<TwitterUserProfileResponse> for TwitterProfile {
+    fn from(twitter_user_profile_response: TwitterUserProfileResponse) -> Self {
         Self {
             handle: twitter_user_profile_response.screen_name,
-            profile_image_url: twitter_user_profile_response.profile_image_url_https,
-            profile_image_url_highres: twitter_profile_picture_response.data.profile_image_url,
+            profile_image_url: twitter_user_profile_response
+                .profile_image_url_https
+                .clone(),
+            profile_image_url_highres: twitter_user_profile_response
+                .profile_image_url_https
+                .replace("_normal.", "_bigger."),
             banner_image_url: twitter_user_profile_response.profile_banner_url,
             description: twitter_user_profile_response.description,
         }
