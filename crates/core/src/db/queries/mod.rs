@@ -10,5 +10,6 @@ pub mod metadata_edition;
 pub mod metadatas;
 pub mod nft_count;
 pub mod stats;
+pub mod stats_global;
 pub mod store_denylist;
 pub mod twitter_handle_name_service;

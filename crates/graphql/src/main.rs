@@ -8,6 +8,7 @@
     missing_copy_implementations
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
+#![feature(lint_reasons)]
 
 use std::sync::Arc;
 

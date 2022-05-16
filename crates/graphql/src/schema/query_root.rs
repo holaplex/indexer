@@ -1,4 +1,7 @@
-use indexer_core::db::{queries, tables::twitter_handle_name_services};
+use indexer_core::db::{
+    queries::{self},
+    tables::twitter_handle_name_services,
+};
 use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
@@ -12,6 +15,7 @@ use objects::{
     marketplace::Marketplace,
     nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator},
     profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
+    stats_global::GlobalStats,
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
@@ -500,5 +504,44 @@ impl QueryRoot {
 
     fn denylist() -> Denylist {
         Denylist
+    }
+
+    #[graphql(description = "Global summary statistics over indexed transactions.")]
+    fn stats_global(&self, context: &AppContext) -> FieldResult<GlobalStats> {
+        let conn = context.shared.db.get().context("failed to connect to db")?;
+
+        let i: u32 = 1000;
+
+        // TODO can/should these two queries be turned into async queries? If so, how do I get started on that?
+
+        // TODO: how do I convert this into UTC epoch seconds?
+        // see comment about not accounting for timezone https://docs.rs/chrono/0.3.1/chrono/naive/datetime/struct.NaiveDateTime.html#method.timestamp
+        let recent_mint_date: NaiveDateTime =
+            match queries::stats_global::nth_mint_date(&conn, Some(i))?.get(0) {
+                Some(v) => Ok(*v),
+                None => Err("failed to get a recent mint"),
+            }?;
+        let seconds_elapsed_since_recent_mint: i64 =
+            Utc::now().timestamp() - recent_mint_date.timestamp();
+
+        let recent_purchase_date: NaiveDateTime =
+            match queries::stats_global::nth_purchase_date(&conn, Some(i))?.get(0) {
+                Some(v) => Ok(*v),
+                None => Err("failed to get a recent mint"),
+            }?;
+
+        let seconds_elapsed_since_recent_purchase: i64 =
+            Utc::now().timestamp() - recent_purchase_date.timestamp();
+
+        #[allow(
+            clippy::cast_precision_loss,
+            reason = "unavoidable downcast for floating point division"
+        )]
+        let result: GlobalStats = GlobalStats {
+            mint_rate: Some(f64::from(i) / (seconds_elapsed_since_recent_mint as f64)),
+            purchase_rate: Some(f64::from(i) / (seconds_elapsed_since_recent_purchase as f64)),
+        };
+
+        Ok(result)
     }
 }
