@@ -74,9 +74,11 @@ impl QueryRoot {
         if let Some(wallet) = wallet {
             let following_query = graph_connections::table
                 .select(graph_connections::to_account)
-                .filter(graph_connections::from_account.eq(wallet));
+                .filter(graph_connections::from_account.eq(wallet.clone()));
 
-            query = query.filter(wallet_totals::address.eq(any(following_query)));
+            query = query
+                .filter(not(wallet_totals::address.eq(any(following_query))))
+                .filter(not(wallet_totals::address.eq(wallet)));
         }
 
         let rows: Vec<(models::WalletTotal, Option<String>)> =
