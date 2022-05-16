@@ -2611,7 +2611,7 @@ version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "730788801b3fc91d9f97095e3590239f7078d81c8c1e9a35460898a806c0b24d"
 dependencies = [
- "anchor-lang 0.24.2",
+ "anchor-lang 0.22.1",
  "anchor-spl 0.22.1",
  "num-traits",
  "smart-wallet 0.9.0",
@@ -3358,7 +3358,7 @@ version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f5e4241760b2efb99e1d8a12e33cebd53f85ac4af093f804891517cd98a952b"
 dependencies = [
- "anchor-lang 0.24.2",
+ "anchor-lang 0.22.1",
  "anchor-spl 0.22.1",
  "govern",
  "num-traits",
