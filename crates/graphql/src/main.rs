@@ -26,6 +26,7 @@ use indexer_core::{
     ServerOpts,
 };
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
+// TODO: use nonblocking once we upgrade past 1.9
 use solana_client::rpc_client::RpcClient;
 
 use crate::schema::{AppContext, Schema};
@@ -68,7 +69,7 @@ pub(crate) struct SharedData {
     pub asset_proxy: AssetProxyArgs,
     pub twitter_bearer_token: String,
     pub search: meilisearch::client::Client,
-    pub rpc: Arc<RpcClient>,
+    pub rpc: RpcClient,
 }
 
 #[allow(clippy::unused_async)]
@@ -133,7 +134,7 @@ fn main() {
             db::connect(db, db::ConnectMode::Read).context("Failed to connect to Postgres")?;
         let db = Arc::new(db);
         let search = search.into_client();
-        let rpc = Arc::new(RpcClient::new(solana_endpoint));
+        let rpc = RpcClient::new(solana_endpoint);
 
         let shared = web::Data::new(SharedData {
             schema: schema::create(),

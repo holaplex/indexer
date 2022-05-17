@@ -44,7 +44,10 @@ pub(crate) async fn process(
             TokenStandard::Fungible => TokenStandardEnum::Fungible,
             TokenStandard::NonFungibleEdition => TokenStandardEnum::NonFungibleEdition,
         }),
-        slot: Some(slot.try_into()?),
+        slot: Some(
+            slot.try_into()
+                .context("Metadata slot was too big to store")?,
+        ),
     };
 
     let first_verified_creator: Option<Pubkey> = meta

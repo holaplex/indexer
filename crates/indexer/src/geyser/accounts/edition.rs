@@ -24,7 +24,10 @@ pub(crate) async fn process(
             .edition
             .try_into()
             .context("Edition ID is too high to store")?,
-        slot: Some(slot.try_into()?),
+        slot: Some(
+            slot.try_into()
+                .context("Edition slot was too big to store")?,
+        ),
     };
 
     client
@@ -62,7 +65,10 @@ pub(crate) async fn process_master(
                     .context("Master edition max supply is too high to store")
             })
             .transpose()?,
-        slot: Some(slot.try_into()?),
+        slot: Some(
+            slot.try_into()
+                .context("Master edition slot was too big to store")?,
+        ),
     };
 
     client

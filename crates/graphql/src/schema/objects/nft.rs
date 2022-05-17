@@ -302,8 +302,10 @@ pub struct Nft {
     pub slot: Option<i32>,
 }
 
-impl From<models::Nft> for Nft {
-    fn from(
+impl TryFrom<models::Nft> for Nft {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
         models::Nft {
             address,
             name,
@@ -317,8 +319,8 @@ impl From<models::Nft> for Nft {
             model,
             slot,
         }: models::Nft,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
             address,
             name,
             seller_fee_basis_points,
@@ -329,8 +331,8 @@ impl From<models::Nft> for Nft {
             image: image.unwrap_or_else(String::new),
             category: category.unwrap_or_else(String::new),
             model,
-            slot: slot.map(TryInto::try_into).transpose().unwrap(),
-        }
+            slot: slot.map(TryInto::try_into).transpose()?,
+        })
     }
 }
 
@@ -460,23 +462,22 @@ If no value is provided, it will return XSmall")))]
 
     pub async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
         if let Some(slot) = self.slot {
-            let rpc = ctx.shared.rpc.clone();
-            let time = tokio::task::spawn_blocking(move || {
-                rpc.get_block_time(slot.try_into().unwrap_or_default())
-                    .map(|s| unix_timestamp(s).map(|t| DateTime::<Utc>::from_utc(t, Utc)))
+            let shared = ctx.shared.clone();
+
+            tokio::task::spawn_blocking(move || {
+                shared
+                    .rpc
+                    .get_block_time(slot.try_into().unwrap_or_default())
+                    .context("RPC call for block time failed")
+                    .and_then(|s| unix_timestamp(s).map(|t| DateTime::<Utc>::from_utc(t, Utc)))
             })
             .await
-            .ok()
-            .transpose()
-            .ok()
-            .flatten()
-            .transpose()
-            .map_err(Into::into);
-
-            return time;
-        };
-
-        Ok(None)
+            .expect("Blocking task panicked")
+            .map(Some)
+            .map_err(Into::into)
+        } else {
+            Ok(None)
+        }
     }
 }
 
