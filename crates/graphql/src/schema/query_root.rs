@@ -119,7 +119,8 @@ impl QueryRoot {
         Ok(NftCount::new(creators))
     }
     #[graphql(arguments(
-        auction_housese(description = "List of auction houses"),
+        auction_houses(description = "List of auction houses"),
+        creators(description = "Optional list of creators"),
         start_date(description = "Start date for which we want to get the average price"),
         end_date(description = "End date for which we want to get the average price")
     ))]
@@ -127,24 +128,30 @@ impl QueryRoot {
         &self,
         _context: &AppContext,
         auction_houses: Vec<PublicKey<AuctionHouse>>,
+        creators: Option<Vec<PublicKey<Creator>>>,
         start_date: DateTime<Utc>,
         end_date: DateTime<Utc>,
     ) -> FieldResult<PriceChart> {
         Ok(PriceChart {
             auction_houses,
+            creators,
             start_date,
             end_date,
         })
     }
 
-    #[graphql(arguments(auction_housese(description = "List of auction houses"),))]
+    #[graphql(arguments(
+        auction_housese(description = "List of auction houses"),
+        creators(description = "Optional list of creators"),
+    ))]
     pub async fn activities(
         &self,
         context: &AppContext,
         auction_houses: Vec<PublicKey<AuctionHouse>>,
+        creators: Option<Vec<PublicKey<Creator>>>,
     ) -> FieldResult<Vec<NftActivity>> {
         let conn = context.shared.db.get()?;
-        let rows = queries::activities::list(&conn, auction_houses)?;
+        let rows = queries::activities::list(&conn, auction_houses, creators)?;
 
         rows.into_iter()
             .map(TryInto::try_into)
