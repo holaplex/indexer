@@ -3013,6 +3013,7 @@ dependencies = [
  "serde_json",
  "solana-client",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]

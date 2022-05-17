@@ -68,7 +68,7 @@ pub(crate) struct SharedData {
     pub asset_proxy: AssetProxyArgs,
     pub twitter_bearer_token: String,
     pub search: meilisearch::client::Client,
-    pub rpc: RpcClient,
+    pub rpc: Arc<RpcClient>,
 }
 
 #[allow(clippy::unused_async)]
@@ -133,7 +133,7 @@ fn main() {
             db::connect(db, db::ConnectMode::Read).context("Failed to connect to Postgres")?;
         let db = Arc::new(db);
         let search = search.into_client();
-        let rpc = RpcClient::new(solana_endpoint);
+        let rpc = Arc::new(RpcClient::new(solana_endpoint));
 
         let shared = web::Data::new(SharedData {
             schema: schema::create(),

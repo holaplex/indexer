@@ -1,6 +1,7 @@
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     db::queries,
+    util::unix_timestamp,
 };
 use objects::{
     auction_house::AuctionHouse, bid_receipt::BidReceipt, listing_receipt::ListingReceipt,
@@ -298,6 +299,7 @@ pub struct Nft {
     pub image: String,
     pub category: String,
     pub model: Option<String>,
+    pub slot: Option<i32>,
 }
 
 impl From<models::Nft> for Nft {
@@ -313,6 +315,7 @@ impl From<models::Nft> for Nft {
             image,
             category,
             model,
+            slot,
         }: models::Nft,
     ) -> Self {
         Self {
@@ -326,6 +329,7 @@ impl From<models::Nft> for Nft {
             image: image.unwrap_or_else(String::new),
             category: category.unwrap_or_else(String::new),
             model,
+            slot: slot.map(TryInto::try_into).transpose().unwrap(),
         }
     }
 }
@@ -452,6 +456,27 @@ If no value is provided, it will return XSmall")))]
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
+    }
+
+    pub async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
+        if let Some(slot) = self.slot {
+            let rpc = ctx.shared.rpc.clone();
+            let time = tokio::task::spawn_blocking(move || {
+                rpc.get_block_time(slot.try_into().unwrap_or_default())
+                    .map(|s| unix_timestamp(s).map(|t| DateTime::<Utc>::from_utc(t, Utc)))
+            })
+            .await
+            .ok()
+            .transpose()
+            .ok()
+            .flatten()
+            .transpose()
+            .map_err(Into::into);
+
+            return time;
+        };
+
+        Ok(None)
     }
 }
 

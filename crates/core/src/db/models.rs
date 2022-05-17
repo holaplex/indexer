@@ -243,6 +243,10 @@ pub struct Nft {
     #[sql_type = "Text"]
     pub uri: String,
 
+    /// Solana slot number
+    #[sql_type = "Nullable<Int8>"]
+    pub slot: Option<i64>,
+
     // Table metadata_json
     /// Metadata description
     #[sql_type = "Nullable<Text>"]
