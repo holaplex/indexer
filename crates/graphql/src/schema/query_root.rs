@@ -355,11 +355,16 @@ impl QueryRoot {
         Ok(Wallet::new(address, twitter_handle))
     }
 
-    fn listings(&self, context: &AppContext) -> FieldResult<Vec<Listing>> {
+    fn listings(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Query limit")] limit: Option<i32>,
+        #[graphql(description = "Query offset")] offset: Option<i32>,
+    ) -> FieldResult<Vec<Listing>> {
         let now = Local::now().naive_utc();
         let conn = context.shared.db.get()?;
 
-        let rows: Vec<ListingRow> = auction_caches::table
+        let mut query = auction_caches::table
             .inner_join(
                 auction_datas::table.on(auction_caches::auction_data.eq(auction_datas::address)),
             )
@@ -376,8 +381,17 @@ impl QueryRoot {
                 ),
             )
             .select(ListingColumns::default())
-            .load(&conn)
-            .context("Failed to load listings")?;
+            .into_boxed();
+
+        if let Some(limit) = limit {
+            query = query.limit(limit.into());
+        }
+
+        if let Some(offset) = offset {
+            query = query.offset(offset.into());
+        }
+
+        let rows: Vec<ListingRow> = query.load(&conn).context("Failed to load listings")?;
 
         rows.into_iter()
             .map(|l| Listing::new(l, now))
