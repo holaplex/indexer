@@ -335,8 +335,8 @@ impl QueryRoot {
             listed,
             auction_houses: auction_houses.map(|a| a.into_iter().map(Into::into).collect()),
             collection: collection.map(Into::into),
-            limit: limit.into(),
-            offset: offset.into(),
+            limit: limit.try_into()?,
+            offset: offset.try_into()?,
         };
         let nfts = queries::metadatas::list(&conn, query_options)?;
 
