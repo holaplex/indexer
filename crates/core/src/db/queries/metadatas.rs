@@ -16,7 +16,6 @@ use crate::{
         Connection,
     },
     error::prelude::*,
-    prelude::*,
 };
 
 /// Format for incoming filters on attributes
@@ -100,7 +99,6 @@ enum MetadataCollectionKeys {
     Table,
     MetadataAddress,
     CollectionAddress,
-    Verified,
 }
 
 /// List query options
@@ -286,7 +284,7 @@ pub fn list(
     }
 
     if let Some(attributes) = attributes {
-        for AttributeFilter { trait_type, values } in attributes.into_iter() {
+        for AttributeFilter { trait_type, values } in attributes {
             let alias = format!("attributes_{}", trait_type);
             let alias: DynIden = SeaRc::new(Alias::new(&alias));
 
