@@ -16,8 +16,8 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 [features]
 consumer = ["suffix"]
 default = ["consumer"]
-geyser = ["solana-sdk", "suffix"]
-http-indexer = ["solana-sdk", "suffix"]
+geyser = ["solana-program", "suffix"]
+http-indexer = ["solana-program", "suffix"]
 producer = ["suffix"]
 search-indexer = ["serde_json", "suffix"]
 suffix = ["clap"]
@@ -31,6 +31,6 @@ rand = "0.8.5"
 rmp-serde = "1.0.0-beta.2"
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = { version = "1.0.79", optional = true }
-solana-sdk = { version = "1.9.4", optional = true }
+solana-program = { version = "1.9.4", optional = true }
 strum = { version = "0.23.0", features = ["derive"] }
 thiserror = "1.0.30"

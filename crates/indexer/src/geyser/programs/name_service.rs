@@ -1,21 +1,15 @@
+use borsh::BorshDeserialize;
+use solana_program::pubkey;
+
 use super::{accounts::name_service, AccountUpdate, Client};
 use crate::prelude::*;
-const HEADER_LENGTH: usize = 96;
-use borsh::BorshDeserialize;
-use solana_program::pubkey::Pubkey;
 
-mod ids {
-    #![allow(missing_docs)]
-    use solana_sdk::pubkeys;
-    pubkeys!(
-        twitter_verification_authority,
-        "FvPH7PrVrLGKPfqaf3xJodFTjZriqrAXXLTVWEorTFBi"
-    );
-    pubkeys!(
-        twitter_root_parent_registry_key,
-        "4YcexoW3r78zz16J2aqmukBLRwGq6rAvWzJpkYAXqebv"
-    );
-}
+const HEADER_LENGTH: usize = 96;
+
+static TWITTER_VERIFICATION_AUTHORITY: Pubkey =
+    pubkey!("FvPH7PrVrLGKPfqaf3xJodFTjZriqrAXXLTVWEorTFBi");
+static TWITTER_ROOT_PARENT_REGISTRY_KEY: Pubkey =
+    pubkey!("4YcexoW3r78zz16J2aqmukBLRwGq6rAvWzJpkYAXqebv");
 
 #[derive(BorshDeserialize, PartialEq, Debug, Clone)]
 struct Header {
@@ -37,9 +31,7 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
     let parent = Pubkey::new(header.parent.as_slice());
     let class = Pubkey::new(header.class.as_slice());
 
-    if parent != ids::twitter_root_parent_registry_key()
-        || class != ids::twitter_verification_authority()
-    {
+    if parent != TWITTER_ROOT_PARENT_REGISTRY_KEY || class != TWITTER_VERIFICATION_AUTHORITY {
         return Ok(());
     }
 

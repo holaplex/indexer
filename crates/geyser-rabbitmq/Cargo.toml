@@ -35,7 +35,6 @@ tokio-reactor-trait = "1.1.0"
 solana-geyser-plugin-interface = "1.9.15"
 solana-logger = "1.9.4"
 solana-program = "1.9.4"
-solana-sdk = "1.9.4"
 solana-metrics = "1.9.4"
 spl-token = "3.2.0"
 

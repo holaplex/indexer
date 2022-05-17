@@ -2,7 +2,6 @@ use std::{sync::Arc, time::Duration};
 
 use indexer_core::clap;
 use indexer_rabbitmq::{http_indexer, search_indexer};
-use solana_sdk::pubkey::Pubkey;
 
 use crate::{db::Pool, prelude::*, reqwest, search_dispatch};
 
