@@ -84,8 +84,8 @@ fn main() {
                 println!("cargo:rerun-if-changed={}/{}", toplevel, file);
             }
 
-            for file in str::from_utf8(&status.stdout)
-                .unwrap()
+            let status = str::from_utf8(&status.stdout).unwrap();
+            for file in status
                 .split('\n')
                 .map(|f| f.trim())
                 .filter(|f| f.len() > 2)
@@ -97,7 +97,7 @@ fn main() {
             println!(
                 "cargo:rustc-env=META_GIT_HEAD={}{}",
                 str::from_utf8(&rev.stdout).unwrap().trim(),
-                if status.stdout.is_empty() {
+                if status.trim().is_empty() {
                     ""
                 } else {
                     "-DIRTY"
