@@ -7,6 +7,7 @@ use super::prelude::*;
 pub struct TwitterProfile {
     pub handle: String,
     pub profile_image_url: String,
+    pub profile_image_url_highres: String,
     pub banner_image_url: String,
     pub description: String,
 }
@@ -30,7 +31,8 @@ impl From<TwitterUserProfileResponse> for TwitterProfile {
     ) -> Self {
         Self {
             handle: screen_name,
-            profile_image_url: profile_image_url_https,
+            profile_image_url: profile_image_url_https.clone(),
+            profile_image_url_highres: profile_image_url_https.replace("_normal.", "_bigger."),
             banner_image_url: profile_banner_url,
             description,
         }

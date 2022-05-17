@@ -74,9 +74,11 @@ impl QueryRoot {
         if let Some(wallet) = wallet {
             let following_query = graph_connections::table
                 .select(graph_connections::to_account)
-                .filter(graph_connections::from_account.eq(wallet));
+                .filter(graph_connections::from_account.eq(wallet.clone()));
 
-            query = query.filter(wallet_totals::address.eq(any(following_query)));
+            query = query
+                .filter(not(wallet_totals::address.eq(any(following_query))))
+                .filter(not(wallet_totals::address.eq(wallet)));
         }
 
         let rows: Vec<(models::WalletTotal, Option<String>)> =
@@ -117,7 +119,8 @@ impl QueryRoot {
         Ok(NftCount::new(creators))
     }
     #[graphql(arguments(
-        auction_housese(description = "List of auction houses"),
+        auction_houses(description = "List of auction houses"),
+        creators(description = "Optional list of creators"),
         start_date(description = "Start date for which we want to get the average price"),
         end_date(description = "End date for which we want to get the average price")
     ))]
@@ -125,24 +128,30 @@ impl QueryRoot {
         &self,
         _context: &AppContext,
         auction_houses: Vec<PublicKey<AuctionHouse>>,
+        creators: Option<Vec<PublicKey<Creator>>>,
         start_date: DateTime<Utc>,
         end_date: DateTime<Utc>,
     ) -> FieldResult<PriceChart> {
         Ok(PriceChart {
             auction_houses,
+            creators,
             start_date,
             end_date,
         })
     }
 
-    #[graphql(arguments(auction_housese(description = "List of auction houses"),))]
+    #[graphql(arguments(
+        auction_housese(description = "List of auction houses"),
+        creators(description = "Optional list of creators"),
+    ))]
     pub async fn activities(
         &self,
         context: &AppContext,
         auction_houses: Vec<PublicKey<AuctionHouse>>,
+        creators: Option<Vec<PublicKey<Creator>>>,
     ) -> FieldResult<Vec<NftActivity>> {
         let conn = context.shared.db.get()?;
-        let rows = queries::activities::list(&conn, auction_houses)?;
+        let rows = queries::activities::list(&conn, auction_houses, creators)?;
 
         rows.into_iter()
             .map(TryInto::try_into)
@@ -326,8 +335,8 @@ impl QueryRoot {
             listed,
             auction_houses: auction_houses.map(|a| a.into_iter().map(Into::into).collect()),
             collection: collection.map(Into::into),
-            limit: limit.into(),
-            offset: offset.into(),
+            limit: limit.try_into()?,
+            offset: offset.try_into()?,
         };
         let nfts = queries::metadatas::list(&conn, query_options)?;
 

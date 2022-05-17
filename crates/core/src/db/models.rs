@@ -282,6 +282,10 @@ pub struct NftActivity {
     #[sql_type = "Array<VarChar>"]
     pub wallets: Vec<String>,
 
+    /// The twitter handles asociated to each wallet [seller, buyer]
+    #[sql_type = "Array<Nullable<Text>>"]
+    pub wallet_twitter_handles: Vec<Option<String>>,
+
     /// Listing/Purchase created time
     #[sql_type = "Text"]
     pub activity_type: String,

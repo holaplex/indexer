@@ -1,25 +1,23 @@
 //! Query utilities for looking up  metadatas
-
 use diesel::{
     pg::Pg,
     prelude::*,
     serialize::ToSql,
     sql_types::{Array, Text},
 };
+use sea_query::{
+    Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc,
+};
 
 use crate::{
     db::{
-        any,
         models::{Nft, NftActivity},
-        not,
-        tables::{
-            attributes, bid_receipts, current_metadata_owners, listing_receipts,
-            metadata_collection_keys, metadata_creators, metadata_jsons, metadatas,
-        },
+        tables::{metadata_jsons, metadatas},
         Connection,
     },
     error::prelude::*,
 };
+
 /// Format for incoming filters on attributes
 #[derive(Debug)]
 pub struct AttributeFilter {
@@ -27,6 +25,80 @@ pub struct AttributeFilter {
     pub trait_type: String,
     /// array of trait values
     pub values: Vec<String>,
+}
+
+#[derive(Iden)]
+enum Metadatas {
+    Table,
+    Address,
+    Name,
+    MintAddress,
+    PrimarySaleHappened,
+    SellerFeeBasisPoints,
+    Uri,
+}
+
+#[derive(Iden)]
+enum MetadataJsons {
+    Table,
+    MetadataAddress,
+    Description,
+    Image,
+    Category,
+    Model,
+}
+
+#[derive(Iden)]
+enum CurrentMetadataOwners {
+    Table,
+    OwnerAddress,
+    MintAddress,
+}
+
+#[derive(Iden)]
+enum ListingReceipts {
+    Table,
+    Price,
+    Metadata,
+    AuctionHouse,
+    Seller,
+    PurchaseReceipt,
+    CanceledAt,
+}
+
+#[derive(Iden)]
+enum MetadataCreators {
+    Table,
+    CreatorAddress,
+    MetadataAddress,
+    Verified,
+}
+
+#[derive(Iden)]
+
+enum BidReceipts {
+    Table,
+    Buyer,
+    Price,
+    Metadata,
+    CanceledAt,
+    PurchaseReceipt,
+    AuctionHouse,
+}
+
+#[derive(Iden)]
+enum Attributes {
+    Table,
+    MetadataAddress,
+    TraitType,
+    Value,
+}
+
+#[derive(Iden)]
+enum MetadataCollectionKeys {
+    Table,
+    MetadataAddress,
+    CollectionAddress,
 }
 
 /// List query options
@@ -47,9 +119,9 @@ pub struct ListQueryOptions {
     /// nft in a specific colleciton
     pub collection: Option<String>,
     /// limit to apply to query
-    pub limit: i64,
+    pub limit: u64,
     /// offset to apply to query
-    pub offset: i64,
+    pub offset: u64,
 }
 
 /// The column set for an NFT
@@ -85,95 +157,195 @@ pub fn list(
         offset,
     }: ListQueryOptions,
 ) -> Result<Vec<Nft>> {
-    let listed = listed.unwrap_or(false);
+    let mut listing_receipts_query = Query::select()
+        .columns(vec![
+            (ListingReceipts::Table, ListingReceipts::Metadata),
+            (ListingReceipts::Table, ListingReceipts::Price),
+            (ListingReceipts::Table, ListingReceipts::Seller),
+        ])
+        .from(ListingReceipts::Table)
+        .order_by(
+            (ListingReceipts::Table, ListingReceipts::Price),
+            Order::Desc,
+        )
+        .and_where(Expr::tbl(ListingReceipts::Table, ListingReceipts::PurchaseReceipt).is_null())
+        .and_where(Expr::tbl(ListingReceipts::Table, ListingReceipts::CanceledAt).is_null())
+        .take();
 
-    let mut query = metadatas::table
-        .inner_join(
-            metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
-        )
-        .inner_join(
-            metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
-        )
-        .inner_join(
-            current_metadata_owners::table
-                .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
-        )
-        .left_outer_join(
-            listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)),
-        )
-        .left_outer_join(bid_receipts::table.on(metadatas::address.eq(bid_receipts::metadata)))
-        .left_outer_join(
-            metadata_collection_keys::table
-                .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
-        )
-        .distinct()
-        .select((NftColumns::default(), listing_receipts::price.nullable()))
-        .order_by((listing_receipts::price.asc(), metadatas::name.asc()))
-        .into_boxed();
-
-    if let Some(auction_houses) = auction_houses {
-        query = query.filter(listing_receipts::auction_house.eq(any(auction_houses)));
-        query = query.or_filter(listing_receipts::auction_house.is_null());
+    if let Some(auction_houses) = auction_houses.clone() {
+        listing_receipts_query.and_where(
+            Expr::col((ListingReceipts::Table, ListingReceipts::AuctionHouse))
+                .is_in(auction_houses),
+        );
     }
 
-    if let Some(attributes) = attributes {
-        query =
-            attributes
-                .into_iter()
-                .fold(query, |acc, AttributeFilter { trait_type, values }| {
-                    let sub = attributes::table
-                        .select(attributes::metadata_address)
-                        .filter(
-                            attributes::trait_type
-                                .eq(trait_type)
-                                .and(attributes::value.eq(any(values))),
-                        );
+    let mut query = Query::select()
+        .columns(vec![
+            (Metadatas::Table, Metadatas::Address),
+            (Metadatas::Table, Metadatas::Name),
+            (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+            (Metadatas::Table, Metadatas::MintAddress),
+            (Metadatas::Table, Metadatas::PrimarySaleHappened),
+            (Metadatas::Table, Metadatas::Uri),
+        ])
+        .columns(vec![
+            (MetadataJsons::Table, MetadataJsons::Description),
+            (MetadataJsons::Table, MetadataJsons::Image),
+            (MetadataJsons::Table, MetadataJsons::Category),
+            (MetadataJsons::Table, MetadataJsons::Model),
+        ])
+        .from(MetadataJsons::Table)
+        .inner_join(
+            Metadatas::Table,
+            Expr::tbl(MetadataJsons::Table, MetadataJsons::MetadataAddress)
+                .equals(Metadatas::Table, Metadatas::Address),
+        )
+        .inner_join(
+            CurrentMetadataOwners::Table,
+            Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
+                CurrentMetadataOwners::Table,
+                CurrentMetadataOwners::MintAddress,
+            ),
+        )
+        .inner_join(
+            MetadataCreators::Table,
+            Expr::tbl(Metadatas::Table, Metadatas::Address)
+                .equals(MetadataCreators::Table, MetadataCreators::MetadataAddress),
+        )
+        .join_lateral(
+            JoinType::LeftJoin,
+            listing_receipts_query.take(),
+            ListingReceipts::Table,
+            Condition::all()
+                .add(
+                    Expr::tbl(ListingReceipts::Table, ListingReceipts::Metadata)
+                        .equals(Metadatas::Table, Metadatas::Address),
+                )
+                .add(
+                    Expr::tbl(ListingReceipts::Table, ListingReceipts::Seller).equals(
+                        CurrentMetadataOwners::Table,
+                        CurrentMetadataOwners::OwnerAddress,
+                    ),
+                ),
+        )
+        .and_where(Expr::tbl(MetadataCreators::Table, MetadataCreators::Verified).eq(true))
+        .limit(limit)
+        .offset(offset)
+        .order_by((ListingReceipts::Table, ListingReceipts::Price), Order::Asc)
+        .take();
 
-                    acc.filter(metadatas::address.eq(any(sub)))
-                });
+    if let Some(owners) = owners {
+        query.and_where(Expr::col(CurrentMetadataOwners::OwnerAddress).is_in(owners));
     }
 
     if let Some(creators) = creators {
-        query = query.filter(metadata_creators::creator_address.eq(any(creators)));
-        query = query.filter(metadata_creators::verified.eq(true));
+        query.and_where(Expr::col(MetadataCreators::CreatorAddress).is_in(creators));
     }
 
-    if let Some(collection) = collection {
-        query = query.filter(metadata_collection_keys::collection_address.eq(collection));
-    }
-
-    if let Some(owners) = owners {
-        query = query.filter(current_metadata_owners::owner_address.eq(any(owners)));
+    if let Some(listed) = listed {
+        query.conditions(
+            listed,
+            |q| {
+                q.and_where(
+                    Expr::col((ListingReceipts::Table, ListingReceipts::Price)).is_not_null(),
+                );
+            },
+            |q| {
+                q.and_where(Expr::col((ListingReceipts::Table, ListingReceipts::Price)).is_null());
+            },
+        );
     }
 
     if let Some(offerers) = offerers {
-        query = query
-            .filter(bid_receipts::buyer.eq(any(offerers)))
-            .filter(bid_receipts::purchase_receipt.is_null())
-            .filter(bid_receipts::canceled_at.is_null());
+        let mut bid_receipts_query = Query::select()
+            .columns(vec![
+                (BidReceipts::Table, BidReceipts::Metadata),
+                (BidReceipts::Table, BidReceipts::Price),
+            ])
+            .from(BidReceipts::Table)
+            .and_where(Expr::col((BidReceipts::Table, BidReceipts::Buyer)).is_in(offerers))
+            .and_where(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
+            .and_where(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null())
+            .take();
+
+        if let Some(auction_houses) = auction_houses {
+            bid_receipts_query.and_where(
+                Expr::col((BidReceipts::Table, BidReceipts::AuctionHouse)).is_in(auction_houses),
+            );
+        }
+
+        query.join_lateral(
+            JoinType::InnerJoin,
+            bid_receipts_query.take(),
+            BidReceipts::Table,
+            Expr::tbl(BidReceipts::Table, BidReceipts::Metadata)
+                .equals(Metadatas::Table, Metadatas::Address),
+        );
     }
 
-    if listed {
-        query = query.filter(not(listing_receipts::price.is_null()));
+    if let Some(attributes) = attributes {
+        for AttributeFilter { trait_type, values } in attributes {
+            let alias = format!("attributes_{}", trait_type);
+            let alias: DynIden = SeaRc::new(Alias::new(&alias));
+
+            query.join_lateral(
+                JoinType::InnerJoin,
+                Query::select()
+                    .from(Attributes::Table)
+                    .column((Attributes::Table, Attributes::MetadataAddress))
+                    .and_where(Expr::col(Attributes::TraitType).eq(trait_type))
+                    .and_where(Expr::col(Attributes::Value).is_in(values))
+                    .take(),
+                alias.clone(),
+                Expr::tbl(alias, Attributes::MetadataAddress)
+                    .equals(Metadatas::Table, Metadatas::Address),
+            );
+        }
     }
 
-    let rows: Vec<(Nft, Option<i64>)> = query
-        .filter(listing_receipts::purchase_receipt.is_null())
-        .filter(listing_receipts::canceled_at.is_null())
-        .limit(limit)
-        .offset(offset)
+    if let Some(collection) = collection {
+        query.inner_join(
+            MetadataCollectionKeys::Table,
+            Expr::tbl(
+                MetadataCollectionKeys::Table,
+                MetadataCollectionKeys::MetadataAddress,
+            )
+            .equals(Metadatas::Table, Metadatas::Address),
+        );
+
+        query.and_where(
+            Expr::col((
+                MetadataCollectionKeys::Table,
+                MetadataCollectionKeys::CollectionAddress,
+            ))
+            .eq(collection),
+        );
+    }
+
+    let query = query.to_string(PostgresQueryBuilder);
+
+    diesel::sql_query(query)
         .load(conn)
-        .context("failed to load nft(s)")?;
-
-    Ok(rows.into_iter().map(|(nft, _)| nft).collect())
+        .context("Failed to load nft(s)")
 }
 
 const ACTIVITES_QUERY: &str = r"
-    SELECT address, metadata, auction_house, price, auction_house, created_at, array[seller::text] as wallets, 'listing' as activity_type
-        FROM listing_receipts WHERE metadata = ANY($1)
+    SELECT listing_receipts.address as address, metadata, auction_house, price, auction_house, created_at,
+    array[seller] as wallets,
+    array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
+    'listing' as activity_type
+        FROM listing_receipts
+        LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listing_receipts.seller)
+        WHERE metadata = ANY($1)
     UNION
-    SELECT address, metadata, auction_house, price, auction_house, created_at, array[seller::text, buyer::text] as wallets, 'purchase' as activity_type
-        FROM purchase_receipts WHERE metadata = ANY($1)
+    SELECT purchase_receipts.address as address, metadata, auction_house, price, auction_house, created_at,
+    array[seller, buyer] as wallets,
+    array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
+    'purchase' as activity_type
+        FROM purchase_receipts
+        LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchase_receipts.seller)
+        LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchase_receipts.buyer)
+        WHERE metadata = ANY($1)
     ORDER BY created_at DESC;
  -- $1: addresses::text[]";
 
