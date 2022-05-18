@@ -165,11 +165,7 @@ impl QueryRoot {
         #[graphql(description = "Twitter handle")] handle: String,
     ) -> Option<Profile> {
         let endpoint = &ctx.shared.asset_proxy.asset_proxy_endpoint;
-        let endpoint = if endpoint.contains("holaplex.tools") {
-            endpoint.replace("[n]", "")
-        } else {
-            endpoint.to_string()
-        };
+        let endpoint = endpoint.replace("[n]", "");
         let http_client = reqwest::Client::new();
 
         let twitter_show_response: TwitterShowResponse = http_client

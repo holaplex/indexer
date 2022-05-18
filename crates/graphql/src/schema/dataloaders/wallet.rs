@@ -12,15 +12,11 @@ impl TryBatchFn<String, Option<TwitterProfile>> for TwitterBatcher {
         let http_client = reqwest::Client::new();
 
         let twitter_users = screen_names
-            .into_iter()
+            .iter()
             .map(|screen_name| {
                 let http_client = &http_client;
                 let _ = self.bearer();
-                let endpoint = if self.endpoint().contains("holaplex.tools") {
-                    self.endpoint().replace("[n]", "")
-                } else {
-                    self.endpoint().to_string()
-                };
+                let endpoint = self.endpoint().replace("[n]", "");
                 async move {
                     http_client
                         .get(format!("{}twitter/{}", endpoint, screen_name))
