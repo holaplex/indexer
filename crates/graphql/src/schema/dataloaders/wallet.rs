@@ -16,10 +16,11 @@ impl TryBatchFn<String, Option<TwitterProfile>> for TwitterBatcher {
             .map(|screen_name| {
                 let http_client = &http_client;
                 let _ = self.bearer();
-                let endpoint = self.endpoint().replace("[n]", "");
+                let url = self.proxy_url(screen_name);
+
                 async move {
                     http_client
-                        .get(format!("{}twitter/{}", endpoint, screen_name))
+                        .get(url.map_err(Error::model_convert)?)
                         .header("Accept", "application/json")
                         .send()
                         .await

@@ -203,7 +203,7 @@ mod cdn {
     pub struct AssetProxyArgs {
         /// Endpoint for Holaplex asset CDN
         #[clap(long, env)]
-        pub asset_proxy_endpoint: String,
+        asset_proxy_endpoint: String,
 
         /// Number of replicas available to proxy asset requests to
         #[clap(long, env)]
@@ -283,6 +283,26 @@ mod cdn {
                 .map(Some)
             },
         }
+    }
+
+    /// Get the base URL for proxied Twitter handle requests
+    ///
+    /// # Errors
+    /// This function fails if the asset proxy configured by `args` has an
+    /// invalid URL
+    #[inline]
+    pub fn proxy_twitter_handle_url(
+        args: &AssetProxyArgs,
+        screen_name: impl AsRef<str>,
+    ) -> Result<Url> {
+        let mut url = Url::parse(&args.asset_proxy_endpoint.replace("[n]", ""))
+            .context("Invalid asset proxy URL")?;
+
+        url.path_segments_mut()
+            .unwrap_or_else(|_| unreachable!())
+            .extend(["twitter", screen_name.as_ref()]);
+
+        Ok(url)
     }
 
     /// Format an [`AssetIdentifier`] as an Holaplex asset proxy URL.  Returns
