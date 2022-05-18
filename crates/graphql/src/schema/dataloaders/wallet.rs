@@ -10,15 +10,20 @@ impl TryBatchFn<String, Option<TwitterProfile>> for TwitterBatcher {
         screen_names: &[String],
     ) -> TryBatchMap<String, Option<TwitterProfile>> {
         let http_client = reqwest::Client::new();
-        let endpoint = self.endpoint();
 
         let twitter_users = screen_names
             .into_iter()
             .map(|screen_name| {
                 let http_client = &http_client;
+                let _ = self.bearer();
+                let endpoint = if self.endpoint().contains("holaplex.tools") {
+                    self.endpoint().replace("[n]", "")
+                } else {
+                    self.endpoint().to_string()
+                };
                 async move {
                     http_client
-                        .get(format!("{}/twitter/{}", endpoint, screen_name))
+                        .get(format!("{}twitter/{}", endpoint, screen_name))
                         .header("Accept", "application/json")
                         .send()
                         .await
@@ -34,8 +39,7 @@ impl TryBatchFn<String, Option<TwitterProfile>> for TwitterBatcher {
 
         Ok(twitter_users
             .into_iter()
-            //.zip(chunked_screen_names)
-            .filter_map(|result| result.ok())
+            .filter_map(Result::ok)
             .flatten()
             .map(|u| (u.screen_name.clone(), u.try_into()))
             .batch(screen_names))

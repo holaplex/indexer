@@ -119,8 +119,8 @@ pub struct Batcher(Arc<Pool>);
 
 #[derive(Clone)]
 pub struct TwitterBatcher {
-    bearer: String,
     endpoint: String,
+    bearer: String,
 }
 
 impl Batcher {
@@ -139,7 +139,7 @@ impl TwitterBatcher {
     pub fn new(endpoint: String, bearer: String) -> Self {
         Self { endpoint, bearer }
     }
-
+    // Saving this for when we add a bearer_token for the assets_cdn
     pub fn bearer(&self) -> &str {
         &self.bearer
     }

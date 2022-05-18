@@ -164,11 +164,16 @@ impl QueryRoot {
         ctx: &AppContext,
         #[graphql(description = "Twitter handle")] handle: String,
     ) -> Option<Profile> {
-        let asset_cdn = &ctx.shared.asset_proxy.asset_proxy_endpoint;
+        let endpoint = &ctx.shared.asset_proxy.asset_proxy_endpoint;
+        let endpoint = if endpoint.contains("holaplex.tools") {
+            endpoint.replace("[n]", "")
+        } else {
+            endpoint.to_string()
+        };
         let http_client = reqwest::Client::new();
 
         let twitter_show_response: TwitterShowResponse = http_client
-            .get(format!("{}/twitter/{}", asset_cdn, &handle))
+            .get(format!("{}/twitter/{}", endpoint, &handle))
             .header("Accept", "application/json")
             //.query(&[("screen_name", &handle)])
             //.bearer_auth(twitter_bearer_token)
@@ -180,7 +185,7 @@ impl QueryRoot {
             .ok()?;
 
         let twitter_profile_picture_response: TwitterProfilePictureResponse = http_client
-            .get(format!("{}/twitter/{}", asset_cdn, &handle))
+            .get(format!("{}/twitter/{}", endpoint, &handle))
             .header("Accept", "application/json")
             //.query(&[("user.fields", "profile_image_url")])
             //.bearer_auth(twitter_bearer_token)
