@@ -175,8 +175,6 @@ impl QueryRoot {
         let twitter_show_response: TwitterShowResponse = http_client
             .get(format!("{}/twitter/{}", endpoint, &handle))
             .header("Accept", "application/json")
-            //.query(&[("screen_name", &handle)])
-            //.bearer_auth(twitter_bearer_token)
             .send()
             .await
             .ok()?
