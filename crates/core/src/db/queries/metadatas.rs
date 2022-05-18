@@ -132,6 +132,7 @@ pub type NftColumns = (
     metadatas::mint_address,
     metadatas::primary_sale_happened,
     metadatas::uri,
+    metadatas::slot,
     metadata_jsons::description,
     metadata_jsons::image,
     metadata_jsons::category,

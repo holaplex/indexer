@@ -340,7 +340,10 @@ impl QueryRoot {
         };
         let nfts = queries::metadatas::list(&conn, query_options)?;
 
-        Ok(nfts.into_iter().map(Into::into).collect())
+        nfts.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     fn wallet(
@@ -401,7 +404,10 @@ impl QueryRoot {
             .load(&conn)
             .context("Failed to load metadata")?;
 
-        Ok(rows.pop().map(Into::into))
+        rows.pop()
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
     }
 
     fn storefronts(&self, context: &AppContext) -> FieldResult<Vec<Storefront>> {

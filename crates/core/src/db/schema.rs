@@ -422,6 +422,7 @@ table! {
         address -> Varchar,
         parent_address -> Varchar,
         edition -> Int8,
+        slot -> Nullable<Int8>,
     }
 }
 
@@ -694,6 +695,7 @@ table! {
         address -> Varchar,
         supply -> Int8,
         max_supply -> Nullable<Int8>,
+        slot -> Nullable<Int8>,
     }
 }
 
@@ -773,6 +775,7 @@ table! {
         edition_nonce -> Nullable<Int4>,
         edition_pda -> Varchar,
         token_standard -> Nullable<Token_standard>,
+        slot -> Nullable<Int8>,
     }
 }
 

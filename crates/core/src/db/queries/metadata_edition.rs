@@ -43,7 +43,9 @@ pub fn load<'a>(
         Option<String>,
         Option<String>,
         Option<i64>,
+        Option<i64>,
         Option<String>,
+        Option<i64>,
         Option<i64>,
         Option<i64>,
     );
@@ -57,19 +59,29 @@ pub fn load<'a>(
             editions::address.nullable(),
             editions::parent_address.nullable(),
             editions::edition.nullable(),
+            editions::slot.nullable(),
             master_editions::address.nullable(),
             master_editions::supply.nullable(),
             master_editions::max_supply.nullable(),
+            master_editions::slot.nullable(),
         ))
         .load::<Cols>(conn)
         .context("Failed to load editions")?;
 
-    let (edition_addr, edition_parent, edition_ord, master_addr, master_supply, master_max) =
-        if metas.len() == 1 {
-            metas.into_iter().next().unwrap_or_else(|| unreachable!())
-        } else {
-            bail!("Invalid metadata address");
-        };
+    let (
+        edition_addr,
+        edition_parent,
+        edition_ord,
+        edition_slot,
+        master_addr,
+        master_supply,
+        master_max,
+        master_edition_slot,
+    ) = if metas.len() == 1 {
+        metas.into_iter().next().unwrap_or_else(|| unreachable!())
+    } else {
+        bail!("Invalid metadata address");
+    };
 
     edition_addr
         .map(|address| {
@@ -92,6 +104,7 @@ pub fn load<'a>(
                     address: Cow::Owned(address),
                     parent_address: Cow::Owned(parent_address),
                     edition: edition_ord.unwrap_or_else(|| unreachable!()),
+                    slot: edition_slot,
                 },
                 parent,
             })
@@ -102,6 +115,7 @@ pub fn load<'a>(
                     address: Cow::Owned(address),
                     supply: master_supply.unwrap_or_else(|| unreachable!()),
                     max_supply: master_max,
+                    slot: master_edition_slot,
                 }))
             })
         })
