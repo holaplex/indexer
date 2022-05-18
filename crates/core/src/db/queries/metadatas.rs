@@ -16,7 +16,6 @@ use crate::{
         Connection,
     },
     error::prelude::*,
-    prelude::*,
 };
 
 /// Format for incoming filters on attributes
@@ -238,23 +237,14 @@ pub fn list(
     }
 
     if let Some(creators) = creators {
-        let creators_query = Query::select()
-            .columns(vec![(
+        query
+            .inner_join(
                 MetadataCreators::Table,
-                MetadataCreators::MetadataAddress,
-            )])
-            .from(MetadataCreators::Table)
+                Expr::tbl(Metadatas::Table, Metadatas::Address)
+                    .equals(MetadataCreators::Table, MetadataCreators::MetadataAddress),
+            )
             .and_where(Expr::col(MetadataCreators::CreatorAddress).is_in(creators))
-            .and_where(Expr::col(MetadataCreators::Verified).eq(true))
-            .take();
-
-        query.join_lateral(
-            JoinType::InnerJoin,
-            creators_query,
-            MetadataCreators::Table,
-            Expr::tbl(Metadatas::Table, Metadatas::Address)
-                .equals(MetadataCreators::Table, MetadataCreators::MetadataAddress),
-        );
+            .and_where(Expr::col(MetadataCreators::Verified).eq(true));
     }
 
     if let Some(listed) = listed {
@@ -348,8 +338,6 @@ pub fn list(
     }
 
     let query = query.to_string(PostgresQueryBuilder);
-
-    debug!("The query: {:?}", query.replace("\"", ""));
 
     diesel::sql_query(query)
         .load(conn)
