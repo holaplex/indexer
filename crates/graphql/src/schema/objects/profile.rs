@@ -58,6 +58,11 @@ impl TwitterProfile {
         &self.handle
     }
 
+    #[graphql(deprecated = "Use profileImageUrlLowres instead.")]
+    fn profile_image_url(&self) -> &str {
+        &self.profile_image_url_lowres
+    }
+
     fn profile_image_url_lowres(&self) -> &str {
         &self.profile_image_url_lowres
     }
