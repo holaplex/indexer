@@ -568,7 +568,7 @@ async fn dispatch_metadata_document(
         .or_else(|| image.map(|s| Ok(s.into())))
         .transpose()?;
 
-    let (name, mint_address, creator_address, creator_twitter_handle) = client
+    if let Ok((name, mint_address, creator_address, creator_twitter_handle)) = client
         .db()
         .run({
             let addr = addr.clone();
@@ -598,19 +598,20 @@ async fn dispatch_metadata_document(
             }
         })
         .await
-        .context("failed to load search document data")?;
-
-    client
-        .search()
-        .upsert_metadata(is_for_backfill, addr, MetadataDocument {
-            name,
-            mint_address,
-            image,
-            creator_address,
-            creator_twitter_handle,
-        })
-        .await
-        .context("Failed to dispatch metadata JSON document job")?;
+        .map_err(|e| warn!("Failed to get search document data for metadata: {:?}", e))
+    {
+        client
+            .search()
+            .upsert_metadata(is_for_backfill, addr, MetadataDocument {
+                name,
+                mint_address,
+                image,
+                creator_address,
+                creator_twitter_handle,
+            })
+            .await
+            .context("Failed to dispatch metadata JSON document job")?;
+    }
 
     Ok(())
 }
