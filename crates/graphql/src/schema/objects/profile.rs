@@ -32,7 +32,7 @@ impl From<TwitterUserProfileResponse> for TwitterProfile {
         Self {
             handle: screen_name,
             profile_image_url_lowres: profile_image_url_https.clone(),
-            profile_image_url_highres: profile_image_url_https.replace("_normal.", "_bigger."),
+            profile_image_url_highres: profile_image_url_https.replace("_normal.", "."),
             banner_image_url: profile_banner_url,
             description,
         }
