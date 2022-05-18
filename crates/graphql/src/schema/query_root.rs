@@ -101,11 +101,12 @@ impl QueryRoot {
         wallet: PublicKey<Wallet>,
         limit: i32,
         offset: i32,
+        types: Option<Vec<FeedEventType>>
     ) -> FieldResult<Vec<FeedEvent>> {
         let conn = ctx.shared.db.get().context("failed to connect to db")?;
 
         let feed_events =
-            queries::feed_event::list(&conn, wallet, limit.try_into()?, offset.try_into()?)?;
+            queries::feed_event::list(&conn, wallet, limit.try_into()?, offset.try_into()?, types)?;
 
         feed_events
             .into_iter()
