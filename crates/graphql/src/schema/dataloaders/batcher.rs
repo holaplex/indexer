@@ -120,6 +120,7 @@ pub struct Batcher(Arc<Pool>);
 #[derive(Clone)]
 pub struct TwitterBatcher {
     bearer: String,
+    endpoint: String,
 }
 
 impl Batcher {
@@ -135,12 +136,15 @@ impl Batcher {
 
 impl TwitterBatcher {
     #[must_use]
-    pub fn new(bearer: String) -> Self {
-        Self { bearer }
+    pub fn new(endpoint: String, bearer: String) -> Self {
+        Self { endpoint, bearer }
     }
 
     pub fn bearer(&self) -> &str {
         &self.bearer
+    }
+    pub fn endpoint(&self) -> &str {
+        &self.endpoint
     }
 }
 

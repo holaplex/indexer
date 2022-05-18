@@ -164,14 +164,14 @@ impl QueryRoot {
         ctx: &AppContext,
         #[graphql(description = "Twitter handle")] handle: String,
     ) -> Option<Profile> {
-        let twitter_bearer_token = &ctx.shared.twitter_bearer_token;
+        let asset_cdn = &ctx.shared.asset_proxy.asset_proxy_endpoint;
         let http_client = reqwest::Client::new();
 
         let twitter_show_response: TwitterShowResponse = http_client
-            .get("https://api.twitter.com/1.1/users/show.json")
+            .get(format!("{}/twitter/{}", asset_cdn, &handle))
             .header("Accept", "application/json")
-            .query(&[("screen_name", &handle)])
-            .bearer_auth(twitter_bearer_token)
+            //.query(&[("screen_name", &handle)])
+            //.bearer_auth(twitter_bearer_token)
             .send()
             .await
             .ok()?
@@ -180,13 +180,10 @@ impl QueryRoot {
             .ok()?;
 
         let twitter_profile_picture_response: TwitterProfilePictureResponse = http_client
-            .get(format!(
-                "https://api.twitter.com/2/users/by/username/{}",
-                handle
-            ))
+            .get(format!("{}/twitter/{}", asset_cdn, &handle))
             .header("Accept", "application/json")
-            .query(&[("user.fields", "profile_image_url")])
-            .bearer_auth(twitter_bearer_token)
+            //.query(&[("user.fields", "profile_image_url")])
+            //.bearer_auth(twitter_bearer_token)
             .send()
             .await
             .ok()?

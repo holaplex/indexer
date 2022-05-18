@@ -203,7 +203,7 @@ mod cdn {
     pub struct AssetProxyArgs {
         /// Endpoint for Holaplex asset CDN
         #[clap(long, env)]
-        asset_proxy_endpoint: String,
+        pub asset_proxy_endpoint: String,
 
         /// Number of replicas available to proxy asset requests to
         #[clap(long, env)]

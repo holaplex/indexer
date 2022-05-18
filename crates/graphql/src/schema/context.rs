@@ -52,7 +52,10 @@ impl juniper::Context for AppContext {}
 impl AppContext {
     pub(crate) fn new(shared: Arc<SharedData>) -> AppContext {
         let batcher = Batcher::new(shared.db.clone());
-        let twitter_batcher = TwitterBatcher::new(shared.twitter_bearer_token.clone());
+        let twitter_batcher = TwitterBatcher::new(
+            shared.asset_proxy.asset_proxy_endpoint.clone(),
+            shared.twitter_bearer_token.clone(),
+        );
 
         Self {
             auction_house_loader: Loader::new(batcher.clone()),
