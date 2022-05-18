@@ -43,6 +43,8 @@ pub struct Edition<'a> {
     pub parent_address: Cow<'a, str>,
     /// The ordinal of this edition
     pub edition: i64,
+    /// Solana slot number
+    pub slot: Option<i64>,
 }
 
 /// A row in the `listing_metadatas` table.  This is a join on `listings` and
@@ -131,6 +133,8 @@ pub struct MasterEdition<'a> {
     /// The maximum printing supply of the master edition, or `None` if it is
     /// unlimited
     pub max_supply: Option<i64>,
+    /// Solana slot number
+    pub slot: Option<i64>,
 }
 
 /// A row in the `metadata_creators` table.  This is a join on `metadatas` and
@@ -180,6 +184,8 @@ pub struct Metadata<'a> {
     pub edition_pda: Cow<'a, str>,
     /// Type of NFT token
     pub token_standard: Option<TokenStandardEnum>,
+    /// Solana slot number
+    pub slot: Option<i64>,
 }
 
 /// A row in the `storefronts` table
@@ -236,6 +242,10 @@ pub struct Nft {
     /// Metadata metadata_json uri
     #[sql_type = "Text"]
     pub uri: String,
+
+    /// Solana slot number
+    #[sql_type = "Nullable<Int8>"]
+    pub slot: Option<i64>,
 
     // Table metadata_json
     /// Metadata description

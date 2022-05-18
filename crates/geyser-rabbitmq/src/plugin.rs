@@ -8,11 +8,7 @@ use solana_program::{
 };
 use spl_token::state::Account as TokenAccount;
 
-mod ids {
-    #![allow(missing_docs)]
-    use solana_sdk::pubkeys;
-    pubkeys!(token, "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-}
+static TOKEN_KEY: Pubkey = solana_program::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
 use serde::Deserialize;
 
@@ -234,7 +230,7 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                             write_version,
                         } = *acct;
 
-                        if owner == ids::token().as_ref()
+                        if owner == TOKEN_KEY.as_ref()
                             && data.len() == TokenAccount::get_packed_len()
                         {
                             let token_account = TokenAccount::unpack_from_slice(data);

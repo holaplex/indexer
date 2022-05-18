@@ -4,7 +4,7 @@
 use std::{marker::PhantomData, time::Duration};
 
 use serde::{Deserialize, Serialize};
-use solana_sdk::pubkey::Pubkey;
+use solana_program::pubkey::Pubkey;
 
 use crate::{
     queue_type::{Binding, QueueProps, RetryProps},
