@@ -36,6 +36,7 @@ enum Metadatas {
     PrimarySaleHappened,
     SellerFeeBasisPoints,
     Uri,
+    Slot,
 }
 
 #[derive(Iden)]
@@ -191,6 +192,7 @@ pub fn list(
             (Metadatas::Table, Metadatas::MintAddress),
             (Metadatas::Table, Metadatas::PrimarySaleHappened),
             (Metadatas::Table, Metadatas::Uri),
+            (Metadatas::Table, Metadatas::Slot),
         ])
         .columns(vec![
             (MetadataJsons::Table, MetadataJsons::Description),
