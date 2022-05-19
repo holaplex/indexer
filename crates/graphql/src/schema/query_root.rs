@@ -536,6 +536,24 @@ impl QueryRoot {
             .map(|r| r.result.into())
             .collect::<Vec<Wallet>>())
     }
+    #[graphql(description = "A marketplace")]
+    fn marketplaces(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Limit for query")] limit: i32,
+        #[graphql(description = "Offset for query")] offset: i32,
+    ) -> FieldResult<Vec<Marketplace>> {
+        let conn = context.shared.db.get()?;
+        let rows: Vec<models::StoreConfigJson> = store_config_jsons::table
+            .select(store_config_jsons::all_columns)
+            .order(store_config_jsons::name.asc())
+            .limit(limit.try_into()?)
+            .offset(offset.try_into()?)
+            .load(&conn)
+            .context("Failed to load store config JSON")?;
+
+        Ok(rows.into_iter().map(Into::into).collect())
+    }
 
     fn denylist() -> Denylist {
         Denylist

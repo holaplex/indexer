@@ -1,0 +1,1 @@
+drop index if exists name_store_config_jsons_idx;
