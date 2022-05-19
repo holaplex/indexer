@@ -63,8 +63,40 @@ impl QueryRoot {
     ) -> FieldResult<Vec<Wallet>> {
         let conn = ctx.shared.db.get().context("failed to connect to db")?;
 
-        // TODO temporarily force specific wallets
-        let wallets_to_follow = vec!["7r8oBPs3vNqgqEG8gnyPWUPgWuScxXyUxtmoLd1bg17F"];
+        let wallets_to_follow = vec![
+            "NWswq7QR7E1i1jkdkddHQUFtRPihqBmJ7MfnMCcUf4H",
+            "3XzWJgu5WEU3GV3mHkWKDYtMXVybUhGeFt7N6uwkcezF",
+            "2BNABAPHhYAxjpWRoKKnTsWT24jELuvadmZALvP6WvY4",
+            "DCFWUYqK1iwGzSD3w6SzpwH77GgmbbVX3E2QRtN1qBrj",
+            "x31BQteSUcoLcatn57pUPh1ATqDkGSBti4KpnXbqjMq",
+            "14kVL6sWSc4oX9rwcJU7aMHMLMjsEfpXcAJf68kmsMeP",
+            "3StkrkMEmdiu9nER5qM3fNR1fCMdawUhGsihF2UkXrPP",
+            "DgzWqku67fPeuWgmyZbNa7U7yicKRhbjM7nB86Yx2ojQ",
+            "Dz3BJenPAMziCBhJFGwUxvu3qhMUuLch8NjoZdfP9xsa",
+            "AwiRcagxnT8NLnJeS8ScVcq2Y9f5VeJUfyfR5AXmVFfh",
+            "AXXRH6NVXjUNxi6GvVWV4Pp6q7k9xkqeqHhRx8sW41TX",
+            "79j2yWfDHnAU3Aq4yfoTcE9KCHCDo2m54aL4te67683Q",
+            "Fh2rUc2CrMTp6H7t1CGnG4aXhWn7BzPPQBU2KkgR4jeh",
+            "gNEt8EeWqdcSpebQXZ8YVnBC9k5yKp2WGvnA9HR8RzQ",
+            "zenom3SnXK6k2UJm73jRQ1n8U7KkLPrTypDatKjGxoL",
+            "Er6QJPusC1JsUqevTjFKXtYHbgCtJkyo1DNjEBWevWut",
+            "HLSgM1a7wSufVwe1NrPPR22ynY2aPsH8a1XQfqFsQiqY",
+            "BjSaYdgdWtBNXGJmy6cuTzxYzLcxvn4Anw6yrWsgKdNm",
+            "8t6BxNBe7pM8YwvG4JUQxi1W9PYfuphrYcUiJF99oWsP",
+            "4ZjYSCH3Sib9iMSM3QN2sL2kwxNcXG2P4XCemSC2hsyb",
+            "GcpdC1iUtfiQ48B6dn7bcM2Ax13R6TDom65jQJiTD18G",
+            "xYwSUQv7DX62XGo4XXFAQRSTwtS1NrWz8rifR7Gppeg",
+            "A1Fk3zhtamLixGStRFc4eBd3pVodoFrNRbVFCaPaPJBu",
+            "B3jtSCpXQpMZR5r5m87854bgMj5veHwz9idjd22eVrP7",
+            "GpnKen3QMaLc1CzFsoy8UbcbPwEXRXb5k2qTkTcUa3RX",
+            "H4dfSserFhYBswmPMF3FdYEbu4aj1AQt7RSXRyVqVjaS",
+            "4Jb3dS76hxcBXKZDkwx3KC4NSMXoTKsyXfwW18apS4vZ",
+            "yTM5APEbWb1GBBtgsjzTF6ZYw5pWxqCr7qKykWW7qLS",
+            "2TKEfKKLreKYykZMCKiFMYhhkKFxajfSBeKNZ8rFa6qt",
+            "CsxZxjL19pJ3DM4yyDZDePgCWj6m7Lm9htwHggBbgP1r",
+            "57DsAWRijeENrhb4RdKiLjKzLF1V8f1J2D8mCNvGMSPu",
+            "DWPpeotxT2Q1m1BDzuycQktDe6VnVejLiPWsjfwG6Nb7",
+        ];
 
         let mut query = wallet_totals::table
             .left_join(
