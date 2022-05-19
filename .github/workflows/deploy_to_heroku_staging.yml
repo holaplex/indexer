@@ -10,14 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: actions/cache@v1
-        with:
-          path: ~/.cargo
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
-            ${{ runner.os }}-cargo
-
       - name: Geyser consumer
         uses: gonuit/heroku-docker-deploy@v1.3.3
         with:
