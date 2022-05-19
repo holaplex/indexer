@@ -11,7 +11,7 @@ use objects::{
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
     nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator},
-    profile::{Profile, TwitterProfilePictureResponse, TwitterShowResponse},
+    profile::TwitterProfile,
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
@@ -163,41 +163,11 @@ impl QueryRoot {
         &self,
         ctx: &AppContext,
         #[graphql(description = "Twitter handle")] handle: String,
-    ) -> Option<Profile> {
-        let twitter_bearer_token = &ctx.shared.twitter_bearer_token;
-        let http_client = reqwest::Client::new();
-
-        let twitter_show_response: TwitterShowResponse = http_client
-            .get("https://api.twitter.com/1.1/users/show.json")
-            .header("Accept", "application/json")
-            .query(&[("screen_name", &handle)])
-            .bearer_auth(twitter_bearer_token)
-            .send()
+    ) -> FieldResult<Option<TwitterProfile>> {
+        ctx.twitter_profile_loader
+            .load(handle)
             .await
-            .ok()?
-            .json()
-            .await
-            .ok()?;
-
-        let twitter_profile_picture_response: TwitterProfilePictureResponse = http_client
-            .get(format!(
-                "https://api.twitter.com/2/users/by/username/{}",
-                handle
-            ))
-            .header("Accept", "application/json")
-            .query(&[("user.fields", "profile_image_url")])
-            .bearer_auth(twitter_bearer_token)
-            .send()
-            .await
-            .ok()?
-            .json()
-            .await
-            .ok()?;
-
-        Some(Profile::from((
-            twitter_profile_picture_response,
-            twitter_show_response,
-        )))
+            .map_err(Into::into)
     }
 
     fn enriched_bonding_changes(
