@@ -14,6 +14,7 @@ use objects::{
     feed_event::FeedEvent,
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
+    listing_receipt::ListingReceipt,
     marketplace::Marketplace,
     nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator},
     profile::TwitterProfile,
@@ -24,7 +25,7 @@ use scalars::PublicKey;
 use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, bid_receipts, graph_connections,
-    metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
+    listing_receipts, metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
 };
 
 use super::prelude::*;
@@ -62,6 +63,9 @@ impl QueryRoot {
     ) -> FieldResult<Vec<Wallet>> {
         let conn = ctx.shared.db.get().context("failed to connect to db")?;
 
+        // TODO temporarily force specific wallets
+        let wallets_to_follow = vec!["7r8oBPs3vNqgqEG8gnyPWUPgWuScxXyUxtmoLd1bg17F"];
+
         let mut query = wallet_totals::table
             .left_join(
                 twitter_handle_name_services::table
@@ -71,6 +75,7 @@ impl QueryRoot {
                 (wallet_totals::all_columns),
                 twitter_handle_name_services::twitter_handle.nullable(),
             ))
+            .filter(wallet_totals::address.eq_any(wallets_to_follow))
             .order(wallet_totals::followers.desc())
             .limit(limit.try_into()?)
             .offset(offset.try_into()?)
@@ -336,6 +341,41 @@ impl QueryRoot {
         let nfts = queries::metadatas::list(&conn, query_options)?;
 
         nfts.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    fn featured_listings(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Limit for query")] limit: i32,
+        #[graphql(description = "Offset for query")] offset: i32,
+    ) -> FieldResult<Vec<ListingReceipt>> {
+        let conn = context.shared.db.get().context("failed to connect to db")?;
+
+        let holaplex_auction_house_address = "9SvsTjqk3YoicaYnC4VW1f8QAN9ku7QCCk6AyfUdzc9t";
+        // TODO expand with other wallets to exclude
+        let sellers_to_exclude = vec!["7r8oBPs3vNqgqEG8gnyPWUPgWuScxXyUxtmoLd1bg17F"];
+
+        let listings: Vec<models::ListingReceipt> = listing_receipts::table
+            .inner_join(
+                wallet_totals::table.on(wallet_totals::address.eq(listing_receipts::seller)),
+            )
+            .select(listing_receipts::all_columns)
+            .filter(listing_receipts::canceled_at.is_null())
+            .filter(listing_receipts::purchase_receipt.is_null())
+            .filter(listing_receipts::auction_house.eq(holaplex_auction_house_address))
+            .filter(listing_receipts::seller.ne_all(sellers_to_exclude))
+            .filter(listing_receipts::seller.eq(wallet_totals::address))
+            .order(wallet_totals::followers.desc())
+            .limit(limit.try_into()?)
+            .offset(offset.try_into()?)
+            .load(&conn)
+            .context("Failed to load listings")?;
+
+        listings
+            .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
