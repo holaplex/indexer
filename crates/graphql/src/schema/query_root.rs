@@ -1,4 +1,9 @@
-use indexer_core::db::{queries, tables::twitter_handle_name_services};
+use std::str::FromStr;
+
+use indexer_core::db::{
+    queries::{self, feed_event::EventType},
+    tables::twitter_handle_name_services,
+};
 use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
@@ -101,12 +106,31 @@ impl QueryRoot {
         wallet: PublicKey<Wallet>,
         limit: i32,
         offset: i32,
-        types: Option<Vec<FeedEventType>>
+        exclude_types: Option<Vec<String>>,
     ) -> FieldResult<Vec<FeedEvent>> {
         let conn = ctx.shared.db.get().context("failed to connect to db")?;
 
-        let feed_events =
-            queries::feed_event::list(&conn, wallet, limit.try_into()?, offset.try_into()?, types)?;
+        let exclusion_types_parsed: Option<Vec<EventType>>;
+        if let Some(types) = exclude_types {
+            exclusion_types_parsed = Some(
+                types
+                    .iter()
+                    .map(|v| EventType::from_str(v))
+                    .filter(|v| !v.is_err())
+                    .map(Result::unwrap)
+                    .collect(),
+            );
+        } else {
+            exclusion_types_parsed = None;
+        }
+
+        let feed_events = queries::feed_event::list(
+            &conn,
+            wallet,
+            limit.try_into()?,
+            offset.try_into()?,
+            exclusion_types_parsed,
+        )?;
 
         feed_events
             .into_iter()

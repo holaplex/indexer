@@ -3,6 +3,7 @@
 use std::str::FromStr;
 
 use diesel::{
+    dsl::not,
     expression::{nullable::Nullable, operators::Eq, AsExpression, NonAggregate},
     prelude::*,
     query_builder::{QueryFragment, QueryId},
@@ -10,7 +11,6 @@ use diesel::{
     sql_types::Text,
     AppearsOnTable,
 };
-use sea_query::{Iden, Query, Expr};
 
 use crate::{
     db::{
@@ -24,81 +24,6 @@ use crate::{
     },
     error::prelude::*,
 };
-
-#[derive(Iden)]
-enum FeedEvents {
-    Table,
-    Id,
-    CreatedAt
-}
-
-#[derive(Iden)]
-enum FeedEventWallets {
-    Table,
-    WalletAddress,
-    FeedEventId
-}
-
-#[derive(Iden)]
-enum TwitterHandleNameServices {
-    Table,
-    Address,
-    WalletAddress,
-    TwitterHandle,
-    Slot,
-    FromBonfida,
-    FromCardinal,
-    WriteVersion
-}
-
-
-#[derive(Iden)]
-enum MintEvents {
-    Table,
-    MetadataAddress,
-    FeedEventId
-}
-
-#[derive(Iden)]
-enum OfferEvents {
-    Table,
-    BidReceiptAddress,
-    FeedEventId
-}
-
-
-#[derive(Iden)]
-enum ListingEvents {
-    Table,
-    ListingReceiptAddress,
-    FeedEventId,
-    Lifecycle
-}
-
-#[derive(Iden)]
-enum PurchaseEvents {
-    Table,
-    PurchseReceiptAddress,
-    FeedEventId
-}
-
-
-#[derive(Iden)]
-enum FollowEvents {
-    Table,
-    GraphConnectionAddress,
-    FeedEventId
-}
-
-#[derive(Iden)]
-enum GraphConnections {
-    Table,
-    Address,
-    FromAccount,
-    ToAccount,
-    ConnectedAt,
-    DisconnectedAt
-}
 
 /// join of event tables into a single event type enriched with twitter info for source wallet
 pub type Columns<'a> = (
@@ -114,9 +39,9 @@ pub type Columns<'a> = (
     Option<models::FollowEvent<'a>>,
 );
 
-// When you add a new type, be sure to add it to the iterator implementation below
+/// feed event types, to be used for filtering feed events
 #[derive(Debug, Clone, Copy)]
-pub enum FeedEventType {
+pub enum EventType {
     /// Mint Events
     Mint,
 
@@ -130,32 +55,23 @@ pub enum FeedEventType {
     Purchase,
 
     /// Follow Events
-    Follow
+    Follow,
 }
 
-
-impl FeedEventType {
-    pub fn iterator() -> impl Iterator<Item = FeedEventType> {
-        [FeedEventType::Mint, FeedEventType::Offer, FeedEventType::Listing, FeedEventType::Purchase, FeedEventType::Follow].iter().copied()
-    }
-}
-
-
-impl FromStr for FeedEventType {
+impl FromStr for EventType {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, String> {
         match s {
-            "mint" => Ok(FeedEventType::Mint),
-            "offer" => Ok(FeedEventType::Offer),
-            "listing" => Ok(FeedEventType::Listing),
-            "purchase" => Ok(FeedEventType::Purchase),
-            "follow" => Ok(FeedEventType::Follow),
-            _ => Err(format!("Unknown event type {}", &s))
+            "mint" => Ok(EventType::Mint),
+            "offer" => Ok(EventType::Offer),
+            "listing" => Ok(EventType::Listing),
+            "purchase" => Ok(EventType::Purchase),
+            "follow" => Ok(EventType::Follow),
+            _ => Err(format!("Unknown event type {}", &s)),
         }
     }
 }
-
 
 /// Return polymorphic list of feed events based on who the wallet is following
 ///
@@ -166,18 +82,15 @@ pub fn list<W: Clone + AsExpression<Text>>(
     wallet: W,
     limit: i64,
     offset: i64,
-    types: Option<Vec<FeedEventType>>
+    exclude_types: Option<Vec<EventType>>
 ) -> Result<
     Vec<Columns>,
 > where <W as AsExpression<Text>>::Expression: NonAggregate + AppearsOnTable<Join<graph_connections::table, JoinOn<Join<JoinOn<Join<JoinOn<Join<JoinOn<Join<JoinOn<Join<JoinOn<Join<JoinOn<Join<feed_event_wallets::table, feed_events::table, Inner>, Eq<Nullable<feed_event_wallets::feed_event_id>, Nullable<feed_events::id>>>, twitter_handle_name_services::table, LeftOuter>, Eq<feed_event_wallets::wallet_address, twitter_handle_name_services::wallet_address>>, mint_events::table, LeftOuter>, Eq<feed_events::id, mint_events::feed_event_id>>, offer_events::table, LeftOuter>, Eq<feed_events::id, offer_events::feed_event_id>>, listing_events::table, LeftOuter>, Eq<feed_events::id, listing_events::feed_event_id>>, purchase_events::table, LeftOuter>, Eq<feed_events::id, purchase_events::feed_event_id>>, follow_events::table, LeftOuter>, Eq<feed_events::id, follow_events::feed_event_id>>, Inner>> + QueryFragment<Pg> + QueryId{
-    let types = types.unwrap_or(FeedEventType::iterator().collect());
-    
-    let following_query = Query::select()
-        .column((GraphConnections::Table, GraphConnections::ToAccount))
-        .and_where(Expr::tbl(GraphConnections::Table, GraphConnections::FromAccount).equals(wallet));
+    let following_query = graph_connections::table
+        .filter(graph_connections::from_account.eq(wallet))
+        .select(graph_connections::to_account);
 
-    // TODO
-    feed_event_wallets::table
+    let mut query = feed_event_wallets::table
         .inner_join(feed_events::table)
         .left_join(twitter_handle_name_services::table.on(
             feed_event_wallets::wallet_address.eq(twitter_handle_name_services::wallet_address),
@@ -198,6 +111,29 @@ pub fn list<W: Clone + AsExpression<Text>>(
             (purchase_events::all_columns.nullable()),
             (follow_events::all_columns.nullable()),
         ))
+        .into_boxed();
+
+    if let Some(event_types) = exclude_types {
+        for event_type in event_types {
+            query = match event_type {
+                EventType::Follow => {
+                    query.filter(not(follow_events::feed_event_id.is_not_null()))
+                },
+                EventType::Offer => {
+                    query.filter(not(offer_events::feed_event_id.is_not_null()))
+                },
+                EventType::Mint => query.filter(not(mint_events::feed_event_id.is_not_null())),
+                EventType::Purchase => {
+                    query.filter(not(purchase_events::feed_event_id.is_not_null()))
+                },
+                EventType::Listing => {
+                    query.filter(not(listing_events::feed_event_id.is_not_null()))
+                },
+            }
+        }
+    }
+
+    query
         .limit(limit)
         .offset(offset)
         .order(feed_events::created_at.desc())
