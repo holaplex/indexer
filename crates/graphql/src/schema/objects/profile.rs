@@ -4,39 +4,12 @@ use tables::twitter_handle_name_services;
 use super::prelude::*;
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct TwitterUserProfileResponse {
-    pub screen_name: String,
-    pub description: String,
-    pub profile_image_url_https: String,
-    pub profile_banner_url: String,
-}
-
-#[derive(Debug, Clone)]
 pub struct TwitterProfile {
     pub handle: String,
     pub profile_image_url_lowres: String,
     pub profile_image_url_highres: String,
     pub banner_image_url: String,
     pub description: String,
-}
-
-impl From<TwitterUserProfileResponse> for TwitterProfile {
-    fn from(
-        TwitterUserProfileResponse {
-            screen_name,
-            description,
-            profile_image_url_https,
-            profile_banner_url,
-        }: TwitterUserProfileResponse,
-    ) -> Self {
-        Self {
-            handle: screen_name,
-            profile_image_url_lowres: profile_image_url_https.clone(),
-            profile_image_url_highres: profile_image_url_https.replace("_normal.", "."),
-            banner_image_url: profile_banner_url,
-            description,
-        }
-    }
 }
 
 #[graphql_object(Context = AppContext)]
