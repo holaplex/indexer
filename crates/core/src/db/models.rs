@@ -1864,3 +1864,129 @@ pub struct WalletTotal {
     /// wallet following
     pub following: i64,
 }
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct BuyInstruction<'a> {
+    pub wallet: Cow<'a, str>,
+    pub payment_account: Cow<'a, str>,
+    pub transfer_authority: Cow<'a, str>,
+    pub treasury_mint: Cow<'a, str>,
+    pub token_account: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub escrow_payment_account: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub buyer_trade_state: Cow<'a, str>,
+    pub trade_state_bump: i16,
+    pub escrow_payment_bump: i16,
+    pub buyer_price: i64,
+    pub token_size: i64,
+    pub created_at: NaiveDateTime,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct SellInstruction<'a> {
+    pub wallet: Cow<'a, str>,
+    pub token_account: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub seller_trade_state: Cow<'a, str>,
+    pub free_seller_trader_state: Cow<'a, str>,
+    pub program_as_signer: Cow<'a, str>,
+    pub trade_state_bump: i16,
+    pub free_trade_state_bump: i16,
+    pub program_as_signer_bump: i16,
+    pub buyer_price: i64,
+    pub token_size: i64,
+    pub created_at: NaiveDateTime,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct ExecuteSaleInstruction<'a> {
+    pub buyer: Cow<'a, str>,
+    pub seller: Cow<'a, str>,
+    pub token_account: Cow<'a, str>,
+    pub token_mint: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub treasury_mint: Cow<'a, str>,
+    pub escrow_payment_account: Cow<'a, str>,
+    pub seller_payment_receipt_account: Cow<'a, str>,
+    pub buyer_receipt_token_account: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub auction_house_treasury: Cow<'a, str>,
+    pub buyer_trade_state: Cow<'a, str>,
+    pub seller_trade_state: Cow<'a, str>,
+    pub free_trade_state: Cow<'a, str>,
+    pub program_as_signer: Cow<'a, str>,
+    pub escrow_payment_bump: i16,
+    pub free_trade_state_bump: i16,
+    pub program_as_signer_bump: i16,
+    pub buyer_price: i64,
+    pub token_size: i64,
+    pub created_at: NaiveDateTime,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct CancelInstruction<'a> {
+    pub wallet: Cow<'a, str>,
+    pub token_account: Cow<'a, str>,
+    pub token_mint: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub trade_state: Cow<'a, str>,
+    pub buyer_price: i64,
+    pub token_size: i64,
+    pub created_at: NaiveDateTime,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct DepositInstruction<'a> {
+    pub wallet: Cow<'a, str>,
+    pub payment_account: Cow<'a, str>,
+    pub transfer_authority: Cow<'a, str>,
+    pub escrow_payment_account: Cow<'a, str>,
+    pub treasury_mint: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub escrow_payment_bump: i16,
+    pub amount: i64,
+    pub created_at: NaiveDateTime,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct WithdrawInstruction<'a> {
+    pub wallet: Cow<'a, str>,
+    pub receipt_account: Cow<'a, str>,
+    pub escrow_payment_account: Cow<'a, str>,
+    pub treasury_mint: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub escrow_payment_bump: i16,
+    pub amount: i64,
+    pub created_at: NaiveDateTime,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct WithdrawFromFeeInstruction<'a> {
+    pub authority: Cow<'a, str>,
+    pub fee_withdrawal_destination: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub amount: i64,
+    pub created_at: NaiveDateTime,
+}

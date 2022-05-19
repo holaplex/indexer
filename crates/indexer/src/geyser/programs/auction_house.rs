@@ -9,7 +9,7 @@ use mpl_auction_house::{
 
 use super::{
     accounts::{auction_house, receipt},
-    instructions::buy,
+    instructions::{buy, execute_sale, sell},
     AccountUpdate, Client,
 };
 use crate::prelude::*;
@@ -66,7 +66,7 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
     }
 }
 
-pub(crate)  fn process_instruction(
+pub(crate) async fn process_instruction(
     client: &Client,
     data: &[u8],
     accounts: &[Pubkey],
@@ -75,16 +75,15 @@ pub(crate)  fn process_instruction(
 
     match discriminator {
         BUY => {
-            debug!("BUY");
-            return buy::process(client, &data[8..].to_vec(), accounts);
+            return buy::process(client, &data[8..].to_vec(), accounts).await;
         },
 
         SELL => {
-            debug!("SELL");
+            return sell::process(client, &data[8..].to_vec(), accounts).await;
         },
 
         EXECUTE_SALE => {
-            debug!("EXECUTE_SALE");
+            return execute_sale::process(client, &data[8..].to_vec(), accounts).await;
         },
 
         CANCEL => {
