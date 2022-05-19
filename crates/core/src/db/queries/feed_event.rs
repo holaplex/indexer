@@ -116,12 +116,8 @@ pub fn list<W: Clone + AsExpression<Text>>(
     if let Some(event_types) = exclude_types {
         for event_type in event_types {
             query = match event_type {
-                EventType::Follow => {
-                    query.filter(not(follow_events::feed_event_id.is_not_null()))
-                },
-                EventType::Offer => {
-                    query.filter(not(offer_events::feed_event_id.is_not_null()))
-                },
+                EventType::Follow => query.filter(not(follow_events::feed_event_id.is_not_null())),
+                EventType::Offer => query.filter(not(offer_events::feed_event_id.is_not_null())),
                 EventType::Mint => query.filter(not(mint_events::feed_event_id.is_not_null())),
                 EventType::Purchase => {
                     query.filter(not(purchase_events::feed_event_id.is_not_null()))
