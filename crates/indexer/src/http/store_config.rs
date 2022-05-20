@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use indexer_core::db::{
     delete, insert_into,
     models::{StoreAuctionHouse, StoreConfigJson, StoreCreator},
-    tables::{store_config_jsons, store_creators},
+    tables::{store_auction_houses, store_config_jsons, store_creators},
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
@@ -15,6 +15,7 @@ use crate::prelude::*;
 pub struct Creator {
     pub address: String,
 }
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AuctionHouse {
     pub address: String,
@@ -112,42 +113,45 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
     if let Some(creators) = json.creators {
         client
             .db()
-            .run(move |db| {
-                let remove_creators = store_creators::table
-                    .filter(store_creators::store_config_address.eq(addr.clone()))
-                    .select(store_creators::creator_address)
-                    .get_results::<String>(db)
-                    .unwrap_or_else(|_| Vec::new())
-                    .into_iter()
-                    .filter(|address| !creators.clone().into_iter().any(|c| &c.address == address))
-                    .collect::<Vec<_>>();
+            .run({
+                let addr = addr.clone();
+                move |db| {
+                    let remove_creators = store_creators::table
+                        .filter(store_creators::store_config_address.eq(&addr))
+                        .select(store_creators::creator_address)
+                        .get_results::<String>(db)
+                        .unwrap_or_else(|_| Vec::new())
+                        .into_iter()
+                        .filter(|address| !creators.iter().any(|c| &c.address == address))
+                        .collect::<Vec<_>>();
 
-                db.build_transaction().read_write().run(|| {
-                    delete(
-                        store_creators::table
-                            .filter(store_creators::creator_address.eq(any(remove_creators)))
-                            .filter(store_creators::store_config_address.eq(addr.clone())),
-                    )
-                    .execute(db)?;
+                    db.build_transaction().read_write().run(|| {
+                        delete(
+                            store_creators::table
+                                .filter(store_creators::creator_address.eq(any(remove_creators)))
+                                .filter(store_creators::store_config_address.eq(&addr)),
+                        )
+                        .execute(db)?;
 
-                    creators.into_iter().try_for_each(|creator| {
-                        let row = StoreCreator {
-                            store_config_address: Owned(addr.clone()),
-                            creator_address: Owned(creator.address),
-                        };
+                        creators.into_iter().try_for_each(|creator| {
+                            let row = StoreCreator {
+                                store_config_address: Borrowed(&addr),
+                                creator_address: Owned(creator.address),
+                            };
 
-                        insert_into(store_creators::table)
-                            .values(&row)
-                            .on_conflict((
-                                store_creators::store_config_address,
-                                store_creators::creator_address,
-                            ))
-                            .do_update()
-                            .set(&row)
-                            .execute(db)
-                            .map(|_| ())
+                            insert_into(store_creators::table)
+                                .values(&row)
+                                .on_conflict((
+                                    store_creators::store_config_address,
+                                    store_creators::creator_address,
+                                ))
+                                .do_update()
+                                .set(&row)
+                                .execute(db)
+                                .map(|_| ())
+                        })
                     })
-                })
+                }
             })
             .await
             .context("failed to insert store creator")?;
@@ -158,30 +162,25 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
             .db()
             .run(move |db| {
                 let remove_ahs = store_auction_houses::table
-                    .filter(store_auction_houses::store_config_address.eq(addr.clone()))
+                    .filter(store_auction_houses::store_config_address.eq(&addr))
                     .select(store_auction_houses::auction_house_address)
                     .get_results::<String>(db)
                     .unwrap_or_else(|_| Vec::new())
                     .into_iter()
-                    .filter(|ah| {
-                        !auction_houses
-                            .clone()
-                            .into_iter()
-                            .any(|ah| &ah.address == ah)
-                    })
+                    .filter(|house| !auction_houses.iter().any(|h| &h.address == house))
                     .collect::<Vec<_>>();
 
                 db.build_transaction().read_write().run(|| {
                     delete(
                         store_auction_houses::table
                             .filter(store_auction_houses::auction_house_address.eq(any(remove_ahs)))
-                            .filter(store_auction_houses::store_config_address.eq(addr.clone())),
+                            .filter(store_auction_houses::store_config_address.eq(&addr)),
                     )
                     .execute(db)?;
 
                     auction_houses.into_iter().try_for_each(|ah| {
                         let row = StoreAuctionHouse {
-                            store_config_address: Owned(addr.clone()),
+                            store_config_address: Borrowed(&addr),
                             auction_house_address: Owned(ah.address),
                         };
 
