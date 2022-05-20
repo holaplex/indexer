@@ -1,6 +1,10 @@
 use std::{collections::HashMap, hash::Hash, sync::Arc};
 
+use indexer_core::assets::proxy_twitter_handle_url;
+use reqwest::Url;
+
 use super::prelude::*;
+use crate::SharedData;
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
@@ -119,12 +123,12 @@ pub struct Batcher(Arc<Pool>);
 
 #[derive(Clone)]
 pub struct TwitterBatcher {
-    bearer: String,
+    shared: Arc<SharedData>,
 }
 
 impl Batcher {
     #[must_use]
-    pub fn new(pool: Arc<Pool>) -> Self {
+    pub(crate) fn new(pool: Arc<Pool>) -> Self {
         Self(pool)
     }
 
@@ -135,12 +139,18 @@ impl Batcher {
 
 impl TwitterBatcher {
     #[must_use]
-    pub fn new(bearer: String) -> Self {
-        Self { bearer }
+    pub(crate) fn new(shared: Arc<SharedData>) -> Self {
+        Self { shared }
     }
 
+    #[inline]
     pub fn bearer(&self) -> &str {
-        &self.bearer
+        &self.shared.twitter_bearer_token
+    }
+
+    #[inline]
+    pub fn proxy_url(&self, screen_name: impl AsRef<str>) -> Result<Url> {
+        proxy_twitter_handle_url(&self.shared.asset_proxy, screen_name)
     }
 }
 
