@@ -63,39 +63,8 @@ impl QueryRoot {
     ) -> FieldResult<Vec<Wallet>> {
         let conn = ctx.shared.db.get().context("failed to connect to db")?;
 
-        let wallets_to_follow = vec![
-            "NWswq7QR7E1i1jkdkddHQUFtRPihqBmJ7MfnMCcUf4H",
-            "3XzWJgu5WEU3GV3mHkWKDYtMXVybUhGeFt7N6uwkcezF",
-            "2BNABAPHhYAxjpWRoKKnTsWT24jELuvadmZALvP6WvY4",
-            "DCFWUYqK1iwGzSD3w6SzpwH77GgmbbVX3E2QRtN1qBrj",
-            "x31BQteSUcoLcatn57pUPh1ATqDkGSBti4KpnXbqjMq",
-            "14kVL6sWSc4oX9rwcJU7aMHMLMjsEfpXcAJf68kmsMeP",
-            "3StkrkMEmdiu9nER5qM3fNR1fCMdawUhGsihF2UkXrPP",
-            "DgzWqku67fPeuWgmyZbNa7U7yicKRhbjM7nB86Yx2ojQ",
-            "Dz3BJenPAMziCBhJFGwUxvu3qhMUuLch8NjoZdfP9xsa",
-            "AwiRcagxnT8NLnJeS8ScVcq2Y9f5VeJUfyfR5AXmVFfh",
-            "AXXRH6NVXjUNxi6GvVWV4Pp6q7k9xkqeqHhRx8sW41TX",
-            "79j2yWfDHnAU3Aq4yfoTcE9KCHCDo2m54aL4te67683Q",
-            "Fh2rUc2CrMTp6H7t1CGnG4aXhWn7BzPPQBU2KkgR4jeh",
-            "gNEt8EeWqdcSpebQXZ8YVnBC9k5yKp2WGvnA9HR8RzQ",
-            "zenom3SnXK6k2UJm73jRQ1n8U7KkLPrTypDatKjGxoL",
-            "Er6QJPusC1JsUqevTjFKXtYHbgCtJkyo1DNjEBWevWut",
-            "HLSgM1a7wSufVwe1NrPPR22ynY2aPsH8a1XQfqFsQiqY",
-            "BjSaYdgdWtBNXGJmy6cuTzxYzLcxvn4Anw6yrWsgKdNm",
-            "8t6BxNBe7pM8YwvG4JUQxi1W9PYfuphrYcUiJF99oWsP",
-            "4ZjYSCH3Sib9iMSM3QN2sL2kwxNcXG2P4XCemSC2hsyb",
-            "GcpdC1iUtfiQ48B6dn7bcM2Ax13R6TDom65jQJiTD18G",
-            "xYwSUQv7DX62XGo4XXFAQRSTwtS1NrWz8rifR7Gppeg",
-            "A1Fk3zhtamLixGStRFc4eBd3pVodoFrNRbVFCaPaPJBu",
-            "B3jtSCpXQpMZR5r5m87854bgMj5veHwz9idjd22eVrP7",
-            "GpnKen3QMaLc1CzFsoy8UbcbPwEXRXb5k2qTkTcUa3RX",
-            "H4dfSserFhYBswmPMF3FdYEbu4aj1AQt7RSXRyVqVjaS",
-            "4Jb3dS76hxcBXKZDkwx3KC4NSMXoTKsyXfwW18apS4vZ",
-            "yTM5APEbWb1GBBtgsjzTF6ZYw5pWxqCr7qKykWW7qLS",
-            "2TKEfKKLreKYykZMCKiFMYhhkKFxajfSBeKNZ8rFa6qt",
-            "CsxZxjL19pJ3DM4yyDZDePgCWj6m7Lm9htwHggBbgP1r",
-            "57DsAWRijeENrhb4RdKiLjKzLF1V8f1J2D8mCNvGMSPu",
-            "DWPpeotxT2Q1m1BDzuycQktDe6VnVejLiPWsjfwG6Nb7",
+        let wallets_to_exclude = vec![
+            "tsU33UT3K2JTfLgHUo7hdzRhRe4wth885cqVbM8WLiq",
         ];
 
         let mut query = wallet_totals::table
@@ -107,7 +76,7 @@ impl QueryRoot {
                 (wallet_totals::all_columns),
                 twitter_handle_name_services::twitter_handle.nullable(),
             ))
-            .filter(wallet_totals::address.eq_any(wallets_to_follow))
+            .filter(wallet_totals::address.ne_all(wallets_to_exclude))
             .order(wallet_totals::followers.desc())
             .limit(limit.try_into()?)
             .offset(offset.try_into()?)
@@ -382,34 +351,7 @@ impl QueryRoot {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let holaplex_auction_house_address = "9SvsTjqk3YoicaYnC4VW1f8QAN9ku7QCCk6AyfUdzc9t";
-        let sellers_to_exclude = vec![
-            "2pUX5sFsGfjJ25ZfCsNySq6JHrhNsqBoSHmvw1WhDpzY",
-            "G7CXk8cN4pt1KKKNBP3tic28a1EEUn83TB3fagzGSb3S",
-            "FRXeM1yBsviqXrLGBz815fw25MnZ1A6t93Qi7FzuQVMH",
-            "E47eeNRZgiqDUKTszB6rMwbt84LdCF32pTR4r4yuUrkg",
-            "GgPpTKg78vmzgDtP1DNn72CHAYjRdKY7AV6zgszoHCSa",
-            "2Z3y5GAGVAn681Rncc4358gPbfNTVQynCgTq2xKbbm1y",
-            "EddYHALSPtgyPjjUmUrsBbgrfqUz6r8p61NKRhj3QPn3",
-            "2fLigDC5sgXmcVMzQUz3vBqoHSj2yCbAJW1oYX8qbyoR",
-            "2BNABAPHhYAxjpWRoKKnTsWT24jELuvadmZALvP6WvY4",
-            "FFUo5prngkQGWiNc9QPknRs2BtTrUCQed8xDvkWrFjuG",
-            "FeikG7Kui7zw8srzShhrPv2TJgwAn61GU7m8xmaK9GnW",
-            "232PpcrPc6Kz7geafvbRzt5HnHP4kX88yvzUCN69WXQC",
-            "4bnYk1bJ7Y1cdsiCy5j9TQWWcfgYaunRdxJPeTuHS13Y",
-            "7pYQK4zUQhtnGUipc3AffhyfBDA6LLStnBpY9oUXMFNH",
-            "9LDNQS6Uxshf7o6qWS6sNDPgFZEhKE1hgiquKyamU1Xa",
-            "3XzWJgu5WEU3GV3mHkWKDYtMXVybUhGeFt7N6uwkcezF",
-            "NWswq7QR7E1i1jkdkddHQUFtRPihqBmJ7MfnMCcUf4H",
-            "GJMCz6W1mcjZZD8jK5kNSPzKWDVTD4vHZCgm8kCdiVNS",
-            "8iGmtE26nBETcxiL6rp1Sn6ZJ8F6ZzTKLW6GL9BGPPHe",
-            "CqC5dNspaUVbUz6QDbNcodpTfgbw1nZ4ra2nectDv1ak",
-            "5P6sDMPFFiFP5eYiVZaH1T4RCL96WZWN6qvobszVLQwN",
-            "C3RUmmisvURnM5VJ8qW2H1iBMKwKbX8Fw6BFnscoZfv6",
-            "GYNT1qUj9Ew45WpHaVZqGSz7R97ve2EjJEEfTcNVrJvQ",
-            "9cBfdWcyRCMibQoxe6kyNTAW7rXHC5eDY3odkHJxqTrR",
-            "7r8oBPs3vNqgqEG8gnyPWUPgWuScxXyUxtmoLd1bg17F",
-            "7oUUEdptZnZVhSet4qobU9PtpPfiNUEJ8ftPnrC6YEaa",
-        ];
+        let sellers_to_exclude: Vec<&str> = vec![];
 
         let listings: Vec<models::ListingReceipt> = listing_receipts::table
             .inner_join(
