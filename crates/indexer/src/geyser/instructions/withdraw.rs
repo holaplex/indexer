@@ -33,8 +33,6 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
         created_at: Utc::now().naive_utc(),
     };
 
-    dbg!("{:?}", &row);
-
     client
         .db()
         .run(move |db| {

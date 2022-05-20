@@ -907,6 +907,29 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    offers (address) {
+        address -> Uuid,
+        trade_state -> Varchar,
+        bookkeeper -> Varchar,
+        auction_house -> Varchar,
+        buyer -> Varchar,
+        metadata -> Varchar,
+        token_account -> Nullable<Varchar>,
+        purchase_receipt -> Nullable<Varchar>,
+        price -> Int8,
+        token_size -> Int8,
+        bump -> Nullable<Int2>,
+        trade_state_bump -> Int2,
+        created_at -> Timestamp,
+        canceled_at -> Nullable<Timestamp>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     proposal_account_metas (proposal_address, program_id, pubkey) {
         proposal_address -> Varchar,
         program_id -> Varchar,
@@ -1349,6 +1372,7 @@ allow_tables_to_appear_in_same_query!(
     metadatas,
     mint_events,
     offer_events,
+    offers,
     proposal_account_metas,
     proposal_instructions,
     proposal_metas,

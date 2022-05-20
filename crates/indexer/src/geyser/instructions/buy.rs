@@ -1,5 +1,9 @@
 use borsh::BorshDeserialize;
-use indexer_core::db::{insert_into, models::BuyInstruction, tables::buy_instructions};
+use indexer_core::db::{
+    insert_into,
+    models::{BuyInstruction, Offer},
+    tables::{buy_instructions, offers},
+};
 
 use super::Client;
 use crate::prelude::*;
@@ -41,7 +45,9 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
         created_at: Utc::now().naive_utc(),
     };
 
-    dbg!("{:?}", &row);
+    upsert_into_offers_table(client, row.clone())
+        .await
+        .context("failed to insert offer")?;
 
     client
         .db()
@@ -52,5 +58,39 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
         })
         .await
         .context("failed to insert buy instruction ")?;
+    Ok(())
+}
+
+async fn upsert_into_offers_table<'a>(
+    client: &Client,
+    data: BuyInstruction<'static>,
+) -> Result<()> {
+    let row = Offer {
+        trade_state: data.buyer_trade_state,
+        bookkeeper: data.wallet.clone(),
+        auction_house: data.auction_house,
+        buyer: data.wallet,
+        metadata: data.metadata,
+        token_account: Some(data.token_account),
+        purchase_receipt: None,
+        price: data.buyer_price,
+        token_size: data.token_size,
+        bump: None,
+        trade_state_bump: data.trade_state_bump,
+        created_at: data.created_at,
+        canceled_at: None,
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(offers::table)
+                .values(&row)
+                .on_conflict_do_nothing()
+                .execute(db)
+        })
+        .await
+        .context("Failed to insert offer")?;
+
     Ok(())
 }

@@ -4,13 +4,13 @@ use indexer_core::{
         insert_into,
         models::{
             BidReceipt as DbBidReceipt, FeedEventWallet, ListingEvent,
-            ListingReceipt as DbListingReceipt, OfferEvent, PurchaseEvent,
+            ListingReceipt as DbListingReceipt, Offer, OfferEvent, PurchaseEvent,
             PurchaseReceipt as DbPurchaseReceipt,
         },
-        select,
+        on_constraint, select,
         tables::{
             bid_receipts, current_metadata_owners, feed_event_wallets, feed_events, listing_events,
-            listing_receipts, metadatas, offer_events, purchase_events, purchase_receipts,
+            listing_receipts, metadatas, offer_events, offers, purchase_events, purchase_receipts,
         },
         Error as DbError,
     },
@@ -206,6 +206,10 @@ pub(crate) async fn process_bid_receipt(
             .transpose()?,
     };
 
+    upsert_into_offers_table(client, row.clone())
+        .await
+        .context("failed to insert into offers table")?;
+
     let offer_event = client
         .db()
         .run(move |db| {
@@ -278,6 +282,39 @@ pub(crate) async fn process_bid_receipt(
     } else {
         trace!("Skipping Dialect dispatch for offer");
     }
+
+    Ok(())
+}
+
+async fn upsert_into_offers_table<'a>(client: &Client, data: DbBidReceipt<'static>) -> Result<()> {
+    let row = Offer {
+        trade_state: data.trade_state,
+        bookkeeper: data.bookkeeper,
+        auction_house: data.auction_house,
+        buyer: data.buyer,
+        metadata: data.metadata,
+        token_account: data.token_account,
+        purchase_receipt: data.purchase_receipt,
+        price: data.price,
+        token_size: data.token_size,
+        bump: Some(data.bump),
+        trade_state_bump: data.trade_state_bump,
+        created_at: data.created_at,
+        canceled_at: data.canceled_at,
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(offers::table)
+                .values(&row)
+                .on_conflict(on_constraint("offers_unique_fields"))
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
+        .context("Failed to insert offer")?;
 
     Ok(())
 }

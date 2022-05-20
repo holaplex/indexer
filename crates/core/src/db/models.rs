@@ -1990,3 +1990,34 @@ pub struct WithdrawFromFeeInstruction<'a> {
     pub amount: i64,
     pub created_at: NaiveDateTime,
 }
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Offer<'a> {
+    /// Trade State account pubkey
+    pub trade_state: Cow<'a, str>,
+    /// Bookkeeper account pubkey
+    pub bookkeeper: Cow<'a, str>,
+    /// Auction house account pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Buyer address
+    pub buyer: Cow<'a, str>,
+    /// Metadata address
+    pub metadata: Cow<'a, str>,
+    /// Token account address
+    pub token_account: Option<Cow<'a, str>>,
+    /// Purchase receipt address
+    pub purchase_receipt: Option<Cow<'a, str>>,
+    /// Price
+    pub price: i64,
+    /// Token size
+    pub token_size: i64,
+    /// Bump
+    pub bump: Option<i16>,
+    /// Trade State bump
+    pub trade_state_bump: i16,
+    /// Created_at timestamp
+    pub created_at: NaiveDateTime,
+    /// Canceled_at timestamp
+    pub canceled_at: Option<NaiveDateTime>,
+}
