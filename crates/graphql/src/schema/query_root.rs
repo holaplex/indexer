@@ -408,7 +408,7 @@ impl QueryRoot {
             "GYNT1qUj9Ew45WpHaVZqGSz7R97ve2EjJEEfTcNVrJvQ",
             "9cBfdWcyRCMibQoxe6kyNTAW7rXHC5eDY3odkHJxqTrR",
             "7r8oBPs3vNqgqEG8gnyPWUPgWuScxXyUxtmoLd1bg17F",
-            "7oUUEdptZnZVhSet4qobU9PtpPfiNUEJ8ftPnrC6YEaa"
+            "7oUUEdptZnZVhSet4qobU9PtpPfiNUEJ8ftPnrC6YEaa",
         ];
 
         let listings: Vec<models::ListingReceipt> = listing_receipts::table
