@@ -1,4 +1,7 @@
-use indexer_core::db::{queries, tables::twitter_handle_name_services};
+use indexer_core::db::{
+    queries::{self, feed_event::EventType},
+    tables::twitter_handle_name_services,
+};
 use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
@@ -9,6 +12,7 @@ use objects::{
     feed_event::FeedEvent,
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
+    listing_receipt::ListingReceipt,
     marketplace::Marketplace,
     nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator},
     profile::TwitterProfile,
@@ -19,7 +23,7 @@ use scalars::PublicKey;
 use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, bid_receipts, graph_connections,
-    metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
+    listing_receipts, metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
 };
 
 use super::prelude::*;
@@ -66,6 +70,7 @@ impl QueryRoot {
                 (wallet_totals::all_columns),
                 twitter_handle_name_services::twitter_handle.nullable(),
             ))
+            .filter(wallet_totals::address.ne_all(&ctx.shared.follow_wallets_exclusions))
             .order(wallet_totals::followers.desc())
             .limit(limit.try_into()?)
             .offset(offset.try_into()?)
@@ -101,11 +106,25 @@ impl QueryRoot {
         wallet: PublicKey<Wallet>,
         limit: i32,
         offset: i32,
+        exclude_types: Option<Vec<String>>,
     ) -> FieldResult<Vec<FeedEvent>> {
         let conn = ctx.shared.db.get().context("failed to connect to db")?;
 
-        let feed_events =
-            queries::feed_event::list(&conn, wallet, limit.try_into()?, offset.try_into()?)?;
+        let exclude_types_parsed: Option<Vec<EventType>> = exclude_types.map(|v_types| {
+            v_types
+                .iter()
+                .map(|v| v.parse::<EventType>())
+                .filter_map(Result::ok)
+                .collect()
+        });
+
+        let feed_events = queries::feed_event::list(
+            &conn,
+            wallet,
+            limit.try_into()?,
+            offset.try_into()?,
+            exclude_types_parsed,
+        )?;
 
         feed_events
             .into_iter()
@@ -311,6 +330,43 @@ impl QueryRoot {
         let nfts = queries::metadatas::list(&conn, query_options)?;
 
         nfts.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    fn featured_listings(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Limit for query")] limit: i32,
+        #[graphql(description = "Offset for query")] offset: i32,
+    ) -> FieldResult<Vec<ListingReceipt>> {
+        let conn = context.shared.db.get().context("Failed to connect to DB")?;
+
+        let listings: Vec<models::ListingReceipt> = listing_receipts::table
+            .inner_join(
+                wallet_totals::table.on(wallet_totals::address.eq(listing_receipts::seller)),
+            )
+            .select(listing_receipts::all_columns)
+            .filter(listing_receipts::canceled_at.is_null())
+            .filter(listing_receipts::purchase_receipt.is_null())
+            .filter(
+                listing_receipts::auction_house
+                    .eq_any(&context.shared.featured_listings_auction_houses),
+            )
+            .filter(
+                listing_receipts::seller
+                    .ne_all(&context.shared.featured_listings_seller_exclusions),
+            )
+            .filter(listing_receipts::seller.eq(wallet_totals::address))
+            .order(wallet_totals::followers.desc())
+            .limit(limit.into())
+            .offset(offset.into())
+            .load(&conn)
+            .context("Failed to load listings")?;
+
+        listings
+            .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
