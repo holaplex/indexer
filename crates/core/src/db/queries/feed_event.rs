@@ -1,7 +1,5 @@
 //! Query utilities for feed events.
 
-use std::str::FromStr;
-
 use diesel::{
     dsl::not,
     expression::{nullable::Nullable, operators::Eq, AsExpression, NonAggregate},
@@ -40,7 +38,8 @@ pub type Columns<'a> = (
 );
 
 /// feed event types, to be used for filtering feed events
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, strum::EnumString)]
+#[strum(serialize_all = "kebab-case")]
 pub enum EventType {
     /// Mint Events
     Mint,
@@ -56,21 +55,6 @@ pub enum EventType {
 
     /// Follow Events
     Follow,
-}
-
-impl FromStr for EventType {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, String> {
-        match s {
-            "mint" => Ok(EventType::Mint),
-            "offer" => Ok(EventType::Offer),
-            "listing" => Ok(EventType::Listing),
-            "purchase" => Ok(EventType::Purchase),
-            "follow" => Ok(EventType::Follow),
-            _ => Err(format!("Unknown event type {}", &s)),
-        }
-    }
 }
 
 /// Return polymorphic list of feed events based on who the wallet is following

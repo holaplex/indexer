@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use indexer_core::db::{
     queries::{self, feed_event::EventType},
     tables::twitter_handle_name_services,
@@ -115,9 +113,8 @@ impl QueryRoot {
         let exclude_types_parsed: Option<Vec<EventType>> = exclude_types.map(|v_types| {
             v_types
                 .iter()
-                .map(|v| EventType::from_str(v))
-                .filter(|v| !v.is_err())
-                .map(Result::unwrap)
+                .map(|v| v.parse::<EventType>())
+                .filter_map(Result::ok)
                 .collect()
         });
 
@@ -344,7 +341,7 @@ impl QueryRoot {
         #[graphql(description = "Limit for query")] limit: i32,
         #[graphql(description = "Offset for query")] offset: i32,
     ) -> FieldResult<Vec<ListingReceipt>> {
-        let conn = context.shared.db.get().context("failed to connect to db")?;
+        let conn = context.shared.db.get().context("Failed to connect to DB")?;
 
         let listings: Vec<models::ListingReceipt> = listing_receipts::table
             .inner_join(
@@ -363,8 +360,8 @@ impl QueryRoot {
             )
             .filter(listing_receipts::seller.eq(wallet_totals::address))
             .order(wallet_totals::followers.desc())
-            .limit(limit.try_into()?)
-            .offset(offset.try_into()?)
+            .limit(limit.into())
+            .offset(offset.into())
             .load(&conn)
             .context("Failed to load listings")?;
 
