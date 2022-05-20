@@ -18,7 +18,7 @@ pub struct InstructionParameters {
 pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -> Result<()> {
     let params = InstructionParameters::try_from_slice(data).context("failed to deserialize")?;
 
-    if accounts.len() != 21 {
+    if accounts.len() != 23 {
         debug!("invalid accounts for ExecuteSaleInstruction");
         return Ok(());
     }

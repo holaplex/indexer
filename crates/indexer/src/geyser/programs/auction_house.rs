@@ -9,22 +9,16 @@ use mpl_auction_house::{
 
 use super::{
     accounts::{auction_house, receipt},
-    instructions::{buy, execute_sale, sell},
+    instructions::{buy, cancel, deposit, execute_sale, sell, withdraw, withdraw_from_fee},
     AccountUpdate, Client,
 };
 use crate::prelude::*;
 
 // Anchor Discriminators
-// const PUBLIC_SALE: [u8; 8] = [169, 84, 218, 35, 42, 206, 16, 171];
 const BUY: [u8; 8] = [102, 6, 61, 18, 1, 218, 235, 234];
-// const AUCTIONEER_PUBLIC_SALE: [u8; 8] = [221, 239, 99, 240, 86, 46, 213, 126];
-// const AUCTIONEER_PRIVATE_SALE: [u8; 8] = [17, 106, 133, 46, 229, 48, 45, 208];
 const SELL: [u8; 8] = [51, 230, 133, 164, 1, 127, 131, 173];
-// const AUCTIONEER_SELL: [u8; 8] = [251, 60, 142, 195, 121, 203, 26, 183];
 const EXECUTE_SALE: [u8; 8] = [37, 74, 217, 157, 79, 49, 35, 6];
-// const AUCTIONEER_EXECUTE_SALE: [u8; 8] = [68, 125, 32, 65, 251, 43, 35, 53];
 const CANCEL: [u8; 8] = [232, 219, 223, 41, 219, 236, 220, 190];
-// const AUCTIONEER_CANCEL: [u8; 8] = [197, 97, 152, 196, 115, 204, 64, 215];
 const DEPOSIT: [u8; 8] = [242, 35, 198, 137, 82, 225, 242, 182];
 const WITHDRAW: [u8; 8] = [183, 18, 70, 156, 148, 109, 161, 34];
 const WITHDRAW_FROM_FEE: [u8; 8] = [179, 208, 190, 154, 32, 179, 19, 59];
@@ -72,33 +66,33 @@ pub(crate) async fn process_instruction(
     accounts: &[Pubkey],
 ) -> Result<()> {
     let discriminator: [u8; 8] = data[..8].try_into()?;
-
+    let params = data[8..].to_vec();
     match discriminator {
         BUY => {
-            return buy::process(client, &data[8..].to_vec(), accounts).await;
+            return buy::process(client, &params, accounts).await;
         },
 
         SELL => {
-            return sell::process(client, &data[8..].to_vec(), accounts).await;
+            return sell::process(client, &params, accounts).await;
         },
 
         EXECUTE_SALE => {
-            return execute_sale::process(client, &data[8..].to_vec(), accounts).await;
+            return execute_sale::process(client, &params, accounts).await;
         },
 
         CANCEL => {
-            debug!("CANCEL");
+            return cancel::process(client, &params, accounts).await;
         },
         DEPOSIT => {
-            debug!("DEPOSIT");
+            return deposit::process(client, &params, accounts).await;
         },
 
         WITHDRAW => {
-            debug!("WITHDRAW");
+            return withdraw::process(client, &params, accounts).await;
         },
 
         WITHDRAW_FROM_FEE => {
-            debug!("WITHDRAW_FROM_FEE");
+            return withdraw_from_fee::process(client, &params, accounts).await;
         },
         _ => {
             debug!("invalid ins");
