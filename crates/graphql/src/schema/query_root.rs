@@ -382,8 +382,34 @@ impl QueryRoot {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let holaplex_auction_house_address = "9SvsTjqk3YoicaYnC4VW1f8QAN9ku7QCCk6AyfUdzc9t";
-        // TODO expand with other wallets to exclude
-        let sellers_to_exclude = vec!["7r8oBPs3vNqgqEG8gnyPWUPgWuScxXyUxtmoLd1bg17F"];
+        let sellers_to_exclude = vec![
+            "2pUX5sFsGfjJ25ZfCsNySq6JHrhNsqBoSHmvw1WhDpzY",
+            "G7CXk8cN4pt1KKKNBP3tic28a1EEUn83TB3fagzGSb3S",
+            "FRXeM1yBsviqXrLGBz815fw25MnZ1A6t93Qi7FzuQVMH",
+            "E47eeNRZgiqDUKTszB6rMwbt84LdCF32pTR4r4yuUrkg",
+            "GgPpTKg78vmzgDtP1DNn72CHAYjRdKY7AV6zgszoHCSa",
+            "2Z3y5GAGVAn681Rncc4358gPbfNTVQynCgTq2xKbbm1y",
+            "EddYHALSPtgyPjjUmUrsBbgrfqUz6r8p61NKRhj3QPn3",
+            "2fLigDC5sgXmcVMzQUz3vBqoHSj2yCbAJW1oYX8qbyoR",
+            "2BNABAPHhYAxjpWRoKKnTsWT24jELuvadmZALvP6WvY4",
+            "FFUo5prngkQGWiNc9QPknRs2BtTrUCQed8xDvkWrFjuG",
+            "FeikG7Kui7zw8srzShhrPv2TJgwAn61GU7m8xmaK9GnW",
+            "232PpcrPc6Kz7geafvbRzt5HnHP4kX88yvzUCN69WXQC",
+            "4bnYk1bJ7Y1cdsiCy5j9TQWWcfgYaunRdxJPeTuHS13Y",
+            "7pYQK4zUQhtnGUipc3AffhyfBDA6LLStnBpY9oUXMFNH",
+            "9LDNQS6Uxshf7o6qWS6sNDPgFZEhKE1hgiquKyamU1Xa",
+            "3XzWJgu5WEU3GV3mHkWKDYtMXVybUhGeFt7N6uwkcezF",
+            "NWswq7QR7E1i1jkdkddHQUFtRPihqBmJ7MfnMCcUf4H",
+            "GJMCz6W1mcjZZD8jK5kNSPzKWDVTD4vHZCgm8kCdiVNS",
+            "8iGmtE26nBETcxiL6rp1Sn6ZJ8F6ZzTKLW6GL9BGPPHe",
+            "CqC5dNspaUVbUz6QDbNcodpTfgbw1nZ4ra2nectDv1ak",
+            "5P6sDMPFFiFP5eYiVZaH1T4RCL96WZWN6qvobszVLQwN",
+            "C3RUmmisvURnM5VJ8qW2H1iBMKwKbX8Fw6BFnscoZfv6",
+            "GYNT1qUj9Ew45WpHaVZqGSz7R97ve2EjJEEfTcNVrJvQ",
+            "9cBfdWcyRCMibQoxe6kyNTAW7rXHC5eDY3odkHJxqTrR",
+            "7r8oBPs3vNqgqEG8gnyPWUPgWuScxXyUxtmoLd1bg17F",
+            "7oUUEdptZnZVhSet4qobU9PtpPfiNUEJ8ftPnrC6YEaa"
+        ];
 
         let listings: Vec<models::ListingReceipt> = listing_receipts::table
             .inner_join(
