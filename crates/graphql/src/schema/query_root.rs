@@ -147,26 +147,21 @@ impl QueryRoot {
     ) -> FieldResult<Vec<FeedEvent>> {
         let conn = ctx.shared.db.get().context("failed to connect to db")?;
 
-        let exclusion_types_parsed: Option<Vec<EventType>>;
-        if let Some(types) = exclude_types {
-            exclusion_types_parsed = Some(
-                types
-                    .iter()
-                    .map(|v| EventType::from_str(v))
-                    .filter(|v| !v.is_err())
-                    .map(Result::unwrap)
-                    .collect(),
-            );
-        } else {
-            exclusion_types_parsed = None;
-        }
+        let exclude_types_parsed: Option<Vec<EventType>> = exclude_types.map(|v_types| {
+            v_types
+                .iter()
+                .map(|v| EventType::from_str(v))
+                .filter(|v| !v.is_err())
+                .map(Result::unwrap)
+                .collect()
+        });
 
         let feed_events = queries::feed_event::list(
             &conn,
             wallet,
             limit.try_into()?,
             offset.try_into()?,
-            exclusion_types_parsed,
+            exclude_types_parsed,
         )?;
 
         feed_events
