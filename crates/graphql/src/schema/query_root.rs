@@ -63,10 +63,6 @@ impl QueryRoot {
     ) -> FieldResult<Vec<Wallet>> {
         let conn = ctx.shared.db.get().context("failed to connect to db")?;
 
-        let wallets_to_exclude = vec![
-            "tsU33UT3K2JTfLgHUo7hdzRhRe4wth885cqVbM8WLiq",
-        ];
-
         let mut query = wallet_totals::table
             .left_join(
                 twitter_handle_name_services::table
@@ -76,7 +72,7 @@ impl QueryRoot {
                 (wallet_totals::all_columns),
                 twitter_handle_name_services::twitter_handle.nullable(),
             ))
-            .filter(wallet_totals::address.ne_all(wallets_to_exclude))
+            .filter(wallet_totals::address.ne_all(&ctx.shared.follow_wallets_exclusions))
             .order(wallet_totals::followers.desc())
             .limit(limit.try_into()?)
             .offset(offset.try_into()?)
@@ -350,9 +346,6 @@ impl QueryRoot {
     ) -> FieldResult<Vec<ListingReceipt>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
-        let holaplex_auction_house_address = "9SvsTjqk3YoicaYnC4VW1f8QAN9ku7QCCk6AyfUdzc9t";
-        let sellers_to_exclude: Vec<&str> = vec![];
-
         let listings: Vec<models::ListingReceipt> = listing_receipts::table
             .inner_join(
                 wallet_totals::table.on(wallet_totals::address.eq(listing_receipts::seller)),
@@ -360,8 +353,14 @@ impl QueryRoot {
             .select(listing_receipts::all_columns)
             .filter(listing_receipts::canceled_at.is_null())
             .filter(listing_receipts::purchase_receipt.is_null())
-            .filter(listing_receipts::auction_house.eq(holaplex_auction_house_address))
-            .filter(listing_receipts::seller.ne_all(sellers_to_exclude))
+            .filter(
+                listing_receipts::auction_house
+                    .eq_any(&context.shared.featured_listings_auction_houses),
+            )
+            .filter(
+                listing_receipts::seller
+                    .ne_all(&context.shared.featured_listings_seller_exclusions),
+            )
             .filter(listing_receipts::seller.eq(wallet_totals::address))
             .order(wallet_totals::followers.desc())
             .limit(limit.try_into()?)
