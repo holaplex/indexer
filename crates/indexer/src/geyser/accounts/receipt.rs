@@ -206,15 +206,23 @@ pub(crate) async fn process_bid_receipt(
             .transpose()?,
     };
 
-    upsert_into_offers_table(client, row.clone())
-        .await
-        .context("failed to insert into offers table")?;
+    let values = row.clone();
 
     let offer_event = client
         .db()
         .run(move |db| {
-            let bid_receipt_exists = select(exists(
-                bid_receipts::table.filter(bid_receipts::address.eq(row.address.clone())),
+            let offer = select(exists(
+                offers::table.filter(
+                    offers::trade_state
+                        .eq(row.trade_state.clone())
+                        .and(offers::bookkeeper.eq(row.bookkeeper.clone()))
+                        .and(offers::bookkeeper.eq(row.bookkeeper.clone()))
+                        .and(offers::auction_house.eq(row.auction_house.clone()))
+                        .and(offers::buyer.eq(row.buyer.clone()))
+                        .and(offers::metadata.eq(row.metadata.clone()))
+                        .and(offers::price.eq(row.price))
+                        .and(offers::token_size.eq(row.token_size)),
+                ),
             ))
             .get_result::<bool>(db);
 
@@ -225,7 +233,7 @@ pub(crate) async fn process_bid_receipt(
                 .set(&row)
                 .execute(db)?;
 
-            if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
+            if Ok(true) == offer || row.purchase_receipt.is_some() {
                 return Ok(None);
             }
 
@@ -274,6 +282,10 @@ pub(crate) async fn process_bid_receipt(
         })
         .await
         .context("Failed to insert bid receipt!")?;
+
+    upsert_into_offers_table(client, values)
+        .await
+        .context("failed to insert into offers table")?;
 
     if offer_event.is_some() {
         client

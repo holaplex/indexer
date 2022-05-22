@@ -110,7 +110,6 @@ pub async fn process_message<H: std::hash::BuildHasher>(
             accounts,
         } => {
             if program == pubkeys::AUCTION_HOUSE {
-                debug!("ins received {:?} {:?} {:?}", program, data, accounts);
                 return programs::auction_house::process_instruction(client, &data, &accounts)
                     .await;
             };
