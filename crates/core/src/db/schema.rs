@@ -9,6 +9,8 @@ table! {
         trait_type -> Nullable<Text>,
         id -> Uuid,
         first_verified_creator -> Nullable<Varchar>,
+        slot -> Int8,
+        write_version -> Int8,
     }
 }
 
@@ -476,6 +478,8 @@ table! {
         uri -> Text,
         file_type -> Text,
         id -> Uuid,
+        slot -> Int8,
+        write_version -> Int8,
     }
 }
 
@@ -721,6 +725,8 @@ table! {
         name -> Nullable<Text>,
         family -> Nullable<Text>,
         id -> Uuid,
+        slot -> Int8,
+        write_version -> Int8,
     }
 }
 
@@ -755,6 +761,8 @@ table! {
         raw_content -> Jsonb,
         model -> Nullable<Text>,
         fetch_uri -> Text,
+        slot -> Int8,
+        write_version -> Int8,
     }
 }
 
