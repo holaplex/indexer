@@ -754,6 +754,7 @@ table! {
         category -> Nullable<Text>,
         raw_content -> Jsonb,
         model -> Nullable<Text>,
+        fetch_uri -> Text,
     }
 }
 

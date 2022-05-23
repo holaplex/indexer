@@ -421,6 +421,8 @@ pub struct MetadataJson<'a> {
     pub raw_content: Cow<'a, serde_json::Value>,
     /// Model the JSON was parsed with
     pub model: Option<Cow<'a, str>>,
+    /// The URI from which the data in this row was retrieved
+    pub fetch_uri: Cow<'a, str>,
 }
 
 /// A row in the `files` table

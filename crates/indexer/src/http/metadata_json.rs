@@ -116,7 +116,7 @@ async fn fetch_json(
     client: &Client,
     meta_key: Pubkey,
     url: Result<Url>,
-) -> Result<MetadataJsonResult> {
+) -> Result<(Url, MetadataJsonResult)> {
     let start_time = Local::now();
     let url = url.context("Failed to create asset URL")?;
 
@@ -140,7 +140,7 @@ async fn fetch_json(
 
     let full_err;
     match serde_json::from_slice(&bytes) {
-        Ok(f) => return Ok(MetadataJsonResult::Full(f)),
+        Ok(f) => return Ok((url, MetadataJsonResult::Full(f))),
         Err(e) => {
             debug!(
                 "Failed to parse full metadata JSON for {:?}: {:?}",
@@ -152,7 +152,7 @@ async fn fetch_json(
     };
 
     match serde_json::from_slice(&bytes) {
-        Ok(value) => return Ok(MetadataJsonResult::Minimal { value, full_err }),
+        Ok(value) => return Ok((url, MetadataJsonResult::Minimal { value, full_err })),
         Err(e) => {
             debug!(
                 "Failed to parse minimal metadata JSON for {:?}: {:?}",
@@ -173,7 +173,7 @@ async fn try_locate_json(
     url: &Url,
     id: &AssetIdentifier,
     meta_key: Pubkey,
-) -> Result<Option<(MetadataJsonResult, Vec<u8>)>> {
+) -> Result<Option<(MetadataJsonResult, Vec<u8>, Url)>> {
     // Set to true for fallback
     const TRY_LAST_RESORT: bool = true;
 
@@ -191,9 +191,9 @@ async fn try_locate_json(
         let fingerprint = id.fingerprint(Some(hint)).unwrap_or_else(|| unreachable!());
 
         match fetch_json(client, meta_key, url).await {
-            Ok(j) => {
+            Ok((url, json)) => {
                 debug!("Using fetch from {:?} for metadata {}", url_str, meta_key);
-                resp = Ok(Some((j, fingerprint)));
+                resp = Ok(Some((json, fingerprint, url)));
                 break;
             },
             Err(e) => {
@@ -208,7 +208,7 @@ async fn try_locate_json(
     }
 
     Ok(match resp {
-        Ok(Some((res, fingerprint))) => Some((res, fingerprint.into_owned())),
+        Ok(Some((res, fingerprint, url))) => Some((res, fingerprint.into_owned(), url)),
         Ok(None) => {
             debug!(
                 "Not fetching unparseable url {:?} for {}",
@@ -218,8 +218,8 @@ async fn try_locate_json(
 
             None
         },
-        Err(()) if TRY_LAST_RESORT => Some((
-            fetch_json(client, meta_key, Ok(url.clone()))
+        Err(()) if TRY_LAST_RESORT => {
+            let (url, json) = fetch_json(client, meta_key, Ok(url.clone()))
                 .await
                 .with_context(|| {
                     format!(
@@ -227,9 +227,10 @@ async fn try_locate_json(
                         url.as_str(),
                         meta_key,
                     )
-                })?,
-            vec![],
-        )),
+                })?;
+
+            Some((json, vec![], url))
+        },
         Err(()) => {
             bail!(
                 "Cached metadata fetch {:?} for {} failed (not trying last-resort)",
@@ -244,6 +245,7 @@ async fn process_full(
     client: &Client,
     addr: String,
     first_verified_creator: Option<String>,
+    fetch_uri: String,
     json: MetadataJson,
     fingerprint: Vec<u8>,
 ) -> Result<()> {
@@ -282,6 +284,7 @@ async fn process_full(
         category: category.map(Owned),
         raw_content: Owned(raw_content),
         model: Some(Borrowed("full")),
+        fetch_uri: Owned(fetch_uri),
     };
 
     client
@@ -313,6 +316,7 @@ async fn process_full(
 async fn process_minimal(
     client: &Client,
     addr: String,
+    fetch_uri: String,
     json: MetadataJsonMinimal,
     fingerprint: Vec<u8>,
     full_err: serde_json::Error,
@@ -355,6 +359,7 @@ async fn process_minimal(
         category: to_opt_string(&category),
         raw_content: Owned(raw_content),
         model: Some(Owned(format!("minimal ({})", full_err))),
+        fetch_uri: Owned(fetch_uri),
     };
 
     client
@@ -526,15 +531,24 @@ pub async fn process<'a>(
         return Ok(());
     }
 
-    debug!("{:?} -> {:?}", url.as_str(), id);
+    trace!("{:?} -> {:?}", url.as_str(), id);
 
-    if let Some((json, fingerprint)) = try_locate_json(client, &url, &id, meta_key).await? {
+    if let Some((json, fingerprint, url)) = try_locate_json(client, &url, &id, meta_key).await? {
         match json {
-            MetadataJsonResult::Full(f) => {
-                process_full(client, addr, first_verified_creator, f, fingerprint).await?;
+            MetadataJsonResult::Full(value) => {
+                process_full(
+                    client,
+                    addr,
+                    first_verified_creator,
+                    url.to_string(),
+                    value,
+                    fingerprint,
+                )
+                .await?;
             },
             MetadataJsonResult::Minimal { value, full_err } => {
-                process_minimal(client, addr, value, fingerprint, full_err).await?;
+                process_minimal(client, addr, url.to_string(), value, fingerprint, full_err)
+                    .await?;
             },
         }
     }
