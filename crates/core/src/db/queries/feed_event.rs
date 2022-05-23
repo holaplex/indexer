@@ -72,6 +72,7 @@ pub fn list<W: Clone + AsExpression<Text>>(
 > where <W as AsExpression<Text>>::Expression: NonAggregate + AppearsOnTable<Join<graph_connections::table, JoinOn<Join<JoinOn<Join<JoinOn<Join<JoinOn<Join<JoinOn<Join<JoinOn<Join<JoinOn<Join<feed_event_wallets::table, feed_events::table, Inner>, Eq<Nullable<feed_event_wallets::feed_event_id>, Nullable<feed_events::id>>>, twitter_handle_name_services::table, LeftOuter>, Eq<feed_event_wallets::wallet_address, twitter_handle_name_services::wallet_address>>, mint_events::table, LeftOuter>, Eq<feed_events::id, mint_events::feed_event_id>>, offer_events::table, LeftOuter>, Eq<feed_events::id, offer_events::feed_event_id>>, listing_events::table, LeftOuter>, Eq<feed_events::id, listing_events::feed_event_id>>, purchase_events::table, LeftOuter>, Eq<feed_events::id, purchase_events::feed_event_id>>, follow_events::table, LeftOuter>, Eq<feed_events::id, follow_events::feed_event_id>>, Inner>> + QueryFragment<Pg> + QueryId{
     let following_query = graph_connections::table
         .filter(graph_connections::from_account.eq(wallet))
+        .filter(graph_connections::disconnected_at.is_null())
         .select(graph_connections::to_account);
 
     let mut query = feed_event_wallets::table
