@@ -747,6 +747,28 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    listings (address) {
+        address -> Uuid,
+        trade_state -> Varchar,
+        bookkeeper -> Varchar,
+        auction_house -> Varchar,
+        seller -> Varchar,
+        metadata -> Varchar,
+        purchase_receipt -> Nullable<Varchar>,
+        price -> Int8,
+        token_size -> Int8,
+        bump -> Nullable<Int2>,
+        trade_state_bump -> Int2,
+        created_at -> Timestamp,
+        canceled_at -> Nullable<Timestamp>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     locker_params (locker_address) {
         locker_address -> Varchar,
         whitelist_enabled -> Bool,
@@ -1014,6 +1036,25 @@ table! {
         token_size -> Int8,
         price -> Int8,
         bump -> Int2,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    purchases (address) {
+        address -> Uuid,
+        bookkeeper -> Varchar,
+        buyer -> Varchar,
+        seller -> Varchar,
+        auction_house -> Varchar,
+        metadata -> Varchar,
+        token_size -> Int8,
+        price -> Int8,
+        bump -> Nullable<Int2>,
         created_at -> Timestamp,
     }
 }
@@ -1308,12 +1349,9 @@ joinable!(feed_event_wallets -> feed_events (feed_event_id));
 joinable!(follow_events -> feed_events (feed_event_id));
 joinable!(follow_events -> graph_connections (graph_connection_address));
 joinable!(listing_events -> feed_events (feed_event_id));
-joinable!(listing_events -> listing_receipts (listing_receipt_address));
 joinable!(mint_events -> feed_events (feed_event_id));
-joinable!(offer_events -> bid_receipts (bid_receipt_address));
 joinable!(offer_events -> feed_events (feed_event_id));
 joinable!(purchase_events -> feed_events (feed_event_id));
-joinable!(purchase_events -> purchase_receipts (purchase_receipt_address));
 
 allow_tables_to_appear_in_same_query!(
     attributes,
@@ -1361,6 +1399,7 @@ allow_tables_to_appear_in_same_query!(
     listing_events,
     listing_metadatas,
     listing_receipts,
+    listings,
     locker_params,
     locker_whitelist_entries,
     lockers,
@@ -1379,6 +1418,7 @@ allow_tables_to_appear_in_same_query!(
     proposals,
     purchase_events,
     purchase_receipts,
+    purchases,
     sell_instructions,
     smart_wallet_owners,
     smart_wallets,

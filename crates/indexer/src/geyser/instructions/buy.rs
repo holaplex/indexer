@@ -97,15 +97,19 @@ async fn upsert_into_offers_table<'a>(
                     offers::trade_state
                         .eq(row.trade_state.clone())
                         .and(offers::bookkeeper.eq(row.bookkeeper.clone()))
-                        .and(offers::bookkeeper.eq(row.bookkeeper.clone()))
                         .and(offers::auction_house.eq(row.auction_house.clone()))
                         .and(offers::buyer.eq(row.buyer.clone()))
                         .and(offers::metadata.eq(row.metadata.clone()))
                         .and(offers::price.eq(row.price))
-                        .and(offers::token_size.eq(row.token_size)),
+                        .and(offers::token_size.eq(row.token_size))
+                        .and(offers::trade_state_bump.eq(row.trade_state_bump)),
                 ),
             ))
             .get_result::<bool>(db);
+
+            if Ok(true) == offer {
+                return Ok(None);
+            }
 
             let offer_uuid = insert_into(offers::table)
                 .values(&row)
@@ -117,10 +121,6 @@ async fn upsert_into_offers_table<'a>(
                 .to_string();
 
             let uuid = offer_uuid.clone();
-
-            if Ok(true) == offer {
-                return Ok(None);
-            }
 
             db.build_transaction().read_write().run(|| {
                 let metadata_owner: String = current_metadata_owners::table

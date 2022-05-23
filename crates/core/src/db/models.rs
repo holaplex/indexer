@@ -2021,3 +2021,55 @@ pub struct Offer<'a> {
     /// Canceled_at timestamp
     pub canceled_at: Option<NaiveDateTime>,
 }
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Purchase<'a> {
+    /// Bookkeeper account pubkey
+    pub bookkeeper: Cow<'a, str>,
+    /// Buyer account pubkey
+    pub buyer: Cow<'a, str>,
+    /// Seller account pubkey
+    pub seller: Cow<'a, str>,
+    /// Auction House account pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Metadata
+    pub metadata: Cow<'a, str>,
+    /// Token size
+    pub token_size: i64,
+    /// Price
+    pub price: i64,
+    /// Bump
+    pub bump: Option<i16>,
+    /// Created at
+    pub created_at: NaiveDateTime,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Listing<'a> {
+    /// Trade state account pubkey
+    pub trade_state: Cow<'a, str>,
+    /// Bookkeeper account pubkey
+    pub bookkeeper: Cow<'a, str>,
+    /// Auction House pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Seller account pubkey
+    pub seller: Cow<'a, str>,
+    /// Metadata Address
+    pub metadata: Cow<'a, str>,
+    /// PurchaseReceipt account address
+    pub purchase_receipt: Option<Cow<'a, str>>,
+    /// Price
+    pub price: i64,
+    /// Token Size
+    pub token_size: i64,
+    /// Bump
+    pub bump: Option<i16>,
+    /// Trade State Bump
+    pub trade_state_bump: i16,
+    /// Created_at timestamp
+    pub created_at: NaiveDateTime,
+    /// Canceled_at timestamp
+    pub canceled_at: Option<NaiveDateTime>,
+}

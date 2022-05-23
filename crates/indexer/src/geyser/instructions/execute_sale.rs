@@ -1,6 +1,14 @@
 use borsh::BorshDeserialize;
-use indexer_core::db::{
-    insert_into, models::ExecuteSaleInstruction, tables::execute_sale_instructions,
+use indexer_core::{
+    db::{
+        insert_into,
+        models::{ExecuteSaleInstruction, FeedEventWallet, Purchase, PurchaseEvent},
+        select,
+        tables::{
+            execute_sale_instructions, feed_event_wallets, feed_events, purchase_events, purchases,
+        },
+    },
+    uuid::Uuid,
 };
 
 use super::Client;
@@ -51,6 +59,10 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
         created_at: Utc::now().naive_utc(),
     };
 
+    upsert_into_purchases_table(client, row.clone())
+        .await
+        .context("failed to insert purchase!")?;
+
     client
         .db()
         .run(move |db| {
@@ -60,5 +72,91 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
         })
         .await
         .context("failed to insert execute sale instruction ")?;
+    Ok(())
+}
+
+async fn upsert_into_purchases_table<'a>(
+    client: &Client,
+    data: ExecuteSaleInstruction<'static>,
+) -> Result<()> {
+    let row = Purchase {
+        bookkeeper: data.buyer.clone(),
+        buyer: data.buyer.clone(),
+        seller: data.seller.clone(),
+        auction_house: data.auction_house.clone(),
+        metadata: data.metadata.clone(),
+        token_size: data.token_size,
+        price: data.buyer_price,
+        bump: None,
+        created_at: data.created_at,
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            let purchase_exists = select(exists(
+                purchases::table.filter(
+                    purchases::bookkeeper
+                        .eq(row.bookkeeper.clone())
+                        .and(purchases::buyer.eq(row.buyer.clone()))
+                        .and(purchases::seller.eq(row.seller.clone()))
+                        .and(purchases::auction_house.eq(row.auction_house.clone()))
+                        .and(purchases::metadata.eq(row.metadata.clone()))
+                        .and(purchases::price.eq(row.price))
+                        .and(purchases::token_size.eq(row.token_size)),
+                ),
+            ))
+            .get_result::<bool>(db);
+
+            if Ok(true) == purchase_exists {
+                return Ok(());
+            }
+
+            let purchase_uuid = insert_into(purchases::table)
+                .values(&row)
+                .on_conflict_do_nothing()
+                .returning(purchases::address)
+                .get_results::<Uuid>(db)?
+                .get(0)
+                .context("failed to get inserted purchase")?
+                .to_string();
+
+            db.build_transaction().read_write().run(|| {
+                let feed_event_id = insert_into(feed_events::table)
+                    .default_values()
+                    .returning(feed_events::id)
+                    .get_result::<Uuid>(db)
+                    .context("Failed to insert feed event")?;
+
+                insert_into(purchase_events::table)
+                    .values(&PurchaseEvent {
+                        feed_event_id,
+                        purchase_receipt_address: Owned(purchase_uuid),
+                    })
+                    .execute(db)
+                    .context("failed to insert purchase created event")?;
+
+                insert_into(feed_event_wallets::table)
+                    .values(&FeedEventWallet {
+                        wallet_address: row.seller,
+                        feed_event_id,
+                    })
+                    .execute(db)
+                    .context("Failed to insert purchase feed event wallet for seller")?;
+
+                insert_into(feed_event_wallets::table)
+                    .values(&FeedEventWallet {
+                        wallet_address: row.buyer,
+                        feed_event_id,
+                    })
+                    .execute(db)
+                    .context("Failed to insert purchase feed event wallet for buyer")?;
+
+                Result::<_>::Ok(())
+            })
+        })
+        .await
+        .context("Failed to insert purchase!")?;
+
     Ok(())
 }

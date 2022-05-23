@@ -4,13 +4,14 @@ use indexer_core::{
         insert_into,
         models::{
             BidReceipt as DbBidReceipt, FeedEventWallet, ListingEvent,
-            ListingReceipt as DbListingReceipt, Offer, OfferEvent, PurchaseEvent,
+            ListingReceipt as DbListingReceipt, Offer, OfferEvent, Purchase, PurchaseEvent,
             PurchaseReceipt as DbPurchaseReceipt,
         },
         on_constraint, select,
         tables::{
             bid_receipts, current_metadata_owners, feed_event_wallets, feed_events, listing_events,
             listing_receipts, metadatas, offer_events, offers, purchase_events, purchase_receipts,
+            purchases,
         },
         Error as DbError,
     },
@@ -119,6 +120,8 @@ pub(crate) async fn process_purchase_receipt(
         created_at: util::unix_timestamp(purchase.created_at)?,
     };
 
+    let values = row.clone();
+
     client
         .db()
         .run(move |db| {
@@ -174,6 +177,10 @@ pub(crate) async fn process_purchase_receipt(
         .await
         .context("Failed to insert purchase receipt!")?;
 
+    upsert_into_purchases_table(client, values)
+        .await
+        .context("Failed to insert purchase")?;
+
     Ok(())
 }
 
@@ -183,18 +190,14 @@ pub(crate) async fn process_bid_receipt(
     bid_receipt: BidReceipt,
 ) -> Result<()> {
     let row = DbBidReceipt {
-        address: Owned(bs58::encode(key).into_string()),
-        trade_state: Owned(bs58::encode(bid_receipt.trade_state).into_string()),
-        bookkeeper: Owned(bs58::encode(bid_receipt.bookkeeper).into_string()),
-        auction_house: Owned(bs58::encode(bid_receipt.auction_house).into_string()),
-        buyer: Owned(bs58::encode(bid_receipt.buyer).into_string()),
-        metadata: Owned(bs58::encode(bid_receipt.metadata).into_string()),
-        token_account: bid_receipt
-            .token_account
-            .map(|t| Owned(bs58::encode(t).into_string())),
-        purchase_receipt: bid_receipt
-            .purchase_receipt
-            .map(|p| Owned(bs58::encode(p).into_string())),
+        address: Owned(key.to_string()),
+        trade_state: Owned(bid_receipt.trade_state.to_string()),
+        bookkeeper: Owned(bid_receipt.bookkeeper.to_string()),
+        auction_house: Owned(bid_receipt.auction_house.to_string()),
+        buyer: Owned(bid_receipt.buyer.to_string()),
+        metadata: Owned(bid_receipt.metadata.to_string()),
+        token_account: bid_receipt.token_account.map(|t| Owned(t.to_string())),
+        purchase_receipt: bid_receipt.purchase_receipt.map(|p| Owned(p.to_string())),
         price: bid_receipt.price.try_into()?,
         token_size: bid_receipt.token_size.try_into()?,
         bump: bid_receipt.bump.into(),
@@ -215,7 +218,6 @@ pub(crate) async fn process_bid_receipt(
                 offers::table.filter(
                     offers::trade_state
                         .eq(row.trade_state.clone())
-                        .and(offers::bookkeeper.eq(row.bookkeeper.clone()))
                         .and(offers::bookkeeper.eq(row.bookkeeper.clone()))
                         .and(offers::auction_house.eq(row.auction_house.clone()))
                         .and(offers::buyer.eq(row.buyer.clone()))
@@ -327,6 +329,38 @@ async fn upsert_into_offers_table<'a>(client: &Client, data: DbBidReceipt<'stati
         })
         .await
         .context("Failed to insert offer")?;
+
+    Ok(())
+}
+
+async fn upsert_into_purchases_table<'a>(
+    client: &Client,
+    data: DbPurchaseReceipt<'static>,
+) -> Result<()> {
+    let row = Purchase {
+        bookkeeper: data.buyer.clone(),
+        buyer: data.buyer.clone(),
+        seller: data.seller.clone(),
+        auction_house: data.auction_house.clone(),
+        metadata: data.metadata.clone(),
+        token_size: data.token_size,
+        price: data.price,
+        bump: Some(data.bump),
+        created_at: data.created_at,
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(purchases::table)
+                .values(&row)
+                .on_conflict(on_constraint("purchases_unique_fields"))
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
+        .context("Failed to insert purchase!")?;
 
     Ok(())
 }
