@@ -4,7 +4,7 @@ use indexer_core::db::{
 use namespaces::state::Entry;
 
 use super::Client;
-use crate::prelude::*;
+use crate::{prelude::*, search_dispatch::TwitterHandleDocument};
 
 pub(crate) async fn process(
     client: &Client,
@@ -20,6 +20,11 @@ pub(crate) async fn process(
         bs58::encode(wallet_address).into_string()
     } else {
         return Ok(());
+    };
+
+    let document = TwitterHandleDocument {
+        owner: wallet_address.to_string(),
+        handle: entry.name.clone(),
     };
 
     let values = TwitterHandle {
@@ -46,8 +51,12 @@ pub(crate) async fn process(
         .await
         .context("failed to load twitter handle name services accounts!")?;
 
+    let search_backfill;
+
     match rows.get(0) {
         Some(indexed) if (slot, write_version) > (indexed.slot, indexed.write_version) => {
+            search_backfill = Some(false);
+
             client
                 .db()
                 .run(move |db| {
@@ -62,8 +71,10 @@ pub(crate) async fn process(
                 .await
                 .context("failed to update twitter handle")?;
         },
-        Some(_) => (),
+        Some(_) => search_backfill = None,
         None => {
+            search_backfill = Some(true);
+
             client
                 .db()
                 .run(move |db| {
@@ -77,6 +88,14 @@ pub(crate) async fn process(
                 .await
                 .context("failed to insert twitter handle")?;
         },
+    }
+
+    if let Some(backfill) = search_backfill {
+        client
+            .search()
+            .upsert_twitter_handle(backfill, key, document)
+            .await
+            .context("Failed to dispatch upsert twitter handle document job")?;
     }
 
     Ok(())
