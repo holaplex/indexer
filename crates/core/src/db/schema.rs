@@ -747,14 +747,14 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    listings (address) {
-        address -> Uuid,
+    listings (id) {
+        id -> Uuid,
         trade_state -> Varchar,
         bookkeeper -> Varchar,
         auction_house -> Varchar,
         seller -> Varchar,
         metadata -> Varchar,
-        purchase_receipt -> Nullable<Varchar>,
+        purchase_id -> Nullable<Uuid>,
         price -> Int8,
         token_size -> Int8,
         bump -> Nullable<Int2>,
@@ -929,15 +929,15 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    offers (address) {
-        address -> Uuid,
+    offers (id) {
+        id -> Uuid,
         trade_state -> Varchar,
         bookkeeper -> Varchar,
         auction_house -> Varchar,
         buyer -> Varchar,
         metadata -> Varchar,
         token_account -> Nullable<Varchar>,
-        purchase_receipt -> Nullable<Varchar>,
+        purchase_id -> Nullable<Uuid>,
         price -> Int8,
         token_size -> Int8,
         bump -> Nullable<Int2>,
@@ -1045,8 +1045,8 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    purchases (address) {
-        address -> Uuid,
+    purchases (id) {
+        id -> Uuid,
         bookkeeper -> Varchar,
         buyer -> Varchar,
         seller -> Varchar,

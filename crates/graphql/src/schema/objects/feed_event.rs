@@ -1,8 +1,11 @@
-use indexer_core::db::{models, queries};
+use indexer_core::{
+    db::{models, queries},
+    uuid::Uuid,
+};
 use juniper::GraphQLUnion;
 use objects::{
     bid_receipt::BidReceipt, graph_connection::GraphConnection, listing_receipt::ListingReceipt,
-    nft::Nft, profile::TwitterProfile, purchase_receipt::PurchaseReceipt,
+    nft::Nft, offer::Offer, profile::TwitterProfile, purchase_receipt::PurchaseReceipt,
 };
 
 use super::prelude::*;
@@ -155,9 +158,9 @@ impl OfferEvent {
         &self.bid_receipt_address
     }
 
-    pub async fn offer(&self, ctx: &AppContext) -> FieldResult<Option<BidReceipt>> {
-        ctx.bid_receipt_loader
-            .load(self.bid_receipt_address.clone())
+    pub async fn offer(&self, ctx: &AppContext) -> FieldResult<Option<Offer>> {
+        ctx.offer_loader
+            .load(Uuid::parse_str(&self.bid_receipt_address.to_string())?)
             .await
             .map_err(Into::into)
     }

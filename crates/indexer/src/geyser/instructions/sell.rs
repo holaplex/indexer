@@ -77,7 +77,7 @@ async fn upsert_into_listings_table<'a>(
         auction_house: data.auction_house.clone(),
         seller: data.wallet.clone(),
         metadata: data.metadata.clone(),
-        purchase_receipt: None,
+        purchase_id: None,
         price: data.buyer_price,
         token_size: data.token_size,
         bump: None,
@@ -111,7 +111,7 @@ async fn upsert_into_listings_table<'a>(
             let listing_uuid = insert_into(listings::table)
                 .values(&row)
                 .on_conflict_do_nothing()
-                .returning(listings::address)
+                .returning(listings::id)
                 .get_results::<Uuid>(db)?
                 .get(0)
                 .context("failed to get inserted listing")?

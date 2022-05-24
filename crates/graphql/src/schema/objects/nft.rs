@@ -4,7 +4,7 @@ use indexer_core::{
     util::unix_timestamp,
 };
 use objects::{
-    auction_house::AuctionHouse, bid_receipt::BidReceipt, listing_receipt::ListingReceipt,
+    auction_house::AuctionHouse, listing_receipt::ListingReceipt, offer::Offer,
     profile::TwitterProfile, purchase_receipt::PurchaseReceipt, wallet::Wallet,
 };
 use reqwest::Url;
@@ -446,8 +446,8 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
-    pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<BidReceipt>> {
-        ctx.bid_receipts_loader
+    pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<Offer>> {
+        ctx.offers_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)

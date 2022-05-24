@@ -302,13 +302,14 @@ pub(crate) async fn process_bid_receipt(
 
 async fn upsert_into_offers_table<'a>(client: &Client, data: DbBidReceipt<'static>) -> Result<()> {
     let row = Offer {
+        id: None,
         trade_state: data.trade_state,
         bookkeeper: data.bookkeeper,
         auction_house: data.auction_house,
         buyer: data.buyer,
         metadata: data.metadata,
         token_account: data.token_account,
-        purchase_receipt: data.purchase_receipt,
+        purchase_id: None,
         price: data.price,
         token_size: data.token_size,
         bump: Some(data.bump),

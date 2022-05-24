@@ -1,5 +1,11 @@
 use borsh::BorshDeserialize;
-use indexer_core::db::{insert_into, models::CancelInstruction, tables::cancel_instructions};
+use indexer_core::db::{
+    insert_into,
+    models::CancelInstruction,
+    select,
+    tables::{cancel_instructions, current_metadata_owners, listings, offers},
+    update,
+};
 
 use super::Client;
 use crate::prelude::*;
@@ -38,9 +44,51 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
         .run(move |db| {
             insert_into(cancel_instructions::table)
                 .values(&row)
-                .execute(db)
+                .execute(db)?;
+            db.build_transaction().read_write().run(|| {
+                let wallet_is_owner = select(exists(
+                    current_metadata_owners::table.filter(
+                        current_metadata_owners::owner_address
+                            .eq(row.wallet.clone())
+                            .and(
+                                current_metadata_owners::token_account_address
+                                    .eq(row.token_account.clone()),
+                            ),
+                    ),
+                ))
+                .get_result::<bool>(db);
+
+                if Ok(true) == wallet_is_owner {
+                    update(
+                        listings::table.filter(
+                            listings::trade_state
+                                .eq(row.trade_state.clone())
+                                .and(listings::auction_house.eq(row.auction_house.clone()))
+                                .and(listings::bookkeeper.eq(row.wallet.clone()))
+                                .and(listings::price.eq(row.buyer_price))
+                                .and(listings::token_size.eq(row.token_size)),
+                        ),
+                    )
+                    .set(listings::canceled_at.eq(Some(row.created_at)))
+                    .execute(db)
+                } else {
+                    update(
+                        offers::table.filter(
+                            offers::trade_state
+                                .eq(row.trade_state.clone())
+                                .and(offers::auction_house.eq(row.auction_house.clone()))
+                                .and(offers::token_account.eq(row.token_account.clone()))
+                                .and(offers::price.eq(row.buyer_price))
+                                .and(offers::token_size.eq(row.token_size)),
+                        ),
+                    )
+                    .set(offers::canceled_at.eq(Some(row.created_at)))
+                    .execute(db)
+                }
+            })
         })
         .await
         .context("failed to insert cancel instruction ")?;
+
     Ok(())
 }

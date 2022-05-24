@@ -74,13 +74,14 @@ async fn upsert_into_offers_table<'a>(
     data: BuyInstruction<'static>,
 ) -> Result<()> {
     let row = Offer {
+        id: None,
         trade_state: data.buyer_trade_state,
         bookkeeper: data.wallet.clone(),
         auction_house: data.auction_house,
         buyer: data.wallet,
         metadata: data.metadata,
         token_account: Some(data.token_account),
-        purchase_receipt: None,
+        purchase_id: None,
         price: data.buyer_price,
         token_size: data.token_size,
         bump: None,
@@ -114,7 +115,7 @@ async fn upsert_into_offers_table<'a>(
             let offer_uuid = insert_into(offers::table)
                 .values(&row)
                 .on_conflict_do_nothing()
-                .returning(offers::address)
+                .returning(offers::id)
                 .get_results::<Uuid>(db)?
                 .get(0)
                 .context("failed to get inserted offer")?

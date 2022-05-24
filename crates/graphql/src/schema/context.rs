@@ -1,4 +1,5 @@
 use dataloaders::{Batcher, Loader, TwitterBatcher};
+use indexer_core::uuid::Uuid;
 use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
@@ -6,6 +7,7 @@ use objects::{
     listing::{Bid, Listing},
     listing_receipt::ListingReceipt,
     nft::{Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
+    offer::Offer,
     profile::TwitterProfile,
     purchase_receipt::PurchaseReceipt,
     stats::{MarketStats, MintStats},
@@ -39,6 +41,8 @@ pub struct AppContext {
     pub purchase_receipts_loader: Loader<PublicKey<Nft>, Vec<PurchaseReceipt>>,
     pub purchase_receipt_loader: Loader<PublicKey<PurchaseReceipt>, Option<PurchaseReceipt>>,
     pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
+    pub offers_loader: Loader<PublicKey<Nft>, Vec<Offer>>,
+    pub offer_loader: Loader<Uuid, Option<Offer>>,
     pub bid_receipt_loader: Loader<PublicKey<BidReceipt>, Option<BidReceipt>>,
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
     pub collection_count_loader: Loader<PublicKey<StoreCreator>, Option<i32>>,
@@ -77,6 +81,8 @@ impl AppContext {
             store_creator_loader: Loader::new(batcher.clone()),
             collection_count_loader: Loader::new(batcher.clone()),
             collection_loader: Loader::new(batcher.clone()),
+            offers_loader: Loader::new(batcher.clone()),
+            offer_loader: Loader::new(batcher.clone()),
             nft_loader: Loader::new(batcher),
             twitter_profile_loader: Loader::new(twitter_batcher),
             shared,

@@ -5,8 +5,10 @@ use indexer_core::{
         models::{ExecuteSaleInstruction, FeedEventWallet, Purchase, PurchaseEvent},
         select,
         tables::{
-            execute_sale_instructions, feed_event_wallets, feed_events, purchase_events, purchases,
+            execute_sale_instructions, feed_event_wallets, feed_events, listings, offers,
+            purchase_events, purchases,
         },
+        update,
     },
     uuid::Uuid,
 };
@@ -112,14 +114,39 @@ async fn upsert_into_purchases_table<'a>(
                 return Ok(());
             }
 
-            let purchase_uuid = insert_into(purchases::table)
+            let uuids = insert_into(purchases::table)
                 .values(&row)
                 .on_conflict_do_nothing()
-                .returning(purchases::address)
-                .get_results::<Uuid>(db)?
-                .get(0)
-                .context("failed to get inserted purchase")?
-                .to_string();
+                .returning(purchases::id)
+                .get_results::<Uuid>(db)?;
+
+            let purchase_uuid = uuids.get(0).context("failed to get inserted purchase")?;
+
+            update(
+                offers::table.filter(
+                    offers::buyer
+                        .eq(row.buyer.clone())
+                        .and(offers::auction_house.eq(row.auction_house.clone()))
+                        .and(offers::metadata.eq(row.metadata.clone()))
+                        .and(offers::price.eq(row.price))
+                        .and(offers::token_size.eq(row.token_size)),
+                ),
+            )
+            .set(offers::purchase_id.eq(Some(purchase_uuid)))
+            .execute(db)?;
+
+            update(
+                listings::table.filter(
+                    listings::auction_house
+                        .eq(row.auction_house.clone())
+                        .and(listings::auction_house.eq(row.auction_house.clone()))
+                        .and(listings::metadata.eq(row.metadata.clone()))
+                        .and(listings::price.eq(row.price))
+                        .and(listings::token_size.eq(row.token_size)),
+                ),
+            )
+            .set(listings::purchase_id.eq(Some(purchase_uuid)))
+            .execute(db)?;
 
             db.build_transaction().read_write().run(|| {
                 let feed_event_id = insert_into(feed_events::table)
@@ -131,7 +158,7 @@ async fn upsert_into_purchases_table<'a>(
                 insert_into(purchase_events::table)
                     .values(&PurchaseEvent {
                         feed_event_id,
-                        purchase_receipt_address: Owned(purchase_uuid),
+                        purchase_receipt_address: Owned(purchase_uuid.to_string()),
                     })
                     .execute(db)
                     .context("failed to insert purchase created event")?;
