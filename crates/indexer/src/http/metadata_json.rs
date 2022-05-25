@@ -134,7 +134,7 @@ async fn fetch_json(
 
     let end_time = Local::now();
 
-    debug!(
+    trace!(
         "Metadata JSON URI {:?} for {} fetched in {}",
         url.as_str(),
         meta_key,
@@ -145,7 +145,7 @@ async fn fetch_json(
     match serde_json::from_slice(&bytes) {
         Ok(f) => return Ok((url, MetadataJsonResult::Full(f))),
         Err(e) => {
-            debug!(
+            trace!(
                 "Failed to parse full metadata JSON for {:?}: {:?}",
                 url.as_str(),
                 e
@@ -157,7 +157,7 @@ async fn fetch_json(
     match serde_json::from_slice(&bytes) {
         Ok(value) => return Ok((url, MetadataJsonResult::Minimal { value, full_err })),
         Err(e) => {
-            debug!(
+            trace!(
                 "Failed to parse minimal metadata JSON for {:?}: {:?}",
                 url.as_str(),
                 e
@@ -178,7 +178,7 @@ async fn try_locate_json(
     meta_key: Pubkey,
 ) -> Result<Option<(MetadataJsonResult, Vec<u8>, Url)>> {
     // Set to true for fallback
-    const TRY_LAST_RESORT: bool = true;
+    const TRY_LAST_RESORT: bool = false;
 
     let mut resp = Ok(None);
 
@@ -195,7 +195,7 @@ async fn try_locate_json(
 
         match fetch_json(client, meta_key, url).await {
             Ok((url, json)) => {
-                debug!("Using fetch from {:?} for metadata {}", url_str, meta_key);
+                trace!("Using fetch from {:?} for metadata {}", url_str, meta_key);
                 resp = Ok(Some((json, fingerprint, url)));
                 break;
             },
@@ -213,7 +213,7 @@ async fn try_locate_json(
     Ok(match resp {
         Ok(Some((res, fingerprint, url))) => Some((res, fingerprint.into_owned(), url)),
         Ok(None) => {
-            debug!(
+            trace!(
                 "Not fetching unparseable url {:?} for {}",
                 url.as_str(),
                 meta_key
@@ -399,7 +399,7 @@ fn process_files(
         let (uri, ty) = if let Some(v) = uri.zip(ty) {
             v
         } else {
-            debug!("Skipping malformed file in JSON");
+            trace!("Skipping malformed file in JSON");
             continue;
         };
 
@@ -560,41 +560,35 @@ pub async fn process<'a>(
     uri_str: String,
     (slot, write_version): (u64, u64),
 ) -> Result<()> {
-    let slot = i64::try_from(slot).context("Slot was too big to store")?;
-    let write_version =
-        i64::try_from(write_version).context("Write version was too big to store")?;
-    let slot_info = (slot, write_version);
+    let slot_info = (
+        i64::try_from(slot).context("Slot was too big to store")?,
+        i64::try_from(write_version).context("Write version was too big to store")?,
+    );
 
     let url = match Url::parse(&uri_str) {
         Ok(u) => u,
         Err(e) => {
             // Don't return an error because this happens A Lot.
-            debug!("Couldn't parse metadata URL: {:?}", e);
+            trace!("Couldn't parse metadata URL: {:?}", e);
             return Ok(());
         },
     };
     let id = AssetIdentifier::new(&url);
 
-    let possible_fingerprints: Vec<_> = id.fingerprints().map(Cow::into_owned).collect();
     let addr = bs58::encode(meta_key).into_string();
-
     let existing_row = client
         .db()
         .run({
             let addr = addr.clone();
             move |db| {
                 metadata_jsons::table
-                    .filter(
-                        metadata_jsons::metadata_address
-                            .eq(addr)
-                            .and(metadata_jsons::fingerprint.eq(any(possible_fingerprints)))
-                            .and(metadata_jsons::model.ne("minimal")),
-                    )
+                    .filter(metadata_jsons::metadata_address.eq(addr))
                     .select((
+                        metadata_jsons::fingerprint,
                         metadata_jsons::raw_content,
                         (metadata_jsons::slot, metadata_jsons::write_version),
                     ))
-                    .first::<(Value, SlotInfo)>(db)
+                    .first::<(Cow<[u8]>, Value, SlotInfo)>(db)
                     .optional()
             }
         })
@@ -604,17 +598,20 @@ pub async fn process<'a>(
     let first_verified_creator =
         first_verified_creator.map(|address| bs58::encode(address).into_string());
 
-    if let Some((json, existing_slot_info)) = existing_row {
-        debug!(
-            "Skipping already-indexed metadata JSON for {} (seen at slot_info={:?})",
-            meta_key, existing_slot_info
-        );
+    if let Some((fingerprint, json, existing_slot_info)) = existing_row {
+        if existing_slot_info > slot_info || id.fingerprints().any(|f| fingerprint == f) {
+            trace!(
+                "Skipping already-indexed metadata JSON for {} (seen at slot_info={:?})",
+                meta_key,
+                existing_slot_info
+            );
 
-        reprocess_attributes(client, addr.clone(), first_verified_creator, slot_info).await?;
+            reprocess_attributes(client, addr.clone(), first_verified_creator, slot_info).await?;
 
-        dispatch_metadata_document(client, true, addr, json).await?;
+            dispatch_metadata_document(client, true, addr, json).await?;
 
-        return Ok(());
+            return Ok(());
+        }
     }
 
     trace!("{:?} -> {:?}", url.as_str(), id);
