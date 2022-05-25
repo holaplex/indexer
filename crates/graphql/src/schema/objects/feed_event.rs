@@ -4,8 +4,8 @@ use indexer_core::{
 };
 use juniper::GraphQLUnion;
 use objects::{
-    bid_receipt::BidReceipt, graph_connection::GraphConnection, listing_receipt::ListingReceipt,
-    nft::Nft, offer::Offer, profile::TwitterProfile, purchase_receipt::PurchaseReceipt,
+    graph_connection::GraphConnection, listing_receipt::ListingReceipt, nft::Nft, offer::Offer,
+    profile::TwitterProfile, purchase_receipt::PurchaseReceipt,
 };
 
 use super::prelude::*;
@@ -120,7 +120,7 @@ pub struct OfferEvent {
     feed_event_id: String,
     twitter_handle: Option<String>,
     wallet_address: String,
-    bid_receipt_address: PublicKey<BidReceipt>,
+    bid_receipt_address: String,
     lifecycle: String,
 }
 
@@ -154,7 +154,7 @@ impl OfferEvent {
         &self.lifecycle
     }
 
-    fn bid_receipt_address(&self) -> &PublicKey<BidReceipt> {
+    fn bid_receipt_address(&self) -> &str {
         &self.bid_receipt_address
     }
 
@@ -322,7 +322,7 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
             ) => Ok(Self::Offer(OfferEvent {
                 feed_event_id: id.to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
-                bid_receipt_address: bid_receipt_address.into_owned().into(),
+                bid_receipt_address: bid_receipt_address.into_owned(),
                 lifecycle: lifecycle.to_string(),
                 twitter_handle,
                 wallet_address,
