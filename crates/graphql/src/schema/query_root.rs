@@ -1,4 +1,5 @@
 use indexer_core::db::{
+    expression::dsl::sum,
     queries::{self, feed_event::EventType},
     tables::twitter_handle_name_services,
 };
@@ -23,7 +24,8 @@ use scalars::PublicKey;
 use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, bid_receipts, graph_connections,
-    listing_receipts, metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
+    listing_receipts, metadata_creators, metadata_jsons, metadatas, store_config_jsons,
+    storefronts, wallet_totals,
 };
 
 use super::prelude::*;
@@ -343,9 +345,15 @@ impl QueryRoot {
     ) -> FieldResult<Vec<ListingReceipt>> {
         let conn = context.shared.db.get().context("Failed to connect to DB")?;
 
+        // choose listings whose NFT's creators have a lot of followers
         let listings: Vec<models::ListingReceipt> = listing_receipts::table
             .inner_join(
-                wallet_totals::table.on(wallet_totals::address.eq(listing_receipts::seller)),
+                metadata_creators::table
+                    .on(metadata_creators::metadata_address.eq(listing_receipts::metadata)),
+            )
+            .inner_join(
+                wallet_totals::table
+                    .on(wallet_totals::address.eq(metadata_creators::creator_address)),
             )
             .select(listing_receipts::all_columns)
             .filter(listing_receipts::canceled_at.is_null())
@@ -358,8 +366,11 @@ impl QueryRoot {
                 listing_receipts::seller
                     .ne_all(&context.shared.featured_listings_seller_exclusions),
             )
-            .filter(listing_receipts::seller.eq(wallet_totals::address))
-            .order(wallet_totals::followers.desc())
+            .filter(metadata_creators::share.gt(0))
+            .filter(metadata_creators::verified.eq(true))
+            .group_by(listing_receipts::metadata)
+            .group_by(listing_receipts::address)
+            .order(sum(wallet_totals::followers).desc())
             .limit(limit.into())
             .offset(offset.into())
             .load(&conn)
