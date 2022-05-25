@@ -1,16 +1,13 @@
 use indexer_core::uuid::Uuid;
-use objects::{nft::Nft, ah_listing::Listing};
+use objects::{ah_listing::Listing, nft::Nft};
 use scalars::PublicKey;
-use tables::{metadatas, listings};
+use tables::{current_metadata_owners, listings, metadatas};
 
 use super::prelude::*;
 
 #[async_trait]
 impl TryBatchFn<Uuid, Option<Listing>> for Batcher {
-    async fn load(
-        &mut self,
-        addresses: &[Uuid],
-    ) -> TryBatchMap<Uuid, Option<Listing>> {
+    async fn load(&mut self, addresses: &[Uuid]) -> TryBatchMap<Uuid, Option<Listing>> {
         let conn = self.db()?;
 
         let rows: Vec<models::Listing> = listings::table
@@ -21,7 +18,7 @@ impl TryBatchFn<Uuid, Option<Listing>> for Batcher {
 
         Ok(rows
             .into_iter()
-            .map(|lr| (lr.id.clone(), lr.try_into()))
+            .map(|lr| (lr.id.unwrap(), lr.try_into()))
             .batch(addresses))
     }
 }
@@ -42,7 +39,7 @@ impl TryBatchFn<PublicKey<Nft>, Vec<Listing>> for Batcher {
             )
             .select(listings::all_columns)
             .filter(listings::canceled_at.is_null())
-            .filter(listings::purchase_receipt.is_null())
+            .filter(listings::purchase_id.is_null())
             .filter(listings::metadata.eq(any(addresses)))
             .load(&conn)
             .context("Failed to load listings")?;

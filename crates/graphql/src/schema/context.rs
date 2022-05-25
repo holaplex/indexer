@@ -1,6 +1,7 @@
 use dataloaders::{Batcher, Loader, TwitterBatcher};
 use indexer_core::uuid::Uuid;
 use objects::{
+    ah_listing::Listing as AHListing,
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
     graph_connection::GraphConnection,
@@ -39,6 +40,8 @@ pub struct AppContext {
     pub graph_connection_loader: Loader<PublicKey<GraphConnection>, Option<GraphConnection>>,
     pub listing_receipts_loader: Loader<PublicKey<Nft>, Vec<ListingReceipt>>,
     pub listing_receipt_loader: Loader<PublicKey<ListingReceipt>, Option<ListingReceipt>>,
+    pub ah_listings_loader: Loader<PublicKey<Nft>, Vec<AHListing>>,
+    pub ah_listing_loader: Loader<Uuid, Option<AHListing>>,
     pub purchase_receipts_loader: Loader<PublicKey<Nft>, Vec<PurchaseReceipt>>,
     pub purchase_receipt_loader: Loader<PublicKey<PurchaseReceipt>, Option<PurchaseReceipt>>,
     pub purchases_loader: Loader<PublicKey<Nft>, Vec<Purchase>>,
@@ -77,6 +80,8 @@ impl AppContext {
             storefront_loader: Loader::new(batcher.clone()),
             listing_receipts_loader: Loader::new(batcher.clone()),
             listing_receipt_loader: Loader::new(batcher.clone()),
+            ah_listings_loader: Loader::new(batcher.clone()),
+            ah_listing_loader: Loader::new(batcher.clone()),
             purchase_receipts_loader: Loader::new(batcher.clone()),
             purchase_receipt_loader: Loader::new(batcher.clone()),
             purchases_loader: Loader::new(batcher.clone()),

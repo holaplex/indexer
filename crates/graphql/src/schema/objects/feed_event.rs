@@ -4,8 +4,8 @@ use indexer_core::{
 };
 use juniper::GraphQLUnion;
 use objects::{
-    graph_connection::GraphConnection, listing_receipt::ListingReceipt, nft::Nft, offer::Offer,
-    profile::TwitterProfile, purchase::Purchase, purchase_receipt::PurchaseReceipt,
+    ah_listing::Listing, graph_connection::GraphConnection, nft::Nft, offer::Offer,
+    profile::TwitterProfile, purchase::Purchase,
 };
 
 use super::prelude::*;
@@ -73,7 +73,7 @@ pub struct PurchaseEvent {
     feed_event_id: String,
     twitter_handle: Option<String>,
     wallet_address: String,
-    purchase_receipt_address: PublicKey<PurchaseReceipt>,
+    purchase_receipt_address: String,
 }
 
 #[graphql_object(Context = AppContext)]
@@ -102,7 +102,7 @@ impl PurchaseEvent {
         &self.feed_event_id
     }
 
-    fn purchase_receipt_address(&self) -> &PublicKey<PurchaseReceipt> {
+    fn purchase_receipt_address(&self) -> &str {
         &self.purchase_receipt_address
     }
 
@@ -170,7 +170,7 @@ impl OfferEvent {
 pub struct ListingEvent {
     created_at: DateTime<Utc>,
     feed_event_id: String,
-    listing_receipt_address: PublicKey<ListingReceipt>,
+    listing_receipt_address: String,
     twitter_handle: Option<String>,
     wallet_address: String,
     lifecycle: String,
@@ -206,13 +206,13 @@ impl ListingEvent {
         &self.lifecycle
     }
 
-    fn listing_receipt_address(&self) -> &PublicKey<ListingReceipt> {
+    fn listing_receipt_address(&self) -> &str {
         &self.listing_receipt_address
     }
 
-    pub async fn listing(&self, ctx: &AppContext) -> FieldResult<Option<ListingReceipt>> {
-        ctx.listing_receipt_loader
-            .load(self.listing_receipt_address.clone())
+    pub async fn listing(&self, ctx: &AppContext) -> FieldResult<Option<Listing>> {
+        ctx.ah_listing_loader
+            .load(Uuid::parse_str(&self.listing_receipt_address.to_string())?)
             .await
             .map_err(Into::into)
     }
@@ -340,7 +340,7 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
             ) => Ok(Self::Listing(ListingEvent {
                 feed_event_id: id.to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
-                listing_receipt_address: listing_receipt_address.into_owned().into(),
+                listing_receipt_address: listing_receipt_address.into_owned(),
                 lifecycle: lifecycle.to_string(),
                 twitter_handle,
                 wallet_address,
@@ -357,7 +357,7 @@ impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
             ) => Ok(Self::Purchase(PurchaseEvent {
                 feed_event_id: id.to_string(),
                 created_at: DateTime::from_utc(created_at, Utc),
-                purchase_receipt_address: purchase_receipt_address.into_owned().into(),
+                purchase_receipt_address: purchase_receipt_address.into_owned(),
                 twitter_handle,
                 wallet_address,
             })),
