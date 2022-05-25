@@ -23,6 +23,7 @@ pub(crate) async fn process(
     key: Pubkey,
     meta: MetadataAccount,
     slot: u64,
+    write_version: u64,
 ) -> Result<()> {
     let addr = bs58::encode(key).into_string();
     let (edition_pda_key, _bump) = find_edition(meta.mint);
@@ -63,6 +64,7 @@ pub(crate) async fn process(
             key,
             first_verified_creator,
             meta.data.uri.trim_end_matches('\0').to_owned(),
+            (slot, write_version),
         )
         .await
         .context("Failed to dispatch metadata JSON job")?;

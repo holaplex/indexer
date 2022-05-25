@@ -421,6 +421,12 @@ pub struct MetadataJson<'a> {
     pub raw_content: Cow<'a, serde_json::Value>,
     /// Model the JSON was parsed with
     pub model: Option<Cow<'a, str>>,
+    /// The URI from which the data in this row was retrieved
+    pub fetch_uri: Cow<'a, str>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `files` table
@@ -433,6 +439,10 @@ pub struct File<'a> {
     pub uri: Cow<'a, str>,
     /// File type attribute
     pub file_type: Cow<'a, str>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `attributes` table
@@ -448,6 +458,10 @@ pub struct MetadataAttributeWrite<'a> {
     pub trait_type: Option<Cow<'a, str>>,
     /// Address of metadata first verified creator
     pub first_verified_creator: Option<Cow<'a, str>>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `attributes` table
@@ -463,6 +477,10 @@ pub struct MetadataAttribute<'a> {
     pub id: Uuid,
     /// Address of metadata first verified creator
     pub first_verified_creator: Option<Cow<'a, str>>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `files` table
@@ -476,6 +494,10 @@ pub struct MetadataFile<'a> {
     pub file_type: Cow<'a, str>,
     /// File generated id
     pub id: Uuid,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `metadata_collections` table
@@ -488,6 +510,10 @@ pub struct MetadataCollection<'a> {
     pub name: Option<Cow<'a, str>>,
     /// Collection family
     pub family: Option<Cow<'a, str>>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `store_configs` table

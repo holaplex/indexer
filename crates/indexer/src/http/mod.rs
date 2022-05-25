@@ -23,9 +23,10 @@ impl Process for MetadataJson {
             meta_address,
             first_verified_creator,
             uri,
+            slot_info,
         } = self;
 
-        metadata_json::process(client, meta_address, first_verified_creator, uri).await
+        metadata_json::process(client, meta_address, first_verified_creator, uri, slot_info).await
     }
 }
 
