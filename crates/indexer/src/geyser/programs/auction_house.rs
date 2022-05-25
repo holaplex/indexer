@@ -67,37 +67,15 @@ pub(crate) async fn process_instruction(
 ) -> Result<()> {
     let discriminator: [u8; 8] = data[..8].try_into()?;
     let params = data[8..].to_vec();
+
     match discriminator {
-        BUY => {
-            return buy::process(client, &params, accounts).await;
-        },
-
-        SELL => {
-            return sell::process(client, &params, accounts).await;
-        },
-
-        EXECUTE_SALE => {
-            return execute_sale::process(client, &params, accounts).await;
-        },
-
-        CANCEL => {
-            return cancel::process(client, &params, accounts).await;
-        },
-        DEPOSIT => {
-            return deposit::process(client, &params, accounts).await;
-        },
-
-        WITHDRAW => {
-            return withdraw::process(client, &params, accounts).await;
-        },
-
-        WITHDRAW_FROM_FEE => {
-            return withdraw_from_fee::process(client, &params, accounts).await;
-        },
-        _ => {
-            debug!("invalid ins");
-        },
-    };
-
-    Ok(())
+        BUY => buy::process(client, &params, accounts).await,
+        SELL => sell::process(client, &params, accounts).await,
+        EXECUTE_SALE => execute_sale::process(client, &params, accounts).await,
+        CANCEL => cancel::process(client, &params, accounts).await,
+        DEPOSIT => deposit::process(client, &params, accounts).await,
+        WITHDRAW => withdraw::process(client, &params, accounts).await,
+        WITHDRAW_FROM_FEE => withdraw_from_fee::process(client, &params, accounts).await,
+        _ => Ok(()),
+    }
 }

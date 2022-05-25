@@ -72,6 +72,7 @@ async fn upsert_into_listings_table<'a>(
     data: SellInstruction<'static>,
 ) -> Result<()> {
     let row = Listing {
+        id: None,
         trade_state: data.seller_trade_state.clone(),
         bookkeeper: data.wallet.clone(),
         auction_house: data.auction_house.clone(),

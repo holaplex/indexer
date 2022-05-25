@@ -82,6 +82,7 @@ async fn upsert_into_purchases_table<'a>(
     data: ExecuteSaleInstruction<'static>,
 ) -> Result<()> {
     let row = Purchase {
+        id: None,
         bookkeeper: data.buyer.clone(),
         buyer: data.buyer.clone(),
         seller: data.seller.clone(),

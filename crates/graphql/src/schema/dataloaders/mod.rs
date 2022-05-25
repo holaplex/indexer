@@ -6,6 +6,7 @@ pub mod listing;
 pub mod listing_receipt;
 pub mod nft;
 pub mod offer;
+pub mod purchase;
 pub mod purchase_receipt;
 pub mod stats;
 pub mod store_creator;

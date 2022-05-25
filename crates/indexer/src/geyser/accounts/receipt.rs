@@ -3,15 +3,15 @@ use indexer_core::{
         custom_types::{ListingEventLifecycleEnum, OfferEventLifecycleEnum},
         insert_into,
         models::{
-            BidReceipt as DbBidReceipt, FeedEventWallet, ListingEvent,
+            BidReceipt as DbBidReceipt, FeedEventWallet, Listing, ListingEvent,
             ListingReceipt as DbListingReceipt, Offer, OfferEvent, Purchase, PurchaseEvent,
             PurchaseReceipt as DbPurchaseReceipt,
         },
         on_constraint, select,
         tables::{
             bid_receipts, current_metadata_owners, feed_event_wallets, feed_events, listing_events,
-            listing_receipts, metadatas, offer_events, offers, purchase_events, purchase_receipts,
-            purchases,
+            listing_receipts, listings, metadatas, offer_events, offers, purchase_events,
+            purchase_receipts, purchases,
         },
         Error as DbError,
     },
@@ -30,15 +30,13 @@ pub(crate) async fn process_listing_receipt(
     listing: ListingReceipt,
 ) -> Result<()> {
     let row = DbListingReceipt {
-        address: Owned(bs58::encode(key).into_string()),
-        trade_state: Owned(bs58::encode(listing.trade_state).into_string()),
-        bookkeeper: Owned(bs58::encode(listing.bookkeeper).into_string()),
-        auction_house: Owned(bs58::encode(listing.auction_house).into_string()),
-        seller: Owned(bs58::encode(listing.seller).into_string()),
-        metadata: Owned(bs58::encode(listing.metadata).into_string()),
-        purchase_receipt: listing
-            .purchase_receipt
-            .map(|p| Owned(bs58::encode(p).into_string())),
+        address: Owned(key.to_string()),
+        trade_state: Owned(listing.trade_state.to_string()),
+        bookkeeper: Owned(listing.bookkeeper.to_string()),
+        auction_house: Owned(listing.auction_house.to_string()),
+        seller: Owned(listing.seller.to_string()),
+        metadata: Owned(listing.metadata.to_string()),
+        purchase_receipt: listing.purchase_receipt.map(|p| Owned(p.to_string())),
         price: listing.price.try_into()?,
         token_size: listing.token_size.try_into()?,
         bump: listing.bump.into(),
@@ -46,6 +44,8 @@ pub(crate) async fn process_listing_receipt(
         created_at: util::unix_timestamp(listing.created_at)?,
         canceled_at: listing.canceled_at.map(util::unix_timestamp).transpose()?,
     };
+
+    let values = row.clone();
 
     client
         .db()
@@ -99,6 +99,10 @@ pub(crate) async fn process_listing_receipt(
         .await
         .context("Failed to insert listing receipt!")?;
 
+    upsert_into_listings_table(client, values)
+        .await
+        .context("Failed to insert listing")?;
+
     Ok(())
 }
 
@@ -108,12 +112,12 @@ pub(crate) async fn process_purchase_receipt(
     purchase: PurchaseReceipt,
 ) -> Result<()> {
     let row = DbPurchaseReceipt {
-        address: Owned(bs58::encode(key).into_string()),
-        bookkeeper: Owned(bs58::encode(purchase.bookkeeper).into_string()),
-        buyer: Owned(bs58::encode(purchase.buyer).into_string()),
-        seller: Owned(bs58::encode(purchase.seller).into_string()),
-        auction_house: Owned(bs58::encode(purchase.auction_house).into_string()),
-        metadata: Owned(bs58::encode(purchase.metadata).into_string()),
+        address: Owned(key.to_string()),
+        bookkeeper: Owned(purchase.bookkeeper.to_string()),
+        buyer: Owned(purchase.buyer.to_string()),
+        seller: Owned(purchase.seller.to_string()),
+        auction_house: Owned(purchase.auction_house.to_string()),
+        metadata: Owned(purchase.metadata.to_string()),
         token_size: purchase.token_size.try_into()?,
         price: purchase.price.try_into()?,
         bump: purchase.bump.into(),
@@ -125,8 +129,17 @@ pub(crate) async fn process_purchase_receipt(
     client
         .db()
         .run(move |db| {
-            let purchase_receipt_exists = select(exists(
-                purchase_receipts::table.filter(purchase_receipts::address.eq(row.address.clone())),
+            let purchase_exists = select(exists(
+                purchases::table.filter(
+                    purchases::bookkeeper
+                        .eq(row.bookkeeper.clone())
+                        .and(purchases::buyer.eq(row.buyer.clone()))
+                        .and(purchases::seller.eq(row.seller.clone()))
+                        .and(purchases::auction_house.eq(row.auction_house.clone()))
+                        .and(purchases::metadata.eq(row.metadata.clone()))
+                        .and(purchases::token_size.eq(row.token_size))
+                        .and(purchases::price.eq(row.price)),
+                ),
             ))
             .get_result::<bool>(db);
 
@@ -136,7 +149,8 @@ pub(crate) async fn process_purchase_receipt(
                 .do_update()
                 .set(&row)
                 .execute(db)?;
-            if Ok(true) == purchase_receipt_exists {
+
+            if Ok(true) == purchase_exists {
                 return Ok(());
             }
 
@@ -339,6 +353,7 @@ async fn upsert_into_purchases_table<'a>(
     data: DbPurchaseReceipt<'static>,
 ) -> Result<()> {
     let row = Purchase {
+        id: None,
         bookkeeper: data.buyer.clone(),
         buyer: data.buyer.clone(),
         seller: data.seller.clone(),
@@ -362,6 +377,42 @@ async fn upsert_into_purchases_table<'a>(
         })
         .await
         .context("Failed to insert purchase!")?;
+
+    Ok(())
+}
+
+async fn upsert_into_listings_table<'a>(
+    client: &Client,
+    data: DbListingReceipt<'static>,
+) -> Result<()> {
+    let row = Listing {
+        id: None,
+        trade_state: data.trade_state.clone(),
+        bookkeeper: data.bookkeeper.clone(),
+        auction_house: data.auction_house.clone(),
+        seller: data.seller.clone(),
+        metadata: data.metadata.clone(),
+        purchase_id: None,
+        price: data.price,
+        token_size: data.token_size,
+        bump: Some(data.bump),
+        trade_state_bump: data.trade_state_bump,
+        created_at: data.created_at,
+        canceled_at: None,
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(listings::table)
+                .values(&row)
+                .on_conflict(on_constraint("listings_unique_fields"))
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
+        .context("Failed to insert listing!")?;
 
     Ok(())
 }

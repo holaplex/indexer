@@ -5,7 +5,7 @@ use indexer_core::{
 };
 use objects::{
     auction_house::AuctionHouse, listing_receipt::ListingReceipt, offer::Offer,
-    profile::TwitterProfile, purchase_receipt::PurchaseReceipt, wallet::Wallet,
+    profile::TwitterProfile, purchase::Purchase, wallet::Wallet,
 };
 use reqwest::Url;
 use scalars::{PublicKey, U64};
@@ -439,8 +439,8 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
-    pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<PurchaseReceipt>> {
-        ctx.purchase_receipts_loader
+    pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<Purchase>> {
+        ctx.purchases_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)

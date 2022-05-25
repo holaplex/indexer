@@ -5,7 +5,7 @@ use indexer_core::{
 use juniper::GraphQLUnion;
 use objects::{
     graph_connection::GraphConnection, listing_receipt::ListingReceipt, nft::Nft, offer::Offer,
-    profile::TwitterProfile, purchase_receipt::PurchaseReceipt,
+    profile::TwitterProfile, purchase::Purchase, purchase_receipt::PurchaseReceipt,
 };
 
 use super::prelude::*;
@@ -106,9 +106,9 @@ impl PurchaseEvent {
         &self.purchase_receipt_address
     }
 
-    pub async fn purchase(&self, ctx: &AppContext) -> FieldResult<Option<PurchaseReceipt>> {
-        ctx.purchase_receipt_loader
-            .load(self.purchase_receipt_address.clone())
+    pub async fn purchase(&self, ctx: &AppContext) -> FieldResult<Option<Purchase>> {
+        ctx.purchase_loader
+            .load(Uuid::parse_str(&self.purchase_receipt_address.to_string())?)
             .await
             .map_err(Into::into)
     }

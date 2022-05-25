@@ -2129,6 +2129,11 @@ pub struct Offer<'a> {
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct Purchase<'a> {
+    /// Random Uuid primary key from offers table
+    /// Optional so that it can be generated randomly when other fields are inserted into table
+    /// Deserialzed as Uuid as id field is primary key so not null
+    #[diesel(deserialize_as = "Uuid")]
+    pub id: Option<Uuid>,
     /// Bookkeeper account pubkey
     pub bookkeeper: Cow<'a, str>,
     /// Buyer account pubkey
@@ -2153,6 +2158,11 @@ pub struct Purchase<'a> {
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct Listing<'a> {
+    /// Random Uuid primary key from offers table
+    /// Optional so that it can be generated randomly when other fields are inserted into table
+    /// Deserialzed as Uuid as id field is primary key so not null
+    #[diesel(deserialize_as = "Uuid")]
+    pub id: Option<Uuid>,
     /// Trade state account pubkey
     pub trade_state: Cow<'a, str>,
     /// Bookkeeper account pubkey

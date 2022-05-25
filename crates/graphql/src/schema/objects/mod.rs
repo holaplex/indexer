@@ -1,3 +1,4 @@
+pub mod ah_listing;
 pub mod auction_house;
 pub mod bid_receipt;
 pub mod bonding_change;
@@ -12,6 +13,7 @@ pub mod marketplace;
 pub mod nft;
 pub mod offer;
 pub mod profile;
+pub mod purchase;
 pub mod purchase_receipt;
 pub mod stats;
 pub mod store_creator;

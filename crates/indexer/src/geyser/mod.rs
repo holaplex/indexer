@@ -108,13 +108,9 @@ pub async fn process_message<H: std::hash::BuildHasher>(
             program,
             data,
             accounts,
-        } => {
-            if program == pubkeys::AUCTION_HOUSE {
-                return programs::auction_house::process_instruction(client, &data, &accounts)
-                    .await;
-            };
-
-            Ok(())
+        } if program == pubkeys::AUCTION_HOUSE => {
+            programs::auction_house::process_instruction(client, &data, &accounts).await
         },
+        Message::InstructionNotify { .. } => Ok(()),
     }
 }
