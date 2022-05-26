@@ -537,11 +537,16 @@ impl QueryRoot {
             .collect::<Vec<Wallet>>())
     }
 
-    #[graphql(description = "Get multiple marketplaces; results will be in alphabetical order by subdomain")]
+    #[graphql(
+        description = "Get multiple marketplaces; results will be in alphabetical order by subdomain"
+    )]
     fn marketplaces(
         &self,
         context: &AppContext,
-        #[graphql(description = "Return these marketplaces; results will be in alphabetical order by subdomain.")] subdomains: Option<Vec<String>>,
+        #[graphql(
+            description = "Return these marketplaces; results will be in alphabetical order by subdomain."
+        )]
+        subdomains: Option<Vec<String>>,
         #[graphql(description = "Limit for query")] limit: Option<i32>,
         #[graphql(description = "Offset for query")] offset: Option<i32>,
     ) -> FieldResult<Vec<Marketplace>> {
@@ -560,13 +565,14 @@ impl QueryRoot {
 
         if let Some(subdomains) = subdomains {
             query = query.filter(store_config_jsons::subdomain.eq_any(subdomains));
-        
         } else {
-            query = query.limit(limit.unwrap().into())
-            .offset(offset.unwrap_or(0).into());
+            query = query
+                .limit(limit.unwrap().into())
+                .offset(offset.unwrap_or(0).into());
         }
 
-        let rows: Vec<models::StoreConfigJson> = query.load(&conn)
+        let rows: Vec<models::StoreConfigJson> = query
+            .load(&conn)
             .context("Failed to load store config JSON")?;
 
         Ok(rows.into_iter().map(Into::into).collect())
