@@ -537,20 +537,36 @@ impl QueryRoot {
             .collect::<Vec<Wallet>>())
     }
 
-    #[graphql(description = "A marketplace")]
+    #[graphql(description = "Get multiple marketplaces; results will be in alphabetical order by subdomain")]
     fn marketplaces(
         &self,
         context: &AppContext,
-        #[graphql(description = "Limit for query")] limit: i32,
-        #[graphql(description = "Offset for query")] offset: i32,
+        #[graphql(description = "Return these marketplaces; results will be in alphabetical order by subdomain.")] subdomains: Option<Vec<String>>,
+        #[graphql(description = "Limit for query")] limit: Option<i32>,
+        #[graphql(description = "Offset for query")] offset: Option<i32>,
     ) -> FieldResult<Vec<Marketplace>> {
+        if subdomains.is_none() && limit.is_none() {
+            return Err(FieldError::new(
+                "You must supply either limit or subdomains.",
+                graphql_value!({ "Filters": "subdomains: Vec<String>, limit: i32" }),
+            ));
+        }
+
         let conn = context.shared.db.get()?;
-        let rows: Vec<models::StoreConfigJson> = store_config_jsons::table
+        let mut query = store_config_jsons::table
             .select(store_config_jsons::all_columns)
             .order(store_config_jsons::name.asc())
-            .limit(limit.try_into()?)
-            .offset(offset.try_into()?)
-            .load(&conn)
+            .into_boxed();
+
+        if let Some(subdomains) = subdomains {
+            query = query.filter(store_config_jsons::subdomain.eq_any(subdomains));
+        
+        } else {
+            query = query.limit(limit.unwrap().into())
+            .offset(offset.unwrap_or(0).into());
+        }
+
+        let rows: Vec<models::StoreConfigJson> = query.load(&conn)
             .context("Failed to load store config JSON")?;
 
         Ok(rows.into_iter().map(Into::into).collect())
