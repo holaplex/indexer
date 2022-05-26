@@ -475,6 +475,10 @@ impl QueryRoot {
         let conn = context.shared.db.get()?;
         let mut rows: Vec<models::StoreConfigJson> = store_config_jsons::table
             .filter(store_config_jsons::subdomain.eq(subdomain))
+            .filter(
+                store_config_jsons::store_address
+                    .ne_all(&context.shared.marketplaces_store_address_exclusions),
+            )
             .select(store_config_jsons::all_columns)
             .limit(1)
             .load(&conn)
@@ -560,6 +564,10 @@ impl QueryRoot {
         let conn = context.shared.db.get()?;
         let mut query = store_config_jsons::table
             .select(store_config_jsons::all_columns)
+            .filter(
+                store_config_jsons::store_address
+                    .ne_all(&context.shared.marketplaces_store_address_exclusions),
+            )
             .order(store_config_jsons::name.asc())
             .into_boxed();
 
