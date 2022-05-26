@@ -547,7 +547,7 @@ impl QueryRoot {
     ) -> FieldResult<Vec<Marketplace>> {
         if subdomains.is_none() && limit.is_none() {
             return Err(FieldError::new(
-                "You must supply either limit or subdomains.",
+                "You must supply limit, subdomains, or both.",
                 graphql_value!({ "Filters": "subdomains: Vec<String>, limit: i32" }),
             ));
         }
