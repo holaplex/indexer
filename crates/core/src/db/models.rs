@@ -572,7 +572,7 @@ pub struct StoreConfigJson<'a> {
     /// Storefront owner address
     pub owner_address: Cow<'a, str>,
     /// Auction house account address
-    pub auction_house_address: Cow<'a, str>,
+    pub auction_house_address: Option<Cow<'a, str>>,
     /// Storefront address
     pub store_address: Option<Cow<'a, str>>,
 }

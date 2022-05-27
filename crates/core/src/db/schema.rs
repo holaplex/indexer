@@ -957,7 +957,7 @@ table! {
         banner_url -> Text,
         subdomain -> Text,
         owner_address -> Varchar,
-        auction_house_address -> Varchar,
+        auction_house_address -> Nullable<Varchar>,
         store_address -> Nullable<Varchar>,
     }
 }

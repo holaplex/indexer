@@ -12,7 +12,7 @@ pub struct Marketplace {
     pub logo_url: String,
     pub banner_url: String,
     pub owner_address: String,
-    pub auction_house_address: String,
+    pub auction_house_address: Option<String>,
     pub store_address: Option<String>,
 }
 
@@ -38,7 +38,7 @@ impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
             logo_url: logo_url.into_owned(),
             banner_url: banner_url.into_owned(),
             owner_address: owner_address.into_owned(),
-            auction_house_address: auction_house_address.into_owned(),
+            auction_house_address: auction_house_address.map(Cow::into_owned),
             store_address: store_address.map(Cow::into_owned),
         }
     }
@@ -74,8 +74,8 @@ impl Marketplace {
         &self.owner_address
     }
 
-    pub fn auction_house_address(&self) -> &str {
-        &self.auction_house_address
+    pub fn auction_house_address(&self) -> Option<&str> {
+        self.auction_house_address.as_deref()
     }
 
     pub fn store_address(&self) -> Option<&str> {
@@ -85,7 +85,13 @@ impl Marketplace {
     pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
         context
             .auction_house_loader
-            .load(self.auction_house_address.clone().into())
+            .load(
+                self.auction_house_address
+                    .as_deref()
+                    .unwrap_or_default()
+                    .to_owned()
+                    .into(),
+            )
             .await
             .map_err(Into::into)
     }
