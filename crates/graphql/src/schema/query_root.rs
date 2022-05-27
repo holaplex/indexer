@@ -1,6 +1,7 @@
 use indexer_core::db::{
+    expression::dsl::all,
     queries::{self, feed_event::EventType},
-    tables::twitter_handle_name_services, expression::dsl::all,
+    tables::twitter_handle_name_services,
 };
 use objects::{
     auction_house::AuctionHouse,
