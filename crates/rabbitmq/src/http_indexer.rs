@@ -4,7 +4,7 @@
 use std::{marker::PhantomData, time::Duration};
 
 use serde::{Deserialize, Serialize};
-use solana_sdk::pubkey::Pubkey;
+use solana_program::pubkey::Pubkey;
 
 use crate::{
     queue_type::{Binding, QueueProps, RetryProps},
@@ -58,6 +58,9 @@ pub struct MetadataJson {
     pub uri: String,
     /// possibly the first verified creator
     pub first_verified_creator: Option<Pubkey>,
+    /// A tuple of (slot, write_version)
+    #[serde(default)]
+    pub slot_info: (u64, u64),
 }
 
 impl Entity for MetadataJson {

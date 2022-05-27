@@ -27,7 +27,7 @@ pub struct Metadata {
 pub struct Address {
     pub owner: String,
     pub auction_house: String,
-    pub store: String,
+    pub store: Option<String>,
     pub store_config: String,
 }
 
@@ -87,7 +87,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         subdomain: Owned(json.subdomain),
         owner_address: Owned(json.address.owner),
         auction_house_address: Owned(json.address.auction_house),
-        store_address: Some(Owned(json.address.store)),
+        store_address: json.address.store.map(Owned),
     };
 
     client

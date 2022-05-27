@@ -78,6 +78,12 @@ impl Creator {
             .map_err(Into::into)
     }
 
+    #[graphql(arguments(
+        auction_houses(description = "List of auction houses"),
+        start_date(description = "Start date for which we want to get the average price"),
+        end_date(description = "End date for which we want to get the average price")
+    ))]
+
     pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
         let conn = context.shared.db.get()?;
 

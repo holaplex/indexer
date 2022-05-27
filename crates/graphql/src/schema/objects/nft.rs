@@ -1,10 +1,11 @@
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     db::queries,
+    util::unix_timestamp,
 };
 use objects::{
     auction_house::AuctionHouse, bid_receipt::BidReceipt, listing_receipt::ListingReceipt,
-    profile::TwitterProfile, purchase_receipt::PurchaseReceipt,
+    profile::TwitterProfile, purchase_receipt::PurchaseReceipt, wallet::Wallet,
 };
 use reqwest::Url;
 use scalars::{PublicKey, U64};
@@ -212,7 +213,7 @@ pub struct NftActivity {
     pub auction_house: String,
     pub price: U64,
     pub created_at: DateTime<Utc>,
-    pub wallets: Vec<String>,
+    pub wallets: Vec<Wallet>,
     pub activity_type: String,
 }
 
@@ -227,6 +228,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
             price,
             created_at,
             wallets,
+            wallet_twitter_handles,
             activity_type,
         }: models::NftActivity,
     ) -> Result<Self, Self::Error> {
@@ -236,7 +238,11 @@ impl TryFrom<models::NftActivity> for NftActivity {
             auction_house,
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
-            wallets,
+            wallets: wallets
+                .into_iter()
+                .zip(wallet_twitter_handles.into_iter())
+                .map(|(address, twitter_handle)| Wallet::new(address.into(), twitter_handle))
+                .collect(),
             activity_type,
         })
     }
@@ -264,7 +270,7 @@ impl NftActivity {
         self.created_at
     }
 
-    fn wallets(&self) -> &Vec<String> {
+    fn wallets(&self) -> &Vec<Wallet> {
         &self.wallets
     }
 
@@ -293,10 +299,13 @@ pub struct Nft {
     pub image: String,
     pub category: String,
     pub model: Option<String>,
+    pub slot: Option<i32>,
 }
 
-impl From<models::Nft> for Nft {
-    fn from(
+impl TryFrom<models::Nft> for Nft {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
         models::Nft {
             address,
             name,
@@ -308,9 +317,10 @@ impl From<models::Nft> for Nft {
             image,
             category,
             model,
+            slot,
         }: models::Nft,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
             address,
             name,
             seller_fee_basis_points,
@@ -321,7 +331,8 @@ impl From<models::Nft> for Nft {
             image: image.unwrap_or_else(String::new),
             category: category.unwrap_or_else(String::new),
             model,
-        }
+            slot: slot.map(TryInto::try_into).transpose()?,
+        })
     }
 }
 
@@ -447,6 +458,26 @@ If no value is provided, it will return XSmall")))]
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
+    }
+
+    pub async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
+        if let Some(slot) = self.slot {
+            let shared = ctx.shared.clone();
+
+            tokio::task::spawn_blocking(move || {
+                shared
+                    .rpc
+                    .get_block_time(slot.try_into().unwrap_or_default())
+                    .context("RPC call for block time failed")
+                    .and_then(|s| unix_timestamp(s).map(|t| DateTime::<Utc>::from_utc(t, Utc)))
+            })
+            .await
+            .expect("Blocking task panicked")
+            .map(Some)
+            .map_err(Into::into)
+        } else {
+            Ok(None)
+        }
     }
 }
 

@@ -53,6 +53,10 @@ pub fn listed<C: ToSql<Text, Pg>, L: ToSql<Text, Pg>>(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
         )
         .inner_join(listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)))
+        .inner_join(
+            current_metadata_owners::table
+                .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
+        )
         .into_boxed();
 
     if let Some(listed) = listed {
@@ -64,6 +68,7 @@ pub fn listed<C: ToSql<Text, Pg>, L: ToSql<Text, Pg>>(
         .filter(metadata_creators::verified.eq(true))
         .filter(listing_receipts::purchase_receipt.is_null())
         .filter(listing_receipts::canceled_at.is_null())
+        .filter(listing_receipts::seller.eq(current_metadata_owners::owner_address))
         .count()
         .get_result(conn)
         .context("failed to load listed nfts count")
@@ -223,6 +228,25 @@ where
                 >,
                 Eq<metadatas::address, listing_receipts::metadata>,
             >,
+        > + AppearsOnTable<
+            JoinOn<
+                Join<
+                    JoinOn<
+                        Join<
+                            JoinOn<
+                                Join<metadatas::table, metadata_creators::table, Inner>,
+                                Eq<metadatas::address, metadata_creators::metadata_address>,
+                            >,
+                            listing_receipts::table,
+                            Inner,
+                        >,
+                        Eq<metadatas::address, listing_receipts::metadata>,
+                    >,
+                    current_metadata_owners::table,
+                    Inner,
+                >,
+                Eq<metadatas::mint_address, current_metadata_owners::mint_address>,
+            >,
         >,
 {
     let mut query = metadatas::table
@@ -230,6 +254,10 @@ where
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
         )
         .inner_join(listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)))
+        .inner_join(
+            current_metadata_owners::table
+                .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
+        )
         .into_boxed();
 
     if let Some(listed) = listed {
@@ -245,6 +273,7 @@ where
         .filter(listing_receipts::purchase_receipt.is_null())
         .filter(listing_receipts::canceled_at.is_null())
         .filter(listing_receipts::seller.eq(wallet))
+        .filter(listing_receipts::seller.eq(current_metadata_owners::owner_address))
         .count()
         .get_result(conn)
         .context("failed to load listed nfts count")

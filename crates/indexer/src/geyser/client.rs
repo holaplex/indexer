@@ -2,7 +2,6 @@ use std::{sync::Arc, time::Duration};
 
 use indexer_core::clap;
 use indexer_rabbitmq::{http_indexer, search_indexer};
-use solana_sdk::pubkey::Pubkey;
 
 use crate::{db::Pool, prelude::*, reqwest, search_dispatch};
 
@@ -111,6 +110,7 @@ impl Client {
         meta_address: Pubkey,
         first_verified_creator: Option<Pubkey>,
         uri: String,
+        slot_info: (u64, u64),
     ) -> Result<(), indexer_rabbitmq::Error> {
         self.http_prod
             .metadata_json
@@ -118,6 +118,7 @@ impl Client {
                 meta_address,
                 uri,
                 first_verified_creator,
+                slot_info,
             })
             .await
     }

@@ -38,6 +38,16 @@ jobs:
           components: cargo, rustc
           profile: minimal
 
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
+
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
@@ -67,6 +77,16 @@ jobs:
           toolchain: nightly-2021-11-09
           components: cargo, rustc
           profile: minimal
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
 
       - uses: actions-rs/cargo@v1
         with:
