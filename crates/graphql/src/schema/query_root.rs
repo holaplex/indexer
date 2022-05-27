@@ -1,6 +1,6 @@
 use indexer_core::db::{
     queries::{self, feed_event::EventType},
-    tables::twitter_handle_name_services,
+    tables::twitter_handle_name_services, expression::dsl::all,
 };
 use objects::{
     auction_house::AuctionHouse,
@@ -70,7 +70,7 @@ impl QueryRoot {
                 (wallet_totals::all_columns),
                 twitter_handle_name_services::twitter_handle.nullable(),
             ))
-            .filter(wallet_totals::address.ne_all(&ctx.shared.follow_wallets_exclusions))
+            .filter(wallet_totals::address.ne(all(&ctx.shared.follow_wallets_exclusions)))
             .order(wallet_totals::followers.desc())
             .limit(limit.try_into()?)
             .offset(offset.try_into()?)
@@ -352,11 +352,11 @@ impl QueryRoot {
             .filter(listing_receipts::purchase_receipt.is_null())
             .filter(
                 listing_receipts::auction_house
-                    .eq_any(&context.shared.featured_listings_auction_houses),
+                    .eq(any(&context.shared.featured_listings_auction_houses)),
             )
             .filter(
                 listing_receipts::seller
-                    .ne_all(&context.shared.featured_listings_seller_exclusions),
+                    .ne(all(&context.shared.featured_listings_seller_exclusions)),
             )
             .filter(listing_receipts::seller.eq(wallet_totals::address))
             .order(wallet_totals::followers.desc())
@@ -477,7 +477,7 @@ impl QueryRoot {
             .filter(store_config_jsons::subdomain.eq(subdomain))
             .filter(
                 store_config_jsons::store_address
-                    .ne_all(&context.shared.marketplaces_store_address_exclusions),
+                    .ne(all(&context.shared.marketplaces_store_address_exclusions)),
             )
             .select(store_config_jsons::all_columns)
             .limit(1)
@@ -566,13 +566,13 @@ impl QueryRoot {
             .select(store_config_jsons::all_columns)
             .filter(
                 store_config_jsons::store_address
-                    .ne_all(&context.shared.marketplaces_store_address_exclusions),
+                    .ne(all(&context.shared.marketplaces_store_address_exclusions)),
             )
             .order(store_config_jsons::name.asc())
             .into_boxed();
 
         if let Some(subdomains) = subdomains {
-            query = query.filter(store_config_jsons::subdomain.eq_any(subdomains));
+            query = query.filter(store_config_jsons::subdomain.eq(any(subdomains)));
         } else {
             query = query
                 .limit(limit.unwrap().into())
