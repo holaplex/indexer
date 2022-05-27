@@ -32,7 +32,7 @@ pub struct Metadata {
 pub struct Address {
     pub owner: String,
     #[deprecated(note = "Use `auction_houses` instead")]
-    pub auction_house: String,
+    pub auction_house: Option<String>,
     pub store: Option<String>,
     pub store_config: String,
 }
@@ -93,7 +93,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         banner_url: Owned(json.theme.banner.url),
         subdomain: Owned(json.subdomain),
         owner_address: Owned(json.address.owner),
-        auction_house_address: Owned(json.address.auction_house),
+        auction_house_address: json.address.auction_house.map(Owned),
         store_address: json.address.store.map(Owned),
     };
 
