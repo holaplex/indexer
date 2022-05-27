@@ -15,8 +15,8 @@ use objects::{
     listing_receipt::ListingReceipt,
     marketplace::Marketplace,
     nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator},
-    stats_global::GlobalStats,
     profile::TwitterProfile,
+    stats_global::GlobalStats,
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
