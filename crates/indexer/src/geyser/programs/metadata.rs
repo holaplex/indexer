@@ -24,7 +24,14 @@ const MASTER_EDITION_V2: u8 = Key::MasterEditionV2 as u8;
 async fn process_metadata(client: &Client, update: AccountUpdate) -> Result<()> {
     // Deserializing using mpl_token_metadata crate
     if let Ok(metadata) = try_from_slice_checked(&update.data, Key::MetadataV1, MAX_METADATA_LEN) {
-        return metadata::process(client, update.key, metadata, update.slot).await;
+        return metadata::process(
+            client,
+            update.key,
+            metadata,
+            update.slot,
+            update.write_version,
+        )
+        .await;
     }
 
     // Deserializing using metaplex_token_metadata and changing the metaplex Metadata to mpl Metadata
@@ -59,7 +66,14 @@ async fn process_metadata(client: &Client, update: AccountUpdate) -> Result<()> 
         uses: None,
     };
 
-    metadata::process(client, update.key, metaplex_metadata, update.slot).await
+    metadata::process(
+        client,
+        update.key,
+        metaplex_metadata,
+        update.slot,
+        update.write_version,
+    )
+    .await
 }
 
 async fn process_edition(client: &Client, update: AccountUpdate) -> Result<()> {

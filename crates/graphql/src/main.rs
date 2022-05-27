@@ -33,7 +33,7 @@ use crate::schema::{AppContext, Schema};
 
 mod schema;
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct Opts {
     #[clap(flatten)]
     server: ServerOpts,
@@ -52,6 +52,15 @@ struct Opts {
 
     #[clap(long, env)]
     solana_endpoint: String,
+
+    #[clap(long, env, use_value_delimiter(true))]
+    follow_wallets_exclusions: Vec<String>,
+
+    #[clap(long, env, use_value_delimiter(true))]
+    featured_listings_auction_houses: Vec<String>,
+
+    #[clap(long, env, use_value_delimiter(true))]
+    featured_listings_seller_exclusions: Vec<String>,
 }
 
 struct GraphiqlData {
@@ -70,6 +79,9 @@ pub(crate) struct SharedData {
     pub twitter_bearer_token: String,
     pub search: meilisearch::client::Client,
     pub rpc: RpcClient,
+    pub follow_wallets_exclusions: Vec<String>,
+    pub featured_listings_auction_houses: Vec<String>,
+    pub featured_listings_seller_exclusions: Vec<String>,
 }
 
 #[allow(clippy::unused_async)]
@@ -115,6 +127,8 @@ async fn graphql(
 
 fn main() {
     indexer_core::run(|| {
+        let opts = Opts::parse();
+        debug!("{:#?}", opts);
         let Opts {
             server,
             db,
@@ -122,7 +136,10 @@ fn main() {
             asset_proxy,
             search,
             solana_endpoint,
-        } = Opts::parse();
+            follow_wallets_exclusions,
+            featured_listings_auction_houses,
+            featured_listings_seller_exclusions,
+        } = opts;
 
         let (addr,) = server.into_parts();
         info!("Listening on {}", addr);
@@ -143,6 +160,9 @@ fn main() {
             twitter_bearer_token,
             search,
             rpc,
+            follow_wallets_exclusions,
+            featured_listings_auction_houses,
+            featured_listings_seller_exclusions,
         });
 
         let version_extension = "/v1";

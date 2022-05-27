@@ -110,6 +110,7 @@ impl Client {
         meta_address: Pubkey,
         first_verified_creator: Option<Pubkey>,
         uri: String,
+        slot_info: (u64, u64),
     ) -> Result<(), indexer_rabbitmq::Error> {
         self.http_prod
             .metadata_json
@@ -117,6 +118,7 @@ impl Client {
                 meta_address,
                 uri,
                 first_verified_creator,
+                slot_info,
             })
             .await
     }

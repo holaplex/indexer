@@ -23,12 +23,15 @@ use serde_json::Value;
 use super::Client;
 use crate::{prelude::*, search_dispatch::MetadataDocument};
 
+type SlotInfo = (i64, i64);
+
 #[derive(Serialize, Deserialize, Debug)]
 struct File {
     uri: Option<String>,
     #[serde(rename = "type")]
     ty: Option<String>,
 }
+
 #[derive(Serialize, Deserialize, Debug)]
 struct Creator {
     address: String,
@@ -116,7 +119,7 @@ async fn fetch_json(
     client: &Client,
     meta_key: Pubkey,
     url: Result<Url>,
-) -> Result<MetadataJsonResult> {
+) -> Result<(Url, MetadataJsonResult)> {
     let start_time = Local::now();
     let url = url.context("Failed to create asset URL")?;
 
@@ -131,7 +134,7 @@ async fn fetch_json(
 
     let end_time = Local::now();
 
-    debug!(
+    trace!(
         "Metadata JSON URI {:?} for {} fetched in {}",
         url.as_str(),
         meta_key,
@@ -140,9 +143,9 @@ async fn fetch_json(
 
     let full_err;
     match serde_json::from_slice(&bytes) {
-        Ok(f) => return Ok(MetadataJsonResult::Full(f)),
+        Ok(f) => return Ok((url, MetadataJsonResult::Full(f))),
         Err(e) => {
-            debug!(
+            trace!(
                 "Failed to parse full metadata JSON for {:?}: {:?}",
                 url.as_str(),
                 e
@@ -152,9 +155,9 @@ async fn fetch_json(
     };
 
     match serde_json::from_slice(&bytes) {
-        Ok(value) => return Ok(MetadataJsonResult::Minimal { value, full_err }),
+        Ok(value) => return Ok((url, MetadataJsonResult::Minimal { value, full_err })),
         Err(e) => {
-            debug!(
+            trace!(
                 "Failed to parse minimal metadata JSON for {:?}: {:?}",
                 url.as_str(),
                 e
@@ -173,9 +176,9 @@ async fn try_locate_json(
     url: &Url,
     id: &AssetIdentifier,
     meta_key: Pubkey,
-) -> Result<Option<(MetadataJsonResult, Vec<u8>)>> {
+) -> Result<Option<(MetadataJsonResult, Vec<u8>, Url)>> {
     // Set to true for fallback
-    const TRY_LAST_RESORT: bool = true;
+    const TRY_LAST_RESORT: bool = false;
 
     let mut resp = Ok(None);
 
@@ -191,9 +194,9 @@ async fn try_locate_json(
         let fingerprint = id.fingerprint(Some(hint)).unwrap_or_else(|| unreachable!());
 
         match fetch_json(client, meta_key, url).await {
-            Ok(j) => {
-                debug!("Using fetch from {:?} for metadata {}", url_str, meta_key);
-                resp = Ok(Some((j, fingerprint)));
+            Ok((url, json)) => {
+                trace!("Using fetch from {:?} for metadata {}", url_str, meta_key);
+                resp = Ok(Some((json, fingerprint, url)));
                 break;
             },
             Err(e) => {
@@ -208,9 +211,9 @@ async fn try_locate_json(
     }
 
     Ok(match resp {
-        Ok(Some((res, fingerprint))) => Some((res, fingerprint.into_owned())),
+        Ok(Some((res, fingerprint, url))) => Some((res, fingerprint.into_owned(), url)),
         Ok(None) => {
-            debug!(
+            trace!(
                 "Not fetching unparseable url {:?} for {}",
                 url.as_str(),
                 meta_key
@@ -218,8 +221,8 @@ async fn try_locate_json(
 
             None
         },
-        Err(()) if TRY_LAST_RESORT => Some((
-            fetch_json(client, meta_key, Ok(url.clone()))
+        Err(()) if TRY_LAST_RESORT => {
+            let (url, json) = fetch_json(client, meta_key, Ok(url.clone()))
                 .await
                 .with_context(|| {
                     format!(
@@ -227,9 +230,10 @@ async fn try_locate_json(
                         url.as_str(),
                         meta_key,
                     )
-                })?,
-            vec![],
-        )),
+                })?;
+
+            Some((json, vec![], url))
+        },
         Err(()) => {
             bail!(
                 "Cached metadata fetch {:?} for {} failed (not trying last-resort)",
@@ -244,8 +248,10 @@ async fn process_full(
     client: &Client,
     addr: String,
     first_verified_creator: Option<String>,
+    fetch_uri: String,
     json: MetadataJson,
     fingerprint: Vec<u8>,
+    slot_info: SlotInfo,
 ) -> Result<()> {
     let raw_content: Value =
         serde_json::value::to_value(&json).context("Failed to upcast metadata JSON")?;
@@ -271,6 +277,7 @@ async fn process_full(
          }| (files, category, creators),
     );
 
+    let (slot, write_version) = slot_info;
     let row = DbMetadataJson {
         metadata_address: Owned(addr.clone()),
         fingerprint: Owned(fingerprint),
@@ -282,6 +289,9 @@ async fn process_full(
         category: category.map(Owned),
         raw_content: Owned(raw_content),
         model: Some(Borrowed("full")),
+        fetch_uri: Owned(fetch_uri),
+        slot,
+        write_version,
     };
 
     client
@@ -298,14 +308,15 @@ async fn process_full(
             // TODO: if the row updates the following functions do not clear the
             //       previous rows from the old metadata JSON:
 
-            process_files(db, &addr, files)?;
+            process_files(db, &addr, files, slot_info)?;
             process_attributes(
                 db,
                 &addr,
                 first_verified_creator.as_deref(),
                 json.attributes,
+                slot_info,
             )?;
-            process_collection(db, &addr, json.collection)
+            process_collection(db, &addr, json.collection, slot_info)
         })
         .await
 }
@@ -313,9 +324,11 @@ async fn process_full(
 async fn process_minimal(
     client: &Client,
     addr: String,
+    fetch_uri: String,
     json: MetadataJsonMinimal,
     fingerprint: Vec<u8>,
     full_err: serde_json::Error,
+    (slot, write_version): SlotInfo,
 ) -> Result<()> {
     fn to_opt_string(v: &Value) -> Option<Cow<'static, str>> {
         v.as_str().map(|s| Owned(s.to_owned())).or_else(|| {
@@ -355,6 +368,9 @@ async fn process_minimal(
         category: to_opt_string(&category),
         raw_content: Owned(raw_content),
         model: Some(Owned(format!("minimal ({})", full_err))),
+        fetch_uri: Owned(fetch_uri),
+        slot,
+        write_version,
     };
 
     client
@@ -373,19 +389,40 @@ async fn process_minimal(
     Ok(())
 }
 
-fn process_files(db: &Connection, addr: &str, files: Option<Vec<File>>) -> Result<()> {
+fn process_files(
+    db: &Connection,
+    addr: &str,
+    files: Option<Vec<File>>,
+    slot_info: SlotInfo,
+) -> Result<()> {
     for File { uri, ty } in files.unwrap_or_else(Vec::new) {
         let (uri, ty) = if let Some(v) = uri.zip(ty) {
             v
         } else {
-            debug!("Skipping malformed file in JSON");
+            trace!("Skipping malformed file in JSON");
             continue;
         };
 
+        let existing_slot_info = files::table
+            .filter(files::metadata_address.eq(addr))
+            .select((files::slot, files::write_version))
+            .get_result::<SlotInfo>(db)
+            .optional()
+            .context("Failed to check for existing file")?;
+
+        if let Some(info) = existing_slot_info {
+            if info >= slot_info {
+                continue;
+            }
+        }
+
+        let (slot, write_version) = slot_info;
         let row = DbFile {
             metadata_address: Borrowed(addr),
             uri: Owned(uri),
             file_type: Owned(ty),
+            slot,
+            write_version,
         };
 
         insert_into(files::table)
@@ -404,13 +441,30 @@ fn process_attributes(
     addr: &str,
     first_verified_creator: Option<&str>,
     attributes: Option<Vec<Attribute>>,
+    slot_info: SlotInfo,
 ) -> Result<()> {
     for Attribute { trait_type, value } in attributes.unwrap_or_else(Vec::new) {
+        let existing_slot_info = attributes::table
+            .filter(attributes::metadata_address.eq(addr))
+            .select((attributes::slot, attributes::write_version))
+            .get_result::<SlotInfo>(db)
+            .optional()
+            .context("Failed to check for existing attribute")?;
+
+        if let Some(info) = existing_slot_info {
+            if info >= slot_info {
+                continue;
+            }
+        }
+
+        let (slot, write_version) = slot_info;
         let row = MetadataAttributeWrite {
             metadata_address: Borrowed(addr),
             trait_type: trait_type.map(Owned),
             value: value.as_ref().map(|v| Owned(v.to_string())),
             first_verified_creator: first_verified_creator.map(Borrowed),
+            slot,
+            write_version,
         };
 
         insert_into(attributes::table)
@@ -430,12 +484,36 @@ fn process_attributes(
 }
 
 #[inline]
-fn process_collection(db: &Connection, addr: &str, collection: Option<Collection>) -> Result<()> {
+fn process_collection(
+    db: &Connection,
+    addr: &str,
+    collection: Option<Collection>,
+    slot_info: SlotInfo,
+) -> Result<()> {
     if let Some(Collection { name, family }) = collection {
+        let existing_slot_info = metadata_collections::table
+            .filter(metadata_collections::metadata_address.eq(addr))
+            .select((
+                metadata_collections::slot,
+                metadata_collections::write_version,
+            ))
+            .get_result::<SlotInfo>(db)
+            .optional()
+            .context("Failed to check for existing collection")?;
+
+        if let Some(info) = existing_slot_info {
+            if info >= slot_info {
+                return Ok(());
+            }
+        }
+
+        let (slot, write_version) = slot_info;
         let row = MetadataCollection {
             metadata_address: Borrowed(addr),
             name: name.map(Owned),
             family: family.map(Owned),
+            slot,
+            write_version,
         };
 
         insert_into(metadata_collections::table)
@@ -452,13 +530,22 @@ async fn reprocess_attributes(
     client: &Client,
     addr: String,
     first_verified_creator: Option<String>,
+    (slot, write_version): SlotInfo,
 ) -> Result<()> {
     client
         .db()
         .run(move |db| {
-            update(attributes::table.filter(attributes::metadata_address.eq(addr)))
-                .set(attributes::first_verified_creator.eq(first_verified_creator))
-                .execute(db)
+            update(
+                attributes::table
+                    .filter(attributes::metadata_address.eq(addr))
+                    .filter(
+                        attributes::slot.lt(slot).or(attributes::slot
+                            .eq(slot)
+                            .and(attributes::write_version.lt(write_version))),
+                    ),
+            )
+            .set(attributes::first_verified_creator.eq(first_verified_creator))
+            .execute(db)
         })
         .await
         .context("Failed to update attributes")?;
@@ -471,34 +558,37 @@ pub async fn process<'a>(
     meta_key: Pubkey,
     first_verified_creator: Option<Pubkey>,
     uri_str: String,
+    (slot, write_version): (u64, u64),
 ) -> Result<()> {
+    let slot_info = (
+        i64::try_from(slot).context("Slot was too big to store")?,
+        i64::try_from(write_version).context("Write version was too big to store")?,
+    );
+
     let url = match Url::parse(&uri_str) {
         Ok(u) => u,
         Err(e) => {
             // Don't return an error because this happens A Lot.
-            debug!("Couldn't parse metadata URL: {:?}", e);
+            trace!("Couldn't parse metadata URL: {:?}", e);
             return Ok(());
         },
     };
     let id = AssetIdentifier::new(&url);
 
-    let possible_fingerprints: Vec<_> = id.fingerprints().map(Cow::into_owned).collect();
     let addr = bs58::encode(meta_key).into_string();
-
-    let existing_json = client
+    let existing_row = client
         .db()
         .run({
             let addr = addr.clone();
             move |db| {
                 metadata_jsons::table
-                    .filter(
-                        metadata_jsons::metadata_address
-                            .eq(addr)
-                            .and(metadata_jsons::fingerprint.eq(any(possible_fingerprints)))
-                            .and(metadata_jsons::model.ne("minimal")),
-                    )
-                    .select(metadata_jsons::raw_content)
-                    .first::<Value>(db)
+                    .filter(metadata_jsons::metadata_address.eq(addr))
+                    .select((
+                        metadata_jsons::fingerprint,
+                        metadata_jsons::raw_content,
+                        (metadata_jsons::slot, metadata_jsons::write_version),
+                    ))
+                    .first::<(Cow<[u8]>, Value, SlotInfo)>(db)
                     .optional()
             }
         })
@@ -508,33 +598,49 @@ pub async fn process<'a>(
     let first_verified_creator =
         first_verified_creator.map(|address| bs58::encode(address).into_string());
 
-    if let Some(json) = existing_json {
-        debug!("Skipping already-indexed metadata JSON for {}", meta_key);
+    if let Some((fingerprint, json, existing_slot_info)) = existing_row {
+        if existing_slot_info > slot_info || id.fingerprints().any(|f| fingerprint == f) {
+            trace!(
+                "Skipping already-indexed metadata JSON for {} (seen at slot_info={:?})",
+                meta_key,
+                existing_slot_info
+            );
 
-        // NOTE: For future reference, this introduces a situation with non-
-        //       idempotent updates.  It is possible that with job retries, a
-        //       sequence of two metadata jobs with differing values for
-        //       first_verified_creator can write the wrong value.  If the first
-        //       job fails, it will be eventually requeued after the second job.
-        //       If the second job subsequently succeeds, then this reprocess
-        //       function will be called by the first job and the first
-        //       verified creator will be updated to an out-of-date value.
-        reprocess_attributes(client, addr.clone(), first_verified_creator).await?;
+            reprocess_attributes(client, addr.clone(), first_verified_creator, slot_info).await?;
 
-        dispatch_metadata_document(client, true, addr, json).await?;
+            dispatch_metadata_document(client, true, addr, json).await?;
 
-        return Ok(());
+            return Ok(());
+        }
     }
 
-    debug!("{:?} -> {:?}", url.as_str(), id);
+    trace!("{:?} -> {:?}", url.as_str(), id);
 
-    if let Some((json, fingerprint)) = try_locate_json(client, &url, &id, meta_key).await? {
+    if let Some((json, fingerprint, url)) = try_locate_json(client, &url, &id, meta_key).await? {
         match json {
-            MetadataJsonResult::Full(f) => {
-                process_full(client, addr, first_verified_creator, f, fingerprint).await?;
+            MetadataJsonResult::Full(value) => {
+                process_full(
+                    client,
+                    addr,
+                    first_verified_creator,
+                    url.to_string(),
+                    value,
+                    fingerprint,
+                    slot_info,
+                )
+                .await?;
             },
             MetadataJsonResult::Minimal { value, full_err } => {
-                process_minimal(client, addr, value, fingerprint, full_err).await?;
+                process_minimal(
+                    client,
+                    addr,
+                    url.to_string(),
+                    value,
+                    fingerprint,
+                    full_err,
+                    slot_info,
+                )
+                .await?;
             },
         }
     }
