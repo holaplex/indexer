@@ -1,22 +1,17 @@
 //! Miscellaneous utility functions.
 #![allow(dead_code)]
 
-use mpl_token_metadata::state::{MasterEditionV1, MasterEditionV2};
-#[cfg(feature = "solana-program")]
-use {
-    indexer_core::prelude::*,
-    mpl_token_metadata::state::Key,
-    solana_program::{account_info::AccountInfo, entrypoint::ProgramResult},
-    solana_sdk::{account::Account, pubkey::Pubkey},
-};
+use indexer_core::prelude::*;
+use mpl_token_metadata::state::{Key, MasterEditionV1, MasterEditionV2};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
 
-/// Borrow a `solana-sdk` account as a `solana-program` account info struct.
-#[cfg(feature = "solana-program")]
-pub async fn account_as_info<T: Send + 'static>(
+/// Borrow an account's raw as a `solana-program` account info struct.
+#[inline]
+pub async fn account_data_as_info<T: Send + 'static>(
     key: Pubkey,
-    is_signer: bool,
-    is_writable: bool,
-    mut acct: Account,
+    mut data: Vec<u8>,
+    owner: Pubkey,
+    mut lamports: u64,
     f: impl Send + FnOnce(AccountInfo<'_>) -> T + 'static,
 ) -> Result<T> {
     // NOTE: this is here because metaplex_auction only allows parsing via
@@ -29,45 +24,19 @@ pub async fn account_as_info<T: Send + 'static>(
     tokio::task::spawn_blocking(move || {
         let inf = AccountInfo::new(
             &key,
-            is_signer,
-            is_writable,
-            &mut acct.lamports,
-            &mut *acct.data,
-            &acct.owner,
-            acct.executable,
-            acct.rent_epoch,
+            false,
+            false,
+            &mut lamports,
+            &mut data,
+            &owner,
+            false,
+            0,
         );
 
         f(inf)
     })
     .await
     .context("Failed to spawn dedicated thread for AccountInfo processing")
-}
-
-/// Borrow an account's raw as a `solana-program` account info struct.
-#[cfg(feature = "solana-program")]
-#[inline]
-pub async fn account_data_as_info<T: Send + 'static>(
-    key: Pubkey,
-    data: impl std::borrow::ToOwned<Owned = Vec<u8>>,
-    owner: Pubkey,
-    lamports: u64,
-    f: impl Send + FnOnce(AccountInfo<'_>) -> T + 'static,
-) -> Result<T> {
-    account_as_info(
-        key,
-        false,
-        false,
-        Account {
-            lamports,
-            data: data.to_owned(),
-            owner,
-            executable: false,
-            rent_epoch: 0,
-        },
-        f,
-    )
-    .await
 }
 
 /// Convenience wrapper for Metaplex's [`MasterEdition`] trait and structs
@@ -84,10 +53,9 @@ impl MasterEdition {
     ///
     /// # Errors
     /// This function fails if the account cannot be parsed as a v1 account or a v2 account.
-    #[cfg(feature = "solana-program")]
     pub fn from_account_info(
         info: &AccountInfo,
-    ) -> Result<Self, solana_sdk::program_error::ProgramError> {
+    ) -> Result<Self, solana_program::program_error::ProgramError> {
         MasterEditionV2::from_account_info(info)
             .map(Self::V2)
             .or_else(|e| {
@@ -97,7 +65,6 @@ impl MasterEdition {
     }
 }
 
-#[cfg(feature = "solana-program")]
 impl mpl_token_metadata::state::MasterEdition for MasterEdition {
     fn key(&self) -> Key {
         match self {

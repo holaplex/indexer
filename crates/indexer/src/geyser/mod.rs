@@ -39,64 +39,61 @@ pub async fn process_message<H: std::hash::BuildHasher>(
 
     match msg {
         Message::AccountUpdate(update)
-            if update.owner == pubkeys::metadata()
-                && check_ignore(IgnoreType::Metadata, &update) =>
+            if update.owner == pubkeys::METADATA && check_ignore(IgnoreType::Metadata, &update) =>
         {
             programs::metadata::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::auction() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::AUCTION => {
             programs::auction::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::metaplex() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::METAPLEX => {
             programs::metaplex::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::auction_house() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::AUCTION_HOUSE => {
             programs::auction_house::process(client, update).await
         },
         Message::AccountUpdate(update)
-            if update.owner == pubkeys::token() && check_ignore(IgnoreType::Tokens, &update) =>
+            if update.owner == pubkeys::TOKEN && check_ignore(IgnoreType::Tokens, &update) =>
         {
             programs::token::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::graph_program() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::GRAPH_PROGRAM => {
             programs::graph::process(client, update).await
         },
         Message::AccountUpdate(update)
-            if update.owner == pubkeys::candy_machine()
+            if update.owner == pubkeys::CANDY_MACHINE
                 && check_ignore(IgnoreType::CandyMachine, &update) =>
         {
             programs::candy_machine::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::name_service() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::NAME_SERVICE => {
             programs::name_service::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::cardinal_token_manager() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::CARDINAL_TOKEN_MANAGER => {
             programs::cardinal_token_manager::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::cardinal_time_invalidator() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::CARDINAL_TIME_INVALIDATOR => {
             programs::cardinal_time_invalidator::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::cardinal_use_invalidator() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::CARDINAL_USE_INVALIDATOR => {
             programs::cardinal_use_invalidator::process(client, update).await
         },
-        Message::AccountUpdate(update)
-            if update.owner == pubkeys::cardinal_paid_claim_approver() =>
-        {
+        Message::AccountUpdate(update) if update.owner == pubkeys::CARDINAL_PAID_CLAIM_APPROVER => {
             programs::cardinal_paid_claim_approver::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::goki_smart_wallet() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::GOKI_SMART_WALLET => {
             programs::goki_smart_wallet::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::tribeca_locked_voter() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::TRIBECA_LOCKED_VOTER => {
             programs::tribeca_locked_voter::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::tribeca_govern() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::TRIBECA_GOVERN => {
             programs::tribeca_govern::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::namespaces() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::NAMESPACES => {
             programs::namespaces::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::token_bonding() => {
+        Message::AccountUpdate(update) if update.owner == pubkeys::TOKEN_BONDING => {
             programs::token_bonding::process(client, update).await
         },
         Message::AccountUpdate(update) => {

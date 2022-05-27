@@ -36,6 +36,7 @@ enum Metadatas {
     PrimarySaleHappened,
     SellerFeeBasisPoints,
     Uri,
+    Slot,
 }
 
 #[derive(Iden)]
@@ -132,6 +133,7 @@ pub type NftColumns = (
     metadatas::mint_address,
     metadatas::primary_sale_happened,
     metadatas::uri,
+    metadatas::slot,
     metadata_jsons::description,
     metadata_jsons::image,
     metadata_jsons::category,
@@ -168,8 +170,11 @@ pub fn list(
             (ListingReceipts::Table, ListingReceipts::Price),
             Order::Desc,
         )
-        .and_where(Expr::tbl(ListingReceipts::Table, ListingReceipts::PurchaseReceipt).is_null())
-        .and_where(Expr::tbl(ListingReceipts::Table, ListingReceipts::CanceledAt).is_null())
+        .cond_where(
+            Condition::all()
+                .add(Expr::tbl(ListingReceipts::Table, ListingReceipts::PurchaseReceipt).is_null())
+                .add(Expr::tbl(ListingReceipts::Table, ListingReceipts::CanceledAt).is_null()),
+        )
         .take();
 
     if let Some(auction_houses) = auction_houses.clone() {
@@ -187,6 +192,7 @@ pub fn list(
             (Metadatas::Table, Metadatas::MintAddress),
             (Metadatas::Table, Metadatas::PrimarySaleHappened),
             (Metadatas::Table, Metadatas::Uri),
+            (Metadatas::Table, Metadatas::Slot),
         ])
         .columns(vec![
             (MetadataJsons::Table, MetadataJsons::Description),
@@ -207,11 +213,6 @@ pub fn list(
                 CurrentMetadataOwners::MintAddress,
             ),
         )
-        .inner_join(
-            MetadataCreators::Table,
-            Expr::tbl(Metadatas::Table, Metadatas::Address)
-                .equals(MetadataCreators::Table, MetadataCreators::MetadataAddress),
-        )
         .join_lateral(
             JoinType::LeftJoin,
             listing_receipts_query.take(),
@@ -228,7 +229,6 @@ pub fn list(
                     ),
                 ),
         )
-        .and_where(Expr::tbl(MetadataCreators::Table, MetadataCreators::Verified).eq(true))
         .limit(limit)
         .offset(offset)
         .order_by((ListingReceipts::Table, ListingReceipts::Price), Order::Asc)
@@ -239,7 +239,14 @@ pub fn list(
     }
 
     if let Some(creators) = creators {
-        query.and_where(Expr::col(MetadataCreators::CreatorAddress).is_in(creators));
+        query
+            .inner_join(
+                MetadataCreators::Table,
+                Expr::tbl(Metadatas::Table, Metadatas::Address)
+                    .equals(MetadataCreators::Table, MetadataCreators::MetadataAddress),
+            )
+            .and_where(Expr::col(MetadataCreators::CreatorAddress).is_in(creators))
+            .and_where(Expr::col(MetadataCreators::Verified).eq(true));
     }
 
     if let Some(listed) = listed {
@@ -263,9 +270,16 @@ pub fn list(
                 (BidReceipts::Table, BidReceipts::Price),
             ])
             .from(BidReceipts::Table)
-            .and_where(Expr::col((BidReceipts::Table, BidReceipts::Buyer)).is_in(offerers))
-            .and_where(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
-            .and_where(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null())
+            .cond_where(
+                Condition::all()
+                    .add(Expr::col((BidReceipts::Table, BidReceipts::Buyer)).is_in(offerers))
+                    .add(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
+                    .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null())
+                    .add(
+                        Expr::tbl(BidReceipts::Table, BidReceipts::Metadata)
+                            .equals(Metadatas::Table, Metadatas::Address),
+                    ),
+            )
             .take();
 
         if let Some(auction_houses) = auction_houses {
@@ -293,8 +307,11 @@ pub fn list(
                 Query::select()
                     .from(Attributes::Table)
                     .column((Attributes::Table, Attributes::MetadataAddress))
-                    .and_where(Expr::col(Attributes::TraitType).eq(trait_type))
-                    .and_where(Expr::col(Attributes::Value).is_in(values))
+                    .cond_where(
+                        Condition::all()
+                            .add(Expr::col(Attributes::TraitType).eq(trait_type))
+                            .add(Expr::col(Attributes::Value).is_in(values)),
+                    )
                     .take(),
                 alias.clone(),
                 Expr::tbl(alias, Attributes::MetadataAddress)

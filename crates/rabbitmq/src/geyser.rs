@@ -4,7 +4,7 @@
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-pub use solana_sdk::pubkey::Pubkey;
+pub use solana_program::pubkey::Pubkey;
 
 use crate::{
     queue_type::{Binding, QueueProps, RetryProps},

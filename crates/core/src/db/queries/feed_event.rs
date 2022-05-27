@@ -1,6 +1,7 @@
 //! Query utilities for feed events.
 
 use diesel::{
+    dsl::not,
     expression::{nullable::Nullable, operators::Eq, AsExpression, NonAggregate},
     prelude::*,
     query_builder::{QueryFragment, QueryId},
@@ -36,6 +37,26 @@ pub type Columns<'a> = (
     Option<models::FollowEvent<'a>>,
 );
 
+/// feed event types, to be used for filtering feed events
+#[derive(Debug, Clone, Copy, strum::EnumString)]
+#[strum(serialize_all = "kebab-case")]
+pub enum EventType {
+    /// Mint Events
+    Mint,
+
+    /// Offer Events
+    Offer,
+
+    /// Listing Events
+    Listing,
+
+    /// Purchase Events
+    Purchase,
+
+    /// Follow Events
+    Follow,
+}
+
 /// Return polymorphic list of feed events based on who the wallet is following
 ///
 /// # Errors
@@ -45,14 +66,16 @@ pub fn list<W: Clone + AsExpression<Text>>(
     wallet: W,
     limit: i64,
     offset: i64,
+    exclude_types: Option<Vec<EventType>>
 ) -> Result<
     Vec<Columns>,
 > where <W as AsExpression<Text>>::Expression: NonAggregate + AppearsOnTable<Join<graph_connections::table, JoinOn<Join<JoinOn<Join<JoinOn<Join<JoinOn<Join<JoinOn<Join<JoinOn<Join<JoinOn<Join<feed_event_wallets::table, feed_events::table, Inner>, Eq<Nullable<feed_event_wallets::feed_event_id>, Nullable<feed_events::id>>>, twitter_handle_name_services::table, LeftOuter>, Eq<feed_event_wallets::wallet_address, twitter_handle_name_services::wallet_address>>, mint_events::table, LeftOuter>, Eq<feed_events::id, mint_events::feed_event_id>>, offer_events::table, LeftOuter>, Eq<feed_events::id, offer_events::feed_event_id>>, listing_events::table, LeftOuter>, Eq<feed_events::id, listing_events::feed_event_id>>, purchase_events::table, LeftOuter>, Eq<feed_events::id, purchase_events::feed_event_id>>, follow_events::table, LeftOuter>, Eq<feed_events::id, follow_events::feed_event_id>>, Inner>> + QueryFragment<Pg> + QueryId{
     let following_query = graph_connections::table
         .filter(graph_connections::from_account.eq(wallet))
+        .filter(graph_connections::disconnected_at.is_null())
         .select(graph_connections::to_account);
 
-    feed_event_wallets::table
+    let mut query = feed_event_wallets::table
         .inner_join(feed_events::table)
         .left_join(twitter_handle_name_services::table.on(
             feed_event_wallets::wallet_address.eq(twitter_handle_name_services::wallet_address),
@@ -73,6 +96,25 @@ pub fn list<W: Clone + AsExpression<Text>>(
             (purchase_events::all_columns.nullable()),
             (follow_events::all_columns.nullable()),
         ))
+        .into_boxed();
+
+    if let Some(event_types) = exclude_types {
+        for event_type in event_types {
+            query = match event_type {
+                EventType::Follow => query.filter(not(follow_events::feed_event_id.is_not_null())),
+                EventType::Offer => query.filter(not(offer_events::feed_event_id.is_not_null())),
+                EventType::Mint => query.filter(not(mint_events::feed_event_id.is_not_null())),
+                EventType::Purchase => {
+                    query.filter(not(purchase_events::feed_event_id.is_not_null()))
+                },
+                EventType::Listing => {
+                    query.filter(not(listing_events::feed_event_id.is_not_null()))
+                },
+            }
+        }
+    }
+
+    query
         .limit(limit)
         .offset(offset)
         .order(feed_events::created_at.desc())

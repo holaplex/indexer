@@ -26,12 +26,14 @@ use indexer_core::{
     ServerOpts,
 };
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
+// TODO: use nonblocking once we upgrade past 1.9
+use solana_client::rpc_client::RpcClient;
 
 use crate::schema::{AppContext, Schema};
 
 mod schema;
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct Opts {
     #[clap(flatten)]
     server: ServerOpts,
@@ -47,6 +49,18 @@ struct Opts {
 
     #[clap(flatten)]
     search: meilisearch::Args,
+
+    #[clap(long, env)]
+    solana_endpoint: String,
+
+    #[clap(long, env, use_value_delimiter(true))]
+    follow_wallets_exclusions: Vec<String>,
+
+    #[clap(long, env, use_value_delimiter(true))]
+    featured_listings_auction_houses: Vec<String>,
+
+    #[clap(long, env, use_value_delimiter(true))]
+    featured_listings_seller_exclusions: Vec<String>,
 }
 
 struct GraphiqlData {
@@ -64,6 +78,10 @@ pub(crate) struct SharedData {
     pub asset_proxy: AssetProxyArgs,
     pub twitter_bearer_token: String,
     pub search: meilisearch::client::Client,
+    pub rpc: RpcClient,
+    pub follow_wallets_exclusions: Vec<String>,
+    pub featured_listings_auction_houses: Vec<String>,
+    pub featured_listings_seller_exclusions: Vec<String>,
 }
 
 #[allow(clippy::unused_async)]
@@ -109,13 +127,19 @@ async fn graphql(
 
 fn main() {
     indexer_core::run(|| {
+        let opts = Opts::parse();
+        debug!("{:#?}", opts);
         let Opts {
             server,
             db,
             twitter_bearer_token,
             asset_proxy,
             search,
-        } = Opts::parse();
+            solana_endpoint,
+            follow_wallets_exclusions,
+            featured_listings_auction_houses,
+            featured_listings_seller_exclusions,
+        } = opts;
 
         let (addr,) = server.into_parts();
         info!("Listening on {}", addr);
@@ -127,6 +151,7 @@ fn main() {
             db::connect(db, db::ConnectMode::Read).context("Failed to connect to Postgres")?;
         let db = Arc::new(db);
         let search = search.into_client();
+        let rpc = RpcClient::new(solana_endpoint);
 
         let shared = web::Data::new(SharedData {
             schema: schema::create(),
@@ -134,6 +159,10 @@ fn main() {
             asset_proxy,
             twitter_bearer_token,
             search,
+            rpc,
+            follow_wallets_exclusions,
+            featured_listings_auction_houses,
+            featured_listings_seller_exclusions,
         });
 
         let version_extension = "/v1";

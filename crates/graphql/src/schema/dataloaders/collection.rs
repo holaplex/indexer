@@ -82,6 +82,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                             image,
                             category,
                             model,
+                            slot: None,
                         }
                         .try_into(),
                     )

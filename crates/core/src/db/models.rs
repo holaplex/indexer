@@ -43,6 +43,8 @@ pub struct Edition<'a> {
     pub parent_address: Cow<'a, str>,
     /// The ordinal of this edition
     pub edition: i64,
+    /// Solana slot number
+    pub slot: Option<i64>,
 }
 
 /// A row in the `listing_metadatas` table.  This is a join on `listings` and
@@ -131,6 +133,8 @@ pub struct MasterEdition<'a> {
     /// The maximum printing supply of the master edition, or `None` if it is
     /// unlimited
     pub max_supply: Option<i64>,
+    /// Solana slot number
+    pub slot: Option<i64>,
 }
 
 /// A row in the `metadata_creators` table.  This is a join on `metadatas` and
@@ -180,6 +184,8 @@ pub struct Metadata<'a> {
     pub edition_pda: Cow<'a, str>,
     /// Type of NFT token
     pub token_standard: Option<TokenStandardEnum>,
+    /// Solana slot number
+    pub slot: Option<i64>,
 }
 
 /// A row in the `storefronts` table
@@ -236,6 +242,10 @@ pub struct Nft {
     /// Metadata metadata_json uri
     #[sql_type = "Text"]
     pub uri: String,
+
+    /// Solana slot number
+    #[sql_type = "Nullable<Int8>"]
+    pub slot: Option<i64>,
 
     // Table metadata_json
     /// Metadata description
@@ -411,6 +421,12 @@ pub struct MetadataJson<'a> {
     pub raw_content: Cow<'a, serde_json::Value>,
     /// Model the JSON was parsed with
     pub model: Option<Cow<'a, str>>,
+    /// The URI from which the data in this row was retrieved
+    pub fetch_uri: Cow<'a, str>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `files` table
@@ -423,6 +439,10 @@ pub struct File<'a> {
     pub uri: Cow<'a, str>,
     /// File type attribute
     pub file_type: Cow<'a, str>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `attributes` table
@@ -438,6 +458,10 @@ pub struct MetadataAttributeWrite<'a> {
     pub trait_type: Option<Cow<'a, str>>,
     /// Address of metadata first verified creator
     pub first_verified_creator: Option<Cow<'a, str>>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `attributes` table
@@ -453,6 +477,10 @@ pub struct MetadataAttribute<'a> {
     pub id: Uuid,
     /// Address of metadata first verified creator
     pub first_verified_creator: Option<Cow<'a, str>>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `files` table
@@ -466,6 +494,10 @@ pub struct MetadataFile<'a> {
     pub file_type: Cow<'a, str>,
     /// File generated id
     pub id: Uuid,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `metadata_collections` table
@@ -478,6 +510,10 @@ pub struct MetadataCollection<'a> {
     pub name: Option<Cow<'a, str>>,
     /// Collection family
     pub family: Option<Cow<'a, str>>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `store_configs` table

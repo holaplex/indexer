@@ -28,8 +28,9 @@ pub use runtime::*;
 
 /// Common traits and re-exports
 pub mod prelude {
+    pub use bs58;
     pub use indexer_core::prelude::*;
-    pub use solana_sdk::{bs58, pubkey::Pubkey};
+    pub use solana_program::pubkey::Pubkey;
 }
 
 mod runtime {
