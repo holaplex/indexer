@@ -6,7 +6,6 @@ use super::prelude::*;
 #[derive(Debug, Clone)]
 pub struct Listing {
     pub trade_state: String,
-    pub bookkeeper: PublicKey<Wallet>,
     pub seller: PublicKey<Wallet>,
     pub auction_house: PublicKey<AuctionHouse>,
     pub metadata: PublicKey<Nft>,
@@ -20,10 +19,6 @@ pub struct Listing {
 impl Listing {
     fn trade_state(&self) -> &str {
         &self.trade_state
-    }
-
-    fn bookkeeper(&self) -> &PublicKey<Wallet> {
-        &self.bookkeeper
     }
 
     fn seller(&self) -> &PublicKey<Wallet> {
@@ -64,14 +59,12 @@ impl<'a> TryFrom<models::Listing<'a>> for Listing {
         models::Listing {
             id: _,
             trade_state,
-            bookkeeper,
             auction_house,
             seller,
             metadata,
             purchase_id: _,
             price,
             token_size,
-            bump: _,
             trade_state_bump: _,
             created_at,
             canceled_at: _,
@@ -79,7 +72,6 @@ impl<'a> TryFrom<models::Listing<'a>> for Listing {
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             trade_state: trade_state.into_owned(),
-            bookkeeper: bookkeeper.into_owned().into(),
             auction_house: auction_house.into_owned().into(),
             seller: seller.into_owned().into(),
             metadata: metadata.into_owned().into(),

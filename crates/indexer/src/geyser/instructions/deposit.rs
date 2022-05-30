@@ -1,17 +1,12 @@
 use borsh::BorshDeserialize;
 use indexer_core::db::{insert_into, models::DepositInstruction, tables::deposit_instructions};
+use mpl_auction_house::instruction::Deposit;
 
 use super::Client;
 use crate::prelude::*;
 
-#[derive(BorshDeserialize, Debug, Clone)]
-pub struct InstructionParameters {
-    escrow_payment_bump: u8,
-    amount: u64,
-}
-
 pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -> Result<()> {
-    let params = InstructionParameters::try_from_slice(data).context("failed to deserialize")?;
+    let params = Deposit::try_from_slice(data).context("failed to deserialize")?;
 
     if accounts.len() != 11 {
         debug!("invalid accounts for DepositInstruction");

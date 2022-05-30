@@ -3,21 +3,16 @@ use indexer_core::db::{
     insert_into,
     models::CancelInstruction,
     select,
-    tables::{cancel_instructions, current_metadata_owners, listings, offers},
+    tables::{cancel_instructions, listings, offers},
     update,
 };
+use mpl_auction_house::instruction::Cancel;
 
 use super::Client;
 use crate::prelude::*;
 
-#[derive(BorshDeserialize, Debug, Clone)]
-pub struct InstructionParameters {
-    buyer_price: u64,
-    token_size: u64,
-}
-
 pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -> Result<()> {
-    let params = InstructionParameters::try_from_slice(data).context("failed to deserialize")?;
+    let params = Cancel::try_from_slice(data).context("failed to deserialize")?;
 
     if accounts.len() != 8 {
         debug!("invalid accounts for DepositInstruction");
@@ -46,27 +41,23 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
                 .values(&row)
                 .execute(db)?;
             db.build_transaction().read_write().run(|| {
-                let wallet_is_owner = select(exists(
-                    current_metadata_owners::table.filter(
-                        current_metadata_owners::owner_address
-                            .eq(row.wallet.clone())
-                            .and(
-                                current_metadata_owners::token_account_address
-                                    .eq(row.token_account.clone()),
-                            ),
+                let listing_trade_state = select(exists(
+                    listings::table.filter(
+                        listings::trade_state
+                            .eq(row.trade_state.clone())
+                            .and(listings::purchase_id.is_null())
+                            .and(listings::canceled_at.is_null()),
                     ),
                 ))
                 .get_result::<bool>(db);
 
-                if Ok(true) == wallet_is_owner {
+                if Ok(true) == listing_trade_state {
                     update(
                         listings::table.filter(
                             listings::trade_state
                                 .eq(row.trade_state.clone())
-                                .and(listings::auction_house.eq(row.auction_house.clone()))
-                                .and(listings::bookkeeper.eq(row.wallet.clone()))
-                                .and(listings::price.eq(row.buyer_price))
-                                .and(listings::token_size.eq(row.token_size)),
+                                .and(listings::purchase_id.is_null())
+                                .and(listings::canceled_at.is_null()),
                         ),
                     )
                     .set(listings::canceled_at.eq(Some(row.created_at)))
@@ -76,10 +67,8 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
                         offers::table.filter(
                             offers::trade_state
                                 .eq(row.trade_state.clone())
-                                .and(offers::auction_house.eq(row.auction_house.clone()))
-                                .and(offers::token_account.eq(row.token_account.clone()))
-                                .and(offers::price.eq(row.buyer_price))
-                                .and(offers::token_size.eq(row.token_size)),
+                                .and(offers::purchase_id.is_null())
+                                .and(offers::canceled_at.is_null()),
                         ),
                     )
                     .set(offers::canceled_at.eq(Some(row.created_at)))

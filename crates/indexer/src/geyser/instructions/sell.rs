@@ -10,21 +10,13 @@ use indexer_core::{
     },
     uuid::Uuid,
 };
+use mpl_auction_house::instruction::Sell;
 
 use super::Client;
 use crate::prelude::*;
 
-#[derive(BorshDeserialize, Debug, Clone)]
-pub struct InstructionParameters {
-    trade_state_bump: u8,
-    free_trade_state_bump: u8,
-    program_as_signer_bump: u8,
-    buyer_price: u64,
-    token_size: u64,
-}
-
 pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -> Result<()> {
-    let params = InstructionParameters::try_from_slice(data).context("failed to deserialize")?;
+    let params = Sell::try_from_slice(data).context("failed to deserialize")?;
 
     if accounts.len() != 12 {
         debug!("invalid accounts for SellInstruction");
@@ -44,8 +36,8 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
         free_seller_trader_state: Owned(accts[7].clone()),
         program_as_signer: Owned(accts[10].clone()),
         trade_state_bump: params.trade_state_bump.try_into()?,
-        free_trade_state_bump: params.free_trade_state_bump.try_into()?,
-        program_as_signer_bump: params.program_as_signer_bump.try_into()?,
+        free_trade_state_bump: params._free_trade_state_bump.try_into()?,
+        program_as_signer_bump: params._program_as_signer_bump.try_into()?,
         buyer_price: params.buyer_price.try_into()?,
         token_size: params.token_size.try_into()?,
         created_at: Utc::now().naive_utc(),
@@ -74,14 +66,12 @@ async fn upsert_into_listings_table<'a>(
     let row = Listing {
         id: None,
         trade_state: data.seller_trade_state.clone(),
-        bookkeeper: data.wallet.clone(),
         auction_house: data.auction_house.clone(),
         seller: data.wallet.clone(),
         metadata: data.metadata.clone(),
         purchase_id: None,
         price: data.buyer_price,
         token_size: data.token_size,
-        bump: None,
         trade_state_bump: data.trade_state_bump,
         created_at: data.created_at,
         canceled_at: None,
@@ -94,13 +84,7 @@ async fn upsert_into_listings_table<'a>(
                 listings::table.filter(
                     listings::trade_state
                         .eq(row.trade_state.clone())
-                        .and(listings::bookkeeper.eq(row.bookkeeper.clone()))
-                        .and(listings::auction_house.eq(row.auction_house.clone()))
-                        .and(listings::seller.eq(row.seller.clone()))
-                        .and(listings::metadata.eq(row.metadata.clone()))
-                        .and(listings::price.eq(row.price))
-                        .and(listings::token_size.eq(row.token_size))
-                        .and(listings::trade_state_bump.eq(row.trade_state_bump)),
+                        .and(listings::metadata.eq(row.metadata.clone())),
                 ),
             ))
             .get_result::<bool>(db);

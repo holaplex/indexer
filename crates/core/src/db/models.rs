@@ -1903,6 +1903,44 @@ pub struct BuyInstruction<'a> {
     pub created_at: NaiveDateTime,
 }
 
+/// A row in the `public_buy_instructions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct PublicBuyInstruction<'a> {
+    /// wallet address
+    pub wallet: Cow<'a, str>,
+    /// Wallet used to pay for the Bid
+    pub payment_account: Cow<'a, str>,
+    /// Transfer authority pubkey
+    pub transfer_authority: Cow<'a, str>,
+    /// Treasury mint pubkey
+    pub treasury_mint: Cow<'a, str>,
+    /// Nft Token account pubkey
+    pub token_account: Cow<'a, str>,
+    /// Metadata account pubkey
+    pub metadata: Cow<'a, str>,
+    /// Escrow account pubkey where funds are deposited
+    pub escrow_payment_account: Cow<'a, str>,
+    /// Authority account pubkey
+    pub authority: Cow<'a, str>,
+    /// Auction house pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Auction house fee account pubkey
+    pub auction_house_fee_account: Cow<'a, str>,
+    /// Buyer trade state account pubkey
+    pub buyer_trade_state: Cow<'a, str>,
+    /// trade state bump
+    pub trade_state_bump: i16,
+    /// escrow payment bump
+    pub escrow_payment_bump: i16,
+    /// buyer price in lamports
+    pub buyer_price: i64,
+    /// Token size (usually 1)
+    pub token_size: i64,
+    /// Timestamp when 'Buy' instruction was received
+    pub created_at: NaiveDateTime,
+}
+
 /// A row in the `sell_instructions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -2088,6 +2126,26 @@ pub struct WithdrawFromFeeInstruction<'a> {
     pub created_at: NaiveDateTime,
 }
 
+/// A row in the `withdraw_from_treasury` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct WithdrawFromTreasuryInstruction<'a> {
+    /// Treasury mint account pubkey
+    pub treasury_mint: Cow<'a, str>,
+    /// Authority account pubkey
+    pub authority: Cow<'a, str>,
+    /// Treasury withdrawl wallet pubkey
+    pub treasury_withdrawal_destination: Cow<'a, str>,
+    /// Auction house treasury account pubkey
+    pub auction_house_treasury: Cow<'a, str>,
+    /// Auction house program pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Amount in lamports withdrawn
+    pub amount: i64,
+    /// Timestamp when 'WithdrawFromTreasury' instruction was received
+    pub created_at: NaiveDateTime,
+}
+
 /// A row in the `offers` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -2099,8 +2157,6 @@ pub struct Offer<'a> {
     pub id: Option<Uuid>,
     /// Trade State account pubkey
     pub trade_state: Cow<'a, str>,
-    /// Bookkeeper account pubkey
-    pub bookkeeper: Cow<'a, str>,
     /// Auction house account pubkey
     pub auction_house: Cow<'a, str>,
     /// Buyer address
@@ -2115,8 +2171,6 @@ pub struct Offer<'a> {
     pub price: i64,
     /// Token size
     pub token_size: i64,
-    /// Bump
-    pub bump: Option<i16>,
     /// Trade State bump
     pub trade_state_bump: i16,
     /// Created_at timestamp
@@ -2134,8 +2188,6 @@ pub struct Purchase<'a> {
     /// Deserialzed as Uuid as id field is primary key so not null
     #[diesel(deserialize_as = "Uuid")]
     pub id: Option<Uuid>,
-    /// Bookkeeper account pubkey
-    pub bookkeeper: Cow<'a, str>,
     /// Buyer account pubkey
     pub buyer: Cow<'a, str>,
     /// Seller account pubkey
@@ -2148,8 +2200,6 @@ pub struct Purchase<'a> {
     pub token_size: i64,
     /// Price
     pub price: i64,
-    /// Bump
-    pub bump: Option<i16>,
     /// Created at
     pub created_at: NaiveDateTime,
 }
@@ -2165,8 +2215,6 @@ pub struct Listing<'a> {
     pub id: Option<Uuid>,
     /// Trade state account pubkey
     pub trade_state: Cow<'a, str>,
-    /// Bookkeeper account pubkey
-    pub bookkeeper: Cow<'a, str>,
     /// Auction House pubkey
     pub auction_house: Cow<'a, str>,
     /// Seller account pubkey
@@ -2179,8 +2227,6 @@ pub struct Listing<'a> {
     pub price: i64,
     /// Token Size
     pub token_size: i64,
-    /// Bump
-    pub bump: Option<i16>,
     /// Trade State Bump
     pub trade_state_bump: i16,
     /// Created_at timestamp

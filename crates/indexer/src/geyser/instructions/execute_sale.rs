@@ -12,21 +12,13 @@ use indexer_core::{
     },
     uuid::Uuid,
 };
+use mpl_auction_house::instruction::ExecuteSale;
 
 use super::Client;
 use crate::prelude::*;
 
-#[derive(BorshDeserialize, Debug, Clone)]
-pub struct InstructionParameters {
-    escrow_payment_bump: u8,
-    free_trade_state_bump: u8,
-    program_as_signer_bump: u8,
-    buyer_price: u64,
-    token_size: u64,
-}
-
 pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -> Result<()> {
-    let params = InstructionParameters::try_from_slice(data).context("failed to deserialize")?;
+    let params = ExecuteSale::try_from_slice(data).context("failed to deserialize")?;
 
     if accounts.len() != 23 {
         debug!("invalid accounts for ExecuteSaleInstruction");
@@ -54,7 +46,7 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
         free_trade_state: Owned(accts[15].clone()),
         program_as_signer: Owned(accts[19].clone()),
         escrow_payment_bump: params.escrow_payment_bump.try_into()?,
-        free_trade_state_bump: params.free_trade_state_bump.try_into()?,
+        free_trade_state_bump: params._free_trade_state_bump.try_into()?,
         program_as_signer_bump: params.program_as_signer_bump.try_into()?,
         buyer_price: params.buyer_price.try_into()?,
         token_size: params.token_size.try_into()?,
@@ -83,14 +75,12 @@ async fn upsert_into_purchases_table<'a>(
 ) -> Result<()> {
     let row = Purchase {
         id: None,
-        bookkeeper: data.buyer.clone(),
         buyer: data.buyer.clone(),
         seller: data.seller.clone(),
         auction_house: data.auction_house.clone(),
         metadata: data.metadata.clone(),
         token_size: data.token_size,
         price: data.buyer_price,
-        bump: None,
         created_at: data.created_at,
     };
 
@@ -99,9 +89,8 @@ async fn upsert_into_purchases_table<'a>(
         .run(move |db| {
             let purchase_exists = select(exists(
                 purchases::table.filter(
-                    purchases::bookkeeper
-                        .eq(row.bookkeeper.clone())
-                        .and(purchases::buyer.eq(row.buyer.clone()))
+                    purchases::buyer
+                        .eq(row.buyer.clone())
                         .and(purchases::seller.eq(row.seller.clone()))
                         .and(purchases::auction_house.eq(row.auction_house.clone()))
                         .and(purchases::metadata.eq(row.metadata.clone()))

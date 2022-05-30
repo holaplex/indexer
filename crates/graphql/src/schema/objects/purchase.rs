@@ -5,7 +5,6 @@ use super::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct Purchase {
-    pub bookkeeper: PublicKey<Wallet>,
     pub buyer: PublicKey<Wallet>,
     pub seller: PublicKey<Wallet>,
     pub auction_house: PublicKey<AuctionHouse>,
@@ -18,10 +17,6 @@ pub struct Purchase {
 #[graphql_object(Context = AppContext)]
 #[graphql(description = "Auction house purchase")]
 impl Purchase {
-    fn bookkeeper(&self) -> &PublicKey<Wallet> {
-        &self.bookkeeper
-    }
-
     fn buyer(&self) -> &PublicKey<Wallet> {
         &self.buyer
     }
@@ -63,14 +58,12 @@ impl<'a> TryFrom<models::Purchase<'a>> for Purchase {
     fn try_from(
         models::Purchase {
             id: _,
-            bookkeeper,
             buyer,
             seller,
             auction_house,
             metadata,
             token_size,
             price,
-            bump: _,
             created_at,
         }: models::Purchase,
     ) -> Result<Self, Self::Error> {
@@ -80,7 +73,6 @@ impl<'a> TryFrom<models::Purchase<'a>> for Purchase {
             metadata: metadata.into_owned().into(),
             price: price.try_into()?,
             auction_house: auction_house.into_owned().into(),
-            bookkeeper: bookkeeper.into_owned().into(),
             created_at: DateTime::from_utc(created_at, Utc),
             token_size: token_size.try_into()?,
         })

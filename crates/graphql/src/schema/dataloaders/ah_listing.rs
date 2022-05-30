@@ -39,7 +39,6 @@ impl TryBatchFn<PublicKey<Nft>, Vec<Listing>> for Batcher {
             )
             .select(listings::all_columns)
             .filter(listings::canceled_at.is_null())
-            .filter(listings::purchase_id.is_null())
             .filter(listings::metadata.eq(any(addresses)))
             .load(&conn)
             .context("Failed to load listings")?;

@@ -5,3 +5,5 @@ drop table cancel_instructions;
 drop table deposit_instructions;
 drop table withdraw_instructions;
 drop table withdraw_from_fee_instructions;
+drop table withdraw_from_treasury_instructions;
+drop table public_buy_instructions;

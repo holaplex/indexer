@@ -139,8 +139,8 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    buy_instructions (address) {
-        address -> Uuid,
+    buy_instructions (id) {
+        id -> Uuid,
         wallet -> Varchar,
         payment_account -> Varchar,
         transfer_authority -> Varchar,
@@ -165,8 +165,8 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    cancel_instructions (address) {
-        address -> Uuid,
+    cancel_instructions (id) {
+        id -> Uuid,
         wallet -> Varchar,
         token_account -> Varchar,
         token_mint -> Varchar,
@@ -464,8 +464,8 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    deposit_instructions (address) {
-        address -> Uuid,
+    deposit_instructions (id) {
+        id -> Uuid,
         wallet -> Varchar,
         payment_account -> Varchar,
         transfer_authority -> Varchar,
@@ -516,8 +516,8 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    execute_sale_instructions (address) {
-        address -> Uuid,
+    execute_sale_instructions (id) {
+        id -> Uuid,
         buyer -> Varchar,
         seller -> Varchar,
         token_account -> Varchar,
@@ -750,14 +750,12 @@ table! {
     listings (id) {
         id -> Uuid,
         trade_state -> Varchar,
-        bookkeeper -> Varchar,
         auction_house -> Varchar,
         seller -> Varchar,
         metadata -> Varchar,
         purchase_id -> Nullable<Uuid>,
         price -> Int8,
         token_size -> Int8,
-        bump -> Nullable<Int2>,
         trade_state_bump -> Int2,
         created_at -> Timestamp,
         canceled_at -> Nullable<Timestamp>,
@@ -932,7 +930,6 @@ table! {
     offers (id) {
         id -> Uuid,
         trade_state -> Varchar,
-        bookkeeper -> Varchar,
         auction_house -> Varchar,
         buyer -> Varchar,
         metadata -> Varchar,
@@ -940,7 +937,6 @@ table! {
         purchase_id -> Nullable<Uuid>,
         price -> Int8,
         token_size -> Int8,
-        bump -> Nullable<Int2>,
         trade_state_bump -> Int2,
         created_at -> Timestamp,
         canceled_at -> Nullable<Timestamp>,
@@ -1015,6 +1011,32 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    public_buy_instructions (id) {
+        id -> Uuid,
+        wallet -> Varchar,
+        payment_account -> Varchar,
+        transfer_authority -> Varchar,
+        treasury_mint -> Varchar,
+        token_account -> Varchar,
+        metadata -> Varchar,
+        escrow_payment_account -> Varchar,
+        authority -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        buyer_trade_state -> Varchar,
+        trade_state_bump -> Int2,
+        escrow_payment_bump -> Int2,
+        buyer_price -> Int8,
+        token_size -> Int8,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     purchase_events (feed_event_id) {
         purchase_receipt_address -> Varchar,
         feed_event_id -> Uuid,
@@ -1047,14 +1069,12 @@ table! {
 
     purchases (id) {
         id -> Uuid,
-        bookkeeper -> Varchar,
         buyer -> Varchar,
         seller -> Varchar,
         auction_house -> Varchar,
         metadata -> Varchar,
         token_size -> Int8,
         price -> Int8,
-        bump -> Nullable<Int2>,
         created_at -> Timestamp,
     }
 }
@@ -1064,8 +1084,8 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    sell_instructions (address) {
-        address -> Uuid,
+    sell_instructions (id) {
+        id -> Uuid,
         wallet -> Varchar,
         token_account -> Varchar,
         metadata -> Varchar,
@@ -1313,8 +1333,8 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    withdraw_from_fee_instructions (address) {
-        address -> Uuid,
+    withdraw_from_fee_instructions (id) {
+        id -> Uuid,
         authority -> Varchar,
         fee_withdrawal_destination -> Varchar,
         auction_house_fee_account -> Varchar,
@@ -1329,8 +1349,25 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    withdraw_instructions (address) {
-        address -> Uuid,
+    withdraw_from_treasury_instructions (id) {
+        id -> Uuid,
+        treasury_mint -> Varchar,
+        authority -> Varchar,
+        treasury_withdrawal_destination -> Varchar,
+        auction_house_treasury -> Varchar,
+        auction_house -> Varchar,
+        amount -> Int8,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    withdraw_instructions (id) {
+        id -> Uuid,
         wallet -> Varchar,
         receipt_account -> Varchar,
         escrow_payment_account -> Varchar,
@@ -1416,6 +1453,7 @@ allow_tables_to_appear_in_same_query!(
     proposal_instructions,
     proposal_metas,
     proposals,
+    public_buy_instructions,
     purchase_events,
     purchase_receipts,
     purchases,
@@ -1437,5 +1475,6 @@ allow_tables_to_appear_in_same_query!(
     wallet_totals,
     whitelisted_creators,
     withdraw_from_fee_instructions,
+    withdraw_from_treasury_instructions,
     withdraw_instructions,
 );

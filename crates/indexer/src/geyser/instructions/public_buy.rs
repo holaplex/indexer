@@ -3,31 +3,31 @@ use indexer_core::{
     db::{
         custom_types::OfferEventLifecycleEnum,
         insert_into,
-        models::{BuyInstruction, FeedEventWallet, Offer, OfferEvent},
+        models::{FeedEventWallet, Offer, OfferEvent, PublicBuyInstruction},
         select,
         tables::{
-            buy_instructions, current_metadata_owners, feed_event_wallets, feed_events, metadatas,
-            offer_events, offers,
+            current_metadata_owners, feed_event_wallets, feed_events, metadatas, offer_events,
+            offers, public_buy_instructions,
         },
     },
     uuid::Uuid,
 };
-use mpl_auction_house::instruction::Buy;
+use mpl_auction_house::instruction::PublicBuy;
 
 use super::Client;
 use crate::prelude::*;
 
 pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -> Result<()> {
-    let params = Buy::try_from_slice(data).context("failed to deserialize")?;
+    let params = PublicBuy::try_from_slice(data).context("failed to deserialize")?;
 
     if accounts.len() != 14 {
-        debug!("invalid accounts for BuyInstruction");
+        debug!("invalid accounts for PublicBuy instruction");
         return Ok(());
     }
 
     let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
 
-    let row = BuyInstruction {
+    let row = PublicBuyInstruction {
         wallet: Owned(accts[0].clone()),
         payment_account: Owned(accts[1].clone()),
         transfer_authority: Owned(accts[2].clone()),
@@ -53,18 +53,18 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
     client
         .db()
         .run(move |db| {
-            insert_into(buy_instructions::table)
+            insert_into(public_buy_instructions::table)
                 .values(&row)
                 .execute(db)
         })
         .await
-        .context("failed to insert buy instruction ")?;
+        .context("failed to insert public buy instruction ")?;
     Ok(())
 }
 
 async fn upsert_into_offers_table<'a>(
     client: &Client,
-    data: BuyInstruction<'static>,
+    data: PublicBuyInstruction<'static>,
 ) -> Result<()> {
     let row = Offer {
         id: None,

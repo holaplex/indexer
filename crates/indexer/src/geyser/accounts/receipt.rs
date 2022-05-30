@@ -47,7 +47,7 @@ pub(crate) async fn process_listing_receipt(
 
     let values = row.clone();
 
-    client
+    let feed_event = client
         .db()
         .run(move |db| {
             let listing_receipt_exists = select(exists(
@@ -63,7 +63,7 @@ pub(crate) async fn process_listing_receipt(
                 .execute(db)?;
 
             if Ok(true) == listing_receipt_exists || row.purchase_receipt.is_some() {
-                return Ok(());
+                return Ok(None);
             }
 
             db.build_transaction().read_write().run(|| {
@@ -82,7 +82,7 @@ pub(crate) async fn process_listing_receipt(
                     .execute(db);
 
                 if Err(DbError::RollbackTransaction) == listing_event {
-                    return Ok(());
+                    return Ok(None);
                 }
 
                 insert_into(feed_event_wallets::table)
@@ -93,15 +93,17 @@ pub(crate) async fn process_listing_receipt(
                     .execute(db)
                     .context("Failed to insert listing feed event wallet")?;
 
-                Result::<_>::Ok(())
+                Result::<_>::Ok(Some(feed_event_id))
             })
         })
         .await
         .context("Failed to insert listing receipt!")?;
 
-    upsert_into_listings_table(client, values)
-        .await
-        .context("Failed to insert listing")?;
+    if feed_event.is_none() {
+        upsert_into_listings_table(client, values)
+            .await
+            .context("Failed to insert listing")?;
+    }
 
     Ok(())
 }
@@ -126,20 +128,11 @@ pub(crate) async fn process_purchase_receipt(
 
     let values = row.clone();
 
-    client
+    let feed_event = client
         .db()
         .run(move |db| {
-            let purchase_exists = select(exists(
-                purchases::table.filter(
-                    purchases::bookkeeper
-                        .eq(row.bookkeeper.clone())
-                        .and(purchases::buyer.eq(row.buyer.clone()))
-                        .and(purchases::seller.eq(row.seller.clone()))
-                        .and(purchases::auction_house.eq(row.auction_house.clone()))
-                        .and(purchases::metadata.eq(row.metadata.clone()))
-                        .and(purchases::token_size.eq(row.token_size))
-                        .and(purchases::price.eq(row.price)),
-                ),
+            let purchase_receipt_exists = select(exists(
+                purchase_receipts::table.filter(purchase_receipts::address.eq(row.address.clone())),
             ))
             .get_result::<bool>(db);
 
@@ -150,8 +143,8 @@ pub(crate) async fn process_purchase_receipt(
                 .set(&row)
                 .execute(db)?;
 
-            if Ok(true) == purchase_exists {
-                return Ok(());
+            if Ok(true) == purchase_receipt_exists {
+                return Ok(None);
             }
 
             db.build_transaction().read_write().run(|| {
@@ -185,15 +178,17 @@ pub(crate) async fn process_purchase_receipt(
                     .execute(db)
                     .context("Failed to insert purchase feed event wallet for buyer")?;
 
-                Result::<_>::Ok(())
+                Result::<_>::Ok(Some(feed_event_id))
             })
         })
         .await
         .context("Failed to insert purchase receipt!")?;
 
-    upsert_into_purchases_table(client, values)
-        .await
-        .context("Failed to insert purchase")?;
+    if feed_event.is_none() {
+        upsert_into_purchases_table(client, values)
+            .await
+            .context("Failed to insert purchase")?;
+    }
 
     Ok(())
 }
@@ -228,17 +223,8 @@ pub(crate) async fn process_bid_receipt(
     let offer_event = client
         .db()
         .run(move |db| {
-            let offer = select(exists(
-                offers::table.filter(
-                    offers::trade_state
-                        .eq(row.trade_state.clone())
-                        .and(offers::bookkeeper.eq(row.bookkeeper.clone()))
-                        .and(offers::auction_house.eq(row.auction_house.clone()))
-                        .and(offers::buyer.eq(row.buyer.clone()))
-                        .and(offers::metadata.eq(row.metadata.clone()))
-                        .and(offers::price.eq(row.price))
-                        .and(offers::token_size.eq(row.token_size)),
-                ),
+            let bid_receipt_exists = select(exists(
+                bid_receipts::table.filter(bid_receipts::address.eq(row.address.clone())),
             ))
             .get_result::<bool>(db);
 
@@ -249,7 +235,7 @@ pub(crate) async fn process_bid_receipt(
                 .set(&row)
                 .execute(db)?;
 
-            if Ok(true) == offer || row.purchase_receipt.is_some() {
+            if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
                 return Ok(None);
             }
 
@@ -299,15 +285,15 @@ pub(crate) async fn process_bid_receipt(
         .await
         .context("Failed to insert bid receipt!")?;
 
-    upsert_into_offers_table(client, values)
-        .await
-        .context("failed to insert into offers table")?;
-
     if offer_event.is_some() {
         client
             .dispatch_dialect_offer_event(key, bid_receipt.metadata)
             .await?;
     } else {
+        upsert_into_offers_table(client, values)
+            .await
+            .context("failed to insert into offers table")?;
+
         trace!("Skipping Dialect dispatch for offer");
     }
 
@@ -318,7 +304,6 @@ async fn upsert_into_offers_table<'a>(client: &Client, data: DbBidReceipt<'stati
     let row = Offer {
         id: None,
         trade_state: data.trade_state,
-        bookkeeper: data.bookkeeper,
         auction_house: data.auction_house,
         buyer: data.buyer,
         metadata: data.metadata,
@@ -326,7 +311,6 @@ async fn upsert_into_offers_table<'a>(client: &Client, data: DbBidReceipt<'stati
         purchase_id: None,
         price: data.price,
         token_size: data.token_size,
-        bump: Some(data.bump),
         trade_state_bump: data.trade_state_bump,
         created_at: data.created_at,
         canceled_at: data.canceled_at,
@@ -354,14 +338,12 @@ async fn upsert_into_purchases_table<'a>(
 ) -> Result<()> {
     let row = Purchase {
         id: None,
-        bookkeeper: data.buyer.clone(),
         buyer: data.buyer.clone(),
         seller: data.seller.clone(),
         auction_house: data.auction_house.clone(),
         metadata: data.metadata.clone(),
         token_size: data.token_size,
         price: data.price,
-        bump: Some(data.bump),
         created_at: data.created_at,
     };
 
@@ -388,14 +370,12 @@ async fn upsert_into_listings_table<'a>(
     let row = Listing {
         id: None,
         trade_state: data.trade_state.clone(),
-        bookkeeper: data.bookkeeper.clone(),
         auction_house: data.auction_house.clone(),
         seller: data.seller.clone(),
         metadata: data.metadata.clone(),
         purchase_id: None,
         price: data.price,
         token_size: data.token_size,
-        bump: Some(data.bump),
         trade_state_bump: data.trade_state_bump,
         created_at: data.created_at,
         canceled_at: None,
