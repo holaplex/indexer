@@ -555,10 +555,12 @@ impl QueryRoot {
         #[graphql(description = "Limit for query")] limit: Option<i32>,
         #[graphql(description = "Offset for query")] offset: Option<i32>,
     ) -> FieldResult<Vec<Marketplace>> {
-        if subdomains.is_none() && limit.is_none() {
+        let too_many_filters = subdomains.is_some() && (limit.is_some() || offset.is_some());
+        let not_enough_filters = subdomains.is_none() && limit.is_none();
+        if too_many_filters || not_enough_filters {
             return Err(FieldError::new(
-                "You must supply limit, subdomains, or both.",
-                graphql_value!({ "Filters": "subdomains: Vec<String>, limit: i32" }),
+                "You must supply either a limit (and optionally offset) or subdomains",
+                graphql_value!({ "Filters": "subdomains: Vec<String>, limit: i32, offset: i32" }),
             ));
         }
 
@@ -576,7 +578,7 @@ impl QueryRoot {
             query = query.filter(store_config_jsons::subdomain.eq(any(subdomains)));
         } else {
             query = query
-                .limit(limit.unwrap().into())
+                .limit(limit.unwrap_or_else(|| unreachable!()).into())
                 .offset(offset.unwrap_or(0).into());
         }
 
