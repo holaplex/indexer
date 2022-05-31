@@ -14,25 +14,25 @@ use crate::{
 };
 
 const FEATURED_LISTINGS_QUERY: &str = r"
-SELECT 
-    a.address, 
-    a.trade_state, 
-    a.bookkeeper, 
-    a.auction_house, 
-    a.seller, 
-    a.metadata, 
-    a.purchase_receipt, 
-    a.price, 
-    a.token_size, 
-    a.bump, 
+SELECT
+    a.address,
+    a.trade_state,
+    a.bookkeeper,
+    a.auction_house,
+    a.seller,
+    a.metadata,
+    a.purchase_receipt,
+    a.price,
+    a.token_size,
+    a.bump,
     a.trade_state_bump,
-    a.created_at, 
+    a.created_at,
     a.canceled_at
-    
+
 FROM (
 
-    SELECT 
-        listing_receipts.*, 
+    SELECT
+        listing_receipts.*,
         row_number() OVER (
             PARTITION BY listing_receipts.seller ORDER BY listing_receipts.price DESC
         ) as row
