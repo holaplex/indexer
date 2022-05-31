@@ -113,13 +113,32 @@ async fn graphql(
     let resp = req.execute(&data.schema, &ctx).await;
     let end = Local::now();
     let duration = end - start;
-    let formatted_duration = duration_hhmmssfff(duration);
 
     if duration > Duration::milliseconds(5000) {
-        warn!(
-            "long graphql request query={:?}, duration={:?}",
-            req, formatted_duration
-        );
+        #[derive(serde::Deserialize)]
+        struct Data {
+            #[serde(default)]
+            query: serde_json::Value,
+            #[serde(default)]
+            operation: serde_json::Value,
+            #[serde(default)]
+            variables: serde_json::Value,
+        }
+
+        match serde_json::to_value(&req).and_then(serde_json::from_value) {
+            Ok(Data {
+                query,
+                operation,
+                variables,
+            }) => warn!(
+                "Long graphql request query={}, operation={:?}, variables={}, duration={}",
+                query,
+                operation,
+                variables,
+                duration_hhmmssfff(duration),
+            ),
+            Err(e) => error!("Failed to format long query for printing: {}", e),
+        }
     }
 
     Ok(HttpResponse::Ok().json(&resp))
