@@ -114,7 +114,7 @@ async fn graphql(
     let duration = end - start;
     let formatted_duration = duration_hhmmssfff(duration);
     if duration > Duration::milliseconds(5000) {
-        let json = serde_json::to_value(&req.clone()).unwrap();
+        let json = serde_json::to_value(&req.clone())?;
         warn!(
             "long graphql request query={}, operation={:?}, variables={}, duration={}",
             json["query"], json["operation"], json["variables"], formatted_duration
