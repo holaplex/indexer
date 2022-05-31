@@ -144,15 +144,24 @@ impl AssetIdentifier {
     }
 
     /// Return all possible fingerprints for this asset ID.
+    #[deprecated = "Use fingerprints_hinted instead"]
+    #[inline]
     pub fn fingerprints(&self) -> impl Iterator<Item = Cow<[u8]>> {
+        self.fingerprints_hinted().map(|(f, _)| f)
+    }
+
+    /// Return each possible fingerprint for this asset ID, alongside its
+    /// corresponding [`AssetHint`].
+    pub fn fingerprints_hinted(&self) -> impl Iterator<Item = (Cow<[u8]>, AssetHint)> {
         self.ipfs
             .iter()
-            .map(|(c, p)| Cow::Owned(Self::fingerprint_ipfs(c, p)))
-            .chain(
-                self.arweave
-                    .iter()
-                    .map(|t| Cow::Borrowed(Self::fingerprint_arweave(t))),
-            )
+            .map(|(c, p)| (Cow::Owned(Self::fingerprint_ipfs(c, p)), AssetHint::Ipfs))
+            .chain(self.arweave.iter().map(|t| {
+                (
+                    Cow::Borrowed(Self::fingerprint_arweave(t)),
+                    AssetHint::Arweave,
+                )
+            }))
     }
 
     fn fingerprint_ipfs(cid: &Cid, path: &str) -> Vec<u8> {

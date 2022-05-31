@@ -120,7 +120,7 @@ async fn graphql(
             #[serde(default)]
             query: serde_json::Value,
             #[serde(default)]
-            operation: serde_json::Value,
+            operation_name: serde_json::Value,
             #[serde(default)]
             variables: serde_json::Value,
         }
@@ -128,12 +128,12 @@ async fn graphql(
         match serde_json::to_value(&req).and_then(serde_json::from_value) {
             Ok(Data {
                 query,
-                operation,
+                operation_name,
                 variables,
             }) => warn!(
                 "Long graphql request query={}, operation={:?}, variables={}, duration={}",
                 query,
-                operation,
+                operation_name,
                 variables,
                 duration_hhmmssfff(duration),
             ),
