@@ -397,19 +397,6 @@ fn process_files(
             continue;
         };
 
-        let existing_slot_info = files::table
-            .filter(files::metadata_address.eq(addr))
-            .select((files::slot, files::write_version))
-            .get_result::<SlotInfo>(db)
-            .optional()
-            .context("Failed to check for existing file")?;
-
-        if let Some(info) = existing_slot_info {
-            if info >= slot_info {
-                continue;
-            }
-        }
-
         let (slot, write_version) = slot_info;
         let row = DbFile {
             metadata_address: Borrowed(addr),
@@ -438,19 +425,6 @@ fn process_attributes(
     slot_info: SlotInfo,
 ) -> Result<()> {
     for Attribute { trait_type, value } in attributes.unwrap_or_else(Vec::new) {
-        let existing_slot_info = attributes::table
-            .filter(attributes::metadata_address.eq(addr))
-            .select((attributes::slot, attributes::write_version))
-            .get_result::<SlotInfo>(db)
-            .optional()
-            .context("Failed to check for existing attribute")?;
-
-        if let Some(info) = existing_slot_info {
-            if info >= slot_info {
-                continue;
-            }
-        }
-
         let (slot, write_version) = slot_info;
         let row = MetadataAttributeWrite {
             metadata_address: Borrowed(addr),
@@ -485,22 +459,6 @@ fn process_collection(
     slot_info: SlotInfo,
 ) -> Result<()> {
     if let Some(Collection { name, family }) = collection {
-        let existing_slot_info = metadata_collections::table
-            .filter(metadata_collections::metadata_address.eq(addr))
-            .select((
-                metadata_collections::slot,
-                metadata_collections::write_version,
-            ))
-            .get_result::<SlotInfo>(db)
-            .optional()
-            .context("Failed to check for existing collection")?;
-
-        if let Some(info) = existing_slot_info {
-            if info >= slot_info {
-                return Ok(());
-            }
-        }
-
         let (slot, write_version) = slot_info;
         let row = MetadataCollection {
             metadata_address: Borrowed(addr),
