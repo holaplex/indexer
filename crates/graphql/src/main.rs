@@ -30,7 +30,6 @@ use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
 use solana_client::rpc_client::RpcClient;
 
 use crate::schema::{AppContext, Schema};
-
 mod schema;
 
 #[derive(Debug, Parser)]
@@ -114,11 +113,11 @@ async fn graphql(
     let end = Local::now();
     let duration = end - start;
     let formatted_duration = duration_hhmmssfff(duration);
-
     if duration > Duration::milliseconds(5000) {
+        let json = serde_json::to_value(&req.clone()).unwrap();
         warn!(
-            "long graphql request query={:?}, duration={:?}",
-            req, formatted_duration
+            "long graphql request query={}, operation={:?}, variables={}, duration={}",
+            json["query"], json["operation"], json["variables"], formatted_duration
         );
     }
 
