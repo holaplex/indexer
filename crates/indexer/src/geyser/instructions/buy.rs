@@ -1,16 +1,9 @@
 use borsh::BorshDeserialize;
-use indexer_core::{
-    db::{
-        custom_types::OfferEventLifecycleEnum,
-        insert_into,
-        models::{BuyInstruction, FeedEventWallet, Offer, OfferEvent},
-        select,
-        tables::{
-            buy_instructions, current_metadata_owners, feed_event_wallets, feed_events, metadatas,
-            offer_events, offers,
-        },
-    },
-    uuid::Uuid,
+use indexer_core::db::{
+    insert_into,
+    models::{BuyInstruction, Offer},
+    on_constraint,
+    tables::{buy_instructions, offers},
 };
 use mpl_auction_house::instruction::Buy;
 
@@ -84,76 +77,15 @@ async fn upsert_into_offers_table<'a>(
     client
         .db()
         .run(move |db| {
-            let offer = select(exists(
-                offers::table.filter(
-                    offers::trade_state
-                        .eq(row.trade_state.clone())
-                        .and(offers::metadata.eq(row.metadata.clone())),
-                ),
-            ))
-            .get_result::<bool>(db);
-
-            if Ok(true) == offer {
-                return Ok(None);
-            }
-
-            let offer_uuid = insert_into(offers::table)
+            insert_into(offers::table)
                 .values(&row)
-                .on_conflict_do_nothing()
-                .returning(offers::id)
-                .get_results::<Uuid>(db)?
-                .get(0)
-                .context("failed to get inserted offer")?
-                .to_string();
-
-            let uuid = offer_uuid.clone();
-
-            db.build_transaction().read_write().run(|| {
-                let metadata_owner: String = current_metadata_owners::table
-                    .inner_join(
-                        metadatas::table
-                            .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
-                    )
-                    .filter(metadatas::address.eq(row.metadata.clone()))
-                    .select(current_metadata_owners::owner_address)
-                    .first(db)?;
-
-                let feed_event_id = insert_into(feed_events::table)
-                    .default_values()
-                    .returning(feed_events::id)
-                    .get_result::<Uuid>(db)
-                    .context("Failed to insert feed event")?;
-
-                insert_into(offer_events::table)
-                    .values(&OfferEvent {
-                        feed_event_id,
-                        lifecycle: OfferEventLifecycleEnum::Created,
-                        bid_receipt_address: Owned(offer_uuid),
-                    })
-                    .execute(db)
-                    .context("failed to insert offer created event")?;
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: row.buyer,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert offer feed event wallet for buyer")?;
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: Owned(metadata_owner),
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert offer feed event wallet for metadata owner")?;
-
-                Result::<_>::Ok(Some((feed_event_id, uuid)))
-            })
+                .on_conflict(on_constraint("offers_unique_fields"))
+                .do_update()
+                .set(&row)
+                .execute(db)
         })
         .await
-        .context("Failed to insert offer!")?;
+        .context("Failed to insert offer")?;
 
     Ok(())
 }
