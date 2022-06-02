@@ -15,7 +15,10 @@ pub mod tables {
 pub use diesel::{
     backend::Backend,
     debug_query, delete, expression, insert_into,
-    pg::{upsert::excluded, Pg},
+    pg::{
+        upsert::{excluded, on_constraint},
+        Pg,
+    },
     query_dsl,
     result::Error,
     select, serialize, sql_query, sql_types, update, Queryable,

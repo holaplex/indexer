@@ -141,6 +141,52 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    buy_instructions (id) {
+        id -> Uuid,
+        wallet -> Varchar,
+        payment_account -> Varchar,
+        transfer_authority -> Varchar,
+        treasury_mint -> Varchar,
+        token_account -> Varchar,
+        metadata -> Varchar,
+        escrow_payment_account -> Varchar,
+        authority -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        buyer_trade_state -> Varchar,
+        trade_state_bump -> Int2,
+        escrow_payment_bump -> Int2,
+        buyer_price -> Int8,
+        token_size -> Int8,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    cancel_instructions (id) {
+        id -> Uuid,
+        wallet -> Varchar,
+        token_account -> Varchar,
+        token_mint -> Varchar,
+        authority -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        trade_state -> Varchar,
+        buyer_price -> Int8,
+        token_size -> Int8,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     candy_machine_collection_pdas (address) {
         address -> Varchar,
         mint -> Varchar,
@@ -420,6 +466,27 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    deposit_instructions (id) {
+        id -> Uuid,
+        wallet -> Varchar,
+        payment_account -> Varchar,
+        transfer_authority -> Varchar,
+        escrow_payment_account -> Varchar,
+        treasury_mint -> Varchar,
+        authority -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        escrow_payment_bump -> Int2,
+        amount -> Int8,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     editions (address) {
         address -> Varchar,
         parent_address -> Varchar,
@@ -443,6 +510,39 @@ table! {
         escrow_started_at -> Int8,
         escrow_ends_at -> Int8,
         vote_delegate -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    execute_sale_instructions (id) {
+        id -> Uuid,
+        buyer -> Varchar,
+        seller -> Varchar,
+        token_account -> Varchar,
+        token_mint -> Varchar,
+        metadata -> Varchar,
+        treasury_mint -> Varchar,
+        escrow_payment_account -> Varchar,
+        seller_payment_receipt_account -> Varchar,
+        buyer_receipt_token_account -> Varchar,
+        authority -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        auction_house_treasury -> Varchar,
+        buyer_trade_state -> Varchar,
+        seller_trade_state -> Varchar,
+        free_trade_state -> Varchar,
+        program_as_signer -> Varchar,
+        escrow_payment_bump -> Int2,
+        free_trade_state_bump -> Int2,
+        program_as_signer_bump -> Int2,
+        buyer_price -> Int8,
+        token_size -> Int8,
+        created_at -> Timestamp,
     }
 }
 
@@ -651,6 +751,26 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    listings (id) {
+        id -> Uuid,
+        trade_state -> Varchar,
+        auction_house -> Varchar,
+        seller -> Varchar,
+        metadata -> Varchar,
+        purchase_id -> Nullable<Uuid>,
+        price -> Int8,
+        token_size -> Int8,
+        trade_state_bump -> Int2,
+        created_at -> Timestamp,
+        canceled_at -> Nullable<Timestamp>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     locker_params (locker_address) {
         locker_address -> Varchar,
         whitelist_enabled -> Bool,
@@ -816,6 +936,27 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    offers (id) {
+        id -> Uuid,
+        trade_state -> Varchar,
+        auction_house -> Varchar,
+        buyer -> Varchar,
+        metadata -> Varchar,
+        token_account -> Nullable<Varchar>,
+        purchase_id -> Nullable<Uuid>,
+        price -> Int8,
+        token_size -> Int8,
+        trade_state_bump -> Int2,
+        created_at -> Timestamp,
+        canceled_at -> Nullable<Timestamp>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     proposal_account_metas (proposal_address, program_id, pubkey) {
         proposal_address -> Varchar,
         program_id -> Varchar,
@@ -879,6 +1020,32 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    public_buy_instructions (id) {
+        id -> Uuid,
+        wallet -> Varchar,
+        payment_account -> Varchar,
+        transfer_authority -> Varchar,
+        treasury_mint -> Varchar,
+        token_account -> Varchar,
+        metadata -> Varchar,
+        escrow_payment_account -> Varchar,
+        authority -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        buyer_trade_state -> Varchar,
+        trade_state_bump -> Int2,
+        escrow_payment_bump -> Int2,
+        buyer_price -> Int8,
+        token_size -> Int8,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     purchase_events (feed_event_id) {
         purchase_receipt_address -> Varchar,
         feed_event_id -> Uuid,
@@ -900,6 +1067,48 @@ table! {
         token_size -> Int8,
         price -> Int8,
         bump -> Int2,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    purchases (id) {
+        id -> Uuid,
+        buyer -> Varchar,
+        seller -> Varchar,
+        auction_house -> Varchar,
+        metadata -> Varchar,
+        token_size -> Int8,
+        price -> Int8,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    sell_instructions (id) {
+        id -> Uuid,
+        wallet -> Varchar,
+        token_account -> Varchar,
+        metadata -> Varchar,
+        authority -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        seller_trade_state -> Varchar,
+        free_seller_trader_state -> Varchar,
+        program_as_signer -> Varchar,
+        trade_state_bump -> Int2,
+        free_trade_state_bump -> Int2,
+        program_as_signer_bump -> Int2,
+        buyer_price -> Int8,
+        token_size -> Int8,
         created_at -> Timestamp,
     }
 }
@@ -1128,17 +1337,67 @@ table! {
     }
 }
 
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    withdraw_from_fee_instructions (id) {
+        id -> Uuid,
+        authority -> Varchar,
+        fee_withdrawal_destination -> Varchar,
+        auction_house_fee_account -> Varchar,
+        auction_house -> Varchar,
+        amount -> Int8,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    withdraw_from_treasury_instructions (id) {
+        id -> Uuid,
+        treasury_mint -> Varchar,
+        authority -> Varchar,
+        treasury_withdrawal_destination -> Varchar,
+        auction_house_treasury -> Varchar,
+        auction_house -> Varchar,
+        amount -> Int8,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    withdraw_instructions (id) {
+        id -> Uuid,
+        wallet -> Varchar,
+        receipt_account -> Varchar,
+        escrow_payment_account -> Varchar,
+        treasury_mint -> Varchar,
+        authority -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        escrow_payment_bump -> Int2,
+        amount -> Int8,
+        created_at -> Timestamp,
+    }
+}
+
 joinable!(cardinal_token_manager_invalidators -> cardinal_token_managers (token_manager_address));
 joinable!(feed_event_wallets -> feed_events (feed_event_id));
 joinable!(follow_events -> feed_events (feed_event_id));
 joinable!(follow_events -> graph_connections (graph_connection_address));
 joinable!(listing_events -> feed_events (feed_event_id));
-joinable!(listing_events -> listing_receipts (listing_receipt_address));
 joinable!(mint_events -> feed_events (feed_event_id));
-joinable!(offer_events -> bid_receipts (bid_receipt_address));
 joinable!(offer_events -> feed_events (feed_event_id));
 joinable!(purchase_events -> feed_events (feed_event_id));
-joinable!(purchase_events -> purchase_receipts (purchase_receipt_address));
 
 allow_tables_to_appear_in_same_query!(
     attributes,
@@ -1149,6 +1408,8 @@ allow_tables_to_appear_in_same_query!(
     bid_receipts,
     bids,
     bonding_changes,
+    buy_instructions,
+    cancel_instructions,
     candy_machine_collection_pdas,
     candy_machine_config_lines,
     candy_machine_creators,
@@ -1165,8 +1426,10 @@ allow_tables_to_appear_in_same_query!(
     cardinal_token_managers,
     cardinal_use_invalidators,
     current_metadata_owners,
+    deposit_instructions,
     editions,
     escrows,
+    execute_sale_instructions,
     feed_event_wallets,
     feed_events,
     files,
@@ -1182,6 +1445,7 @@ allow_tables_to_appear_in_same_query!(
     listing_events,
     listing_metadatas,
     listing_receipts,
+    listings,
     locker_params,
     locker_whitelist_entries,
     lockers,
@@ -1193,12 +1457,16 @@ allow_tables_to_appear_in_same_query!(
     metadatas,
     mint_events,
     offer_events,
+    offers,
     proposal_account_metas,
     proposal_instructions,
     proposal_metas,
     proposals,
+    public_buy_instructions,
     purchase_events,
     purchase_receipts,
+    purchases,
+    sell_instructions,
     smart_wallet_owners,
     smart_wallets,
     store_config_jsons,
@@ -1215,4 +1483,7 @@ allow_tables_to_appear_in_same_query!(
     votes,
     wallet_totals,
     whitelisted_creators,
+    withdraw_from_fee_instructions,
+    withdraw_from_treasury_instructions,
+    withdraw_instructions,
 );
