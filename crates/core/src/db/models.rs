@@ -655,8 +655,9 @@ pub struct BidReceipt<'a> {
 }
 
 /// A row in the `listing_receipts` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
 #[diesel(treat_none_as_null = true)]
+#[table_name = "listing_receipts"]
 pub struct ListingReceipt<'a> {
     /// ListingReceipt account pubkey
     pub address: Cow<'a, str>,

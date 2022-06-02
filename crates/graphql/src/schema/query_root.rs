@@ -23,7 +23,7 @@ use scalars::PublicKey;
 use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, bid_receipts, graph_connections,
-    listing_receipts, metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
+    metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
 };
 
 use super::prelude::*;
@@ -338,32 +338,45 @@ impl QueryRoot {
     fn featured_listings(
         &self,
         context: &AppContext,
+        #[graphql(description = "Return listings only from these auction houses")]
+        auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
+        #[graphql(description = "Return listings not from these sellers")]
+        seller_exclusions: Option<Vec<PublicKey<Wallet>>>,
+        #[graphql(description = "Return at most this many listings per seller")]
+        limit_per_seller: Option<i32>,
         #[graphql(description = "Limit for query")] limit: i32,
-        #[graphql(description = "Offset for query")] offset: i32,
+        #[graphql(description = "Offset for query")] offset: Option<i32>,
     ) -> FieldResult<Vec<ListingReceipt>> {
         let conn = context.shared.db.get().context("Failed to connect to DB")?;
 
-        let listings: Vec<models::ListingReceipt> = listing_receipts::table
-            .inner_join(
-                wallet_totals::table.on(wallet_totals::address.eq(listing_receipts::seller)),
-            )
-            .select(listing_receipts::all_columns)
-            .filter(listing_receipts::canceled_at.is_null())
-            .filter(listing_receipts::purchase_receipt.is_null())
-            .filter(
-                listing_receipts::auction_house
-                    .eq_any(&context.shared.featured_listings_auction_houses),
-            )
-            .filter(
-                listing_receipts::seller
-                    .ne_all(&context.shared.featured_listings_seller_exclusions),
-            )
-            .filter(listing_receipts::seller.eq(wallet_totals::address))
-            .order(wallet_totals::followers.desc())
-            .limit(limit.into())
-            .offset(offset.into())
-            .load(&conn)
-            .context("Failed to load listings")?;
+        let auction_houses = auction_houses.unwrap_or_else(|| {
+            context
+                .shared
+                .featured_listings_auction_houses
+                .iter()
+                .map(|a| PublicKey::from(a.clone()))
+                .collect()
+        });
+        let seller_exclusions = seller_exclusions.unwrap_or_else(|| {
+            context
+                .shared
+                .featured_listings_seller_exclusions
+                .iter()
+                .map(|s| PublicKey::from(s.clone()))
+                .collect()
+        });
+        let limit_per_seller = limit_per_seller.unwrap_or(5);
+        let offset = offset.unwrap_or(0);
+
+        // choose listings whose NFT's creators have a lot of followers
+        let listings = queries::featured_listings::list(
+            &conn,
+            auction_houses,
+            seller_exclusions,
+            limit_per_seller,
+            limit,
+            offset,
+        )?;
 
         listings
             .into_iter()
