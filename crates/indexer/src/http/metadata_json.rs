@@ -179,6 +179,8 @@ async fn try_locate_json(
 ) -> Result<Option<(MetadataJsonResult, Vec<u8>, Url)>> {
     // Set to true for fallback
     const TRY_LAST_RESORT: bool = false;
+    // Set to true to fetch links with no fingerprint
+    const FETCH_NON_PERMAWEB: bool = true;
 
     let mut resp = Ok(None);
 
@@ -206,6 +208,19 @@ async fn try_locate_json(
 
     Ok(match resp {
         Ok(Some((res, fingerprint, url))) => Some((res, fingerprint.into_owned(), url)),
+        Ok(None) if FETCH_NON_PERMAWEB => {
+            let (url, json) = fetch_json(client, meta_key, Ok(url.clone()))
+                .await
+                .with_context(|| {
+                    format!(
+                        "Non-permaweb metadata fetch {:?} for {} failed",
+                        url.as_str(),
+                        meta_key
+                    )
+                })?;
+
+            Some((json, AssetIdentifier::fingerprint_unparseable(&url), url))
+        },
         Ok(None) => {
             trace!(
                 "Not fetching unparseable url {:?} for {}",
