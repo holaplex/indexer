@@ -339,9 +339,9 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(description = "Return listings only from these auction houses")]
-        auction_houses: Option<Vec<String>>,
+        auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
         #[graphql(description = "Return listings not from these sellers")]
-        seller_exclusions: Option<Vec<String>>,
+        seller_exclusions: Option<Vec<PublicKey<Wallet>>>,
         #[graphql(description = "Return at most this many listings per seller")]
         limit_per_seller: Option<i32>,
         #[graphql(description = "Limit for query")] limit: i32,
@@ -349,10 +349,22 @@ impl QueryRoot {
     ) -> FieldResult<Vec<ListingReceipt>> {
         let conn = context.shared.db.get().context("Failed to connect to DB")?;
 
-        let auction_houses = auction_houses
-            .unwrap_or_else(|| context.shared.featured_listings_auction_houses.clone());
-        let seller_exclusions = seller_exclusions
-            .unwrap_or_else(|| context.shared.featured_listings_seller_exclusions.clone());
+        let auction_houses = auction_houses.unwrap_or_else(|| {
+            context
+                .shared
+                .featured_listings_auction_houses
+                .iter()
+                .map(|a| PublicKey::from(a.clone()))
+                .collect()
+        });
+        let seller_exclusions = seller_exclusions.unwrap_or_else(|| {
+            context
+                .shared
+                .featured_listings_seller_exclusions
+                .iter()
+                .map(|s| PublicKey::from(s.clone()))
+                .collect()
+        });
         let limit_per_seller = limit_per_seller.unwrap_or(5);
         let offset = offset.unwrap_or(0);
 
