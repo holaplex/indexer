@@ -13,7 +13,7 @@ use indexer_core::{
             listing_receipts, listings, metadatas, offer_events, offers, purchase_events,
             purchase_receipts, purchases,
         },
-        Error as DbError,
+        update, Error as DbError,
     },
     prelude::*,
     util,
@@ -350,12 +350,43 @@ async fn upsert_into_purchases_table<'a>(
     client
         .db()
         .run(move |db| {
-            insert_into(purchases::table)
+            let purchase_id = insert_into(purchases::table)
                 .values(&row)
                 .on_conflict(on_constraint("purchases_unique_fields"))
                 .do_update()
                 .set(&row)
-                .execute(db)
+                .returning(purchases::id)
+                .get_result::<Uuid>(db)?;
+
+            update(
+                offers::table.filter(
+                    offers::auction_house
+                        .eq(row.auction_house.clone())
+                        .and(offers::buyer.eq(row.buyer.clone()))
+                        .and(offers::metadata.eq(row.metadata.clone()))
+                        .and(offers::token_size.eq(row.token_size))
+                        .and(offers::price.eq(row.price))
+                        .and(offers::purchase_id.is_null())
+                        .and(offers::canceled_at.is_null()),
+                ),
+            )
+            .set(offers::purchase_id.eq(Some(purchase_id)))
+            .execute(db)?;
+
+            update(
+                listings::table.filter(
+                    listings::auction_house
+                        .eq(row.auction_house.clone())
+                        .and(listings::seller.eq(row.seller.clone()))
+                        .and(listings::metadata.eq(row.metadata.clone()))
+                        .and(listings::price.eq(row.price))
+                        .and(listings::token_size.eq(row.token_size))
+                        .and(listings::purchase_id.is_null())
+                        .and(listings::canceled_at.is_null()),
+                ),
+            )
+            .set(listings::purchase_id.eq(Some(purchase_id)))
+            .execute(db)
         })
         .await
         .context("Failed to insert purchase!")?;

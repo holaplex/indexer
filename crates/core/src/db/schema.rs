@@ -1395,9 +1395,12 @@ joinable!(feed_event_wallets -> feed_events (feed_event_id));
 joinable!(follow_events -> feed_events (feed_event_id));
 joinable!(follow_events -> graph_connections (graph_connection_address));
 joinable!(listing_events -> feed_events (feed_event_id));
+joinable!(listing_events -> listing_receipts (listing_receipt_address));
 joinable!(mint_events -> feed_events (feed_event_id));
+joinable!(offer_events -> bid_receipts (bid_receipt_address));
 joinable!(offer_events -> feed_events (feed_event_id));
 joinable!(purchase_events -> feed_events (feed_event_id));
+joinable!(purchase_events -> purchase_receipts (purchase_receipt_address));
 
 allow_tables_to_appear_in_same_query!(
     attributes,

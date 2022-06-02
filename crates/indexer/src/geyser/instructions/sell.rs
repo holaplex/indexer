@@ -10,6 +10,7 @@ use mpl_auction_house::instruction::Sell;
 use super::Client;
 use crate::prelude::*;
 
+#[allow(clippy::pedantic)]
 pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -> Result<()> {
     let params = Sell::try_from_slice(data).context("failed to deserialize")?;
 

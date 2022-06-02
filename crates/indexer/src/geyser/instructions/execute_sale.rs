@@ -1,15 +1,20 @@
 use borsh::BorshDeserialize;
-use indexer_core::db::{
-    insert_into,
-    models::{ExecuteSaleInstruction, Purchase},
-    on_constraint,
-    tables::{execute_sale_instructions, purchases},
+use indexer_core::{
+    db::{
+        insert_into,
+        models::{ExecuteSaleInstruction, Purchase},
+        on_constraint,
+        tables::{execute_sale_instructions, listings, offers, purchases},
+        update,
+    },
+    uuid::Uuid,
 };
 use mpl_auction_house::instruction::ExecuteSale;
 
 use super::Client;
 use crate::prelude::*;
 
+#[allow(clippy::pedantic)]
 pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -> Result<()> {
     let params = ExecuteSale::try_from_slice(data).context("failed to deserialize")?;
 
@@ -80,12 +85,35 @@ async fn upsert_into_purchases_table<'a>(
     client
         .db()
         .run(move |db| {
-            insert_into(purchases::table)
+            let purchase_id = insert_into(purchases::table)
                 .values(&row)
                 .on_conflict(on_constraint("purchases_unique_fields"))
                 .do_update()
                 .set(&row)
-                .execute(db)
+                .returning(purchases::id)
+                .get_result::<Uuid>(db)?;
+
+            update(
+                listings::table.filter(
+                    listings::trade_state
+                        .eq(data.seller_trade_state.clone())
+                        .and(listings::purchase_id.is_null())
+                        .and(listings::canceled_at.is_null()),
+                ),
+            )
+            .set(listings::purchase_id.eq(Some(purchase_id)))
+            .execute(db)?;
+
+            update(
+                offers::table.filter(
+                    offers::trade_state
+                        .eq(data.buyer_trade_state.clone())
+                        .and(offers::purchase_id.is_null())
+                        .and(offers::canceled_at.is_null()),
+                ),
+            )
+            .set(offers::purchase_id.eq(Some(purchase_id)))
+            .execute(db)
         })
         .await
         .context("Failed to insert purchase!")?;
