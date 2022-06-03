@@ -98,6 +98,8 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
                 .on_conflict(store_config_jsons::config_address)
                 .do_update()
                 .set(&row)
+                .on_conflict(store_config_jsons::subdomain)
+                .do_nothing()
                 .execute(db)
         })
         .await
