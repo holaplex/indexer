@@ -1,6 +1,9 @@
+use std::marker::PhantomData;
+
 use objects::{auction_house::AuctionHouse, stats::MarketStats, store_creator::StoreCreator};
 
 use super::prelude::*;
+use crate::schema::scalars::PublicKey;
 
 #[derive(Debug, Clone)]
 /// An Holaplex marketplace
@@ -12,7 +15,7 @@ pub struct Marketplace {
     pub logo_url: String,
     pub banner_url: String,
     pub owner_address: String,
-    pub auction_house_address: Option<String>,
+    pub auction_house_address: Option<PublicKey<AuctionHouse>>,
     pub store_address: Option<String>,
 }
 
@@ -38,7 +41,7 @@ impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
             logo_url: logo_url.into_owned(),
             banner_url: banner_url.into_owned(),
             owner_address: owner_address.into_owned(),
-            auction_house_address: auction_house_address.map(Cow::into_owned),
+            auction_house_address: auction_house_address.map(|a| a.into()),
             store_address: store_address.map(Cow::into_owned),
         }
     }
@@ -74,24 +77,24 @@ impl Marketplace {
         &self.owner_address
     }
 
-    pub fn auction_house_address(&self) -> Option<&str> {
-        self.auction_house_address.as_deref()
+    #[deprecated(note = "Use `auction_houses` instead")]
+    pub fn auction_house_address(&self) -> Option<PublicKey<AuctionHouse>> {
+        self.auction_house_address.clone()
     }
 
     pub fn store_address(&self) -> Option<&str> {
         self.store_address.as_deref()
     }
 
+    #[deprecated(note = "Use `auction_houses` instead")]
     pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
+        let ah = match self.auction_house_address {
+            Some(ref t) => t.clone(),
+            None => return Ok(None),
+        };
         context
             .auction_house_loader
-            .load(
-                self.auction_house_address
-                    .as_deref()
-                    .unwrap_or_default()
-                    .to_owned()
-                    .into(),
-            )
+            .load(ah)
             .await
             .map_err(Into::into)
     }
