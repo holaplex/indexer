@@ -1,8 +1,9 @@
+use objects::auction_house::AuctionHouse;
 use scalars::U64;
 
 use super::prelude::*;
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 pub struct MintStats {
     pub auction_house: String,
     pub mint: String,
@@ -10,6 +11,38 @@ pub struct MintStats {
     pub average: Option<U64>,
     pub volume_24hr: Option<U64>,
     pub volume_total: Option<U64>,
+}
+
+#[graphql_object(Context = AppContext)]
+#[graphql(description = "Mint Stats")]
+impl MintStats {
+    fn mint(&self) -> &str {
+        &self.mint
+    }
+
+    fn floor(&self) -> Option<U64> {
+        self.floor
+    }
+
+    fn average(&self) -> Option<U64> {
+        self.average
+    }
+
+    fn volume_24hr(&self) -> Option<U64> {
+        self.volume_24hr
+    }
+
+    fn volume_total(&self) -> Option<U64> {
+        self.volume_total
+    }
+
+    pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
+        context
+            .auction_house_loader
+            .load(self.auction_house.to_owned().into())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
