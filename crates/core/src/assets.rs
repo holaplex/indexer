@@ -182,6 +182,18 @@ impl AssetIdentifier {
     fn fingerprint_arweave(txid: &ArTxid) -> &[u8] {
         &txid.0
     }
+
+    /// Fingerprint a URL that could not be parsed as an [`AssetIdentifier`].
+    #[must_use]
+    pub fn fingerprint_unparseable(url: &Url) -> Vec<u8> {
+        use cid::multihash::StatefulHasher;
+
+        let mut h = cid::multihash::Sha3_256::default();
+
+        h.update(url.as_str().as_bytes());
+
+        h.finalize().as_ref().to_vec()
+    }
 }
 
 #[cfg(feature = "asset-cdn")]
