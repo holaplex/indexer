@@ -117,6 +117,8 @@ pub struct ListQueryOptions {
     pub attributes: Option<Vec<AttributeFilter>>,
     /// nfts listed for sale
     pub listed: Option<bool>,
+    /// nfts with active offers
+    pub with_offers: Option<bool>,
     /// nft in a specific colleciton
     pub collection: Option<String>,
     /// limit to apply to query
@@ -155,6 +157,7 @@ pub fn list(
         offerers,
         attributes,
         listed,
+        with_offers,
         collection,
         limit,
         offset,
@@ -264,23 +267,36 @@ pub fn list(
         );
     }
 
-    if let Some(offerers) = offerers {
+    // ignoring the with_offers=false case for now, since it is more complicated and we dont currently have a need
+    let should_query_bid_receipts =
+        offerers.is_some() || (with_offers.is_some() && with_offers.unwrap_or(false));
+
+    if should_query_bid_receipts {
+        let mut bid_receipts_conditions = Condition::all().add(
+            Expr::tbl(BidReceipts::Table, BidReceipts::Metadata)
+                .equals(Metadatas::Table, Metadatas::Address),
+        );
+
+        if let Some(offerers) = offerers {
+            bid_receipts_conditions = bid_receipts_conditions
+                .add(Expr::col((BidReceipts::Table, BidReceipts::Buyer)).is_in(offerers))
+                .add(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
+                .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null());
+        } else if let Some(with_offers) = with_offers {
+            if with_offers {
+                bid_receipts_conditions = bid_receipts_conditions
+                    .add(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
+                    .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null());
+            }
+        }
+
         let mut bid_receipts_query = Query::select()
             .columns(vec![
                 (BidReceipts::Table, BidReceipts::Metadata),
                 (BidReceipts::Table, BidReceipts::Price),
             ])
             .from(BidReceipts::Table)
-            .cond_where(
-                Condition::all()
-                    .add(Expr::col((BidReceipts::Table, BidReceipts::Buyer)).is_in(offerers))
-                    .add(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
-                    .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null())
-                    .add(
-                        Expr::tbl(BidReceipts::Table, BidReceipts::Metadata)
-                            .equals(Metadatas::Table, Metadatas::Address),
-                    ),
-            )
+            .cond_where(bid_receipts_conditions)
             .take();
 
         if let Some(auction_houses) = auction_houses {

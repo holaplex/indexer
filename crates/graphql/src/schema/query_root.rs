@@ -295,8 +295,12 @@ impl QueryRoot {
             Vec<PublicKey<Wallet>>,
         >,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
-        #[graphql(description = "Filter only listed nfts")] listed: Option<bool>,
-        #[graphql(description = "Filter nfts associated to the list of auction houses")]
+        #[graphql(description = "Filter only listed NFTs")] listed: Option<bool>,
+        #[graphql(
+            description = "Filter only NFTs with active offers; ignored if 'offerers' is provided or if flag is 'false';"
+        )]
+        with_offers: Option<bool>,
+        #[graphql(description = "Filter NFTs associated to the list of auction houses")]
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
         #[graphql(description = "Filter on a collection")] collection: Option<PublicKey<Nft>>,
         #[graphql(description = "Limit for query")] limit: i32,
@@ -322,6 +326,7 @@ impl QueryRoot {
             offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed,
+            with_offers,
             auction_houses: auction_houses.map(|a| a.into_iter().map(Into::into).collect()),
             collection: collection.map(Into::into),
             limit: limit.try_into()?,
