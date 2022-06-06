@@ -239,6 +239,10 @@ pub struct Nft {
     #[sql_type = "Bool"]
     pub primary_sale_happened: bool,
 
+    /// The address of the Update Authority (for the Metadata PDA)
+    #[sql_type = "VarChar"]
+    pub update_authority_address: String,
+
     /// Metadata metadata_json uri
     #[sql_type = "Text"]
     pub uri: String,
@@ -330,6 +334,10 @@ pub struct SampleNft {
     /// True if this item is in the secondary market.  Immutable once set.
     #[sql_type = "Bool"]
     pub primary_sale_happened: bool,
+
+    /// The address of the Update Authority (for the Metadata PDA)
+    #[sql_type = "VarChar"]
+    pub update_authority_address: String,
 
     /// uri for metadata_json
     #[sql_type = "Text"]
