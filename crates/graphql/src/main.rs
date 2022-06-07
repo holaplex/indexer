@@ -115,7 +115,7 @@ async fn graphql(
     let end = Local::now();
     let duration = end - start;
     info!(
-        "host={}, remote_addr={}, peer_addr={}",
+        "host={:?}, remote_addr={:?}, peer_addr={:?}",
         conn.host(),
         conn.realip_remote_addr().unwrap_or(&String::new()),
         conn.peer_addr().unwrap_or(&String::new())
