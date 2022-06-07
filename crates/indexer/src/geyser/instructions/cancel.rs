@@ -15,7 +15,7 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
     let params = Cancel::try_from_slice(data).context("failed to deserialize")?;
 
     if accounts.len() != 8 {
-        debug!("invalid accounts for DepositInstruction");
+        debug!("invalid accounts for CancelInstruction");
         return Ok(());
     }
 
