@@ -12,7 +12,7 @@
 use std::sync::Arc;
 
 use actix_cors::Cors;
-use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer};
+use actix_web::{dev::ConnectionInfo, http, web, App, Error, HttpResponse, HttpServer};
 use indexer_core::{
     assets::AssetProxyArgs,
     chrono::{Duration, Local},
@@ -106,6 +106,7 @@ async fn redirect_version(data: web::Data<RedirectData>) -> HttpResponse {
 async fn graphql(
     data: web::Data<SharedData>,
     req: web::Json<GraphQLRequest>,
+    conn: ConnectionInfo,
 ) -> Result<HttpResponse, Error> {
     let ctx = AppContext::new(data.clone().into_inner());
     let start = Local::now();
@@ -113,7 +114,12 @@ async fn graphql(
     let resp = req.execute(&data.schema, &ctx).await;
     let end = Local::now();
     let duration = end - start;
-
+    info!(
+        "host={:?}, remote_addr={:?}, peer_addr={:?}",
+        conn.host(),
+        conn.realip_remote_addr().unwrap_or(&String::new()),
+        conn.peer_addr().unwrap_or(&String::new())
+    );
     if duration > Duration::milliseconds(5000) {
         #[derive(serde::Deserialize)]
         struct Data {
@@ -201,7 +207,6 @@ fn main() {
             .block_on(
                 HttpServer::new(move || {
                     App::new()
-                        .wrap(middleware::Logger::default())
                         .wrap(
                             Cors::default()
                                 .allow_any_origin()
