@@ -12,7 +12,7 @@
 use std::sync::Arc;
 
 use actix_cors::Cors;
-use actix_web::{dev::ConnectionInfo, http, middleware, web, App, Error, HttpResponse, HttpServer};
+use actix_web::{dev::ConnectionInfo, http, web, App, Error, HttpResponse, HttpServer};
 use indexer_core::{
     assets::AssetProxyArgs,
     chrono::{Duration, Local},
@@ -207,7 +207,6 @@ fn main() {
             .block_on(
                 HttpServer::new(move || {
                     App::new()
-                        .wrap(middleware::Logger::default())
                         .wrap(
                             Cors::default()
                                 .allow_any_origin()
