@@ -297,7 +297,7 @@ impl QueryRoot {
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
         #[graphql(description = "Filter only listed NFTs")] listed: Option<bool>,
         #[graphql(
-            description = "Filter only NFTs with active offers; ignored if 'offerers' is provided or if flag is 'false';"
+            description = "Filter only NFTs with active offers; ignored if flag is 'false';"
         )]
         with_offers: Option<bool>,
         #[graphql(description = "Filter NFTs associated to the list of auction houses")]
