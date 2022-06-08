@@ -1,4 +1,5 @@
 use indexer_core::db::{
+    expression::dsl::all,
     queries::{self, feed_event::EventType},
     tables::twitter_handle_name_services,
 };
@@ -70,7 +71,7 @@ impl QueryRoot {
                 (wallet_totals::all_columns),
                 twitter_handle_name_services::twitter_handle.nullable(),
             ))
-            .filter(wallet_totals::address.ne_all(&ctx.shared.follow_wallets_exclusions))
+            .filter(wallet_totals::address.ne(all(&ctx.shared.follow_wallets_exclusions)))
             .order(wallet_totals::followers.desc())
             .limit(limit.try_into()?)
             .offset(offset.try_into()?)
@@ -488,6 +489,10 @@ impl QueryRoot {
         let conn = context.shared.db.get()?;
         let mut rows: Vec<models::StoreConfigJson> = store_config_jsons::table
             .filter(store_config_jsons::subdomain.eq(subdomain))
+            .filter(
+                store_config_jsons::store_address
+                    .ne(all(&context.shared.marketplaces_store_address_exclusions)),
+            )
             .select(store_config_jsons::all_columns)
             .limit(1)
             .load(&conn)
@@ -548,6 +553,53 @@ impl QueryRoot {
             .into_iter()
             .map(|r| r.result.into())
             .collect::<Vec<Wallet>>())
+    }
+
+    #[graphql(
+        description = "Get multiple marketplaces; results will be in alphabetical order by subdomain"
+    )]
+    fn marketplaces(
+        &self,
+        context: &AppContext,
+        #[graphql(
+            description = "Return these marketplaces; results will be in alphabetical order by subdomain."
+        )]
+        subdomains: Option<Vec<String>>,
+        #[graphql(description = "Limit for query")] limit: Option<i32>,
+        #[graphql(description = "Offset for query")] offset: Option<i32>,
+    ) -> FieldResult<Vec<Marketplace>> {
+        let too_many_filters = subdomains.is_some() && (limit.is_some() || offset.is_some());
+        let not_enough_filters = subdomains.is_none() && limit.is_none();
+        if too_many_filters || not_enough_filters {
+            return Err(FieldError::new(
+                "You must supply either a limit (and optionally offset) or subdomains",
+                graphql_value!({ "Filters": "subdomains: Vec<String>, limit: i32, offset: i32" }),
+            ));
+        }
+
+        let conn = context.shared.db.get()?;
+        let mut query = store_config_jsons::table
+            .select(store_config_jsons::all_columns)
+            .filter(
+                store_config_jsons::store_address
+                    .ne(all(&context.shared.marketplaces_store_address_exclusions)),
+            )
+            .order(store_config_jsons::name.asc())
+            .into_boxed();
+
+        if let Some(subdomains) = subdomains {
+            query = query.filter(store_config_jsons::subdomain.eq(any(subdomains)));
+        } else {
+            query = query
+                .limit(limit.unwrap_or_else(|| unreachable!()).into())
+                .offset(offset.unwrap_or(0).into());
+        }
+
+        let rows: Vec<models::StoreConfigJson> = query
+            .load(&conn)
+            .context("Failed to load store config JSON")?;
+
+        Ok(rows.into_iter().map(Into::into).collect())
     }
 
     fn denylist() -> Denylist {
