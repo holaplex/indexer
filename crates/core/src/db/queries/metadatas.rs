@@ -282,7 +282,9 @@ pub fn list(
                 .add(Expr::col((BidReceipts::Table, BidReceipts::Buyer)).is_in(offerers))
                 .add(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
                 .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null());
-        } else if let Some(with_offers) = with_offers {
+        }
+        
+        if let Some(with_offers) = with_offers {
             if with_offers {
                 bid_receipts_conditions = bid_receipts_conditions
                     .add(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
