@@ -396,8 +396,9 @@ Any other value will return the original image size.
 
 If no value is provided, it will return XSmall")))]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
-        let id = if let Ok(url) = Url::parse(&self.image) {
-            AssetIdentifier::new(&url)
+        let url = Url::parse(&self.image);
+        let id = if let Ok(ref url) = url {
+            AssetIdentifier::new(url)
         } else {
             return Ok(self.image.clone());
         };
