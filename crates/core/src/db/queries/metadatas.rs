@@ -283,7 +283,7 @@ pub fn list(
                 .add(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
                 .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null());
         }
-        
+
         if let Some(with_offers) = with_offers {
             if with_offers {
                 bid_receipts_conditions = bid_receipts_conditions
