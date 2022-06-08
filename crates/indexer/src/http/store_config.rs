@@ -63,6 +63,7 @@ struct SettingUri {
     auction_houses: Option<Vec<AuctionHouse>>,
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Result<()> {
     let url = Url::parse(&uri_str).context("Couldn't parse store config URL")?;
 
@@ -85,6 +86,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         return Ok(());
     }
 
+    #[allow(deprecated)]
     let row = StoreConfigJson {
         config_address: Owned(addr.clone()),
         name: Owned(json.meta.name),

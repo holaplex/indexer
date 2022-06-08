@@ -1,11 +1,11 @@
 use objects::auction_house::AuctionHouse;
-use scalars::U64;
+use scalars::{PublicKey, U64};
 
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct MintStats {
-    pub auction_house: String,
+    pub auction_house: PublicKey<AuctionHouse>,
     pub mint: String,
     pub floor: Option<U64>,
     pub average: Option<U64>,
@@ -39,7 +39,7 @@ impl MintStats {
     pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
         context
             .auction_house_loader
-            .load(self.auction_house.to_owned().into())
+            .load(self.auction_house.clone())
             .await
             .map_err(Into::into)
     }
@@ -59,7 +59,7 @@ impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
         }: models::MintStats,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            auction_house: auction_house.into_owned(),
+            auction_house: auction_house.into(),
             mint: mint.into_owned(),
             floor: floor.map(TryInto::try_into).transpose()?,
             average: average.map(TryInto::try_into).transpose()?,
