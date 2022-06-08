@@ -11,11 +11,13 @@ pub struct ArTxid(pub [u8; 32]);
 
 /// Struct to hold tx ids
 #[derive(Debug, Clone)]
-pub struct AssetIdentifier {
-    /// ipfs cid
+pub struct AssetIdentifier<'a> {
+    /// The CID of a potential IPFS asset
     pub ipfs: Option<(Cid, String)>,
-    /// Arweave tx id
+    /// The transaction ID of a potential Arweave asset
     pub arweave: Option<ArTxid>,
+    /// The URL that was parsed
+    pub url: &'a Url,
 }
 
 /// An unambiguous asset-type hint
@@ -33,7 +35,7 @@ impl From<i32> for ImageSize {
     }
 }
 
-impl AssetIdentifier {
+impl<'a> AssetIdentifier<'a> {
     /// Attempt to parse IPFS or Arweave asset IDs from a URL.
     ///
     /// Parsing occurs as follows:
@@ -47,7 +49,7 @@ impl AssetIdentifier {
     ///    considered ambiguous and unusable and no IPFS data is returned.  The
     ///    same holds for the Arweave parse result.
     #[must_use]
-    pub fn new(url: &Url) -> Self {
+    pub fn new(url: &'a Url) -> Self {
         let mut ipfs = Ok(None);
         let mut arweave = Ok(None);
 
@@ -68,6 +70,7 @@ impl AssetIdentifier {
         Self {
             ipfs: ipfs.ok().flatten(),
             arweave: arweave.ok().flatten(),
+            url,
         }
     }
 
@@ -131,7 +134,7 @@ impl AssetIdentifier {
     /// For ambiguous cases, a type hint must be provided for disambiguation
     /// otherwise no result is returned.
     #[must_use]
-    pub fn fingerprint(&self, hint: Option<AssetHint>) -> Option<Cow<[u8]>> {
+    pub fn fingerprint(&self, hint: Option<AssetHint>, allow_indet: bool) -> Option<Cow<[u8]>> {
         match (self.ipfs.as_ref(), self.arweave.as_ref(), hint) {
             (Some((cid, path)), Some(_), Some(AssetHint::Ipfs)) | (Some((cid, path)), None, _) => {
                 Some(Cow::Owned(Self::fingerprint_ipfs(cid, path)))
@@ -139,28 +142,33 @@ impl AssetIdentifier {
             (Some(_), Some(txid), Some(AssetHint::Arweave)) | (None, Some(txid), _) => {
                 Some(Cow::Borrowed(Self::fingerprint_arweave(txid)))
             },
+            (None, None, _) if allow_indet => {
+                Some(Cow::Owned(Self::fingerprint_indeterminate(self.url)))
+            },
             (Some(_), Some(_), None) | (None, None, _) => None,
         }
     }
 
-    /// Return all possible fingerprints for this asset ID.
-    #[deprecated = "Use fingerprints_hinted instead"]
-    #[inline]
-    pub fn fingerprints(&self) -> impl Iterator<Item = Cow<[u8]>> {
-        self.fingerprints_hinted().map(|(f, _)| f)
-    }
-
     /// Return each possible fingerprint for this asset ID, alongside its
-    /// corresponding [`AssetHint`].
-    pub fn fingerprints_hinted(&self) -> impl Iterator<Item = (Cow<[u8]>, AssetHint)> {
+    /// corresponding [`AssetHint`] (or `None` if the fingerprint represents
+    /// an indeterminate asset).
+    pub fn fingerprints_hinted(&self) -> impl Iterator<Item = (Cow<[u8]>, Option<AssetHint>)> {
         self.ipfs
             .iter()
-            .map(|(c, p)| (Cow::Owned(Self::fingerprint_ipfs(c, p)), AssetHint::Ipfs))
+            .map(|(c, p)| {
+                (
+                    Cow::Owned(Self::fingerprint_ipfs(c, p)),
+                    Some(AssetHint::Ipfs),
+                )
+            })
             .chain(self.arweave.iter().map(|t| {
                 (
                     Cow::Borrowed(Self::fingerprint_arweave(t)),
-                    AssetHint::Arweave,
+                    Some(AssetHint::Arweave),
                 )
+            }))
+            .chain(std::iter::once_with(|| {
+                (Cow::Owned(Self::fingerprint_indeterminate(self.url)), None)
             }))
     }
 
@@ -183,9 +191,7 @@ impl AssetIdentifier {
         &txid.0
     }
 
-    /// Fingerprint a URL that could not be parsed as an [`AssetIdentifier`].
-    #[must_use]
-    pub fn fingerprint_unparseable(url: &Url) -> Vec<u8> {
+    fn fingerprint_indeterminate(url: &Url) -> Vec<u8> {
         use cid::multihash::StatefulHasher;
 
         let mut h = cid::multihash::Sha3_256::default();
@@ -239,7 +245,7 @@ mod cdn {
         query: impl IntoIterator<Item = (&'q str, &'q str)>,
     ) -> Result<Url> {
         let rem = md5::compute(
-            id.fingerprint(Some(hint))
+            id.fingerprint(Some(hint), false)
                 .unwrap_or_else(|| unreachable!())
                 .as_ref(),
         )[0]
