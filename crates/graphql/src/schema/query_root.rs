@@ -427,9 +427,8 @@ impl QueryRoot {
         }
 
         for address in addresses {
-            let address_string = address.to_string();
             wallets
-                .entry(address_string)
+                .entry(address.to_string())
                 .or_insert_with(|| Wallet::new(address, None));
         }
 
