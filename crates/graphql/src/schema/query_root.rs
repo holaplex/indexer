@@ -398,6 +398,29 @@ impl QueryRoot {
         Ok(Wallet::new(address, twitter_handle))
     }
 
+    fn wallets(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Addresses of the wallets")] addresses: Vec<PublicKey<Wallet>>,
+    ) -> FieldResult<Vec<Wallet>> {
+        if addresses.is_empty() {
+            return Err(FieldError::new(
+                "You must supply at least one address to query.",
+                graphql_value!({ "addresses": "Vec<String>"}),
+            ));
+        }
+
+        let conn = context.shared.db.get()?;
+
+        let twitter_handles =
+            queries::twitter_handle_name_service::get_multiple(&conn, &addresses).unwrap();
+
+        Ok(twitter_handles
+            .into_iter()
+            .map(|h| Wallet::new(h.wallet_address.into(), Some(h.twitter_handle.into_owned())))
+            .collect())
+    }
+
     fn listings(&self, context: &AppContext) -> FieldResult<Vec<Listing>> {
         let now = Local::now().naive_utc();
         let conn = context.shared.db.get()?;
