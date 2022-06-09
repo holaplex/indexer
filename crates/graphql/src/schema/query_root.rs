@@ -416,15 +416,21 @@ impl QueryRoot {
             queries::twitter_handle_name_service::get_multiple(&conn, &addresses)?;
 
         let mut wallets: HashMap<String, Wallet> = HashMap::new();
-        twitter_handles.into_iter().for_each(|twitter_handle| {
-            wallets.insert(twitter_handle.wallet_address.to_string(), Wallet::new(twitter_handle.wallet_address.into(), Some(twitter_handle.twitter_handle.into())));
-        });
+        for twitter_handle in twitter_handles {
+            wallets.insert(
+                twitter_handle.wallet_address.to_string(),
+                Wallet::new(
+                    twitter_handle.wallet_address.into(),
+                    Some(twitter_handle.twitter_handle.into()),
+                ),
+            );
+        }
 
         for address in addresses {
             let address_string = address.to_string();
-            if !wallets.contains_key(&address_string) {
-                wallets.insert(address_string, Wallet::new(address, None));
-            }
+            wallets
+                .entry(address_string)
+                .or_insert_with(|| Wallet::new(address, None));
         }
 
         Ok(wallets.values().cloned().collect())
