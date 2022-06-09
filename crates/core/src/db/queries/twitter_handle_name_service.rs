@@ -53,7 +53,7 @@ pub fn get_multiple(
     conn: &Connection,
     addresses: impl ToSql<Array<Text>, Pg>,
 ) -> Result<Vec<TwitterHandle>> {
-    // Appears to not be possible to select a row by unique key by the 
+    // Appears to not be possible to select a row by unique key by the
     // highest value in another row using diesel ORM
     // See https://stackoverflow.com/a/61964064 (and diesel gitter)
     diesel::sql_query(GET_MULTIPLE_HANDLES_QUERY)
