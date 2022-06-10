@@ -4,7 +4,6 @@ use indexer_core::{
         queries::{self, feed_event::EventType},
         tables::twitter_handle_name_services,
     },
-    meilisearch::client::Client,
 };
 use objects::{
     auction_house::AuctionHouse,

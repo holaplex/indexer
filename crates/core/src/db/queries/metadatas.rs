@@ -106,7 +106,7 @@ enum MetadataCollectionKeys {
 /// List query options
 #[derive(Debug)]
 pub struct ListQueryOptions {
-    /// NFT metadata addresses
+    /// NFT metadata addresses (combines with other filters)
     pub addresses: Option<Vec<String>>,
     /// nft owners
     pub owners: Option<Vec<String>>,
