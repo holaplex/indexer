@@ -35,6 +35,7 @@ enum Metadatas {
     MintAddress,
     PrimarySaleHappened,
     SellerFeeBasisPoints,
+    UpdateAuthorityAddress,
     Uri,
     Slot,
 }
@@ -193,6 +194,7 @@ pub fn list(
             (Metadatas::Table, Metadatas::Address),
             (Metadatas::Table, Metadatas::Name),
             (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+            (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
             (Metadatas::Table, Metadatas::MintAddress),
             (Metadatas::Table, Metadatas::PrimarySaleHappened),
             (Metadatas::Table, Metadatas::Uri),
