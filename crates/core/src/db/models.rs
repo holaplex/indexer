@@ -5,7 +5,7 @@
 use std::borrow::Cow;
 
 use chrono::NaiveDateTime;
-use diesel::sql_types::{Array, Bool, Int4, Int8, Nullable, Text, Timestamp, VarChar};
+use diesel::sql_types::{Array, Bool, Int4, Int8, Nullable, Text, Timestamp, Timestamptz, VarChar};
 use uuid::Uuid;
 
 #[allow(clippy::wildcard_imports)]
@@ -1815,6 +1815,45 @@ pub struct StoreCreatorCount<'a> {
     #[sql_type = "Int8"]
     pub nfts: i64,
 }
+
+/// A join of all `feed_events` related tables into a complete feed event record
+#[derive(Debug, Clone, QueryableByName)]
+pub struct CompleteFeedEvent {
+    /// generated id
+    #[sql_type = "Text"]
+    pub id: String,
+    /// generated created_at
+    #[sql_type = "Timestamptz"]
+    pub created_at: NaiveDateTime,
+    /// wallet associated to the event
+    #[sql_type = "Text"]
+    pub wallet_address: String,
+    /// potentially twitter handle for associated wallet
+    #[sql_type = "Nullable<Text>"]
+    pub twitter_handle: Option<String>,
+    /// metadata address that triggered the mint event
+    #[sql_type = "Nullable<Text>"]
+    pub metadata_address: Option<String>,
+    /// purchase receipt address that triggered the purchase event
+    #[sql_type = "Nullable<Text>"]
+    pub purchase_receipt_address: Option<String>,
+    #[sql_type = "Nullable<Text>"]
+    /// bid receipt address that triggered the offer event
+    pub bid_receipt_address: Option<String>,
+    /// the lifecycle of the offer event
+    #[sql_type = "Nullable<Text>"]
+    pub offer_lifecycle: Option<String>,
+    /// listing receipt address that triggered the listing event
+    #[sql_type = "Nullable<Text>"]
+    pub listing_receipt_address: Option<String>,
+    /// the lifecycle of the listing event
+    #[sql_type = "Nullable<Text>"]
+    pub listing_lifecycle: Option<String>,
+    /// graph connection address that triggered the follow event
+    #[sql_type = "Nullable<Text>"]
+    pub graph_connection_address: Option<String>,
+}
+
 /// A row in the `feed_events` table
 #[derive(Debug, Clone, Copy, Queryable, Insertable)]
 #[table_name = "feed_events"]
