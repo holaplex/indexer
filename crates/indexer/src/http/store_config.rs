@@ -60,7 +60,7 @@ struct SettingUri {
     creators: Option<Vec<Creator>>,
     #[serde(flatten)]
     extra: HashMap<String, serde_json::Value>,
-    auction_houses: Option<Vec<AuctionHouse>>,
+    auctionHouses: Option<Vec<AuctionHouse>>,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -159,7 +159,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
             .context("failed to insert store creator")?;
     }
 
-    if let Some(auction_houses) = json.auction_houses {
+    if let Some(auction_houses) = json.auctionHouses {
         client
             .db()
             .run(move |db| {
