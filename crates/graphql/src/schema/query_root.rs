@@ -331,7 +331,7 @@ impl QueryRoot {
             limit: limit.try_into()?,
             offset: offset.try_into()?,
         };
-        let nfts = queries::metadatas::list(&conn, query_options).unwrap();
+        let nfts = queries::metadatas::list(&conn, query_options)?;
 
         nfts.into_iter()
             .map(TryInto::try_into)
