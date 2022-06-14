@@ -35,6 +35,7 @@ enum Metadatas {
     MintAddress,
     PrimarySaleHappened,
     SellerFeeBasisPoints,
+    UpdateAuthorityAddress,
     Uri,
     Slot,
 }
@@ -105,6 +106,8 @@ enum MetadataCollectionKeys {
 /// List query options
 #[derive(Debug)]
 pub struct ListQueryOptions {
+    /// NFT metadata addresses (combines with other filters)
+    pub addresses: Option<Vec<String>>,
     /// nft owners
     pub owners: Option<Vec<String>>,
     /// auction houses
@@ -149,6 +152,7 @@ pub type NftColumns = (
 pub fn list(
     conn: &Connection,
     ListQueryOptions {
+        addresses,
         owners,
         creators,
         auction_houses,
@@ -190,6 +194,7 @@ pub fn list(
             (Metadatas::Table, Metadatas::Address),
             (Metadatas::Table, Metadatas::Name),
             (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+            (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
             (Metadatas::Table, Metadatas::MintAddress),
             (Metadatas::Table, Metadatas::PrimarySaleHappened),
             (Metadatas::Table, Metadatas::Uri),
@@ -234,6 +239,10 @@ pub fn list(
         .offset(offset)
         .order_by((ListingReceipts::Table, ListingReceipts::Price), Order::Asc)
         .take();
+
+    if let Some(addresses) = addresses {
+        query.and_where(Expr::col(Metadatas::Address).is_in(addresses));
+    }
 
     if let Some(owners) = owners {
         query.and_where(Expr::col(CurrentMetadataOwners::OwnerAddress).is_in(owners));

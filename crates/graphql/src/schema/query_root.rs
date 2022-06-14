@@ -285,7 +285,7 @@ impl QueryRoot {
         })
     }
 
-    fn nfts(
+    async fn nfts(
         &self,
         context: &AppContext,
         #[graphql(description = "Filter on owner address")] owners: Option<Vec<PublicKey<Wallet>>>,
@@ -300,6 +300,10 @@ impl QueryRoot {
         #[graphql(description = "Filter nfts associated to the list of auction houses")]
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
         #[graphql(description = "Filter on a collection")] collection: Option<PublicKey<Nft>>,
+        #[graphql(
+            description = "Return NFTs whose metadata contain this search term (case-insensitive)"
+        )]
+        term: Option<String>,
         #[graphql(description = "Limit for query")] limit: i32,
         #[graphql(description = "Offset for query")] offset: i32,
     ) -> FieldResult<Vec<Nft>> {
@@ -308,16 +312,42 @@ impl QueryRoot {
             && creators.is_none()
             && auction_houses.is_none()
             && offerers.is_none()
+            && term.is_none()
         {
             return Err(FieldError::new(
                 "No filter provided! Please provide at least one of the filters",
-                graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, offerers: Vec<PublicKey>, auction_houses: Vec<PublicKey>" }),
+                graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, offerers: Vec<PublicKey>, auction_houses: Vec<PublicKey>, term: String" }),
             ));
         }
 
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
+        let addresses = match term {
+            Some(term) => {
+                let search = &context.shared.search;
+                let search_result = search
+                    .index("metadatas")
+                    .search()
+                    .with_query(&term)
+                    .with_offset(offset.try_into()?)
+                    .with_limit(limit.try_into()?)
+                    .execute::<Value>()
+                    .await
+                    .context("failed to load search result for metadata json")?
+                    .hits;
+
+                Some(
+                    search_result
+                        .into_iter()
+                        .map(|r| MetadataJson::from(r.result).address)
+                        .collect(),
+                )
+            },
+            None => None,
+        };
+
         let query_options = queries::metadatas::ListQueryOptions {
+            addresses,
             owners: owners.map(|a| a.into_iter().map(Into::into).collect()),
             creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
             offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
