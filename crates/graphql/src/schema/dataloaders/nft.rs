@@ -40,22 +40,25 @@ impl TryBatchFn<PublicKey<Nft>, Vec<CollectionNft>> for Batcher {
     ) -> TryBatchMap<PublicKey<Nft>, Vec<CollectionNft>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::Nft> = metadatas::table
+        let rows: Vec<(String, models::Nft)> = metadatas::table
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .inner_join(
                 metadata_collection_keys::table
-                    .on(metadata_collection_keys::collection_address.eq(metadatas::address)),
+                    .on(metadata_collection_keys::collection_address.eq(metadatas::mint_address)),
             )
             .filter(metadata_collection_keys::metadata_address.eq(any(addresses)))
-            .select(queries::metadatas::NftColumns::default())
+            .select((
+                metadata_collection_keys::metadata_address,
+                queries::metadatas::NftColumns::default(),
+            ))
             .load(&conn)
             .context("Failed to load Collection NFTs")?;
 
         Ok(rows
             .into_iter()
-            .map(|nft| (nft.address.clone(), nft.try_into()))
+            .map(|(addr, nft)| (addr, nft.try_into()))
             .batch(addresses))
     }
 }
