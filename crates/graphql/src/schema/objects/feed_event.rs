@@ -296,7 +296,7 @@ impl TryFrom<models::CompleteFeedEvent> for FeedEvent {
         ) {
             (Some(metadata_address), (None, None), (None, None), None, None) => {
                 Ok(Self::Mint(MintEvent {
-                    feed_event_id: id,
+                    feed_event_id: id.to_string(),
                     created_at: DateTime::from_utc(created_at, Utc),
                     metadata_address: metadata_address.into(),
                     twitter_handle,
@@ -305,27 +305,27 @@ impl TryFrom<models::CompleteFeedEvent> for FeedEvent {
             },
             (None, (Some(bid_receipt_address), Some(lifecycle)), (None, None), None, None) => {
                 Ok(Self::Offer(OfferEvent {
-                    feed_event_id: id,
+                    feed_event_id: id.to_string(),
                     created_at: DateTime::from_utc(created_at, Utc),
                     bid_receipt_address: bid_receipt_address.into(),
-                    lifecycle,
+                    lifecycle: lifecycle.to_string(),
                     twitter_handle,
                     wallet_address: wallet_address.into(),
                 }))
             },
             (None, (None, None), (Some(listing_receipt_address), Some(lifecycle)), None, None) => {
                 Ok(Self::Listing(ListingEvent {
-                    feed_event_id: id,
+                    feed_event_id: id.to_string(),
                     created_at: DateTime::from_utc(created_at, Utc),
                     listing_receipt_address: listing_receipt_address.into(),
-                    lifecycle,
+                    lifecycle: lifecycle.to_string(),
                     twitter_handle,
                     wallet_address: wallet_address.into(),
                 }))
             },
             (None, (None, None), (None, None), Some(purchase_receipt_address), None) => {
                 Ok(Self::Purchase(PurchaseEvent {
-                    feed_event_id: id,
+                    feed_event_id: id.to_string(),
                     created_at: DateTime::from_utc(created_at, Utc),
                     purchase_receipt_address: purchase_receipt_address.into(),
                     twitter_handle,
@@ -334,7 +334,7 @@ impl TryFrom<models::CompleteFeedEvent> for FeedEvent {
             },
             (None, (None, None), (None, None), None, Some(graph_connection_address)) => {
                 Ok(Self::Follow(FollowEvent {
-                    feed_event_id: id,
+                    feed_event_id: id.to_string(),
                     created_at: DateTime::from_utc(created_at, Utc),
                     graph_connection_address: graph_connection_address.into(),
                     twitter_handle,

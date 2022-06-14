@@ -126,14 +126,16 @@ pub fn list(
             PurchaseEvents::Table,
             PurchaseEvents::PurchaseReceiptAddress,
         ))
-        .columns(vec![
-            (OfferEvents::Table, OfferEvents::BidReceiptAddress),
-            (OfferEvents::Table, OfferEvents::Lifecycle),
-        ])
-        .columns(vec![
-            (ListingEvents::Table, ListingEvents::ListingReceiptAddress),
-            (ListingEvents::Table, ListingEvents::Lifecycle),
-        ])
+        .column((OfferEvents::Table, OfferEvents::BidReceiptAddress))
+        .expr_as(
+            Expr::col((OfferEvents::Table, OfferEvents::Lifecycle)),
+            Alias::new("offer_lifecycle"),
+        )
+        .column((ListingEvents::Table, ListingEvents::ListingReceiptAddress))
+        .expr_as(
+            Expr::col((ListingEvents::Table, ListingEvents::Lifecycle)),
+            Alias::new("listing_lifecycle"),
+        )
         .column((FollowEvents::Table, FollowEvents::GraphConnectionAddress))
         .from(FeedEvents::Table)
         .inner_join(
