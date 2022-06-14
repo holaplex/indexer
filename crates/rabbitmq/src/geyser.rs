@@ -35,20 +35,27 @@ pub struct AccountUpdate {
     pub is_startup: bool,
 }
 
+/// Message data for an instruction notification
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InstructionNotify {
+    /// The program this instruction was executed with
+    pub program: Pubkey,
+    /// The binary instruction opcode
+    pub data: Vec<u8>,
+    /// The account inputs to this instruction
+    pub accounts: Vec<Pubkey>,
+    /// The slot in which the transaction including this instruction was
+    /// reported
+    pub slot: u64,
+}
+
 /// A message transmitted by a Geyser plugin
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Message {
     /// Indicates an account should be updated
     AccountUpdate(AccountUpdate),
     /// Indicates an instruction was included in a **successful** transaction
-    InstructionNotify {
-        /// The program this instruction was executed with
-        program: Pubkey,
-        /// The binary instruction opcode
-        data: Vec<u8>,
-        /// The account inputs to this instruction
-        accounts: Vec<Pubkey>,
-    },
+    InstructionNotify(InstructionNotify),
 }
 
 /// AMQP configuration for Geyser plugins

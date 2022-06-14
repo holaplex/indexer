@@ -2,7 +2,7 @@ use std::{env, sync::Arc};
 
 use anyhow::Context;
 use hashbrown::HashSet;
-use indexer_rabbitmq::geyser::{AccountUpdate, Message};
+use indexer_rabbitmq::geyser::{AccountUpdate, InstructionNotify, Message};
 use solana_program::{
     instruction::CompiledInstruction, message::SanitizedMessage, program_pack::Pack,
 };
@@ -277,13 +277,14 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
     fn notify_transaction(
         &mut self,
         transaction: ReplicaTransactionInfoVersions,
-        _slot: u64,
+        slot: u64,
     ) -> Result<()> {
         #[inline]
         fn process_instruction(
             sel: &InstructionSelector,
             ins: &CompiledInstruction,
             msg: &SanitizedMessage,
+            slot: u64,
         ) -> anyhow::Result<Option<Message>> {
             let program = *msg
                 .get_account_key(ins.program_id_index as usize)
@@ -306,11 +307,12 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
 
             let data = ins.data.clone();
 
-            Ok(Some(Message::InstructionNotify {
+            Ok(Some(Message::InstructionNotify(InstructionNotify {
                 program,
                 data,
                 accounts,
-            }))
+                slot,
+            })))
         }
 
         self.with_inner(
@@ -337,7 +339,7 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                                 .flatten()
                                 .flat_map(|i| i.instructions.iter()),
                         ) {
-                            match process_instruction(&this.ins_sel, ins, msg) {
+                            match process_instruction(&this.ins_sel, ins, msg, slot) {
                                 Ok(Some(m)) => {
                                     this.spawn(|this| async move {
                                         this.producer.send(m).await;
