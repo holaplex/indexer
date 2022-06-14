@@ -4,8 +4,7 @@ use diesel::{
     expression::{AsExpression, NonAggregate},
     pg::Pg,
     query_builder::{QueryFragment, QueryId},
-    sql_types::{Array, Text},
-    types::ToSql,
+    sql_types::Text,
     AppearsOnTable, OptionalExtension,
 };
 
@@ -38,11 +37,7 @@ where
 ///
 /// # Errors
 /// This function fails if the underlying query fails to execute.
-pub fn get_multiple(
-    conn: &Connection,
-    addresses: Vec<String>,
-) -> Result<Vec<TwitterHandle>> {
-
+pub fn get_multiple(conn: &Connection, addresses: Vec<String>) -> Result<Vec<TwitterHandle>> {
     twitter_handle_name_services::table
         .filter(twitter_handle_name_services::wallet_address.eq(any(addresses)))
         .select(twitter_handle_name_services::all_columns)
