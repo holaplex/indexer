@@ -294,6 +294,7 @@ pub struct Nft {
     pub seller_fee_basis_points: i32,
     pub mint_address: String,
     pub primary_sale_happened: bool,
+    pub update_authority_address: String,
     pub uri: String,
     pub description: String,
     pub image: String,
@@ -312,6 +313,7 @@ impl TryFrom<models::Nft> for Nft {
             seller_fee_basis_points,
             mint_address,
             primary_sale_happened,
+            update_authority_address,
             uri,
             description,
             image,
@@ -326,6 +328,7 @@ impl TryFrom<models::Nft> for Nft {
             seller_fee_basis_points,
             mint_address,
             primary_sale_happened,
+            update_authority_address,
             uri,
             description: description.unwrap_or_else(String::new),
             image: image.unwrap_or_else(String::new),
@@ -356,6 +359,10 @@ impl Nft {
 
     pub fn primary_sale_happened(&self) -> bool {
         self.primary_sale_happened
+    }
+
+    pub fn update_authority_address(&self) -> &str {
+        &self.update_authority_address
     }
 
     pub fn description(&self) -> &str {
@@ -389,8 +396,9 @@ Any other value will return the original image size.
 
 If no value is provided, it will return XSmall")))]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
-        let id = if let Ok(url) = Url::parse(&self.image) {
-            AssetIdentifier::new(&url)
+        let url = Url::parse(&self.image);
+        let id = if let Ok(ref url) = url {
+            AssetIdentifier::new(url)
         } else {
             return Ok(self.image.clone());
         };

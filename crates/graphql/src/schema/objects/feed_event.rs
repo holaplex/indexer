@@ -1,8 +1,8 @@
-use indexer_core::db::{models, queries};
+use indexer_core::db::models;
 use juniper::GraphQLUnion;
 use objects::{
     bid_receipt::BidReceipt, graph_connection::GraphConnection, listing_receipt::ListingReceipt,
-    nft::Nft, profile::TwitterProfile, purchase_receipt::PurchaseReceipt,
+    nft::Nft, profile::TwitterProfile, purchase_receipt::PurchaseReceipt, wallet::Wallet,
 };
 
 use super::prelude::*;
@@ -13,7 +13,7 @@ pub struct MintEvent {
     created_at: DateTime<Utc>,
     feed_event_id: String,
     twitter_handle: Option<String>,
-    wallet_address: String,
+    wallet_address: PublicKey<Wallet>,
     metadata_address: PublicKey<Nft>,
 }
 
@@ -22,7 +22,7 @@ pub struct FollowEvent {
     created_at: DateTime<Utc>,
     feed_event_id: String,
     twitter_handle: Option<String>,
-    wallet_address: String,
+    wallet_address: PublicKey<Wallet>,
     graph_connection_address: PublicKey<GraphConnection>,
 }
 
@@ -32,7 +32,7 @@ impl FollowEvent {
         self.created_at
     }
 
-    fn wallet_address(&self) -> &str {
+    fn wallet_address(&self) -> &PublicKey<Wallet> {
         &self.wallet_address
     }
 
@@ -69,7 +69,7 @@ pub struct PurchaseEvent {
     created_at: DateTime<Utc>,
     feed_event_id: String,
     twitter_handle: Option<String>,
-    wallet_address: String,
+    wallet_address: PublicKey<Wallet>,
     purchase_receipt_address: PublicKey<PurchaseReceipt>,
 }
 
@@ -79,7 +79,7 @@ impl PurchaseEvent {
         self.created_at
     }
 
-    fn wallet_address(&self) -> &str {
+    fn wallet_address(&self) -> &PublicKey<Wallet> {
         &self.wallet_address
     }
 
@@ -116,7 +116,7 @@ pub struct OfferEvent {
     created_at: DateTime<Utc>,
     feed_event_id: String,
     twitter_handle: Option<String>,
-    wallet_address: String,
+    wallet_address: PublicKey<Wallet>,
     bid_receipt_address: PublicKey<BidReceipt>,
     lifecycle: String,
 }
@@ -127,7 +127,7 @@ impl OfferEvent {
         self.created_at
     }
 
-    fn wallet_address(&self) -> &str {
+    fn wallet_address(&self) -> &PublicKey<Wallet> {
         &self.wallet_address
     }
 
@@ -169,7 +169,7 @@ pub struct ListingEvent {
     feed_event_id: String,
     listing_receipt_address: PublicKey<ListingReceipt>,
     twitter_handle: Option<String>,
-    wallet_address: String,
+    wallet_address: PublicKey<Wallet>,
     lifecycle: String,
 }
 
@@ -179,7 +179,7 @@ impl ListingEvent {
         self.created_at
     }
 
-    fn wallet_address(&self) -> &str {
+    fn wallet_address(&self) -> &PublicKey<Wallet> {
         &self.wallet_address
     }
 
@@ -221,7 +221,7 @@ impl MintEvent {
         self.created_at
     }
 
-    fn wallet_address(&self) -> &str {
+    fn wallet_address(&self) -> &PublicKey<Wallet> {
         &self.wallet_address
     }
 
@@ -269,111 +269,78 @@ pub enum FeedEvent {
 #[error("Invalid feed event variant")]
 pub struct TryFromError;
 
-impl<'a> TryFrom<queries::feed_event::Columns<'a>> for FeedEvent {
+impl TryFrom<models::CompleteFeedEvent> for FeedEvent {
     type Error = TryFromError;
 
     fn try_from(
-        (
-            models::FeedEvent { id, created_at },
+        models::CompleteFeedEvent {
+            id,
+            created_at,
             wallet_address,
             twitter_handle,
-            mint_event,
-            offer_event,
-            listing_event,
-            purchase_event,
-            follow_event,
-        ): queries::feed_event::Columns,
+            metadata_address,
+            purchase_receipt_address,
+            bid_receipt_address,
+            offer_lifecycle,
+            listing_receipt_address,
+            listing_lifecycle,
+            graph_connection_address,
+        }: models::CompleteFeedEvent,
     ) -> Result<Self, Self::Error> {
         match (
-            mint_event,
-            offer_event,
-            listing_event,
-            purchase_event,
-            follow_event,
+            metadata_address,
+            (bid_receipt_address, offer_lifecycle),
+            (listing_receipt_address, listing_lifecycle),
+            purchase_receipt_address,
+            graph_connection_address,
         ) {
-            (
-                Some(models::MintEvent {
-                    metadata_address, ..
-                }),
-                None,
-                None,
-                None,
-                None,
-            ) => Ok(Self::Mint(MintEvent {
-                feed_event_id: id.to_string(),
-                created_at: DateTime::from_utc(created_at, Utc),
-                metadata_address: metadata_address.into_owned().into(),
-                twitter_handle,
-                wallet_address,
-            })),
-            (
-                None,
-                Some(models::OfferEvent {
-                    bid_receipt_address,
-                    lifecycle,
-                    ..
-                }),
-                None,
-                None,
-                None,
-            ) => Ok(Self::Offer(OfferEvent {
-                feed_event_id: id.to_string(),
-                created_at: DateTime::from_utc(created_at, Utc),
-                bid_receipt_address: bid_receipt_address.into_owned().into(),
-                lifecycle: lifecycle.to_string(),
-                twitter_handle,
-                wallet_address,
-            })),
-            (
-                None,
-                None,
-                Some(models::ListingEvent {
-                    listing_receipt_address,
-                    lifecycle,
-                    ..
-                }),
-                None,
-                None,
-            ) => Ok(Self::Listing(ListingEvent {
-                feed_event_id: id.to_string(),
-                created_at: DateTime::from_utc(created_at, Utc),
-                listing_receipt_address: listing_receipt_address.into_owned().into(),
-                lifecycle: lifecycle.to_string(),
-                twitter_handle,
-                wallet_address,
-            })),
-            (
-                None,
-                None,
-                None,
-                Some(models::PurchaseEvent {
-                    purchase_receipt_address,
-                    ..
-                }),
-                None,
-            ) => Ok(Self::Purchase(PurchaseEvent {
-                feed_event_id: id.to_string(),
-                created_at: DateTime::from_utc(created_at, Utc),
-                purchase_receipt_address: purchase_receipt_address.into_owned().into(),
-                twitter_handle,
-                wallet_address,
-            })),
-            (
-                None,
-                None,
-                None,
-                None,
-                Some(models::FollowEvent {
-                    graph_connection_address,
-                    ..
-                }),
-            ) => Ok(Self::Follow(FollowEvent {
-                feed_event_id: id.to_string(),
-                created_at: DateTime::from_utc(created_at, Utc),
-                graph_connection_address: graph_connection_address.into_owned().into(),
-                twitter_handle,
-                wallet_address,
-            })),
+            (Some(metadata_address), (None, None), (None, None), None, None) => {
+                Ok(Self::Mint(MintEvent {
+                    feed_event_id: id.to_string(),
+                    created_at: DateTime::from_utc(created_at, Utc),
+                    metadata_address: metadata_address.into(),
+                    twitter_handle,
+                    wallet_address: wallet_address.into(),
+                }))
+            },
+            (None, (Some(bid_receipt_address), Some(lifecycle)), (None, None), None, None) => {
+                Ok(Self::Offer(OfferEvent {
+                    feed_event_id: id.to_string(),
+                    created_at: DateTime::from_utc(created_at, Utc),
+                    bid_receipt_address: bid_receipt_address.into(),
+                    lifecycle: lifecycle.to_string(),
+                    twitter_handle,
+                    wallet_address: wallet_address.into(),
+                }))
+            },
+            (None, (None, None), (Some(listing_receipt_address), Some(lifecycle)), None, None) => {
+                Ok(Self::Listing(ListingEvent {
+                    feed_event_id: id.to_string(),
+                    created_at: DateTime::from_utc(created_at, Utc),
+                    listing_receipt_address: listing_receipt_address.into(),
+                    lifecycle: lifecycle.to_string(),
+                    twitter_handle,
+                    wallet_address: wallet_address.into(),
+                }))
+            },
+            (None, (None, None), (None, None), Some(purchase_receipt_address), None) => {
+                Ok(Self::Purchase(PurchaseEvent {
+                    feed_event_id: id.to_string(),
+                    created_at: DateTime::from_utc(created_at, Utc),
+                    purchase_receipt_address: purchase_receipt_address.into(),
+                    twitter_handle,
+                    wallet_address: wallet_address.into(),
+                }))
+            },
+            (None, (None, None), (None, None), None, Some(graph_connection_address)) => {
+                Ok(Self::Follow(FollowEvent {
+                    feed_event_id: id.to_string(),
+                    created_at: DateTime::from_utc(created_at, Utc),
+                    graph_connection_address: graph_connection_address.into(),
+                    twitter_handle,
+                    wallet_address: wallet_address.into(),
+                }))
+            },
             _ => {
                 debug!("feed_event_id: {}", id);
 

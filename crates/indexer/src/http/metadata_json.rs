@@ -173,18 +173,25 @@ async fn fetch_json(
 
 async fn try_locate_json(
     client: &Client,
-    url: &Url,
-    id: &AssetIdentifier,
+    id: &AssetIdentifier<'_>,
     meta_key: Pubkey,
 ) -> Result<Option<(MetadataJsonResult, Vec<u8>, Url)>> {
     // Set to true for fallback
     const TRY_LAST_RESORT: bool = false;
+    // Set to true to fetch links with no fingerprint
+    const FETCH_NON_PERMAWEB: bool = true;
 
     let mut resp = Ok(None);
 
     for (fingerprint, hint) in id.fingerprints_hinted() {
-        let url = proxy_url_hinted(client.proxy_args(), id, hint, None)
-            .map(|u| u.unwrap_or_else(|| unreachable!()));
+        let url = if let Some(hint) = hint {
+            proxy_url_hinted(client.proxy_args(), id, hint, None)
+                .map(|u| u.unwrap_or_else(|| unreachable!()))
+        } else if FETCH_NON_PERMAWEB {
+            Ok(id.url.clone())
+        } else {
+            continue;
+        };
         let url_str = url.as_ref().map_or("???", Url::as_str).to_owned();
 
         match fetch_json(client, meta_key, url).await {
@@ -209,19 +216,19 @@ async fn try_locate_json(
         Ok(None) => {
             trace!(
                 "Not fetching unparseable url {:?} for {}",
-                url.as_str(),
+                id.url.as_str(),
                 meta_key
             );
 
             None
         },
         Err(()) if TRY_LAST_RESORT => {
-            let (url, json) = fetch_json(client, meta_key, Ok(url.clone()))
+            let (url, json) = fetch_json(client, meta_key, Ok(id.url.clone()))
                 .await
                 .with_context(|| {
                     format!(
                         "Last-resort metadata fetch {:?} for {} failed",
-                        url.as_str(),
+                        id.url.as_str(),
                         meta_key,
                     )
                 })?;
@@ -231,7 +238,7 @@ async fn try_locate_json(
         Err(()) => {
             bail!(
                 "Cached metadata fetch {:?} for {} failed (not trying last-resort)",
-                url.as_str(),
+                id.url.as_str(),
                 meta_key
             )
         },
@@ -569,7 +576,7 @@ pub async fn process<'a>(
 
     trace!("{:?} -> {:?}", url.as_str(), id);
 
-    if let Some((json, fingerprint, url)) = try_locate_json(client, &url, &id, meta_key).await? {
+    if let Some((json, fingerprint, url)) = try_locate_json(client, &id, meta_key).await? {
         match json {
             MetadataJsonResult::Full(value) => {
                 process_full(
