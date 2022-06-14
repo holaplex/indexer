@@ -11,8 +11,8 @@ use uuid::Uuid;
 #[allow(clippy::wildcard_imports)]
 use super::schema::*;
 use crate::db::custom_types::{
-    EndSettingType, ListingEventLifecycleEnum, OfferEventLifecycleEnum, TokenStandardEnum,
-    WhitelistMintMode,
+    EndSettingType, ListingEventLifecycle, ListingEventLifecycleEnum, OfferEventLifecycle,
+    OfferEventLifecycleEnum, TokenStandardEnum, WhitelistMintMode,
 };
 
 /// A row in the `bids` table
@@ -1819,38 +1819,38 @@ pub struct StoreCreatorCount<'a> {
 /// A join of all `feed_events` related tables into a complete feed event record
 #[derive(Debug, Clone, QueryableByName)]
 pub struct CompleteFeedEvent {
-    /// generated id
-    #[sql_type = "Text"]
-    pub id: String,
+    /// generated id for the event
+    #[sql_type = "diesel::sql_types::Uuid"]
+    pub id: Uuid,
     /// generated created_at
     #[sql_type = "Timestamptz"]
     pub created_at: NaiveDateTime,
     /// wallet associated to the event
-    #[sql_type = "Text"]
+    #[sql_type = "VarChar"]
     pub wallet_address: String,
     /// potentially twitter handle for associated wallet
     #[sql_type = "Nullable<Text>"]
     pub twitter_handle: Option<String>,
     /// metadata address that triggered the mint event
-    #[sql_type = "Nullable<Text>"]
+    #[sql_type = "Nullable<VarChar>"]
     pub metadata_address: Option<String>,
     /// purchase receipt address that triggered the purchase event
-    #[sql_type = "Nullable<Text>"]
+    #[sql_type = "Nullable<VarChar>"]
     pub purchase_receipt_address: Option<String>,
-    #[sql_type = "Nullable<Text>"]
+    #[sql_type = "Nullable<VarChar>"]
     /// bid receipt address that triggered the offer event
     pub bid_receipt_address: Option<String>,
     /// the lifecycle of the offer event
-    #[sql_type = "Nullable<Text>"]
-    pub offer_lifecycle: Option<String>,
+    #[sql_type = "Nullable<OfferEventLifecycle>"]
+    pub offer_lifecycle: Option<OfferEventLifecycleEnum>,
     /// listing receipt address that triggered the listing event
     #[sql_type = "Nullable<Text>"]
     pub listing_receipt_address: Option<String>,
     /// the lifecycle of the listing event
-    #[sql_type = "Nullable<Text>"]
-    pub listing_lifecycle: Option<String>,
+    #[sql_type = "Nullable<ListingEventLifecycle>"]
+    pub listing_lifecycle: Option<ListingEventLifecycleEnum>,
     /// graph connection address that triggered the follow event
-    #[sql_type = "Nullable<Text>"]
+    #[sql_type = "Nullable<VarChar>"]
     pub graph_connection_address: Option<String>,
 }
 
