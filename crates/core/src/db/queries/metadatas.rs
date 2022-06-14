@@ -286,12 +286,10 @@ pub fn list(
                 .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null());
         }
 
-        if let Some(with_offers) = with_offers {
-            if with_offers {
-                bid_receipts_conditions = bid_receipts_conditions
-                    .add(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
-                    .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null());
-            }
+        if let Some(true) = with_offers {
+            bid_receipts_conditions = bid_receipts_conditions
+                .add(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
+                .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null());
         }
 
         let mut bid_receipts_query = Query::select()
