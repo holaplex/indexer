@@ -468,6 +468,13 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
+    pub async fn collections(&self, ctx: &AppContext) -> FieldResult<Vec<Nft>> {
+        ctx.nft_collections_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
     pub async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
         if let Some(slot) = self.slot {
             let shared = ctx.shared.clone();

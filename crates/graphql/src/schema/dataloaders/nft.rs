@@ -1,4 +1,4 @@
-use indexer_core::db::queries;
+use indexer_core::db::{queries, tables::metadata_collection_keys};
 use objects::{
     listing_receipt::ListingReceipt,
     nft::{Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
@@ -28,6 +28,35 @@ impl TryBatchFn<PublicKey<Nft>, Vec<NftAttribute>> for Batcher {
         Ok(rows
             .into_iter()
             .map(|a| (a.metadata_address.clone(), a.try_into()))
+            .batch(addresses))
+    }
+}
+
+/// Collection Loader
+#[async_trait]
+impl TryBatchFn<PublicKey<Nft>, Vec<Nft>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Nft>],
+    ) -> TryBatchMap<PublicKey<Nft>, Vec<Nft>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::Nft> = metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .inner_join(
+                metadata_collection_keys::table
+                    .on(metadata_collection_keys::collection_address.eq(metadatas::address)),
+            )
+            .filter(metadata_collection_keys::metadata_address.eq(any(addresses)))
+            .select(queries::metadatas::NftColumns::default())
+            .load(&conn)
+            .context("Failed to load Collection NFTs")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|nft| (nft.address.clone(), nft.try_into()))
             .batch(addresses))
     }
 }
