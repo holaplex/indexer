@@ -443,7 +443,7 @@ impl QueryRoot {
         let conn = context.shared.db.get()?;
 
         let twitter_handles =
-            queries::twitter_handle_name_service::get_multiple(&conn, &addresses)?;
+            queries::twitter_handle_name_service::get_multiple(&conn, addresses.iter().map(|a| a.to_string()).collect())?;
 
         let mut wallets: HashMap<String, Wallet> = HashMap::new();
         for twitter_handle in twitter_handles {

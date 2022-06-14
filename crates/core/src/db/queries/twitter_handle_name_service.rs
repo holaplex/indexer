@@ -34,30 +34,18 @@ where
         .context("Failed to load twitter handle")
 }
 
-const GET_MULTIPLE_HANDLES_QUERY: &str = r"
-SELECT A.*
-FROM twitter_handle_name_services A
-INNER JOIN (
-    SELECT wallet_address, MAX(write_version) as write_version
-    FROM twitter_handle_name_services
-    WHERE wallet_address = ANY($1)
-    GROUP BY wallet_address
-) B on A.wallet_address = B.wallet_address AND A.write_version = B.write_version
--- $1: addresses::text[]";
-
 /// Return twitter handles linked to the provide wallet addresses
 ///
 /// # Errors
 /// This function fails if the underlying query fails to execute.
 pub fn get_multiple(
     conn: &Connection,
-    addresses: impl ToSql<Array<Text>, Pg>,
+    addresses: Vec<String>,
 ) -> Result<Vec<TwitterHandle>> {
-    // Appears to not be possible to select a row by unique key by the
-    // highest value in another row using diesel ORM
-    // See https://stackoverflow.com/a/61964064 (and diesel gitter)
-    diesel::sql_query(GET_MULTIPLE_HANDLES_QUERY)
-        .bind(addresses)
+
+    twitter_handle_name_services::table
+        .filter(twitter_handle_name_services::wallet_address.eq(any(addresses)))
+        .select(twitter_handle_name_services::all_columns)
         .load(conn)
-        .context("Failed to load featured listings")
+        .context("Failed to load twitter handle")
 }
