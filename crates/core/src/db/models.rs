@@ -978,7 +978,7 @@ pub struct MarketStats<'a> {
 }
 
 /// A row in the `twitter_handle_name_services` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "twitter_handle_name_services"]
 pub struct TwitterHandle<'a> {
