@@ -121,7 +121,7 @@ impl QueryRoot {
 
         let feed_events = queries::feed_event::list(
             &conn,
-            wallet,
+            wallet.to_string(),
             limit.try_into()?,
             offset.try_into()?,
             exclude_types_parsed,
