@@ -1,6 +1,6 @@
 delete from store_config_jsons
   where store_address = any($EOF${
-    3doAaFs2VuTLnVTPLZwFAWsskqwwC4xLt31dZ24uwYsd
+    3doAaFs2VuTLnVTPLZwFAWsskqwwC4xLt31dZ24uwYsd,
     5zisriEADFDHbPS66RYhcaL3nrHcJDUGVmHrMPYLF2ZJ
   }$EOF$);
 
