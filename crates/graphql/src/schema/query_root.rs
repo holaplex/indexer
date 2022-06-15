@@ -16,7 +16,7 @@ use objects::{
     listing_receipt::ListingReceipt,
     marketplace::Marketplace,
     nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator},
-    profile::TwitterProfile,
+    profile::{ProfilesStats, TwitterProfile},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
@@ -27,7 +27,7 @@ use tables::{
     metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
 };
 
-use super::{objects::profile::ProfilesStats, prelude::*};
+use super::prelude::*;
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
