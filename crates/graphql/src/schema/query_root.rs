@@ -485,14 +485,13 @@ impl QueryRoot {
 
         if let Some(nft_metadata_addresses) = nft_metadata_addresses {
             let listings_query =
-            listing_metadatas::table
+                listing_metadatas::table
                     .select(listing_metadatas::listing_address)
                     .distinct()
                     .inner_join(metadata_jsons::table.on(
                         metadata_jsons::metadata_address.eq(listing_metadatas::metadata_address),
                     ))
                     .filter(metadata_jsons::metadata_address.eq(any(nft_metadata_addresses)));
-
 
             query = query.filter(auction_datas::address.eq(any(listings_query)));
         }
