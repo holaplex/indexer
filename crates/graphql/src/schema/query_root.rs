@@ -366,6 +366,7 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
+    #[graphql(description = "Stats aggregated across all indexed NFTs")]
     fn nfts_stats(&self) -> FieldResult<NftsStats> {
         Ok(NftsStats {})
     }
