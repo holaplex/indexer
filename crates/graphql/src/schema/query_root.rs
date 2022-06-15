@@ -27,7 +27,7 @@ use tables::{
     metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
 };
 
-use super::{prelude::*};
+use super::prelude::*;
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
