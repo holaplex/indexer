@@ -1,0 +1,3 @@
+drop trigger listing_receipts_check_slot_wv;
+drop trigger bid_receipts_check_slot_wv;
+drop trigger purchase_receipts_check_slot_wv;

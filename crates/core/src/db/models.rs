@@ -660,6 +660,10 @@ pub struct BidReceipt<'a> {
     pub created_at: NaiveDateTime,
     /// Canceled_at timestamp
     pub canceled_at: Option<NaiveDateTime>,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write_version
+    pub write_version: i64,
 }
 
 /// A row in the `listing_receipts` table
@@ -693,6 +697,10 @@ pub struct ListingReceipt<'a> {
     pub created_at: NaiveDateTime,
     /// Canceled_at timestamp
     pub canceled_at: Option<NaiveDateTime>,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write_version
+    pub write_version: i64,
 }
 
 /// A row in the `purchase_receipts` table
@@ -719,6 +727,10 @@ pub struct PurchaseReceipt<'a> {
     pub bump: i16,
     /// Created at
     pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write_version
+    pub write_version: i64,
 }
 
 /// A row in the `store_creators` table
@@ -1975,6 +1987,8 @@ pub struct BuyInstruction<'a> {
     pub token_size: i64,
     /// Timestamp when 'Buy' instruction was received
     pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
 }
 
 /// A row in the `public_buy_instructions` table
@@ -2013,6 +2027,8 @@ pub struct PublicBuyInstruction<'a> {
     pub token_size: i64,
     /// Timestamp when 'Buy' instruction was received
     pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
 }
 
 /// A row in the `sell_instructions` table
@@ -2049,6 +2065,8 @@ pub struct SellInstruction<'a> {
     pub token_size: i64,
     /// Timestamp when 'Sell' instruction was received
     pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
 }
 
 /// A row in the `execute_sale_instructions` table
@@ -2101,6 +2119,8 @@ pub struct ExecuteSaleInstruction<'a> {
     pub token_size: i64,
     /// Timestamp when 'ExecuteSale' instruction was received
     pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
 }
 /// A row in the `cancel_instructions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2126,6 +2146,8 @@ pub struct CancelInstruction<'a> {
     pub token_size: i64,
     /// Timestamp when 'Cancel' instruction was received
     pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
 }
 
 /// A row in the `deposit_instructions` table
@@ -2154,6 +2176,8 @@ pub struct DepositInstruction<'a> {
     pub amount: i64,
     /// Timestamp when 'Deposit' instruction was received
     pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
 }
 
 /// A row in the `withdraw_instructions` table
@@ -2180,6 +2204,8 @@ pub struct WithdrawInstruction<'a> {
     pub amount: i64,
     /// Timestamp when 'Withdraw' instruction was received
     pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
 }
 
 /// A row in the `withdraw_from_fee_instructions` table
@@ -2198,6 +2224,8 @@ pub struct WithdrawFromFeeInstruction<'a> {
     pub amount: i64,
     /// Timestamp when 'WithdrawFromFee' instruction was received
     pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
 }
 
 /// A row in the `withdraw_from_treasury` table
@@ -2218,6 +2246,8 @@ pub struct WithdrawFromTreasuryInstruction<'a> {
     pub amount: i64,
     /// Timestamp when 'WithdrawFromTreasury' instruction was received
     pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
 }
 
 /// A row in the `offers` table
@@ -2251,6 +2281,10 @@ pub struct Offer<'a> {
     pub created_at: NaiveDateTime,
     /// Canceled_at timestamp
     pub canceled_at: Option<NaiveDateTime>,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write_version
+    pub write_version: i64,
 }
 
 /// A row in the `purchases` table
@@ -2276,6 +2310,10 @@ pub struct Purchase<'a> {
     pub price: i64,
     /// Created at
     pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write_version
+    pub write_version: i64,
 }
 
 /// A row in the `listings` table
@@ -2307,4 +2345,8 @@ pub struct Listing<'a> {
     pub created_at: NaiveDateTime,
     /// Canceled_at timestamp
     pub canceled_at: Option<NaiveDateTime>,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write_version
+    pub write_version: i64,
 }

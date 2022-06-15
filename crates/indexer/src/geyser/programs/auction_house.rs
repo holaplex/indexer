@@ -40,14 +40,14 @@ async fn process_listing_receipt(client: &Client, update: AccountUpdate) -> Resu
         ListingReceipt::try_deserialize(&mut update.data.as_slice())
             .context("Failed to deserialize listing receipt data")?;
 
-    receipt::process_listing_receipt(client, update.key, listing_receipt).await
+    receipt::process_listing_receipt(client, update.key, listing_receipt, update.slot, update.write_version).await
 }
 
 async fn process_bid_receipt(client: &Client, update: AccountUpdate) -> Result<()> {
     let bid_receipt: BidReceipt = BidReceipt::try_deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize bid receipt data")?;
 
-    receipt::process_bid_receipt(client, update.key, bid_receipt).await
+    receipt::process_bid_receipt(client, update.key, bid_receipt, update.slot, update.write_version).await
 }
 
 async fn process_purchase_receipt(client: &Client, update: AccountUpdate) -> Result<()> {
@@ -55,7 +55,7 @@ async fn process_purchase_receipt(client: &Client, update: AccountUpdate) -> Res
         PurchaseReceipt::try_deserialize(&mut update.data.as_slice())
             .context("Failed to deserialize purchase receipt data")?;
 
-    receipt::process_purchase_receipt(client, update.key, purchase_receipt).await
+    receipt::process_purchase_receipt(client, update.key, purchase_receipt, update.slot, update.write_version).await
 }
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {

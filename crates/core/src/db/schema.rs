@@ -105,6 +105,8 @@ table! {
         trade_state_bump -> Int2,
         created_at -> Timestamp,
         canceled_at -> Nullable<Timestamp>,
+        slot -> Int8,
+        write_version -> Int8,
     }
 }
 
@@ -159,6 +161,7 @@ table! {
         buyer_price -> Int8,
         token_size -> Int8,
         created_at -> Timestamp,
+        slot -> Int8,
     }
 }
 
@@ -179,6 +182,7 @@ table! {
         buyer_price -> Int8,
         token_size -> Int8,
         created_at -> Timestamp,
+        slot -> Int8,
     }
 }
 
@@ -479,6 +483,7 @@ table! {
         escrow_payment_bump -> Int2,
         amount -> Int8,
         created_at -> Timestamp,
+        slot -> Int8,
     }
 }
 
@@ -543,6 +548,7 @@ table! {
         buyer_price -> Int8,
         token_size -> Int8,
         created_at -> Timestamp,
+        slot -> Int8,
     }
 }
 
@@ -743,6 +749,8 @@ table! {
         trade_state_bump -> Int2,
         created_at -> Timestamp,
         canceled_at -> Nullable<Timestamp>,
+        slot -> Int8,
+        write_version -> Int8,
     }
 }
 
@@ -763,6 +771,8 @@ table! {
         trade_state_bump -> Int2,
         created_at -> Timestamp,
         canceled_at -> Nullable<Timestamp>,
+        slot -> Int8,
+        write_version -> Int8,
     }
 }
 
@@ -949,6 +959,8 @@ table! {
         trade_state_bump -> Int2,
         created_at -> Timestamp,
         canceled_at -> Nullable<Timestamp>,
+        slot -> Int8,
+        write_version -> Int8,
     }
 }
 
@@ -1038,6 +1050,7 @@ table! {
         buyer_price -> Int8,
         token_size -> Int8,
         created_at -> Timestamp,
+        slot -> Int8,
     }
 }
 
@@ -1068,6 +1081,8 @@ table! {
         price -> Int8,
         bump -> Int2,
         created_at -> Timestamp,
+        slot -> Int8,
+        write_version -> Int8,
     }
 }
 
@@ -1085,6 +1100,8 @@ table! {
         token_size -> Int8,
         price -> Int8,
         created_at -> Timestamp,
+        slot -> Int8,
+        write_version -> Int8,
     }
 }
 
@@ -1110,6 +1127,7 @@ table! {
         buyer_price -> Int8,
         token_size -> Int8,
         created_at -> Timestamp,
+        slot -> Int8,
     }
 }
 
@@ -1350,6 +1368,7 @@ table! {
         auction_house -> Varchar,
         amount -> Int8,
         created_at -> Timestamp,
+        slot -> Int8,
     }
 }
 
@@ -1367,6 +1386,7 @@ table! {
         auction_house -> Varchar,
         amount -> Int8,
         created_at -> Timestamp,
+        slot -> Int8,
     }
 }
 
@@ -1387,6 +1407,7 @@ table! {
         escrow_payment_bump -> Int2,
         amount -> Int8,
         created_at -> Timestamp,
+        slot -> Int8,
     }
 }
 

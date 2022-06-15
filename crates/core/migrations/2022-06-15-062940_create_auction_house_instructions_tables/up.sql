@@ -15,7 +15,8 @@ create table buy_instructions (
     escrow_payment_bump                      smallint        not null,
     buyer_price                              bigint          not null,
     token_size                               bigint          not null,
-    created_at                               timestamp       not null
+    created_at                               timestamp       not null,
+    slot                                     bigint          not null
 );
 
 create table public_buy_instructions (
@@ -35,7 +36,8 @@ create table public_buy_instructions (
     escrow_payment_bump                      smallint        not null,
     buyer_price                              bigint          not null,
     token_size                               bigint          not null,
-    created_at                               timestamp       not null
+    created_at                               timestamp       not null,
+    slot                                     bigint          not null
 );
 
 create table sell_instructions (
@@ -54,7 +56,8 @@ create table sell_instructions (
     program_as_signer_bump                   smallint        not null,
     buyer_price                              bigint          not null,
     token_size                               bigint          not null,
-    created_at                               timestamp       not null
+    created_at                               timestamp       not null,
+    slot                                     bigint          not null
 );
 
 create table execute_sale_instructions (
@@ -81,7 +84,8 @@ create table execute_sale_instructions (
     program_as_signer_bump                   smallint        not null,
     buyer_price                              bigint          not null,
     token_size                               bigint          not null,
-    created_at                               timestamp       not null
+    created_at                               timestamp       not null,
+    slot                                     bigint          not null
 );
 
 create table cancel_instructions (
@@ -95,7 +99,8 @@ create table cancel_instructions (
     trade_state                              varchar(48)     not null,
     buyer_price                              bigint          not null,
     token_size                               bigint          not null,
-    created_at                               timestamp       not null
+    created_at                               timestamp       not null,
+    slot                                     bigint          not null
 );
 
 create table deposit_instructions (
@@ -110,7 +115,8 @@ create table deposit_instructions (
     auction_house_fee_account                varchar(48)     not null,
     escrow_payment_bump                      smallint        not null,
     amount                                   bigint          not null,
-    created_at                               timestamp       not null
+    created_at                               timestamp       not null,
+    slot                                     bigint          not null
 );
 
 create table withdraw_instructions (
@@ -124,7 +130,8 @@ create table withdraw_instructions (
     auction_house_fee_account                varchar(48)     not null,
     escrow_payment_bump                      smallint        not null,
     amount                                   bigint          not null,
-    created_at                               timestamp       not null
+    created_at                               timestamp       not null,
+    slot                                     bigint          not null
 );
 
 create table withdraw_from_fee_instructions (
@@ -134,7 +141,8 @@ create table withdraw_from_fee_instructions (
     auction_house_fee_account                varchar(48)     not null,
     auction_house                            varchar(48)     not null,
     amount                                   bigint          not null,
-    created_at                               timestamp       not null
+    created_at                               timestamp       not null,
+    slot                                     bigint          not null
 );
 
 create table withdraw_from_treasury_instructions (
@@ -145,5 +153,54 @@ create table withdraw_from_treasury_instructions (
     auction_house_treasury                   varchar(48)     not null,
     auction_house                            varchar(48)     not null,
     amount                                   bigint          not null,
-    created_at                               timestamp       not null
+    created_at                               timestamp       not null,
+    slot                                     bigint          not null
 );
+
+create function check_slot() returns trigger
+  language plpgsql
+  as $EOF$
+begin
+  if old.slot > new.slot then
+    return old;
+  end if;
+
+  return new;
+end
+$EOF$;
+
+create trigger buy_ins_check_slot
+before update on buy_instructions for row
+execute function check_slot();
+
+create trigger public_buy_ins_check_slot
+before update on public_buy_instructions for row
+execute function check_slot();
+
+create trigger sell_ins_check_slot
+before update on sell_instructions for row
+execute function check_slot();
+
+create trigger cancel_ins_check_slot
+before update on cancel_instructions for row
+execute function check_slot();
+
+create trigger execute_sale_ins_check_slot
+before update on execute_sale_instructions for row
+execute function check_slot();
+
+create trigger deposit_ins_check_slot
+before update on deposit_instructions for row
+execute function check_slot();
+
+create trigger withdraw_from_fee_ins_check_slot
+before update on withdraw_from_fee_instructions for row
+execute function check_slot();
+
+create trigger withdraw_from_treasury_ins_check_slot
+before update on withdraw_from_treasury_instructions for row
+execute function check_slot();
+
+create trigger withdraw_ins_check_slot
+before update on withdraw_instructions for row
+execute function check_slot();
