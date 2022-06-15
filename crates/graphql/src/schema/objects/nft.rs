@@ -468,6 +468,13 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
+    pub async fn collections(&self, ctx: &AppContext) -> FieldResult<Vec<CollectionNft>> {
+        ctx.nft_collections_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
     pub async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
         if let Some(slot) = self.slot {
             let shared = ctx.shared.clone();
@@ -486,6 +493,73 @@ If no value is provided, it will return XSmall")))]
         } else {
             Ok(None)
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CollectionNft(Nft);
+
+impl TryFrom<models::Nft> for CollectionNft {
+    type Error = <Nft as TryFrom<models::Nft>>::Error;
+
+    fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
+        value.try_into().map(Self)
+    }
+}
+
+impl<S: juniper::ScalarValue> juniper::marker::IsOutputType<S> for CollectionNft {
+    fn mark() {
+        <Nft as juniper::marker::IsOutputType<S>>::mark();
+    }
+}
+
+impl<S: juniper::ScalarValue> juniper::marker::GraphQLObjectType<S> for CollectionNft {}
+
+impl<S: juniper::ScalarValue> juniper::GraphQLType<S> for CollectionNft {
+    fn name(_: &()) -> Option<&'static str> {
+        Some("CollectionNft")
+    }
+
+    fn meta<'r>(inf: &(), reg: &mut juniper::Registry<'r, S>) -> juniper::meta::MetaType<'r, S>
+    where
+        S: 'r,
+    {
+        <Nft as juniper::GraphQLType<S>>::meta(inf, reg)
+    }
+}
+
+impl<S: juniper::ScalarValue> juniper::GraphQLValue<S> for CollectionNft {
+    type Context = AppContext;
+    type TypeInfo = ();
+
+    fn type_name<'i>(&self, _: &'i ()) -> Option<&'i str> {
+        Some("CollectionNft")
+    }
+
+    fn resolve_field(
+        &self,
+        inf: &(),
+        field: &str,
+        args: &juniper::Arguments<'_, S>,
+        exec: &juniper::Executor<'_, '_, AppContext, S>,
+    ) -> juniper::ExecutionResult<S> {
+        self.0.resolve_field(inf, field, args, exec)
+    }
+
+    fn concrete_type_name(&self, _: &AppContext, _: &()) -> String {
+        "CollectionNft".into()
+    }
+}
+
+impl<S: juniper::ScalarValue + Send + Sync> juniper::GraphQLValueAsync<S> for CollectionNft {
+    fn resolve_field_async<'a>(
+        &'a self,
+        inf: &'a (),
+        field: &'a str,
+        args: &'a juniper::Arguments<'_, S>,
+        exec: &'a juniper::Executor<'_, '_, AppContext, S>,
+    ) -> juniper::BoxFuture<'a, juniper::ExecutionResult<S>> {
+        self.0.resolve_field_async(inf, field, args, exec)
     }
 }
 
