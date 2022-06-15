@@ -703,16 +703,11 @@ impl NftsStats {
         Ok(count.try_into()?)
     }
 
-    #[graphql(description = "The total number of listings with active offers")]
-    fn listings_with_active_offers(&self, context: &AppContext) -> FieldResult<i32> {
+    #[graphql(description = "The total number of NFTs with active offers")]
+    fn nfts_with_active_offers(&self, context: &AppContext) -> FieldResult<i32> {
         let conn = context.shared.db.get()?;
 
-        let count: i64 = listing_receipts::table
-            .inner_join(
-                bid_receipts::table.on(bid_receipts::metadata.eq(listing_receipts::metadata)),
-            )
-            .filter(listing_receipts::purchase_receipt.is_null())
-            .filter(listing_receipts::canceled_at.is_null())
+        let count: i64 = bid_receipts::table
             .filter(bid_receipts::purchase_receipt.is_null())
             .filter(bid_receipts::canceled_at.is_null())
             .count()
