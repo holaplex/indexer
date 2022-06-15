@@ -27,7 +27,7 @@ use tables::{
     metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
 };
 
-use super::prelude::*;
+use super::{objects::profile::ProfilesStats, prelude::*};
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
@@ -583,6 +583,11 @@ impl QueryRoot {
             .into_iter()
             .map(|r| r.result.into())
             .collect::<Vec<Wallet>>())
+    }
+
+    #[graphql(description = "returns stats about profiles")]
+    async fn profiles_stats(&self) -> FieldResult<ProfilesStats> {
+        Ok(ProfilesStats {})
     }
 
     #[graphql(
