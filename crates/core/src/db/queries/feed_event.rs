@@ -109,6 +109,7 @@ pub fn list(
     exclude_types: Option<Vec<EventType>>,
 ) -> Result<Vec<CompleteFeedEvent>> {
     let mut events_query = Query::select()
+        .distinct()
         .columns(vec![
             (FeedEvents::Table, FeedEvents::Id),
             (FeedEvents::Table, FeedEvents::CreatedAt),
