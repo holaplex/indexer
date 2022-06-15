@@ -15,7 +15,7 @@ use objects::{
     listing::{Listing, ListingColumns, ListingRow},
     listing_receipt::ListingReceipt,
     marketplace::Marketplace,
-    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator},
+    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
     profile::TwitterProfile,
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
@@ -27,7 +27,7 @@ use tables::{
     metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
 };
 
-use super::prelude::*;
+use super::{prelude::*};
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
@@ -364,6 +364,10 @@ impl QueryRoot {
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
+    }
+
+    fn nfts_stats(&self) -> FieldResult<NftsStats> {
+        Ok(NftsStats {})
     }
 
     fn featured_listings(
