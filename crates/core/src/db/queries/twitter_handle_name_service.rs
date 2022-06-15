@@ -42,5 +42,5 @@ pub fn get_multiple(conn: &Connection, addresses: Vec<String>) -> Result<Vec<Twi
         .filter(twitter_handle_name_services::wallet_address.eq(any(addresses)))
         .select(twitter_handle_name_services::all_columns)
         .load(conn)
-        .context("Failed to load twitter handle")
+        .context("Failed to load twitter handles")
 }
