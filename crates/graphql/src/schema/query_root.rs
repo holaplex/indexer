@@ -439,7 +439,12 @@ impl QueryRoot {
         let now = Local::now().naive_utc();
         let conn = context.shared.db.get().context("Failed to connect to DB")?;
 
+        // this had to be separated from the additional query filter because rust 
+        // couldnt pass the query through to the async block this creates.
         let nft_metadata_addresses: Option<Vec<String>> = match term {
+            // the magic number for limit is just to ensure we can get enough 
+            // addresses that there's a good chance of finding listings that match
+            // with the other query requirements
             Some(term) => {
                 let search = &context.shared.search;
                 let search_result = search
