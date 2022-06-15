@@ -1,7 +1,7 @@
 use indexer_core::db::{
     expression::dsl::all,
     queries::{self, feed_event::EventType},
-    tables::twitter_handle_name_services,
+    tables::{listing_metadatas, twitter_handle_name_services},
 };
 use objects::{
     auction_house::AuctionHouse,
@@ -428,10 +428,12 @@ impl QueryRoot {
         Ok(Wallet::new(address, twitter_handle))
     }
 
-    fn listings(
+    async fn listings(
         &self,
         context: &AppContext,
-        #[graphql(description = "Query limit")] limit: Option<i32>,
+        #[graphql(description = "Return only listings whose NFTs' metadatas contain this term")]
+        term: Option<String>,
+        #[graphql(description = "Query limit")] limit: i32,
         #[graphql(description = "Query offset")] offset: Option<i32>,
     ) -> FieldResult<Vec<Listing>> {
         let now = Local::now().naive_utc();
@@ -454,14 +456,36 @@ impl QueryRoot {
                 ),
             )
             .select(ListingColumns::default())
+            .limit(limit.into())
+            .offset(offset.unwrap_or(0).into())
             .into_boxed();
 
-        if let Some(limit) = limit {
-            query = query.limit(limit.into());
-        }
+        if let Some(term) = term {
+            let search = &context.shared.search;
+            let search_result = search
+                .index("metadatas")
+                .search()
+                .with_query(&term)
+                .with_limit(limit.try_into()?)
+                .with_offset(offset.unwrap_or(0).try_into()?)
+                .execute::<Value>()
+                .await
+                .context("failed to load search result for metadata json")?
+                .hits;
 
-        if let Some(offset) = offset {
-            query = query.offset(offset.into());
+            let nft_metadata_addresses: Vec<String> = search_result
+                .into_iter()
+                .map(|r| MetadataJson::from(r.result).address)
+                .collect();
+
+            let listings_query =
+                listing_metadatas::table
+                    .select(listing_metadatas::listing_address)
+                    .inner_join(metadata_jsons::table.on(
+                        listing_metadatas::metadata_address.eq(metadata_jsons::metadata_address),
+                    ))
+                    .filter(metadata_jsons::metadata_address.eq(any(nft_metadata_addresses)));
+            query = query.filter(auction_datas::address.eq(any(listings_query)));
         }
 
         let rows: Vec<ListingRow> = query.load(&conn).context("Failed to load listings")?;
