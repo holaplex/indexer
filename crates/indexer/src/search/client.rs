@@ -1,9 +1,18 @@
-use std::{sync::Arc, time::Duration};
+use std::{collections::BinaryHeap, sync::Arc, time::Duration};
 
 use crossbeam::queue::SegQueue;
-use indexer_core::{clap, hash::HashMap, meilisearch, meilisearch::client::Client as MeiliClient};
+use indexer_core::{
+    clap,
+    hash::HashMap,
+    meilisearch::{
+        self,
+        client::Client as MeiliClient,
+        tasks::{DocumentAddition, ProcessedTask, Task, TaskType},
+    },
+    util,
+};
 use tokio::{
-    sync::{mpsc, oneshot, RwLock},
+    sync::{mpsc, oneshot, Mutex, RwLock},
     task,
 };
 
@@ -16,12 +25,37 @@ pub struct Args {
     #[clap(long, env, default_value_t = 1000)]
     upsert_batch: usize,
 
-    /// Maximum commit interval between upserts, in seconds
-    #[clap(long, env, default_value_t = 30.0)]
-    upsert_interval: f64,
+    /// Sample size to use when approximating upsert interval from completed
+    /// tasks
+    #[clap(long, env, default_value_t = 30)]
+    upsert_interval_sample_size: usize,
+
+    /// Don't perform any upserts, just print what would be upserted
+    #[clap(long, short = 'n', env)]
+    dry_run: bool,
 
     #[clap(flatten)]
     meili: meilisearch::Args,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct UpsertTimingDatapoint {
+    finished_at: DateTime<Utc>,
+    duration: Duration,
+}
+
+impl std::cmp::Ord for UpsertTimingDatapoint {
+    fn cmp(&self, rhs: &Self) -> std::cmp::Ordering {
+        rhs.finished_at
+            .cmp(&self.finished_at)
+            .then_with(|| rhs.duration.cmp(&self.duration))
+    }
+}
+
+impl std::cmp::PartialOrd for UpsertTimingDatapoint {
+    fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(rhs))
+    }
 }
 
 /// Wrapper for handling network logic
@@ -30,6 +64,7 @@ pub struct Client {
     db: Pool,
     upsert_batch: usize,
     upsert_queue: RwLock<SegQueue<(String, super::Document)>>,
+    upsert_timing_set: Mutex<BinaryHeap<UpsertTimingDatapoint>>,
     trigger_upsert: mpsc::Sender<()>,
 }
 
@@ -44,12 +79,12 @@ impl Client {
     ) -> Result<(Arc<Self>, task::JoinHandle<()>, oneshot::Sender<()>)> {
         let Args {
             upsert_batch,
-            upsert_interval,
+            upsert_interval_sample_size,
+            dry_run,
             meili,
         } = args;
 
         let meili = meili.into_client();
-        let upsert_interval = Duration::from_secs_f64(upsert_interval);
 
         create_index(meili.clone(), "metadatas", "id")
             .await
@@ -66,12 +101,15 @@ impl Client {
             db,
             upsert_batch,
             upsert_queue: RwLock::new(SegQueue::new()),
+            upsert_timing_set: Mutex::new(BinaryHeap::new()),
             trigger_upsert,
         });
 
         let upsert_task = task::spawn(arc_self.clone().run_upserts(
             meili.clone(),
-            upsert_interval,
+            upsert_interval_sample_size,
+            upsert_batch,
+            dry_run,
             upsert_rx,
             stop_rx,
         ));
@@ -82,13 +120,22 @@ impl Client {
     async fn run_upserts(
         self: Arc<Self>,
         meili: MeiliClient,
-        interval: Duration,
+        interval_sample_size: usize,
+        batch_size: usize,
+        dry_run: bool,
         mut rx: mpsc::Receiver<()>,
         mut stop_rx: oneshot::Receiver<()>,
     ) {
         loop {
             match self
-                .try_run_upserts(meili.clone(), interval, &mut rx, &mut stop_rx)
+                .try_run_upserts(
+                    meili.clone(),
+                    interval_sample_size,
+                    batch_size,
+                    dry_run,
+                    &mut rx,
+                    &mut stop_rx,
+                )
                 .await
             {
                 Ok(()) => break,
@@ -101,10 +148,104 @@ impl Client {
         }
     }
 
+    async fn update_upsert_interval(
+        meili: &MeiliClient,
+        set: &mut BinaryHeap<UpsertTimingDatapoint>,
+        sample_size: usize,
+        batch_size: usize,
+    ) -> Result<Duration> {
+        let tasks = meili
+            .get_tasks()
+            .await
+            .context("Failed to get Meilisearch task list")?;
+
+        let cutoff = set.peek().map(|u| u.finished_at);
+        debug!("Cutoff time for task sampling: {:?}", cutoff);
+
+        set.extend(
+            tasks
+                .into_iter()
+                .filter_map(|task| {
+                    let ProcessedTask {
+                        duration,
+                        finished_at,
+                        update_type,
+                        ..
+                    } = match task {
+                        Task::Succeeded { content } => content,
+                        _ => return None,
+                    };
+
+                    // Reject outliers or non-upsert tasks
+                    match update_type {
+                        TaskType::DocumentAddition {
+                            details:
+                                Some(DocumentAddition {
+                                    indexed_documents: Some(count),
+                                    ..
+                                }),
+                        } if count >= batch_size / 2 => (),
+                        _ => return None,
+                    }
+
+                    let finished_at = finished_at.unix_timestamp_nanos();
+                    let finished_at = DateTime::from_utc(
+                        NaiveDateTime::from_timestamp_opt(
+                            (finished_at / 1_000_000_000).try_into().ok()?,
+                            finished_at.rem_euclid(1_000_000_000).try_into().ok()?,
+                        )?,
+                        Utc,
+                    );
+
+                    Some(UpsertTimingDatapoint {
+                        finished_at,
+                        duration,
+                    })
+                })
+                .take_while(|u| cutoff.as_ref().map_or(true, |c| &u.finished_at > c)),
+        );
+
+        while set.len() > sample_size {
+            set.pop();
+        }
+
+        let mut times: Vec<_> = set.iter().map(|u| u.duration).collect();
+        times.sort_unstable();
+
+        trace!("Timing set: {:#?}", set);
+        trace!("Times: {:#?}", times);
+
+        let interval;
+
+        {
+            #![allow(
+                clippy::cast_possible_truncation,
+                clippy::cast_precision_loss,
+                clippy::cast_sign_loss
+            )]
+
+            interval = times
+                .get((times.len() as f64 * 0.75).round() as usize)
+                .or_else(|| times.get(0))
+                .copied()
+                .unwrap_or_else(|| Duration::from_secs(30));
+        }
+
+        debug!(
+            "Selected upsert interval: {}",
+            chrono::Duration::from_std(interval)
+                .map_or_else(|_| "???".into(), util::duration_hhmmssfff)
+        );
+
+        Ok(interval)
+    }
+
     async fn try_run_upserts(
         &self,
         meili: MeiliClient,
-        interval: Duration,
+        interval_sample_size: usize,
+        batch_size: usize,
+        dry_run: bool,
         rx: &mut mpsc::Receiver<()>,
         mut stop_rx: &mut oneshot::Receiver<()>,
     ) -> Result<()> {
@@ -114,10 +255,23 @@ impl Client {
             Tick,
         }
 
+        let mut timing_set = self
+            .upsert_timing_set
+            .try_lock()
+            .context("Deadlock detected on upsert timing set")?;
+
         let mut lock_if_stopping = None;
 
         let stop_reason = loop {
             use futures_util::StreamExt;
+
+            let interval = Self::update_upsert_interval(
+                &meili,
+                &mut *timing_set,
+                interval_sample_size,
+                batch_size,
+            )
+            .await?;
 
             let evt = tokio::select! {
                 o = rx.recv() => Event::Rx(o),
@@ -168,8 +322,13 @@ impl Client {
                     idx
                 );
 
-                let meili = meili.clone();
-                futures.push(async move { meili.index(idx).add_or_replace(&*docs, None).await });
+                if dry_run {
+                    info!("Upsert to {:?} of {:#?}", idx, serde_json::to_value(&docs));
+                } else {
+                    let meili = meili.clone();
+                    futures
+                        .push(async move { meili.index(idx).add_or_replace(&*docs, None).await });
+                }
             }
 
             while let Some(res) = futures.next().await {
