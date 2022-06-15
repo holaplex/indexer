@@ -437,7 +437,30 @@ impl QueryRoot {
         #[graphql(description = "Query offset")] offset: Option<i32>,
     ) -> FieldResult<Vec<Listing>> {
         let now = Local::now().naive_utc();
-        let conn = context.shared.db.get()?;
+        let conn = context.shared.db.get().context("Failed to connect to DB")?;
+
+        let nft_metadata_addresses: Option<Vec<String>> = match term {
+            Some(term) => {
+                let search = &context.shared.search;
+                let search_result = search
+                    .index("metadatas")
+                    .search()
+                    .with_query(&term)
+                    .with_limit(10000)
+                    .execute::<Value>()
+                    .await
+                    .context("failed to load search result for metadata json")?
+                    .hits;
+
+                Some(
+                    search_result
+                        .into_iter()
+                        .map(|r| MetadataJson::from(r.result).address)
+                        .collect(),
+                )
+            },
+            None => None,
+        };
 
         let mut query = auction_caches::table
             .inner_join(
@@ -460,31 +483,17 @@ impl QueryRoot {
             .offset(offset.unwrap_or(0).into())
             .into_boxed();
 
-        if let Some(term) = term {
-            let search = &context.shared.search;
-            let search_result = search
-                .index("metadatas")
-                .search()
-                .with_query(&term)
-                .with_limit(limit.try_into()?)
-                .with_offset(offset.unwrap_or(0).try_into()?)
-                .execute::<Value>()
-                .await
-                .context("failed to load search result for metadata json")?
-                .hits;
-
-            let nft_metadata_addresses: Vec<String> = search_result
-                .into_iter()
-                .map(|r| MetadataJson::from(r.result).address)
-                .collect();
-
+        if let Some(nft_metadata_addresses) = nft_metadata_addresses {
             let listings_query =
-                listing_metadatas::table
+            listing_metadatas::table
                     .select(listing_metadatas::listing_address)
+                    .distinct()
                     .inner_join(metadata_jsons::table.on(
-                        listing_metadatas::metadata_address.eq(metadata_jsons::metadata_address),
+                        metadata_jsons::metadata_address.eq(listing_metadatas::metadata_address),
                     ))
                     .filter(metadata_jsons::metadata_address.eq(any(nft_metadata_addresses)));
+
+
             query = query.filter(auction_datas::address.eq(any(listings_query)));
         }
 
