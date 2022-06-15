@@ -12,7 +12,7 @@ use indexer_core::{
     util,
 };
 use tokio::{
-    sync::{mpsc, oneshot, Mutex, RwLock},
+    sync::{mpsc, oneshot, RwLock},
     task,
 };
 
@@ -38,33 +38,12 @@ pub struct Args {
     meili: meilisearch::Args,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct UpsertTimingDatapoint {
-    finished_at: DateTime<Utc>,
-    duration: Duration,
-}
-
-impl std::cmp::Ord for UpsertTimingDatapoint {
-    fn cmp(&self, rhs: &Self) -> std::cmp::Ordering {
-        rhs.finished_at
-            .cmp(&self.finished_at)
-            .then_with(|| rhs.duration.cmp(&self.duration))
-    }
-}
-
-impl std::cmp::PartialOrd for UpsertTimingDatapoint {
-    fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(rhs))
-    }
-}
-
 /// Wrapper for handling network logic
 #[derive(Debug)]
 pub struct Client {
     db: Pool,
     upsert_batch: usize,
     upsert_queue: RwLock<SegQueue<(String, super::Document)>>,
-    upsert_timing_set: Mutex<BinaryHeap<UpsertTimingDatapoint>>,
     trigger_upsert: mpsc::Sender<()>,
 }
 
@@ -101,7 +80,6 @@ impl Client {
             db,
             upsert_batch,
             upsert_queue: RwLock::new(SegQueue::new()),
-            upsert_timing_set: Mutex::new(BinaryHeap::new()),
             trigger_upsert,
         });
 
@@ -150,70 +128,90 @@ impl Client {
 
     async fn update_upsert_interval(
         meili: &MeiliClient,
-        set: &mut BinaryHeap<UpsertTimingDatapoint>,
         sample_size: usize,
         batch_size: usize,
     ) -> Result<Duration> {
+        #[derive(Debug, Clone)]
+        struct UpsertTimingDatapoint {
+            finished_at: DateTime<Utc>,
+            duration: Duration,
+        }
+
+        impl std::cmp::PartialEq<UpsertTimingDatapoint> for UpsertTimingDatapoint {
+            fn eq(&self, rhs: &Self) -> bool {
+                self.finished_at.eq(&rhs.finished_at) && self.duration.eq(&rhs.duration)
+            }
+        }
+
+        impl std::cmp::Eq for UpsertTimingDatapoint {}
+
+        impl std::cmp::Ord for UpsertTimingDatapoint {
+            fn cmp(&self, rhs: &Self) -> std::cmp::Ordering {
+                self.finished_at
+                    .cmp(&rhs.finished_at)
+                    .then_with(|| self.duration.cmp(&rhs.duration))
+            }
+        }
+
+        impl std::cmp::PartialOrd for UpsertTimingDatapoint {
+            fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
+                Some(self.cmp(rhs))
+            }
+        }
+
+        let start = Local::now();
+
         let tasks = meili
             .get_tasks()
             .await
             .context("Failed to get Meilisearch task list")?;
 
-        let cutoff = set.peek().map(|u| u.finished_at);
-        debug!("Cutoff time for task sampling: {:?}", cutoff);
+        let mut set: BinaryHeap<_> = tasks
+            .into_iter()
+            .filter_map(|task| {
+                let ProcessedTask {
+                    duration,
+                    finished_at,
+                    update_type,
+                    ..
+                } = match task {
+                    Task::Succeeded { content } => content,
+                    _ => return None,
+                };
 
-        set.extend(
-            tasks
-                .into_iter()
-                .filter_map(|task| {
-                    let ProcessedTask {
-                        duration,
-                        finished_at,
-                        update_type,
-                        ..
-                    } = match task {
-                        Task::Succeeded { content } => content,
-                        _ => return None,
-                    };
+                // Reject outliers or non-upsert tasks
+                match update_type {
+                    TaskType::DocumentAddition {
+                        details:
+                            Some(DocumentAddition {
+                                indexed_documents: Some(count),
+                                ..
+                            }),
+                    } if count >= batch_size / 2 => (),
+                    _ => return None,
+                }
 
-                    // Reject outliers or non-upsert tasks
-                    match update_type {
-                        TaskType::DocumentAddition {
-                            details:
-                                Some(DocumentAddition {
-                                    indexed_documents: Some(count),
-                                    ..
-                                }),
-                        } if count >= batch_size / 2 => (),
-                        _ => return None,
-                    }
+                let finished_at = finished_at.unix_timestamp_nanos();
+                let finished_at = DateTime::from_utc(
+                    NaiveDateTime::from_timestamp_opt(
+                        (finished_at / 1_000_000_000).try_into().ok()?,
+                        finished_at.rem_euclid(1_000_000_000).try_into().ok()?,
+                    )?,
+                    Utc,
+                );
 
-                    let finished_at = finished_at.unix_timestamp_nanos();
-                    let finished_at = DateTime::from_utc(
-                        NaiveDateTime::from_timestamp_opt(
-                            (finished_at / 1_000_000_000).try_into().ok()?,
-                            finished_at.rem_euclid(1_000_000_000).try_into().ok()?,
-                        )?,
-                        Utc,
-                    );
-
-                    Some(UpsertTimingDatapoint {
-                        finished_at,
-                        duration,
-                    })
+                Some(UpsertTimingDatapoint {
+                    finished_at,
+                    duration,
                 })
-                .take_while(|u| cutoff.as_ref().map_or(true, |c| &u.finished_at > c)),
-        );
+            })
+            .collect();
 
-        while set.len() > sample_size {
-            set.pop();
-        }
-
-        let mut times: Vec<_> = set.iter().map(|u| u.duration).collect();
+        let mut times: Vec<_> = std::iter::from_fn(|| set.pop())
+            .take(sample_size)
+            .map(|u| u.duration)
+            .collect();
         times.sort_unstable();
-
-        trace!("Timing set: {:#?}", set);
-        trace!("Times: {:#?}", times);
 
         let interval;
 
@@ -237,6 +235,15 @@ impl Client {
                 .map_or_else(|_| "???".into(), util::duration_hhmmssfff)
         );
 
+        let elapsed = Local::now() - start;
+
+        if elapsed > chrono::Duration::seconds(30) {
+            warn!(
+                "Calculating interval took {}",
+                util::duration_hhmmssfff(elapsed)
+            );
+        }
+
         Ok(interval)
     }
 
@@ -255,23 +262,13 @@ impl Client {
             Tick,
         }
 
-        let mut timing_set = self
-            .upsert_timing_set
-            .try_lock()
-            .context("Deadlock detected on upsert timing set")?;
-
         let mut lock_if_stopping = None;
 
         let stop_reason = loop {
             use futures_util::StreamExt;
 
-            let interval = Self::update_upsert_interval(
-                &meili,
-                &mut *timing_set,
-                interval_sample_size,
-                batch_size,
-            )
-            .await?;
+            let interval =
+                Self::update_upsert_interval(&meili, interval_sample_size, batch_size).await?;
 
             let evt = tokio::select! {
                 o = rx.recv() => Event::Rx(o),
