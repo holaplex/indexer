@@ -45,7 +45,7 @@ pub(crate) async fn process_listing_receipt(
         trade_state_bump: listing.trade_state_bump.into(),
         created_at: util::unix_timestamp(listing.created_at)?,
         canceled_at: listing.canceled_at.map(util::unix_timestamp).transpose()?,
-        slot : slot.try_into()?,
+        slot: slot.try_into()?,
         write_version: write_version.try_into()?,
     };
 
@@ -130,7 +130,7 @@ pub(crate) async fn process_purchase_receipt(
         price: purchase.price.try_into()?,
         bump: purchase.bump.into(),
         created_at: util::unix_timestamp(purchase.created_at)?,
-        slot : slot.try_into()?,
+        slot: slot.try_into()?,
         write_version: write_version.try_into()?,
     };
 
@@ -226,7 +226,7 @@ pub(crate) async fn process_bid_receipt(
             .canceled_at
             .map(util::unix_timestamp)
             .transpose()?,
-        slot : slot.try_into()?,
+        slot: slot.try_into()?,
         write_version: write_version.try_into()?,
     };
 
@@ -328,8 +328,8 @@ async fn upsert_into_offers_table<'a>(client: &Client, data: DbBidReceipt<'stati
         trade_state_bump: data.trade_state_bump,
         created_at: data.created_at,
         canceled_at: data.canceled_at,
-        slot : data.slot,
-        write_version: data.write_version,
+        slot: data.slot,
+        write_version: Some(data.write_version),
     };
 
     client
@@ -361,8 +361,8 @@ async fn upsert_into_purchases_table<'a>(
         token_size: data.token_size,
         price: data.price,
         created_at: data.created_at,
-        slot : data.slot,
-        write_version: data.write_version,
+        slot: data.slot,
+        write_version: Some(data.write_version),
     };
 
     client
@@ -428,8 +428,8 @@ async fn upsert_into_listings_table<'a>(
         trade_state_bump: data.trade_state_bump,
         created_at: data.created_at,
         canceled_at: None,
-        slot : data.slot,
-        write_version: data.write_version,
+        slot: data.slot,
+        write_version: Some(data.write_version),
     };
 
     client

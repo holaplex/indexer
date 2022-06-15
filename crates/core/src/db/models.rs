@@ -2284,7 +2284,7 @@ pub struct Offer<'a> {
     /// Solana slot number
     pub slot: i64,
     /// Solana write_version
-    pub write_version: i64,
+    pub write_version: Option<i64>,
 }
 
 /// A row in the `purchases` table
@@ -2313,7 +2313,7 @@ pub struct Purchase<'a> {
     /// Solana slot number
     pub slot: i64,
     /// Solana write_version
-    pub write_version: i64,
+    pub write_version: Option<i64>,
 }
 
 /// A row in the `listings` table
@@ -2348,5 +2348,5 @@ pub struct Listing<'a> {
     /// Solana slot number
     pub slot: i64,
     /// Solana write_version
-    pub write_version: i64,
+    pub write_version: Option<i64>,
 }

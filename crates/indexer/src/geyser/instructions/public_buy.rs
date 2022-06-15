@@ -17,7 +17,12 @@ use mpl_auction_house::instruction::PublicBuy;
 use super::Client;
 use crate::prelude::*;
 
-pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -> Result<()> {
+pub(crate) async fn process(
+    client: &Client,
+    data: &[u8],
+    accounts: &[Pubkey],
+    slot: u64,
+) -> Result<()> {
     let params = PublicBuy::try_from_slice(data).context("failed to deserialize")?;
 
     if accounts.len() != 14 {
@@ -44,6 +49,7 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
         buyer_price: params.buyer_price.try_into()?,
         token_size: params.token_size.try_into()?,
         created_at: Utc::now().naive_utc(),
+        slot: slot.try_into()?,
     };
 
     upsert_into_offers_table(client, row.clone())
@@ -79,6 +85,8 @@ async fn upsert_into_offers_table<'a>(
         trade_state_bump: data.trade_state_bump,
         created_at: data.created_at,
         canceled_at: None,
+        slot: data.slot,
+        write_version: None,
     };
 
     client

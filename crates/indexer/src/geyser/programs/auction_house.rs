@@ -40,14 +40,28 @@ async fn process_listing_receipt(client: &Client, update: AccountUpdate) -> Resu
         ListingReceipt::try_deserialize(&mut update.data.as_slice())
             .context("Failed to deserialize listing receipt data")?;
 
-    receipt::process_listing_receipt(client, update.key, listing_receipt, update.slot, update.write_version).await
+    receipt::process_listing_receipt(
+        client,
+        update.key,
+        listing_receipt,
+        update.slot,
+        update.write_version,
+    )
+    .await
 }
 
 async fn process_bid_receipt(client: &Client, update: AccountUpdate) -> Result<()> {
     let bid_receipt: BidReceipt = BidReceipt::try_deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize bid receipt data")?;
 
-    receipt::process_bid_receipt(client, update.key, bid_receipt, update.slot, update.write_version).await
+    receipt::process_bid_receipt(
+        client,
+        update.key,
+        bid_receipt,
+        update.slot,
+        update.write_version,
+    )
+    .await
 }
 
 async fn process_purchase_receipt(client: &Client, update: AccountUpdate) -> Result<()> {
@@ -55,7 +69,14 @@ async fn process_purchase_receipt(client: &Client, update: AccountUpdate) -> Res
         PurchaseReceipt::try_deserialize(&mut update.data.as_slice())
             .context("Failed to deserialize purchase receipt data")?;
 
-    receipt::process_purchase_receipt(client, update.key, purchase_receipt, update.slot, update.write_version).await
+    receipt::process_purchase_receipt(
+        client,
+        update.key,
+        purchase_receipt,
+        update.slot,
+        update.write_version,
+    )
+    .await
 }
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
@@ -72,20 +93,23 @@ pub(crate) async fn process_instruction(
     client: &Client,
     data: &[u8],
     accounts: &[Pubkey],
+    slot: u64,
 ) -> Result<()> {
     let discriminator: [u8; 8] = data[..8].try_into()?;
     let params = data[8..].to_vec();
 
     match discriminator {
-        BUY => buy::process(client, &params, accounts).await,
-        PUBLIC_BUY => public_buy::process(client, &params, accounts).await,
-        SELL => sell::process(client, &params, accounts).await,
-        EXECUTE_SALE => execute_sale::process(client, &params, accounts).await,
-        CANCEL => cancel::process(client, &params, accounts).await,
-        DEPOSIT => deposit::process(client, &params, accounts).await,
-        WITHDRAW => withdraw::process(client, &params, accounts).await,
-        WITHDRAW_FROM_FEE => withdraw_from_fee::process(client, &params, accounts).await,
-        WITHDRAW_FROM_TREASURY => withdraw_from_treasury::process(client, &params, accounts).await,
+        BUY => buy::process(client, &params, accounts, slot).await,
+        PUBLIC_BUY => public_buy::process(client, &params, accounts, slot).await,
+        SELL => sell::process(client, &params, accounts, slot).await,
+        EXECUTE_SALE => execute_sale::process(client, &params, accounts, slot).await,
+        CANCEL => cancel::process(client, &params, accounts, slot).await,
+        DEPOSIT => deposit::process(client, &params, accounts, slot).await,
+        WITHDRAW => withdraw::process(client, &params, accounts, slot).await,
+        WITHDRAW_FROM_FEE => withdraw_from_fee::process(client, &params, accounts, slot).await,
+        WITHDRAW_FROM_TREASURY => {
+            withdraw_from_treasury::process(client, &params, accounts, slot).await
+        },
         _ => Ok(()),
     }
 }

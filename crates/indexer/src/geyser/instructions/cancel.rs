@@ -11,7 +11,12 @@ use mpl_auction_house::instruction::Cancel;
 use super::Client;
 use crate::prelude::*;
 
-pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -> Result<()> {
+pub(crate) async fn process(
+    client: &Client,
+    data: &[u8],
+    accounts: &[Pubkey],
+    slot: u64,
+) -> Result<()> {
     let params = Cancel::try_from_slice(data).context("failed to deserialize")?;
 
     if accounts.len() != 8 {
@@ -32,6 +37,7 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
         buyer_price: params.buyer_price.try_into()?,
         token_size: params.token_size.try_into()?,
         created_at: Utc::now().naive_utc(),
+        slot: slot.try_into()?,
     };
 
     client

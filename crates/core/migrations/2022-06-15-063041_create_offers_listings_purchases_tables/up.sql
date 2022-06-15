@@ -12,7 +12,7 @@ create table offers (
     created_at              timestamp       not null,
     canceled_at             timestamp,
     slot                    bigint          not null default -1,
-    write_version           bigint          not null default -1,
+    write_version           bigint,
 
     constraint offers_unique_fields unique 
     (trade_state, auction_house, buyer, metadata, price, token_size, trade_state_bump)
@@ -31,7 +31,7 @@ create table purchases (
     price                   bigint          not null,
     created_at              timestamp       not null,
     slot                    bigint          not null default -1,
-    write_version           bigint          not null default -1,
+    write_version           bigint,
 
     constraint purchases_unique_fields unique 
     (buyer, seller, auction_house, metadata, token_size, price)
@@ -50,7 +50,7 @@ create table listings (
     created_at              timestamp       not null,
     canceled_at             timestamp,
     slot                    bigint          not null default -1,
-    write_version           bigint          not null default -1,
+    write_version           bigint,
 
     constraint listings_unique_fields unique 
     (trade_state, auction_house, seller, metadata, price, token_size, trade_state_bump)

@@ -5,7 +5,12 @@ use mpl_auction_house::instruction::Withdraw;
 use super::Client;
 use crate::prelude::*;
 
-pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -> Result<()> {
+pub(crate) async fn process(
+    client: &Client,
+    data: &[u8],
+    accounts: &[Pubkey],
+    slot: u64,
+) -> Result<()> {
     let params = Withdraw::try_from_slice(data).context("failed to deserialize")?;
 
     if accounts.len() != 11 {
@@ -26,6 +31,7 @@ pub(crate) async fn process(client: &Client, data: &[u8], accounts: &[Pubkey]) -
         escrow_payment_bump: params.escrow_payment_bump.try_into()?,
         amount: params.amount.try_into()?,
         created_at: Utc::now().naive_utc(),
+        slot: slot.try_into()?,
     };
 
     client
