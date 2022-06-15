@@ -23,7 +23,7 @@ pub(crate) async fn process(
 ) -> Result<()> {
     let params = ExecuteSale::try_from_slice(data).context("failed to deserialize")?;
 
-    if accounts.len() != 23 {
+    if accounts.len() < 21 {
         debug!("invalid accounts for ExecuteSaleInstruction");
         return Ok(());
     }
