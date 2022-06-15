@@ -229,7 +229,7 @@ impl Client {
                 .unwrap_or_else(|| Duration::from_secs(30));
         }
 
-        debug!(
+        info!(
             "Selected upsert interval: {}",
             chrono::Duration::from_std(interval)
                 .map_or_else(|_| "???".into(), util::duration_hhmmssfff)
