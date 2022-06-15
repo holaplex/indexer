@@ -12,7 +12,7 @@
 use std::sync::Arc;
 
 use actix_cors::Cors;
-use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer};
+use actix_web::{dev::ConnectionInfo, http, web, App, Error, HttpResponse, HttpServer};
 use indexer_core::{
     assets::AssetProxyArgs,
     chrono::{Duration, Local},
@@ -61,6 +61,9 @@ struct Opts {
 
     #[clap(long, env, use_value_delimiter(true))]
     featured_listings_seller_exclusions: Vec<String>,
+
+    #[clap(long, env, use_value_delimiter(true))]
+    marketplaces_store_address_exclusions: Vec<String>,
 }
 
 struct GraphiqlData {
@@ -82,6 +85,7 @@ pub(crate) struct SharedData {
     pub follow_wallets_exclusions: Vec<String>,
     pub featured_listings_auction_houses: Vec<String>,
     pub featured_listings_seller_exclusions: Vec<String>,
+    pub marketplaces_store_address_exclusions: Vec<String>,
 }
 
 #[allow(clippy::unused_async)]
@@ -106,6 +110,7 @@ async fn redirect_version(data: web::Data<RedirectData>) -> HttpResponse {
 async fn graphql(
     data: web::Data<SharedData>,
     req: web::Json<GraphQLRequest>,
+    conn: ConnectionInfo,
 ) -> Result<HttpResponse, Error> {
     let ctx = AppContext::new(data.clone().into_inner());
     let start = Local::now();
@@ -113,13 +118,37 @@ async fn graphql(
     let resp = req.execute(&data.schema, &ctx).await;
     let end = Local::now();
     let duration = end - start;
-    let formatted_duration = duration_hhmmssfff(duration);
-
+    info!(
+        "host={:?}, remote_addr={:?}, peer_addr={:?}",
+        conn.host(),
+        conn.realip_remote_addr().unwrap_or(&String::new()),
+        conn.peer_addr().unwrap_or(&String::new())
+    );
     if duration > Duration::milliseconds(5000) {
-        warn!(
-            "long graphql request query={:?}, duration={:?}",
-            req, formatted_duration
-        );
+        #[derive(serde::Deserialize)]
+        struct Data {
+            #[serde(default)]
+            query: serde_json::Value,
+            #[serde(default)]
+            operation_name: serde_json::Value,
+            #[serde(default)]
+            variables: serde_json::Value,
+        }
+
+        match serde_json::to_value(&req).and_then(serde_json::from_value) {
+            Ok(Data {
+                query,
+                operation_name,
+                variables,
+            }) => warn!(
+                "Long graphql request query={}, operation={:?}, variables={}, duration={}",
+                query,
+                operation_name,
+                variables,
+                duration_hhmmssfff(duration),
+            ),
+            Err(e) => error!("Failed to format long query for printing: {}", e),
+        }
     }
 
     Ok(HttpResponse::Ok().json(&resp))
@@ -139,6 +168,7 @@ fn main() {
             follow_wallets_exclusions,
             featured_listings_auction_houses,
             featured_listings_seller_exclusions,
+            marketplaces_store_address_exclusions,
         } = opts;
 
         let (addr,) = server.into_parts();
@@ -163,6 +193,7 @@ fn main() {
             follow_wallets_exclusions,
             featured_listings_auction_houses,
             featured_listings_seller_exclusions,
+            marketplaces_store_address_exclusions,
         });
 
         let version_extension = "/v1";
@@ -182,7 +213,6 @@ fn main() {
             .block_on(
                 HttpServer::new(move || {
                     App::new()
-                        .wrap(middleware::Logger::default())
                         .wrap(
                             Cors::default()
                                 .allow_any_origin()

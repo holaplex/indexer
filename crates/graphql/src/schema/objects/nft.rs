@@ -294,6 +294,7 @@ pub struct Nft {
     pub seller_fee_basis_points: i32,
     pub mint_address: String,
     pub primary_sale_happened: bool,
+    pub update_authority_address: String,
     pub uri: String,
     pub description: String,
     pub image: String,
@@ -312,6 +313,7 @@ impl TryFrom<models::Nft> for Nft {
             seller_fee_basis_points,
             mint_address,
             primary_sale_happened,
+            update_authority_address,
             uri,
             description,
             image,
@@ -326,6 +328,7 @@ impl TryFrom<models::Nft> for Nft {
             seller_fee_basis_points,
             mint_address,
             primary_sale_happened,
+            update_authority_address,
             uri,
             description: description.unwrap_or_else(String::new),
             image: image.unwrap_or_else(String::new),
@@ -356,6 +359,10 @@ impl Nft {
 
     pub fn primary_sale_happened(&self) -> bool {
         self.primary_sale_happened
+    }
+
+    pub fn update_authority_address(&self) -> &str {
+        &self.update_authority_address
     }
 
     pub fn description(&self) -> &str {
@@ -389,8 +396,9 @@ Any other value will return the original image size.
 
 If no value is provided, it will return XSmall")))]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
-        let id = if let Ok(url) = Url::parse(&self.image) {
-            AssetIdentifier::new(&url)
+        let url = Url::parse(&self.image);
+        let id = if let Ok(ref url) = url {
+            AssetIdentifier::new(url)
         } else {
             return Ok(self.image.clone());
         };
@@ -460,6 +468,13 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
+    pub async fn collections(&self, ctx: &AppContext) -> FieldResult<Vec<CollectionNft>> {
+        ctx.nft_collections_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
     pub async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
         if let Some(slot) = self.slot {
             let shared = ctx.shared.clone();
@@ -478,6 +493,73 @@ If no value is provided, it will return XSmall")))]
         } else {
             Ok(None)
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CollectionNft(Nft);
+
+impl TryFrom<models::Nft> for CollectionNft {
+    type Error = <Nft as TryFrom<models::Nft>>::Error;
+
+    fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
+        value.try_into().map(Self)
+    }
+}
+
+impl<S: juniper::ScalarValue> juniper::marker::IsOutputType<S> for CollectionNft {
+    fn mark() {
+        <Nft as juniper::marker::IsOutputType<S>>::mark();
+    }
+}
+
+impl<S: juniper::ScalarValue> juniper::marker::GraphQLObjectType<S> for CollectionNft {}
+
+impl<S: juniper::ScalarValue> juniper::GraphQLType<S> for CollectionNft {
+    fn name(_: &()) -> Option<&'static str> {
+        Some("CollectionNft")
+    }
+
+    fn meta<'r>(inf: &(), reg: &mut juniper::Registry<'r, S>) -> juniper::meta::MetaType<'r, S>
+    where
+        S: 'r,
+    {
+        <Nft as juniper::GraphQLType<S>>::meta(inf, reg)
+    }
+}
+
+impl<S: juniper::ScalarValue> juniper::GraphQLValue<S> for CollectionNft {
+    type Context = AppContext;
+    type TypeInfo = ();
+
+    fn type_name<'i>(&self, _: &'i ()) -> Option<&'i str> {
+        Some("CollectionNft")
+    }
+
+    fn resolve_field(
+        &self,
+        inf: &(),
+        field: &str,
+        args: &juniper::Arguments<'_, S>,
+        exec: &juniper::Executor<'_, '_, AppContext, S>,
+    ) -> juniper::ExecutionResult<S> {
+        self.0.resolve_field(inf, field, args, exec)
+    }
+
+    fn concrete_type_name(&self, _: &AppContext, _: &()) -> String {
+        "CollectionNft".into()
+    }
+}
+
+impl<S: juniper::ScalarValue + Send + Sync> juniper::GraphQLValueAsync<S> for CollectionNft {
+    fn resolve_field_async<'a>(
+        &'a self,
+        inf: &'a (),
+        field: &'a str,
+        args: &'a juniper::Arguments<'_, S>,
+        exec: &'a juniper::Executor<'_, '_, AppContext, S>,
+    ) -> juniper::BoxFuture<'a, juniper::ExecutionResult<S>> {
+        self.0.resolve_field_async(inf, field, args, exec)
     }
 }
 
