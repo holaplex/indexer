@@ -672,7 +672,7 @@ impl MetadataJson {
 }
 
 #[derive(Debug, Clone)]
-pub struct NftsStats {}
+pub struct NftsStats;
 
 #[graphql_object(Context = AppContext)]
 impl NftsStats {
