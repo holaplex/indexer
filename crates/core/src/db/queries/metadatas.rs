@@ -269,11 +269,7 @@ pub fn list(
         );
     }
 
-    // ignoring the with_offers=false case for now, since it is more complicated and we dont currently have a need
-    let should_query_bid_receipts =
-        offerers.is_some() || (with_offers.is_some() && with_offers.unwrap_or(false));
-
-    if should_query_bid_receipts {
+    if  offerers.is_some() || (with_offers.is_some() && with_offers.unwrap_or(false)) {
         let mut bid_receipts_conditions = Condition::all().add(
             Expr::tbl(BidReceipts::Table, BidReceipts::Metadata)
                 .equals(Metadatas::Table, Metadatas::Address),
