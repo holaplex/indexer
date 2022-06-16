@@ -587,7 +587,7 @@ impl QueryRoot {
 
     #[graphql(description = "returns stats about profiles")]
     async fn profiles_stats(&self) -> FieldResult<ProfilesStats> {
-        Ok(ProfilesStats {})
+        Ok(ProfilesStats)
     }
 
     #[graphql(
