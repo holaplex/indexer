@@ -16,8 +16,8 @@ use super::prelude::*;
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
     pub metadata_address: String,
-    pub value: String,
-    pub trait_type: String,
+    pub value: Option<String>,
+    pub trait_type: Option<String>,
 }
 
 #[graphql_object(Context = AppContext)]
@@ -26,12 +26,12 @@ impl NftAttribute {
         &self.metadata_address
     }
 
-    pub fn value(&self) -> &str {
-        &self.value
+    pub fn value(&self) -> Option<&str> {
+        self.value.as_deref()
     }
 
-    pub fn trait_type(&self) -> &str {
-        &self.trait_type
+    pub fn trait_type(&self) -> Option<&str> {
+        self.trait_type.as_deref()
     }
 }
 
@@ -48,12 +48,8 @@ impl<'a> TryFrom<models::MetadataAttribute<'a>> for NftAttribute {
     ) -> Result<Self> {
         Ok(Self {
             metadata_address: metadata_address.into_owned(),
-            value: value
-                .ok_or_else(|| anyhow!("Missing attribute value"))?
-                .into_owned(),
-            trait_type: trait_type
-                .ok_or_else(|| anyhow!("Missing attribute trait type"))?
-                .into_owned(),
+            value: value.map(Cow::into_owned),
+            trait_type: trait_type.map(Cow::into_owned),
         })
     }
 }
