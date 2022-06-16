@@ -269,7 +269,7 @@ pub fn list(
         );
     }
 
-    if  offerers.is_some() || (with_offers.is_some() && with_offers.unwrap_or(false)) {
+    if offerers.is_some() || (with_offers.is_some() && with_offers.unwrap_or(false)) {
         let mut bid_receipts_conditions = Condition::all().add(
             Expr::tbl(BidReceipts::Table, BidReceipts::Metadata)
                 .equals(Metadatas::Table, Metadatas::Address),
