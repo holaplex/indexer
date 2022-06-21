@@ -53,7 +53,7 @@ impl TwitterProfile {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct ProfilesStats;
 
 #[graphql_object(Context = AppContext)]
