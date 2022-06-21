@@ -6,6 +6,24 @@ use tables::{metadatas, offers};
 use super::prelude::*;
 
 #[async_trait]
+impl TryBatchFn<Uuid, Option<Offer>> for Batcher {
+    async fn load(&mut self, ids: &[Uuid]) -> TryBatchMap<Uuid, Option<Offer>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::Offer> = offers::table
+            .select(offers::all_columns)
+            .filter(offers::id.eq(any(ids)))
+            .load(&conn)
+            .context("Failed to load bid receipts")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|br| (br.id.unwrap(), br.try_into()))
+            .batch(ids))
+    }
+}
+
+#[async_trait]
 impl TryBatchFn<PublicKey<Nft>, Vec<Offer>> for Batcher {
     async fn load(
         &mut self,
@@ -26,23 +44,5 @@ impl TryBatchFn<PublicKey<Nft>, Vec<Offer>> for Batcher {
             .into_iter()
             .map(|br| (br.metadata.clone(), br.try_into()))
             .batch(addresses))
-    }
-}
-
-#[async_trait]
-impl TryBatchFn<Uuid, Option<Offer>> for Batcher {
-    async fn load(&mut self, ids: &[Uuid]) -> TryBatchMap<Uuid, Option<Offer>> {
-        let conn = self.db()?;
-
-        let rows: Vec<models::Offer> = offers::table
-            .select(offers::all_columns)
-            .filter(offers::id.eq(any(ids)))
-            .load(&conn)
-            .context("Failed to load bid receipts")?;
-
-        Ok(rows
-            .into_iter()
-            .map(|br| (br.id.unwrap(), br.try_into()))
-            .batch(ids))
     }
 }
