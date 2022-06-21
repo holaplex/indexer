@@ -319,7 +319,7 @@ impl QueryRoot {
             ));
         }
 
-        if with_offers.is_some() && !with_offers.unwrap() {
+        if let Some(false) = with_offers {
             return Err(FieldError::new(
                 "with_offers == false is not currently supported",
                 graphql_value!({ "invalid_parameter": "with_offers" }),
