@@ -77,7 +77,6 @@ impl<'a> TryFrom<models::Offer<'a>> for Offer {
             buyer,
             metadata,
             token_account,
-
             price,
             token_size,
             trade_state_bump,
