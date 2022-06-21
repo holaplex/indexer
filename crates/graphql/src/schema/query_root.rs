@@ -367,8 +367,8 @@ impl QueryRoot {
     }
 
     #[graphql(description = "Stats aggregated across all indexed NFTs")]
-    fn nfts_stats(&self) -> FieldResult<NftsStats> {
-        Ok(NftsStats)
+    fn nfts_stats(&self) -> NftsStats {
+        NftsStats
     }
 
     fn featured_listings(
