@@ -712,9 +712,9 @@ table! {
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
     listing_events (feed_event_id) {
-        listing_receipt_address -> Varchar,
         feed_event_id -> Uuid,
         lifecycle -> Listingeventlifecycle,
+        listing_id -> Uuid,
     }
 }
 
@@ -935,9 +935,9 @@ table! {
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
     offer_events (feed_event_id) {
-        bid_receipt_address -> Varchar,
         feed_event_id -> Uuid,
         lifecycle -> Offereventlifecycle,
+        offer_id -> Uuid,
     }
 }
 
@@ -1060,8 +1060,8 @@ table! {
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
     purchase_events (feed_event_id) {
-        purchase_receipt_address -> Varchar,
         feed_event_id -> Uuid,
+        purchase_id -> Uuid,
     }
 }
 
@@ -1416,12 +1416,9 @@ joinable!(feed_event_wallets -> feed_events (feed_event_id));
 joinable!(follow_events -> feed_events (feed_event_id));
 joinable!(follow_events -> graph_connections (graph_connection_address));
 joinable!(listing_events -> feed_events (feed_event_id));
-joinable!(listing_events -> listing_receipts (listing_receipt_address));
 joinable!(mint_events -> feed_events (feed_event_id));
-joinable!(offer_events -> bid_receipts (bid_receipt_address));
 joinable!(offer_events -> feed_events (feed_event_id));
 joinable!(purchase_events -> feed_events (feed_event_id));
-joinable!(purchase_events -> purchase_receipts (purchase_receipt_address));
 
 allow_tables_to_appear_in_same_query!(
     attributes,

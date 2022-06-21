@@ -49,9 +49,7 @@ pub(crate) async fn process_listing_receipt(
         write_version: write_version.try_into()?,
     };
 
-    let values = row.clone();
-
-    let feed_event = client
+    client
         .db()
         .run(move |db| {
             let listing_receipt_exists = select(exists(
@@ -67,8 +65,32 @@ pub(crate) async fn process_listing_receipt(
                 .execute(db)?;
 
             if Ok(true) == listing_receipt_exists || row.purchase_receipt.is_some() {
-                return Ok(None);
+                return Ok(());
             }
+
+            let values = Listing {
+                id: None,
+                trade_state: row.trade_state.clone(),
+                auction_house: row.auction_house.clone(),
+                seller: row.seller.clone(),
+                metadata: row.metadata.clone(),
+                purchase_id: None,
+                price: row.price,
+                token_size: row.token_size,
+                trade_state_bump: row.trade_state_bump,
+                created_at: row.created_at,
+                canceled_at: None,
+                slot: row.slot,
+                write_version: Some(row.write_version),
+            };
+
+            let listing_id = insert_into(listings::table)
+                .values(&values)
+                .on_conflict(on_constraint("listings_unique_fields"))
+                .do_update()
+                .set(&values)
+                .returning(listings::id)
+                .get_result::<Uuid>(db)?;
 
             db.build_transaction().read_write().run(|| {
                 let feed_event_id = insert_into(feed_events::table)
@@ -81,12 +103,12 @@ pub(crate) async fn process_listing_receipt(
                     .values(&ListingEvent {
                         feed_event_id,
                         lifecycle: ListingEventLifecycleEnum::Created,
-                        listing_receipt_address: row.address,
+                        listing_id,
                     })
                     .execute(db);
 
                 if Err(DbError::RollbackTransaction) == listing_event {
-                    return Ok(None);
+                    return Ok(());
                 }
 
                 insert_into(feed_event_wallets::table)
@@ -97,17 +119,11 @@ pub(crate) async fn process_listing_receipt(
                     .execute(db)
                     .context("Failed to insert listing feed event wallet")?;
 
-                Result::<_>::Ok(Some(feed_event_id))
+                Result::<_>::Ok(())
             })
         })
         .await
         .context("Failed to insert listing receipt!")?;
-
-    if feed_event.is_none() {
-        upsert_into_listings_table(client, values)
-            .await
-            .context("Failed to insert listing")?;
-    }
 
     Ok(())
 }
@@ -134,27 +150,39 @@ pub(crate) async fn process_purchase_receipt(
         write_version: write_version.try_into()?,
     };
 
-    let values = row.clone();
+    let purchase_receipt_exists = client
+        .db()
+        .run({
+            let row = row.clone();
+            move |db| {
+                let purchase_receipt_exists = select(exists(
+                    purchase_receipts::table
+                        .filter(purchase_receipts::address.eq(row.address.clone())),
+                ))
+                .get_result::<bool>(db)?;
 
-    let feed_event = client
+                insert_into(purchase_receipts::table)
+                    .values(&row)
+                    .on_conflict(purchase_receipts::address)
+                    .do_update()
+                    .set(&row)
+                    .execute(db)?;
+
+                Result::<bool>::Ok(purchase_receipt_exists)
+            }
+        })
+        .await
+        .context("failed to check if purchase receipt exists!")?;
+
+    if purchase_receipt_exists {
+        return Ok(());
+    }
+
+    let purchase_id = upsert_into_purchases_table(client, row.clone()).await?;
+
+    client
         .db()
         .run(move |db| {
-            let purchase_receipt_exists = select(exists(
-                purchase_receipts::table.filter(purchase_receipts::address.eq(row.address.clone())),
-            ))
-            .get_result::<bool>(db);
-
-            insert_into(purchase_receipts::table)
-                .values(&row)
-                .on_conflict(purchase_receipts::address)
-                .do_update()
-                .set(&row)
-                .execute(db)?;
-
-            if Ok(true) == purchase_receipt_exists {
-                return Ok(None);
-            }
-
             db.build_transaction().read_write().run(|| {
                 let feed_event_id = insert_into(feed_events::table)
                     .default_values()
@@ -163,9 +191,9 @@ pub(crate) async fn process_purchase_receipt(
                     .context("Failed to insert feed event")?;
 
                 insert_into(purchase_events::table)
-                    .values(&PurchaseEvent {
+                    .values(PurchaseEvent {
+                        purchase_id,
                         feed_event_id,
-                        purchase_receipt_address: row.address,
                     })
                     .execute(db)
                     .context("failed to insert purchase created event")?;
@@ -186,17 +214,11 @@ pub(crate) async fn process_purchase_receipt(
                     .execute(db)
                     .context("Failed to insert purchase feed event wallet for buyer")?;
 
-                Result::<_>::Ok(Some(feed_event_id))
+                Result::<_>::Ok(())
             })
         })
         .await
-        .context("Failed to insert purchase receipt!")?;
-
-    if feed_event.is_none() {
-        upsert_into_purchases_table(client, values)
-            .await
-            .context("Failed to insert purchase")?;
-    }
+        .context("failed to insert purchase event")?;
 
     Ok(())
 }
@@ -230,16 +252,15 @@ pub(crate) async fn process_bid_receipt(
         write_version: write_version.try_into()?,
     };
 
-    let offer_event = client
+    let bid_receipt_exists = client
         .db()
         .run({
             let row = row.clone();
-
             move |db| {
                 let bid_receipt_exists = select(exists(
                     bid_receipts::table.filter(bid_receipts::address.eq(row.address.clone())),
                 ))
-                .get_result::<bool>(db);
+                .get_result::<bool>(db)?;
 
                 insert_into(bid_receipts::table)
                     .values(&row)
@@ -248,53 +269,65 @@ pub(crate) async fn process_bid_receipt(
                     .set(&row)
                     .execute(db)?;
 
-                if Ok(true) == bid_receipt_exists || row.purchase_receipt.is_some() {
-                    return Ok(None);
-                }
-
-                db.build_transaction().read_write().run(|| {
-                    let metadata_owner: String =
-                        current_metadata_owners::table
-                            .inner_join(metadatas::table.on(
-                                metadatas::mint_address.eq(current_metadata_owners::mint_address),
-                            ))
-                            .select(current_metadata_owners::owner_address)
-                            .first(db)?;
-
-                    let feed_event_id = insert_into(feed_events::table)
-                        .default_values()
-                        .returning(feed_events::id)
-                        .get_result::<Uuid>(db)
-                        .context("Failed to insert feed event")?;
-
-                    insert_into(offer_events::table)
-                        .values(&OfferEvent {
-                            feed_event_id,
-                            lifecycle: OfferEventLifecycleEnum::Created,
-                            bid_receipt_address: row.address,
-                        })
-                        .execute(db)
-                        .context("failed to insert offer created event")?;
-
-                    insert_into(feed_event_wallets::table)
-                        .values(&FeedEventWallet {
-                            wallet_address: row.buyer,
-                            feed_event_id,
-                        })
-                        .execute(db)
-                        .context("Failed to insert offer feed event wallet for buyer")?;
-
-                    insert_into(feed_event_wallets::table)
-                        .values(&FeedEventWallet {
-                            wallet_address: Owned(metadata_owner),
-                            feed_event_id,
-                        })
-                        .execute(db)
-                        .context("Failed to insert offer feed event wallet for metadata owner")?;
-
-                    Result::<_>::Ok(Some(feed_event_id))
-                })
+                Result::<bool>::Ok(bid_receipt_exists)
             }
+        })
+        .await
+        .context("failed to insert bid reciept")?;
+
+    if bid_receipt_exists || row.purchase_receipt.is_some() {
+        return Ok(());
+    }
+
+    let offer_id = upsert_into_offers_table(client, row.clone())
+        .await
+        .context("failed to insert offer")?;
+
+    let offer_event = client
+        .db()
+        .run(move |db| {
+            db.build_transaction().read_write().run(|| {
+                let metadata_owner: String = current_metadata_owners::table
+                    .inner_join(
+                        metadatas::table
+                            .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
+                    )
+                    .select(current_metadata_owners::owner_address)
+                    .first(db)?;
+
+                let feed_event_id = insert_into(feed_events::table)
+                    .default_values()
+                    .returning(feed_events::id)
+                    .get_result::<Uuid>(db)
+                    .context("Failed to insert feed event")?;
+
+                insert_into(offer_events::table)
+                    .values(&OfferEvent {
+                        feed_event_id,
+                        lifecycle: OfferEventLifecycleEnum::Created,
+                        offer_id,
+                    })
+                    .execute(db)
+                    .context("failed to insert offer created event")?;
+
+                insert_into(feed_event_wallets::table)
+                    .values(&FeedEventWallet {
+                        wallet_address: row.buyer,
+                        feed_event_id,
+                    })
+                    .execute(db)
+                    .context("Failed to insert offer feed event wallet for buyer")?;
+
+                insert_into(feed_event_wallets::table)
+                    .values(&FeedEventWallet {
+                        wallet_address: Owned(metadata_owner),
+                        feed_event_id,
+                    })
+                    .execute(db)
+                    .context("Failed to insert offer feed event wallet for metadata owner")?;
+
+                Result::<_>::Ok(Some(feed_event_id))
+            })
         })
         .await
         .context("Failed to insert bid receipt!")?;
@@ -303,147 +336,113 @@ pub(crate) async fn process_bid_receipt(
         client
             .dispatch_dialect_offer_event(key, bid_receipt.metadata)
             .await?;
-    } else {
-        upsert_into_offers_table(client, row)
-            .await
-            .context("failed to insert into offers table")?;
-
-        trace!("Skipping Dialect dispatch for offer");
     }
 
     Ok(())
 }
 
-async fn upsert_into_offers_table<'a>(client: &Client, data: DbBidReceipt<'static>) -> Result<()> {
-    let row = Offer {
+async fn upsert_into_offers_table<'a>(client: &Client, row: DbBidReceipt<'static>) -> Result<Uuid> {
+    let values = Offer {
         id: None,
-        trade_state: data.trade_state,
-        auction_house: data.auction_house,
-        buyer: data.buyer,
-        metadata: data.metadata,
-        token_account: data.token_account,
+        trade_state: row.trade_state,
+        auction_house: row.auction_house,
+        buyer: row.buyer,
+        metadata: row.metadata,
+        token_account: row.token_account,
         purchase_id: None,
-        price: data.price,
-        token_size: data.token_size,
-        trade_state_bump: data.trade_state_bump,
-        created_at: data.created_at,
-        canceled_at: data.canceled_at,
-        slot: data.slot,
-        write_version: Some(data.write_version),
+        price: row.price,
+        token_size: row.token_size,
+        trade_state_bump: row.trade_state_bump,
+        created_at: row.created_at,
+        canceled_at: row.canceled_at,
+        slot: row.slot,
+        write_version: Some(row.write_version),
     };
 
-    client
+    let offer_id = client
         .db()
-        .run(move |db| {
-            insert_into(offers::table)
-                .values(&row)
-                .on_conflict(on_constraint("offers_unique_fields"))
-                .do_update()
-                .set(&row)
-                .execute(db)
+        .run({
+            move |db| {
+                let offer_id = insert_into(offers::table)
+                    .values(&values)
+                    .on_conflict(on_constraint("offers_unique_fields"))
+                    .do_update()
+                    .set(&values)
+                    .returning(offers::id)
+                    .get_result::<Uuid>(db)?;
+
+                Result::<_>::Ok(offer_id)
+            }
         })
         .await
-        .context("Failed to insert offer")?;
+        .context("failed to insert purchase")?;
 
-    Ok(())
+    Ok(offer_id)
 }
 
 async fn upsert_into_purchases_table<'a>(
     client: &Client,
-    data: DbPurchaseReceipt<'static>,
-) -> Result<()> {
+    row: DbPurchaseReceipt<'static>,
+) -> Result<Uuid> {
     let row = Purchase {
         id: None,
-        buyer: data.buyer.clone(),
-        seller: data.seller.clone(),
-        auction_house: data.auction_house.clone(),
-        metadata: data.metadata.clone(),
-        token_size: data.token_size,
-        price: data.price,
-        created_at: data.created_at,
-        slot: data.slot,
-        write_version: Some(data.write_version),
+        buyer: row.buyer.clone(),
+        seller: row.seller.clone(),
+        auction_house: row.auction_house.clone(),
+        metadata: row.metadata.clone(),
+        token_size: row.token_size,
+        price: row.price,
+        created_at: row.created_at,
+        slot: row.slot,
+        write_version: Some(row.write_version),
     };
-
-    client
+    let purchase_id = client
         .db()
-        .run(move |db| {
-            let purchase_id = insert_into(purchases::table)
-                .values(&row)
-                .on_conflict(on_constraint("purchases_unique_fields"))
-                .do_update()
-                .set(&row)
-                .returning(purchases::id)
-                .get_result::<Uuid>(db)?;
+        .run({
+            move |db| {
+                let purchase_id = insert_into(purchases::table)
+                    .values(&row)
+                    .on_conflict(on_constraint("purchases_unique_fields"))
+                    .do_update()
+                    .set(&row)
+                    .returning(purchases::id)
+                    .get_result::<Uuid>(db)?;
 
-            update(
-                offers::table.filter(
-                    offers::auction_house
-                        .eq(row.auction_house.clone())
-                        .and(offers::buyer.eq(row.buyer.clone()))
-                        .and(offers::metadata.eq(row.metadata.clone()))
-                        .and(offers::token_size.eq(row.token_size))
-                        .and(offers::price.eq(row.price))
-                        .and(offers::purchase_id.is_null())
-                        .and(offers::canceled_at.is_null()),
-                ),
-            )
-            .set(offers::purchase_id.eq(Some(purchase_id)))
-            .execute(db)?;
+                update(
+                    offers::table.filter(
+                        offers::auction_house
+                            .eq(row.auction_house.clone())
+                            .and(offers::buyer.eq(row.buyer.clone()))
+                            .and(offers::metadata.eq(row.metadata.clone()))
+                            .and(offers::token_size.eq(row.token_size))
+                            .and(offers::price.eq(row.price))
+                            .and(offers::purchase_id.is_null())
+                            .and(offers::canceled_at.is_null()),
+                    ),
+                )
+                .set(offers::purchase_id.eq(Some(purchase_id)))
+                .execute(db)?;
 
-            update(
-                listings::table.filter(
-                    listings::auction_house
-                        .eq(row.auction_house.clone())
-                        .and(listings::seller.eq(row.seller.clone()))
-                        .and(listings::metadata.eq(row.metadata.clone()))
-                        .and(listings::price.eq(row.price))
-                        .and(listings::token_size.eq(row.token_size))
-                        .and(listings::purchase_id.is_null())
-                        .and(listings::canceled_at.is_null()),
-                ),
-            )
-            .set(listings::purchase_id.eq(Some(purchase_id)))
-            .execute(db)
+                update(
+                    listings::table.filter(
+                        listings::auction_house
+                            .eq(row.auction_house.clone())
+                            .and(listings::seller.eq(row.seller.clone()))
+                            .and(listings::metadata.eq(row.metadata.clone()))
+                            .and(listings::price.eq(row.price))
+                            .and(listings::token_size.eq(row.token_size))
+                            .and(listings::purchase_id.is_null())
+                            .and(listings::canceled_at.is_null()),
+                    ),
+                )
+                .set(listings::purchase_id.eq(Some(purchase_id)))
+                .execute(db)?;
+
+                Result::<_>::Ok(purchase_id)
+            }
         })
         .await
-        .context("Failed to insert purchase!")?;
+        .context("failed to insert purchase")?;
 
-    Ok(())
-}
-
-async fn upsert_into_listings_table<'a>(
-    client: &Client,
-    data: DbListingReceipt<'static>,
-) -> Result<()> {
-    let row = Listing {
-        id: None,
-        trade_state: data.trade_state.clone(),
-        auction_house: data.auction_house.clone(),
-        seller: data.seller.clone(),
-        metadata: data.metadata.clone(),
-        purchase_id: None,
-        price: data.price,
-        token_size: data.token_size,
-        trade_state_bump: data.trade_state_bump,
-        created_at: data.created_at,
-        canceled_at: None,
-        slot: data.slot,
-        write_version: Some(data.write_version),
-    };
-
-    client
-        .db()
-        .run(move |db| {
-            insert_into(listings::table)
-                .values(&row)
-                .on_conflict(on_constraint("listings_unique_fields"))
-                .do_update()
-                .set(&row)
-                .execute(db)
-        })
-        .await
-        .context("Failed to insert listing!")?;
-
-    Ok(())
+    Ok(purchase_id)
 }

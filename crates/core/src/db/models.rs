@@ -1846,18 +1846,18 @@ pub struct CompleteFeedEvent {
     /// metadata address that triggered the mint event
     #[sql_type = "Nullable<VarChar>"]
     pub metadata_address: Option<String>,
-    /// purchase receipt address that triggered the purchase event
-    #[sql_type = "Nullable<VarChar>"]
-    pub purchase_receipt_address: Option<String>,
-    #[sql_type = "Nullable<VarChar>"]
-    /// bid receipt address that triggered the offer event
-    pub bid_receipt_address: Option<String>,
+    /// purchase id that triggered the purchase event
+    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
+    pub purchase_id: Option<Uuid>,
+    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
+    /// offer id that triggered the offer event
+    pub offer_id: Option<Uuid>,
     /// the lifecycle of the offer event
     #[sql_type = "Nullable<OfferEventLifecycle>"]
     pub offer_lifecycle: Option<OfferEventLifecycleEnum>,
-    /// listing receipt address that triggered the listing event
-    #[sql_type = "Nullable<Text>"]
-    pub listing_receipt_address: Option<String>,
+    /// listing id that triggered the listing event
+    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
+    pub listing_id: Option<Uuid>,
     /// the lifecycle of the listing event
     #[sql_type = "Nullable<ListingEventLifecycle>"]
     pub listing_lifecycle: Option<ListingEventLifecycleEnum>,
@@ -1897,11 +1897,11 @@ pub struct MintEvent<'a> {
 }
 
 /// A row in the `offer_events` table
-#[derive(Debug, Clone, Queryable, Insertable)]
+#[derive(Debug, Clone, Copy, Queryable, Insertable)]
 #[table_name = "offer_events"]
-pub struct OfferEvent<'a> {
-    /// foreign key to `bid_recipts` address
-    pub bid_receipt_address: Cow<'a, str>,
+pub struct OfferEvent {
+    /// foreign key to `offers` id
+    pub offer_id: Uuid,
     /// foreign key to `feed_events`
     pub feed_event_id: Uuid,
     ///  enum of offer lifecycle
@@ -1909,11 +1909,11 @@ pub struct OfferEvent<'a> {
 }
 
 /// A row in the `listing_events` table
-#[derive(Debug, Clone, Queryable, Insertable)]
+#[derive(Debug, Clone, Copy, Queryable, Insertable)]
 #[table_name = "listing_events"]
-pub struct ListingEvent<'a> {
-    /// foreign key to `listing_receipts` address
-    pub listing_receipt_address: Cow<'a, str>,
+pub struct ListingEvent {
+    /// foreign key to `listings` id
+    pub listing_id: Uuid,
     /// foreign key to `feed_events`
     pub feed_event_id: Uuid,
     /// enum of listing lifecycle
@@ -1921,11 +1921,11 @@ pub struct ListingEvent<'a> {
 }
 
 /// A row in the `purchase_events` table
-#[derive(Debug, Clone, Queryable, Insertable)]
+#[derive(Debug, Clone, Copy, Queryable, Insertable)]
 #[table_name = "purchase_events"]
-pub struct PurchaseEvent<'a> {
-    /// foreign key to `purchase_receipts` address
-    pub purchase_receipt_address: Cow<'a, str>,
+pub struct PurchaseEvent {
+    /// foreign key to `purchases` id
+    pub purchase_id: Uuid,
     /// foreign key to `feed_events`
     pub feed_event_id: Uuid,
 }

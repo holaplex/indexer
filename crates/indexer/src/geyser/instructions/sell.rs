@@ -1,9 +1,14 @@
 use borsh::BorshDeserialize;
-use indexer_core::db::{
-    insert_into,
-    models::{Listing, SellInstruction},
-    on_constraint,
-    tables::{listings, sell_instructions},
+use indexer_core::{
+    db::{
+        custom_types::ListingEventLifecycleEnum,
+        insert_into,
+        models::{FeedEventWallet, Listing, ListingEvent, SellInstruction},
+        on_constraint, select,
+        tables::{feed_event_wallets, feed_events, listing_events, listings, sell_instructions},
+        Error as DbError,
+    },
+    uuid::Uuid,
 };
 use mpl_auction_house::instruction::Sell;
 
@@ -84,12 +89,56 @@ async fn upsert_into_listings_table<'a>(
     client
         .db()
         .run(move |db| {
-            insert_into(listings::table)
+            let listing_exists = select(exists(
+                listings::table.filter(
+                    listings::trade_state
+                        .eq(row.trade_state.clone())
+                        .and(listings::metadata.eq(row.metadata.clone())),
+                ),
+            ))
+            .get_result::<bool>(db)?;
+
+            let listing_id = insert_into(listings::table)
                 .values(&row)
                 .on_conflict(on_constraint("listings_unique_fields"))
                 .do_update()
                 .set(&row)
-                .execute(db)
+                .returning(listings::id)
+                .get_result::<Uuid>(db)?;
+
+            if listing_exists {
+                return Ok(());
+            }
+
+            db.build_transaction().read_write().run(|| {
+                let feed_event_id = insert_into(feed_events::table)
+                    .default_values()
+                    .returning(feed_events::id)
+                    .get_result::<Uuid>(db)
+                    .context("Failed to insert feed event")?;
+
+                let listing_event = insert_into(listing_events::table)
+                    .values(&ListingEvent {
+                        feed_event_id,
+                        lifecycle: ListingEventLifecycleEnum::Created,
+                        listing_id,
+                    })
+                    .execute(db);
+
+                if Err(DbError::RollbackTransaction) == listing_event {
+                    return Ok(());
+                }
+
+                insert_into(feed_event_wallets::table)
+                    .values(&FeedEventWallet {
+                        wallet_address: row.seller,
+                        feed_event_id,
+                    })
+                    .execute(db)
+                    .context("Failed to insert listing feed event wallet")?;
+
+                Result::<_>::Ok(())
+            })
         })
         .await
         .context("Failed to insert listing!")?;

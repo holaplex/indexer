@@ -2,9 +2,12 @@ use borsh::BorshDeserialize;
 use indexer_core::{
     db::{
         insert_into,
-        models::{ExecuteSaleInstruction, Purchase},
-        on_constraint,
-        tables::{execute_sale_instructions, listings, offers, purchases},
+        models::{ExecuteSaleInstruction, FeedEventWallet, Purchase, PurchaseEvent},
+        on_constraint, select,
+        tables::{
+            execute_sale_instructions, feed_event_wallets, feed_events, listings, offers,
+            purchase_events, purchases,
+        },
         update,
     },
     uuid::Uuid,
@@ -93,6 +96,23 @@ async fn upsert_into_purchases_table<'a>(
     client
         .db()
         .run(move |db| {
+            let purchase_exists = select(exists(
+                purchases::table.filter(
+                    purchases::buyer
+                        .eq(row.buyer.clone())
+                        .and(purchases::seller.eq(row.seller.clone()))
+                        .and(purchases::auction_house.eq(row.auction_house.clone()))
+                        .and(purchases::metadata.eq(row.metadata.clone()))
+                        .and(purchases::price.eq(row.price))
+                        .and(purchases::token_size.eq(row.token_size)),
+                ),
+            ))
+            .get_result::<bool>(db)?;
+
+            if purchase_exists {
+                return Ok(());
+            }
+
             let purchase_id = insert_into(purchases::table)
                 .values(&row)
                 .on_conflict(on_constraint("purchases_unique_fields"))
@@ -121,7 +141,41 @@ async fn upsert_into_purchases_table<'a>(
                 ),
             )
             .set(offers::purchase_id.eq(Some(purchase_id)))
-            .execute(db)
+            .execute(db)?;
+
+            db.build_transaction().read_write().run(|| {
+                let feed_event_id = insert_into(feed_events::table)
+                    .default_values()
+                    .returning(feed_events::id)
+                    .get_result::<Uuid>(db)
+                    .context("Failed to insert feed event")?;
+
+                insert_into(purchase_events::table)
+                    .values(PurchaseEvent {
+                        purchase_id,
+                        feed_event_id,
+                    })
+                    .execute(db)
+                    .context("failed to insert purchase created event")?;
+
+                insert_into(feed_event_wallets::table)
+                    .values(&FeedEventWallet {
+                        wallet_address: row.seller,
+                        feed_event_id,
+                    })
+                    .execute(db)
+                    .context("Failed to insert purchase feed event wallet for seller")?;
+
+                insert_into(feed_event_wallets::table)
+                    .values(&FeedEventWallet {
+                        wallet_address: row.buyer,
+                        feed_event_id,
+                    })
+                    .execute(db)
+                    .context("Failed to insert purchase feed event wallet for buyer")?;
+
+                Result::<_>::Ok(())
+            })
         })
         .await
         .context("Failed to insert purchase!")?;
