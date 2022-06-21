@@ -16,7 +16,7 @@ use objects::{
     listing_receipt::ListingReceipt,
     marketplace::Marketplace,
     nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
-    profile::TwitterProfile,
+    profile::{ProfilesStats, TwitterProfile},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
@@ -631,6 +631,11 @@ impl QueryRoot {
             .into_iter()
             .map(|r| r.result.into())
             .collect::<Vec<Wallet>>())
+    }
+
+    #[graphql(description = "returns stats about profiles")]
+    async fn profiles_stats(&self) -> ProfilesStats {
+        ProfilesStats
     }
 
     #[graphql(
