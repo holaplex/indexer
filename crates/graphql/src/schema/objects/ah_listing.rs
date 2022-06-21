@@ -61,10 +61,8 @@ impl<'a> TryFrom<models::Listing<'a>> for Listing {
             auction_house,
             seller,
             metadata,
-
             price,
             token_size,
-
             created_at,
             ..
         }: models::Listing,
