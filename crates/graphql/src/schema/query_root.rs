@@ -15,7 +15,7 @@ use objects::{
     listing::{Listing, ListingColumns, ListingRow},
     listing_receipt::ListingReceipt,
     marketplace::Marketplace,
-    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator},
+    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
     profile::TwitterProfile,
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
@@ -364,6 +364,11 @@ impl QueryRoot {
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
+    }
+
+    #[graphql(description = "Stats aggregated across all indexed NFTs")]
+    fn nfts_stats(&self) -> NftsStats {
+        NftsStats
     }
 
     fn featured_listings(

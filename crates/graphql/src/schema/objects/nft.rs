@@ -1,6 +1,9 @@
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
-    db::queries,
+    db::{
+        queries,
+        tables::{bid_receipts, listing_receipts, metadata_jsons},
+    },
     util::unix_timestamp,
 };
 use objects::{
@@ -661,5 +664,52 @@ impl MetadataJson {
 
     pub fn creator_twitter_handle(&self) -> Option<&str> {
         self.creator_twitter_handle.as_deref()
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct NftsStats;
+
+#[graphql_object(Context = AppContext)]
+impl NftsStats {
+    #[graphql(description = "The total number of indexed NFTs")]
+    fn total_nfts(&self, context: &AppContext) -> FieldResult<i32> {
+        let conn = context.shared.db.get()?;
+
+        let count: i64 = metadata_jsons::table
+            .count()
+            .get_result(&conn)
+            .context("failed to load total NFTs count")?;
+
+        Ok(count.try_into()?)
+    }
+
+    #[graphql(description = "The total number of buy-now listings")]
+    fn buy_now_listings(&self, context: &AppContext) -> FieldResult<i32> {
+        let conn = context.shared.db.get()?;
+
+        let count: i64 = listing_receipts::table
+            .filter(listing_receipts::price.is_not_null())
+            .filter(listing_receipts::purchase_receipt.is_null())
+            .filter(listing_receipts::canceled_at.is_null())
+            .count()
+            .get_result(&conn)
+            .context("failed to load listed nfts count")?;
+
+        Ok(count.try_into()?)
+    }
+
+    #[graphql(description = "The total number of NFTs with active offers")]
+    fn nfts_with_active_offers(&self, context: &AppContext) -> FieldResult<i32> {
+        let conn = context.shared.db.get()?;
+
+        let count: i64 = bid_receipts::table
+            .filter(bid_receipts::purchase_receipt.is_null())
+            .filter(bid_receipts::canceled_at.is_null())
+            .count()
+            .get_result(&conn)
+            .context("failed to load listed nfts count")?;
+
+        Ok(count.try_into()?)
     }
 }
