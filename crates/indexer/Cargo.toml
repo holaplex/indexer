@@ -121,6 +121,7 @@ rev = "fed1261e68c524a0389b7b41e00c89623e7c3abc"
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
 tag = "v0.4.0"
+features=["producer"]
 
 # Workspace dependencies
 [dependencies.indexer-core]

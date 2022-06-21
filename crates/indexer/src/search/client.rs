@@ -380,7 +380,7 @@ impl Client {
 }
 
 async fn create_index(meili: MeiliClient, index_name: &str, primary_key: &str) -> Result<()> {
-    if let Ok(idx) = meili.get_index(index_name).await {
+    if let Ok(mut idx) = meili.get_index(index_name).await {
         ensure!(
             idx.get_primary_key()
                 .await

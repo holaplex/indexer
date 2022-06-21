@@ -9,8 +9,8 @@ use indexer_core::{
             MetadataJson as DbMetadataJson,
         },
         tables::{
-            attributes, files, metadata_collections, metadata_creators, metadata_jsons, metadatas,
-            twitter_handle_name_services,
+            attributes, files, metadata_collection_keys, metadata_collections, metadata_creators,
+            metadata_jsons, metadatas, twitter_handle_name_services,
         },
         update, Connection,
     },
@@ -21,7 +21,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::Client;
-use crate::{prelude::*, search_dispatch::MetadataDocument};
+use crate::{
+    prelude::*,
+    search_dispatch::{CollectionDocument, MetadataDocument},
+};
 
 type SlotInfo = (i64, i64);
 
@@ -634,50 +637,145 @@ async fn dispatch_metadata_document(
         .or_else(|| image.map(|s| Ok(s.into())))
         .transpose()?;
 
-    if let Ok((name, mint_address, creator_address, creator_twitter_handle)) = client
+    if let Ok((name, mint_address, collection_address, creator_address, creator_twitter_handle)) =
+        client
+            .db()
+            .run({
+                let addr = addr.clone();
+                move |db| {
+                    let (name, mint_address, collection_address) =
+                        metadatas::table
+                            .left_join(metadata_collection_keys::table.on(
+                                metadatas::address.eq(metadata_collection_keys::metadata_address),
+                            ))
+                            .filter(metadatas::address.eq(&addr))
+                            .select((
+                                metadatas::name,
+                                metadatas::mint_address,
+                                metadata_collection_keys::collection_address.nullable(),
+                            ))
+                            .first(db)
+                            .context("failed to load mint and name for search doc")?;
+
+                    let (creator_address, creator_twitter_handle) = metadata_creators::table
+                        .left_join(
+                            twitter_handle_name_services::table
+                                .on(metadata_creators::creator_address
+                                    .eq(twitter_handle_name_services::wallet_address)),
+                        )
+                        .filter(metadata_creators::metadata_address.eq(&addr))
+                        .filter(metadata_creators::verified.eq(true))
+                        .filter(metadata_creators::position.eq(0))
+                        .select((
+                            metadata_creators::creator_address,
+                            twitter_handle_name_services::twitter_handle.nullable(),
+                        ))
+                        .first(db)
+                        .context("failed to load creators for search document")?;
+
+                    Result::<(String, String, Option<String>, String, Option<String>)>::Ok((
+                        name,
+                        mint_address,
+                        collection_address,
+                        creator_address,
+                        creator_twitter_handle,
+                    ))
+                }
+            })
+            .await
+            .map_err(|e| warn!("Failed to get search document data for metadata: {:?}", e))
+    {
+        let document = MetadataDocument {
+            name,
+            mint_address,
+            image,
+            creator_address,
+            creator_twitter_handle,
+            collection_address: collection_address.clone(),
+        };
+
+        client
+            .search()
+            .upsert_metadata(is_for_backfill, addr, document)
+            .await
+            .context("Failed to dispatch metadata JSON document job")?;
+
+        if let Some(addr) = collection_address {
+            upsert_collection_metadata(client, addr, is_for_backfill)
+                .await
+                .context("failed to index collection metadata")?;
+        }
+    }
+
+    Ok(())
+}
+
+async fn upsert_collection_metadata(
+    client: &Client,
+    mint_address: String,
+    is_for_backfill: bool,
+) -> Result<()> {
+    let (address, name, image, description) = client
         .db()
         .run({
-            let addr = addr.clone();
+            let mint_address = mint_address.clone();
             move |db| {
-                let (name, mint_address) = metadatas::table
-                    .filter(metadatas::address.eq(&addr))
-                    .select((metadatas::name, metadatas::mint_address))
-                    .first(db)
-                    .context("failed to load mint and name for search doc")?;
-
-                let (creator_address, creator_twitter_handle) = metadata_creators::table
-                    .left_join(
-                        twitter_handle_name_services::table.on(metadata_creators::creator_address
-                            .eq(twitter_handle_name_services::wallet_address)),
+                let (address, name, image, description) = metadatas::table
+                    .inner_join(
+                        metadata_jsons::table
+                            .on(metadatas::address.eq(metadata_jsons::metadata_address)),
                     )
-                    .filter(metadata_creators::metadata_address.eq(&addr))
-                    .filter(metadata_creators::verified.eq(true))
-                    .filter(metadata_creators::position.eq(0))
+                    .filter(metadatas::mint_address.eq(&mint_address))
                     .select((
-                        metadata_creators::creator_address,
-                        twitter_handle_name_services::twitter_handle.nullable(),
+                        metadatas::address,
+                        metadatas::name,
+                        metadata_jsons::image,
+                        metadata_jsons::description,
                     ))
-                    .first(db)
-                    .context("failed to load creators for search document")?;
+                    .first(db)?;
 
-                Result::<_>::Ok((name, mint_address, creator_address, creator_twitter_handle))
+                Result::<(String, String, Option<String>, Option<String>)>::Ok((
+                    address,
+                    name,
+                    image,
+                    description,
+                ))
             }
         })
         .await
-        .map_err(|e| warn!("Failed to get search document data for metadata: {:?}", e))
-    {
-        client
-            .search()
-            .upsert_metadata(is_for_backfill, addr, MetadataDocument {
-                name,
-                mint_address,
-                image,
-                creator_address,
-                creator_twitter_handle,
-            })
-            .await
-            .context("Failed to dispatch metadata JSON document job")?;
+        .context("failed to fetch collection metadata")?;
+    let document = client
+        .search()
+        .get_document("collections".to_string(), address.clone())
+        .await;
+
+    if document.is_ok() {
+        return Ok(());
     }
+
+    let image = image
+        .clone()
+        .and_then(|i| Url::parse(&i).ok())
+        .and_then(|u| {
+            let id = AssetIdentifier::new(&u);
+
+            proxy_url(client.proxy_args(), &id, Some(("width", "200")))
+                .map(|o| o.map(|u| u.to_string()))
+                .transpose()
+        })
+        .or_else(|| image.map(Ok))
+        .transpose()?;
+
+    client
+        .search()
+        .upsert_collection(is_for_backfill, address, CollectionDocument {
+            name,
+            description,
+            image,
+            mint_address,
+        })
+        .await
+        .context("Failed to dispatch collection document job")?;
 
     Ok(())
 }
