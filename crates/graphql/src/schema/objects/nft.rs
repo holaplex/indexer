@@ -671,7 +671,7 @@ impl MetadataJson {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct NftsStats;
 
 #[graphql_object(Context = AppContext)]
