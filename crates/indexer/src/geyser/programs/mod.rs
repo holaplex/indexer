@@ -16,4 +16,4 @@ pub mod token_bonding;
 pub mod tribeca_govern;
 pub mod tribeca_locked_voter;
 
-pub(self) use super::{accounts, AccountUpdate, Client};
+pub(self) use super::{accounts, instructions, AccountUpdate, Client};

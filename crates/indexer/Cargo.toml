@@ -117,13 +117,13 @@ rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
 git = "https://github.com/holaplex/graph-program.git"
 rev = "fed1261e68c524a0389b7b41e00c89623e7c3abc"
 
+[dependencies.indexer-rabbitmq]
+package = "holaplex-indexer-rabbitmq"
+git = "https://github.com/holaplex/indexer-geyser-plugin"
+tag = "v0.4.0"
+
 # Workspace dependencies
 [dependencies.indexer-core]
 package = "holaplex-indexer-core"
 version = "=0.1.0"
 path = "../core"
-
-[dependencies.indexer-rabbitmq]
-package = "holaplex-indexer-rabbitmq"
-version = "=0.1.0"
-path = "../rabbitmq"
