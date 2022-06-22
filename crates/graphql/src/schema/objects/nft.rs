@@ -467,8 +467,8 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
-    pub async fn collections(&self, ctx: &AppContext) -> FieldResult<Vec<CollectionNft>> {
-        ctx.nft_collections_loader
+    pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNft>> {
+        ctx.nft_collection_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)

@@ -33,11 +33,11 @@ impl TryBatchFn<PublicKey<Nft>, Vec<NftAttribute>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Nft>, Vec<CollectionNft>> for Batcher {
+impl TryBatchFn<PublicKey<Nft>, Option<CollectionNft>> for Batcher {
     async fn load(
         &mut self,
         addresses: &[PublicKey<Nft>],
-    ) -> TryBatchMap<PublicKey<Nft>, Vec<CollectionNft>> {
+    ) -> TryBatchMap<PublicKey<Nft>, Option<CollectionNft>> {
         let conn = self.db()?;
 
         let rows: Vec<(String, models::Nft)> = metadatas::table
