@@ -1,4 +1,5 @@
 use indexer_core::db::{
+    self,
     expression::dsl::all,
     queries::{self, feed_event::EventType},
     tables::twitter_handle_name_services,
@@ -40,6 +41,24 @@ struct AttributeFilter {
 impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
     fn from(AttributeFilter { trait_type, values }: AttributeFilter) -> Self {
         Self { trait_type, values }
+    }
+}
+
+#[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]
+#[graphql(description = "Sorts results ascending or descending")]
+pub enum OrderDirection {
+    #[graphql(name = "DESC")]
+    Desc,
+    #[graphql(name = "ASC")]
+    Asc,
+}
+
+impl From<OrderDirection> for db::custom_types::OrderDirection {
+    fn from(other: OrderDirection) -> Self {
+        match other {
+            OrderDirection::Desc => Self::Desc,
+            OrderDirection::Asc => Self::Asc,
+        }
     }
 }
 
@@ -128,6 +147,56 @@ impl QueryRoot {
         )?;
 
         feed_events
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    #[graphql(description = "Returns featured collection NFTs ordered by volume (sum over prices)")]
+    async fn collections_featured_by_volume(
+        &self,
+        context: &AppContext,
+        #[graphql(term = "Return collections whose name or family contain this term (case insensitive)")] term: Option<
+            String,
+        >,
+        #[graphql(order_direction = "Sort ascending or descending")]
+        order_direction: OrderDirection,
+        #[graphql(limit = "Return at most this many results")] limit: i32,
+        #[graphql(offset = "Return results starting from this index")] offset: i32,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = context.shared.db.get().context("failed to connect to db")?;
+
+        let addresses: Option<Vec<String>> = match term {
+            Some(term) => {
+                let search = &context.shared.search;
+                let search_result = search
+                    //TODO refactor for collections
+                    .index("metadatas")
+                    .search()
+                    .with_query(&term)
+                    .with_offset(offset.try_into()?)
+                    .with_limit(limit.try_into()?)
+                    .execute::<Value>()
+                    .await
+                    .context("failed to load search result for collections")?
+                    .hits;
+
+                Some(
+                    search_result
+                        .into_iter()
+                        // TODO refactor for collections
+                        .map(|r| MetadataJson::from(r.result).address)
+                        .collect(),
+                )
+            },
+            None => None,
+        };
+        
+        let collections =
+            queries::collections::by_volume(&conn, addresses, order_direction.into(), limit, offset).unwrap();
+
+        collections
             .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
