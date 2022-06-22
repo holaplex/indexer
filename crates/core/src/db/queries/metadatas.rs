@@ -110,6 +110,8 @@ pub struct ListQueryOptions {
     pub addresses: Option<Vec<String>>,
     /// nft owners
     pub owners: Option<Vec<String>>,
+    /// nft update_authorities
+    pub update_authorities: Option<Vec<String>>,
     /// auction houses
     pub auction_houses: Option<Vec<String>>,
     /// nft creators
@@ -154,6 +156,7 @@ pub fn list(
     ListQueryOptions {
         addresses,
         owners,
+        update_authorities,
         creators,
         auction_houses,
         offerers,
@@ -246,6 +249,10 @@ pub fn list(
 
     if let Some(owners) = owners {
         query.and_where(Expr::col(CurrentMetadataOwners::OwnerAddress).is_in(owners));
+    }
+
+    if let Some(update_authorities) = update_authorities {
+        query.and_where(Expr::col(Metadatas::UpdateAuthorityAddress).is_in(update_authorities));
     }
 
     if let Some(creators) = creators {
