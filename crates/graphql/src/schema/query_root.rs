@@ -157,9 +157,10 @@ impl QueryRoot {
     async fn collections_featured_by_volume(
         &self,
         context: &AppContext,
-        #[graphql(term = "Return collections whose name or family contain this term (case insensitive)")] term: Option<
-            String,
-        >,
+        #[graphql(
+            term = "Return collections whose name or family contain this term (case insensitive)"
+        )]
+        term: Option<String>,
         #[graphql(order_direction = "Sort ascending or descending")]
         order_direction: OrderDirection,
         #[graphql(limit = "Return at most this many results")] limit: i32,
@@ -170,8 +171,8 @@ impl QueryRoot {
         let addresses: Option<Vec<String>> = match term {
             Some(term) => {
                 let search = &context.shared.search;
+                //TODO refactor for collections
                 let search_result = search
-                    //TODO refactor for collections
                     .index("metadatas")
                     .search()
                     .with_query(&term)
@@ -182,19 +183,25 @@ impl QueryRoot {
                     .context("failed to load search result for collections")?
                     .hits;
 
+                // TODO refactor for collections
                 Some(
                     search_result
                         .into_iter()
-                        // TODO refactor for collections
                         .map(|r| MetadataJson::from(r.result).address)
                         .collect(),
                 )
             },
             None => None,
         };
-        
-        let collections =
-            queries::collections::by_volume(&conn, addresses, order_direction.into(), limit, offset).unwrap();
+
+        let collections = queries::collections::by_volume(
+            &conn,
+            addresses,
+            order_direction.into(),
+            limit,
+            offset,
+        )
+        .unwrap();
 
         collections
             .into_iter()

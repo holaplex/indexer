@@ -1,7 +1,12 @@
 //! Query utilities for collections.
 
 use anyhow::Context;
-use diesel::{pg::Pg, sql_types::{Integer, Text, Nullable, Array}, types::ToSql, RunQueryDsl};
+use diesel::{
+    pg::Pg,
+    sql_types::{Array, Integer, Nullable, Text},
+    types::ToSql,
+    RunQueryDsl,
+};
 
 use crate::{
     db::{custom_types::OrderDirection, models::Nft, Connection},
