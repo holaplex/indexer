@@ -20,7 +20,7 @@ pub use diesel::{
         Pg,
     },
     query_dsl,
-    result::Error,
+    result::{DatabaseErrorKind, Error},
     select, serialize, sql_query, sql_types, update, Queryable,
 };
 use diesel::{pg, r2d2};
