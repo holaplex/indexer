@@ -528,6 +528,27 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
+    fn nfts_by_address(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Addresses of NFTs")] addresses: Vec<PublicKey<Nft>>,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = context.shared.db.get()?;
+        let rows: Vec<models::Nft> = metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .filter(metadatas::address.eq(any(addresses)))
+            .select(queries::metadatas::NftColumns::default())
+            .load(&conn)
+            .context("Failed to load NFTs")?;
+
+        rows.into_iter()
+            .map(|r| Nft::try_from(r))
+            .collect::<Result<_,_>>()
+            .map_err(Into::into)
+    }
+
     fn storefronts(&self, context: &AppContext) -> FieldResult<Vec<Storefront>> {
         let conn = context.shared.db.get()?;
         let rows: Vec<models::Storefront> = storefronts::table
