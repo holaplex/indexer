@@ -158,7 +158,7 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(
-            term = "Return collections whose name or family contain this term (case insensitive)"
+            term = "Return collections whose metdata match this term (case insensitive)"
         )]
         term: Option<String>,
         #[graphql(order_direction = "Sort ascending or descending")]
