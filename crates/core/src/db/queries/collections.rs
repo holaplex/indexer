@@ -40,7 +40,7 @@ inner join (
         limit $2
         offset $3
 ) a on (a.collection = metadatas.mint_address)
--- $2: limit::text[]
+-- $1: addresses::text[]
 -- $2: limit::integer
 -- $3: offset::integer";
 
