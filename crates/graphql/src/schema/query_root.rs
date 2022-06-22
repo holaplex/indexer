@@ -200,8 +200,7 @@ impl QueryRoot {
             order_direction.into(),
             limit,
             offset,
-        )
-        .unwrap();
+        )?;
 
         collections
             .into_iter()
