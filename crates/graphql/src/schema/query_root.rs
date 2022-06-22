@@ -530,7 +530,7 @@ impl QueryRoot {
     }
 
     #[graphql(description = "Get a list of NFTs by metadata address (list version of 'nfts' endpoint).")]
-    fn nfts_by_address(
+    fn nfts_by_metadata_address(
         &self,
         context: &AppContext,
         #[graphql(description = "Metadata addresses of NFTs")] addresses: Vec<PublicKey<Nft>>,
