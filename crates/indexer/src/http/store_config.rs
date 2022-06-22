@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use indexer_core::db::{
     delete, insert_into,
     models::{StoreConfigJson, StoreCreator},
-    select,
     tables::{store_config_jsons, store_creators},
 };
 use reqwest::Url;
@@ -94,24 +93,26 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
     client
         .db()
         .run(move |db| {
-            let subdomain_exists = select(exists(
-                store_config_jsons::table
-                    .filter(store_config_jsons::subdomain.eq(row.subdomain.clone())),
-            ))
-            .get_result::<bool>(db);
+            use indexer_core::db::{DatabaseErrorKind, Error};
 
-            if Ok(true) == subdomain_exists {
-                return Ok(());
-            }
-
-            insert_into(store_config_jsons::table)
+            match insert_into(store_config_jsons::table)
                 .values(&row)
                 .on_conflict(store_config_jsons::config_address)
                 .do_update()
                 .set(&row)
-                .execute(db)?;
-
-            Result::<_>::Ok(())
+                .execute(db)
+            {
+                Ok(_) => Ok(()),
+                Err(Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
+                    warn!(
+                        "Rejecting storefront upsert for {:?} (subdomain {:?}) \
+                        violating unique constraint",
+                        row.name, row.subdomain
+                    );
+                    Ok(())
+                },
+                Err(e) => Err(e),
+            }
         })
         .await
         .context("failed to insert store config json")?;
