@@ -505,11 +505,12 @@ impl QueryRoot {
             .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
-
+    
+    #[graphql(description = "Get an NFT by metadata address.")]
     fn nft(
         &self,
         context: &AppContext,
-        #[graphql(description = "Address of NFT")] address: String,
+        #[graphql(description = "Metadata address of NFT")] address: String,
     ) -> FieldResult<Option<Nft>> {
         let conn = context.shared.db.get()?;
         let mut rows: Vec<models::Nft> = metadatas::table
@@ -528,11 +529,11 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
-    #[graphql(description = "Get a list of NFTs by address (list version of 'nfts' endpoint).")]
+    #[graphql(description = "Get a list of NFTs by metadata address (list version of 'nfts' endpoint).")]
     fn nfts_by_address(
         &self,
         context: &AppContext,
-        #[graphql(description = "Addresses of NFTs")] addresses: Vec<PublicKey<Nft>>,
+        #[graphql(description = "Metadata addresses of NFTs")] addresses: Vec<PublicKey<Nft>>,
     ) -> FieldResult<Vec<Nft>> {
         let conn = context.shared.db.get()?;
         let rows: Vec<models::Nft> = metadatas::table
