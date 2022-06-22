@@ -528,6 +528,7 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
+    #[graphql(description = "Get a list of NFTs by address (list version of 'nfts' endpoint).")]
     fn nfts_by_address(
         &self,
         context: &AppContext,
@@ -544,8 +545,8 @@ impl QueryRoot {
             .context("Failed to load NFTs")?;
 
         rows.into_iter()
-            .map(|r| Nft::try_from(r))
-            .collect::<Result<_,_>>()
+            .map(Nft::try_from)
+            .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
 
