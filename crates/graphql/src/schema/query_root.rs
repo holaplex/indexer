@@ -15,8 +15,8 @@ use objects::{
     listing::{Listing, ListingColumns, ListingRow},
     listing_receipt::ListingReceipt,
     marketplace::Marketplace,
-    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator},
-    profile::TwitterProfile,
+    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
+    profile::{ProfilesStats, TwitterProfile},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
@@ -292,6 +292,9 @@ impl QueryRoot {
         #[graphql(description = "Filter on creator address")] creators: Option<
             Vec<PublicKey<Wallet>>,
         >,
+        #[graphql(description = "Filter on update authorities")] update_authorities: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
         #[graphql(description = "Filter on offerers address")] offerers: Option<
             Vec<PublicKey<Wallet>>,
         >,
@@ -350,6 +353,7 @@ impl QueryRoot {
             addresses,
             owners: owners.map(|a| a.into_iter().map(Into::into).collect()),
             creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
+            update_authorities: update_authorities.map(|a| a.into_iter().map(Into::into).collect()),
             offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed,
@@ -364,6 +368,11 @@ impl QueryRoot {
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
+    }
+
+    #[graphql(description = "Stats aggregated across all indexed NFTs")]
+    fn nfts_stats(&self) -> NftsStats {
+        NftsStats
     }
 
     fn featured_listings(
@@ -426,6 +435,49 @@ impl QueryRoot {
         let twitter_handle = queries::twitter_handle_name_service::get(&conn, &address)?;
 
         Ok(Wallet::new(address, twitter_handle))
+    }
+
+    fn wallets(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Addresses of the wallets")] addresses: Vec<PublicKey<Wallet>>,
+    ) -> FieldResult<Vec<Wallet>> {
+        if addresses.is_empty() {
+            return Err(FieldError::new(
+                "You must supply at least one address to query.",
+                graphql_value!({ "addresses": "Vec<String>"}),
+            ));
+        }
+
+        let conn = context.shared.db.get()?;
+
+        let twitter_handles = queries::twitter_handle_name_service::get_multiple(
+            &conn,
+            addresses.iter().map(ToString::to_string).collect(),
+        )?;
+
+        let wallets = twitter_handles.into_iter().fold(
+            addresses
+                .into_iter()
+                .map(|a| (a, None))
+                .collect::<HashMap<_, _>>(),
+            |mut h,
+             models::TwitterHandle {
+                 wallet_address,
+                 twitter_handle,
+                 ..
+             }| {
+                *h.entry(wallet_address.into_owned().into()).or_insert(None) =
+                    Some(twitter_handle.into_owned());
+
+                h
+            },
+        );
+
+        Ok(wallets
+            .into_iter()
+            .map(|(k, v)| Wallet::new(k, v))
+            .collect())
     }
 
     fn listings(&self, context: &AppContext) -> FieldResult<Vec<Listing>> {
@@ -583,6 +635,11 @@ impl QueryRoot {
             .into_iter()
             .map(|r| r.result.into())
             .collect::<Vec<Wallet>>())
+    }
+
+    #[graphql(description = "returns stats about profiles")]
+    async fn profiles_stats(&self) -> ProfilesStats {
+        ProfilesStats
     }
 
     #[graphql(

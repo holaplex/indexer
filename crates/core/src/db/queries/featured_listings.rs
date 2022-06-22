@@ -27,7 +27,9 @@ SELECT
     a.bump,
     a.trade_state_bump,
     a.created_at,
-    a.canceled_at
+    a.canceled_at,
+    a.slot,
+    a.write_version
 
 FROM (
 
