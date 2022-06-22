@@ -37,8 +37,8 @@ inner join (
         where ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
         group by metadata_collection_keys.collection_address
         order by volume {order_direction}
-		limit $2
-		offset $3
+        limit $2
+        offset $3
 ) a on (a.collection = metadatas.mint_address)
 -- $2: limit::text[]
 -- $2: limit::integer
