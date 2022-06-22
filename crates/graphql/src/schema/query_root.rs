@@ -292,6 +292,9 @@ impl QueryRoot {
         #[graphql(description = "Filter on creator address")] creators: Option<
             Vec<PublicKey<Wallet>>,
         >,
+        #[graphql(description = "Filter on update authorities")] update_authorities: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
         #[graphql(description = "Filter on offerers address")] offerers: Option<
             Vec<PublicKey<Wallet>>,
         >,
@@ -350,6 +353,7 @@ impl QueryRoot {
             addresses,
             owners: owners.map(|a| a.into_iter().map(Into::into).collect()),
             creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
+            update_authorities: update_authorities.map(|a| a.into_iter().map(Into::into).collect()),
             offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed,
