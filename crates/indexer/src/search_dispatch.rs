@@ -68,18 +68,14 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if the index or document from the meilisearch client can not be fetched
-    pub async fn get_document(&self, idx: String, id: String) -> Result<serde_json::Value> {
-        let index = self
-            .meili_client
-            .get_index(idx)
-            .await
-            .context("failed to get index")?;
+    pub async fn get_document(
+        &self,
+        idx: String,
+        id: String,
+    ) -> Result<serde_json::Value, meilisearch::errors::Error> {
+        let index = self.meili_client.get_index(idx).await?;
 
-        let document = index
-            .get_document::<serde_json::Value>(&id)
-            .await
-            .context("failed to get document")?;
-        Ok(document)
+        index.get_document::<serde_json::Value>(&id).await
     }
 
     #[inline]

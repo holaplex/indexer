@@ -15,6 +15,9 @@ use indexer_core::{
         update, Connection,
     },
     hash::HashMap,
+    meilisearch::errors::{
+        Error::Meilisearch, ErrorCode as MeiliSearchErrorCode, MeilisearchError,
+    },
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
@@ -643,7 +646,7 @@ async fn dispatch_metadata_document(
             .run({
                 let addr = addr.clone();
                 move |db| {
-                    let (name, mint_address, collection_address) =
+                    let (name, mint_address, collection_address): (String, String, Option<String>) =
                         metadatas::table
                             .left_join(metadata_collection_keys::table.on(
                                 metadatas::address.eq(metadata_collection_keys::metadata_address),
@@ -673,7 +676,7 @@ async fn dispatch_metadata_document(
                         .first(db)
                         .context("failed to load creators for search document")?;
 
-                    Result::<(String, String, Option<String>, String, Option<String>)>::Ok((
+                    Result::<_>::Ok((
                         name,
                         mint_address,
                         collection_address,
@@ -720,7 +723,7 @@ async fn upsert_collection_metadata(
         .run({
             let mint_address = mint_address.clone();
             move |db| {
-                let (address, name, image) = metadatas::table
+                let (address, name, image): (String, String, Option<String>) = metadatas::table
                     .inner_join(
                         metadata_jsons::table
                             .on(metadatas::address.eq(metadata_jsons::metadata_address)),
@@ -729,42 +732,55 @@ async fn upsert_collection_metadata(
                     .select((metadatas::address, metadatas::name, metadata_jsons::image))
                     .first(db)?;
 
-                Result::<(String, String, Option<String>)>::Ok((address, name, image))
+                Result::<_>::Ok((address, name, image))
             }
         })
         .await
         .context("failed to fetch collection metadata")?;
+
     let document = client
         .search()
         .get_document("collections".to_string(), address.clone())
         .await;
 
-    if document.is_ok() {
-        return Ok(());
+    match document {
+        Err(e)
+            if matches!(
+                &e,
+                Meilisearch(MeilisearchError {
+                    error_code: MeiliSearchErrorCode::DocumentNotFound,
+                    ..
+                })
+            ) =>
+        {
+            let image = image
+                .clone()
+                .and_then(|i| Url::parse(&i).ok())
+                .and_then(|u| {
+                    let id = AssetIdentifier::new(&u);
+
+                    proxy_url(client.proxy_args(), &id, Some(("width", "200")))
+                        .map(|o| o.map(|u| u.to_string()))
+                        .transpose()
+                })
+                .or_else(|| image.map(Ok))
+                .transpose()?;
+
+            client
+                .search()
+                .upsert_collection(is_for_backfill, address, CollectionDocument {
+                    name,
+                    image,
+                    mint_address,
+                })
+                .await
+                .context("Failed to dispatch collection document job")?;
+        },
+        Err(e) => {
+            bail!("Failed to fetch collection document {}", e);
+        },
+        Ok(_) => return Ok(()),
     }
-
-    let image = image
-        .clone()
-        .and_then(|i| Url::parse(&i).ok())
-        .and_then(|u| {
-            let id = AssetIdentifier::new(&u);
-
-            proxy_url(client.proxy_args(), &id, Some(("width", "200")))
-                .map(|o| o.map(|u| u.to_string()))
-                .transpose()
-        })
-        .or_else(|| image.map(Ok))
-        .transpose()?;
-
-    client
-        .search()
-        .upsert_collection(is_for_backfill, address, CollectionDocument {
-            name,
-            image,
-            mint_address,
-        })
-        .await
-        .context("Failed to dispatch collection document job")?;
 
     Ok(())
 }

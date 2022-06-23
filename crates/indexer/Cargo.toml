@@ -31,8 +31,9 @@ http = [
   "search-dispatch",
   "serde_json",
   "indexer-rabbitmq/http-indexer",
+  "indexer-rabbitmq/producer",
   "indexer-rabbitmq/search-indexer",
-  "indexer-rabbitmq/producer"
+  
 ]
 reqwest-client = [
   "reqwest",
