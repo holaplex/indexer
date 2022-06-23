@@ -254,7 +254,7 @@ pub fn list_relay(
     is_forward: bool,
     cursor: String,
     wallet: Option<String>,
-    exclude_types: Option<Vec<EventType>>,
+    include_types: Option<Vec<EventType>>,
 ) -> Result<Vec<CompleteFeedEvent>> {
     let mut events_query = Query::select()
         .distinct()
@@ -348,29 +348,29 @@ pub fn list_relay(
     events_query.limit(limit);
 
 
-    if let Some(event_types) = exclude_types {
+    if let Some(event_types) = include_types {
         for event_type in event_types {
             match event_type {
                 EventType::Follow => events_query.and_where(
                     Expr::col((FollowEvents::Table, FollowEvents::GraphConnectionAddress))
-                        .is_null(),
+                        .is_not_null(),
                 ),
                 EventType::Offer => events_query.and_where(
-                    Expr::col((OfferEvents::Table, OfferEvents::BidReceiptAddress)).is_null(),
+                    Expr::col((OfferEvents::Table, OfferEvents::BidReceiptAddress)).is_not_null(),
                 ),
                 EventType::Mint => events_query.and_where(
-                    Expr::col((MintEvents::Table, MintEvents::MetadataAddress)).is_null(),
+                    Expr::col((MintEvents::Table, MintEvents::MetadataAddress)).is_not_null(),
                 ),
                 EventType::Purchase => events_query.and_where(
                     Expr::col((
                         PurchaseEvents::Table,
                         PurchaseEvents::PurchaseReceiptAddress,
                     ))
-                    .is_null(),
+                    .is_not_null(),
                 ),
                 EventType::Listing => events_query.and_where(
                     Expr::col((ListingEvents::Table, ListingEvents::ListingReceiptAddress))
-                        .is_null(),
+                        .is_not_null(),
                 ),
             };
         }

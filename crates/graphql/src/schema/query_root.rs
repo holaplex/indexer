@@ -148,11 +148,11 @@ impl QueryRoot {
         limit: i32,
         is_forward: bool,
         cursor: String,
-        exclude_types: Option<Vec<String>>,
+        include_types: Option<Vec<String>>,
     ) -> FieldResult<Vec<FeedEvent>> {
         let conn = ctx.shared.db.get().context("failed to connect to db")?;
 
-        let exclude_types_parsed: Option<Vec<EventType>> = exclude_types.map(|v_types| {
+        let include_types_parsed: Option<Vec<EventType>> = include_types.map(|v_types| {
             v_types
                 .iter()
                 .map(|v| v.parse::<EventType>())
@@ -166,7 +166,7 @@ impl QueryRoot {
             is_forward,
             cursor,
             None,
-            exclude_types_parsed,
+            include_types_parsed,
         )?;
 
         feed_events
