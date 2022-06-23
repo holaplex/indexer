@@ -1,6 +1,6 @@
 //! Query utilities for feed events.
 
-use diesel::{prelude::*, sql_types::Timestamp};
+use diesel::prelude::*;
 use sea_query::{
     Alias, CommonTableExpression, Expr, Iden, Order, PostgresQueryBuilder, Query,
     QueryStatementWriter,
