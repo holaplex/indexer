@@ -552,9 +552,7 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
-    #[graphql(
-        description = "Get a list of NFTs by mint address."
-    )]
+    #[graphql(description = "Get a list of NFTs by mint address.")]
     fn nfts_by_mint_address(
         &self,
         context: &AppContext,
