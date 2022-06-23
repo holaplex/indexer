@@ -23,8 +23,9 @@ use objects::{
 use scalars::PublicKey;
 use serde_json::Value;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, bid_receipts, graph_connections, metadata_collection_keys
-    metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
+    auction_caches, auction_datas, auction_datas_ext, bid_receipts, graph_connections,
+    metadata_collection_keys, metadata_jsons, metadatas, store_config_jsons, storefronts,
+    wallet_totals,
 };
 
 use super::prelude::*;
@@ -438,12 +439,12 @@ impl QueryRoot {
         let query = metadatas::table
             .inner_join(
                 metadata_collection_keys::table
-                    .on(metadatas::mint_address.eq(metadata_collection_keys.collection_address)),
+                    .on(metadatas::mint_address.eq(metadata_collection_keys::collection_address)),
             )
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
-            .filter(metadata::mint_address.eq(update_authority_address))
+            .filter(metadatas::mint_address.eq(update_authority_address))
             .filter(metadata_collection_keys::verified.eq(true))
             .select((
                 metadatas::address,
