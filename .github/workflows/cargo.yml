@@ -38,6 +38,16 @@ jobs:
           components: cargo, rustc
           profile: minimal
 
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
+
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
@@ -50,7 +60,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --lib --bins --all-features --no-deps --profile=debug-lite
+          args: --all --lib --all-features --no-deps --profile=debug-lite
 
   release-check:
     name: cargo check/doc/clippy (release profile)
@@ -68,6 +78,16 @@ jobs:
           components: cargo, rustc
           profile: minimal
 
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
+
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
@@ -76,4 +96,4 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --lib --bins --all-features --no-deps --profile=release-lite
+          args: --all --lib --all-features --no-deps --profile=release-lite

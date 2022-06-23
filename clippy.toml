@@ -2,3 +2,8 @@ doc-valid-idents = [
   "GraphQL",
   "RabbitMQ",
 ]
+
+[[disallowed-methods]]
+path = "chrono::naive::datetime::NaiveDateTime::from_timestamp"
+reason = "use from_timestamp_opt or indexer_core::util::unix_timestamp"
+

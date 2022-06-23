@@ -1,6 +1,10 @@
 use std::{collections::HashMap, hash::Hash, sync::Arc};
 
+use indexer_core::assets::proxy_twitter_handle_url;
+use reqwest::Url;
+
 use super::prelude::*;
+use crate::SharedData;
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
@@ -8,6 +12,14 @@ pub enum Error {
     ConnectionFailed,
     #[error("Failed to process a model: {0}")]
     ModelConvert(#[from] Arc<indexer_core::error::Error>),
+}
+
+impl Error {
+    /// Construct a [`ModelConvert`](Self::ModelConvert) error from the given
+    /// error.
+    pub fn model_convert(e: impl Into<indexer_core::error::Error>) -> Self {
+        e.into().into()
+    }
 }
 
 impl From<indexer_core::error::Error> for Error {
@@ -19,7 +31,7 @@ impl From<indexer_core::error::Error> for Error {
 pub type BatchResult<T> = Result<T, Error>;
 pub type BatchMap<K, V> = HashMap<K, BatchResult<V>>;
 pub type TryBatchMap<K, V> = BatchResult<BatchMap<K, V>>;
-pub type Loader<K, V> = dataloader::non_cached::Loader<K, BatchResult<V>, Batcher>;
+pub type Loader<K, V, B = Batcher> = dataloader::non_cached::Loader<K, BatchResult<V>, B>;
 
 /// Helper trait for wrapping a value in [`Result`] if necessary
 pub trait ResultLike<T, E> {
@@ -109,9 +121,14 @@ pub trait TryBatchFn<K, V> {
 #[derive(Clone)]
 pub struct Batcher(Arc<Pool>);
 
+#[derive(Clone)]
+pub struct TwitterBatcher {
+    shared: Arc<SharedData>,
+}
+
 impl Batcher {
     #[must_use]
-    pub fn new(pool: Arc<Pool>) -> Self {
+    pub(crate) fn new(pool: Arc<Pool>) -> Self {
         Self(pool)
     }
 
@@ -120,10 +137,40 @@ impl Batcher {
     }
 }
 
+impl TwitterBatcher {
+    #[must_use]
+    pub(crate) fn new(shared: Arc<SharedData>) -> Self {
+        Self { shared }
+    }
+
+    #[inline]
+    pub fn bearer(&self) -> &str {
+        &self.shared.twitter_bearer_token
+    }
+
+    #[inline]
+    pub fn proxy_url(&self, screen_name: impl AsRef<str>) -> Result<Url> {
+        proxy_twitter_handle_url(&self.shared.asset_proxy, screen_name)
+    }
+}
+
 #[async_trait]
 impl<K: Clone + Eq + Hash + Sync, V> BatchFn<K, BatchResult<V>> for Batcher
 where
     Batcher: TryBatchFn<K, V>,
+{
+    async fn load(&mut self, keys: &[K]) -> BatchMap<K, V> {
+        match TryBatchFn::load(self, keys).await {
+            Ok(m) => m,
+            Err(e) => keys.iter().cloned().map(|k| (k, Err(e.clone()))).collect(),
+        }
+    }
+}
+
+#[async_trait]
+impl<K: Clone + Eq + Hash + Sync, V> BatchFn<K, BatchResult<V>> for TwitterBatcher
+where
+    TwitterBatcher: TryBatchFn<K, V>,
 {
     async fn load(&mut self, keys: &[K]) -> BatchMap<K, V> {
         match TryBatchFn::load(self, keys).await {

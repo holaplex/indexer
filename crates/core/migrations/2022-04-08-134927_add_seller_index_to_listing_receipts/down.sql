@@ -1,0 +1,1 @@
+drop index if exists seller_listing_receipts_idx;

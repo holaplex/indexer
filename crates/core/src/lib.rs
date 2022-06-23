@@ -1,6 +1,7 @@
 //! Core components for the `holaplex-indexer` family of crates.
 
 #![deny(
+    clippy::disallowed_method,
     clippy::suspicious,
     clippy::style,
     missing_debug_implementations,
@@ -10,37 +11,52 @@
 #![feature(iter_intersperse)]
 
 // TODO: #[macro_use] is somewhat deprecated, but diesel still relies on it
+#[cfg(feature = "db")]
 #[macro_use]
 extern crate diesel;
+#[cfg(feature = "db")]
 #[macro_use]
 extern crate diesel_migrations;
 
 pub extern crate chrono;
 pub extern crate clap;
+pub extern crate num_cpus;
 pub extern crate url;
+pub extern crate uuid;
 
+#[cfg(feature = "assets")]
 pub mod assets;
+#[cfg(feature = "db")]
 pub mod db;
 pub mod error;
 pub mod hash;
+#[cfg(feature = "meilisearch")]
+pub mod meilisearch;
+#[cfg(feature = "solana")]
 pub mod pubkeys;
 pub mod util;
 
 /// Commonly used utilities
 pub mod prelude {
-    pub use std::borrow::{
-        Cow,
-        Cow::{Borrowed, Owned},
+    pub use std::{
+        borrow::{
+            Cow,
+            Cow::{Borrowed, Owned},
+        },
+        time::Duration as StdDuration,
     };
 
     pub use chrono::{self, prelude::*};
+    #[cfg(feature = "db")]
     pub use diesel::{
         debug_query,
         dsl::{any, exists, not},
         expression_methods::*,
         pg::Pg,
         query_dsl::{BelongingToDsl, GroupByDsl, JoinOnDsl, QueryDsl, RunQueryDsl, SaveChangesDsl},
+        result::OptionalExtension,
     };
+    #[cfg(feature = "db")]
     pub use diesel_full_text_search::{TsQueryExtensions, TsVectorExtensions};
     pub use log::{debug, error, info, trace, warn};
 
@@ -64,7 +80,7 @@ fn dotenv(name: impl AsRef<Path>) -> Result<Option<PathBuf>, dotenv::Error> {
 }
 
 /// Common options for all server crates.
-#[derive(Debug, Clone, Copy, clap::Parser)]
+#[derive(Debug, Clone, Copy, clap::Args)]
 pub struct ServerOpts {
     /// The address to bind to
     #[clap(long = "addr", default_value = "0.0.0.0:3000", env)]

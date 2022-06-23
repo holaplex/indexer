@@ -1,6 +1,7 @@
 //! GraphQL server to read from `holaplex-indexer`
 
 #![deny(
+    clippy::disallowed_method,
     clippy::suspicious,
     clippy::style,
     missing_debug_implementations,
@@ -8,125 +9,210 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
-use std::{future::Future, pin::Pin, sync::Arc};
+use std::sync::Arc;
 
 use actix_cors::Cors;
-use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer};
-use indexer_core::{clap, clap::Parser, db, db::Pool, prelude::*, ServerOpts};
+use actix_web::{dev::ConnectionInfo, http, web, App, Error, HttpResponse, HttpServer};
+use indexer_core::{
+    assets::AssetProxyArgs,
+    chrono::{Duration, Local},
+    clap,
+    clap::Parser,
+    db,
+    db::Pool,
+    meilisearch,
+    prelude::*,
+    util::duration_hhmmssfff,
+    ServerOpts,
+};
 use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
+// TODO: use nonblocking once we upgrade past 1.9
+use solana_client::rpc_client::RpcClient;
 
 use crate::schema::{AppContext, Schema};
 
 mod schema;
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct Opts {
     #[clap(flatten)]
     server: ServerOpts,
 
+    #[clap(flatten)]
+    db: db::ConnectArgs,
+
     #[clap(long, env)]
     twitter_bearer_token: Option<String>,
 
-    #[clap(long, env)]
-    asset_proxy_endpoint: String,
+    #[clap(flatten)]
+    asset_proxy: AssetProxyArgs,
+
+    #[clap(flatten)]
+    search: meilisearch::Args,
 
     #[clap(long, env)]
-    asset_proxy_count: u8,
+    solana_endpoint: String,
+
+    #[clap(long, env, use_value_delimiter(true))]
+    follow_wallets_exclusions: Vec<String>,
+
+    #[clap(long, env, use_value_delimiter(true))]
+    featured_listings_auction_houses: Vec<String>,
+
+    #[clap(long, env, use_value_delimiter(true))]
+    featured_listings_seller_exclusions: Vec<String>,
+
+    #[clap(long, env, use_value_delimiter(true))]
+    marketplaces_store_address_exclusions: Vec<String>,
 }
 
-fn graphiql(uri: String) -> impl Fn() -> HttpResponse + Clone {
-    move || {
-        let html = graphiql_source(&uri, None);
-
-        HttpResponse::Ok()
-            .content_type("text/html; charset=utf-8")
-            .body(html)
-    }
+struct GraphiqlData {
+    uri: String,
 }
 
-fn redirect_version(
+struct RedirectData {
     route: &'static str,
-    version: &'static str,
-) -> impl Fn() -> HttpResponse + Clone {
-    move || {
-        HttpResponse::MovedPermanently()
-            .insert_header(("Location", version))
-            .body(format!(
-                "API route {} deprecated, please use {}",
-                route, version
-            ))
-    }
-}
-
-fn graphql(
-    db_pool: Arc<Pool>,
-    shared: Arc<SharedData>,
-) -> impl Fn(
-    web::Data<Arc<Schema>>,
-    web::Json<GraphQLRequest>,
-) -> Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>>
-+ Clone {
-    move |st: web::Data<Arc<Schema>>, data: web::Json<GraphQLRequest>| {
-        let pool = Arc::clone(&db_pool);
-        let shared = Arc::clone(&shared);
-
-        Box::pin(async move {
-            let ctx = AppContext::new(pool, shared);
-            let res = data.execute(&st, &ctx).await;
-
-            let json = serde_json::to_string(&res)?;
-
-            Ok(HttpResponse::Ok()
-                .content_type("application/json")
-                .body(json))
-        })
-    }
+    new_route: &'static str,
 }
 
 pub(crate) struct SharedData {
-    pub asset_proxy_endpoint: String,
-    pub asset_proxy_count: u8,
+    schema: Schema,
+    pub db: Arc<Pool>,
+    pub asset_proxy: AssetProxyArgs,
     pub twitter_bearer_token: String,
+    pub search: meilisearch::client::Client,
+    pub rpc: RpcClient,
+    pub follow_wallets_exclusions: Vec<String>,
+    pub featured_listings_auction_houses: Vec<String>,
+    pub featured_listings_seller_exclusions: Vec<String>,
+    pub marketplaces_store_address_exclusions: Vec<String>,
+}
+
+#[allow(clippy::unused_async)]
+async fn graphiql(data: web::Data<GraphiqlData>) -> HttpResponse {
+    let html = graphiql_source(&data.uri, None);
+
+    HttpResponse::Ok()
+        .content_type("text/html; charset=utf-8")
+        .body(html)
+}
+
+#[allow(clippy::unused_async)]
+async fn redirect_version(data: web::Data<RedirectData>) -> HttpResponse {
+    HttpResponse::MovedPermanently()
+        .insert_header(("Location", data.new_route))
+        .body(format!(
+            "API route {} deprecated, please use {}",
+            data.route, data.new_route
+        ))
+}
+
+async fn graphql(
+    data: web::Data<SharedData>,
+    req: web::Json<GraphQLRequest>,
+    conn: ConnectionInfo,
+) -> Result<HttpResponse, Error> {
+    let ctx = AppContext::new(data.clone().into_inner());
+    let start = Local::now();
+
+    let resp = req.execute(&data.schema, &ctx).await;
+    let end = Local::now();
+    let duration = end - start;
+    info!(
+        "host={:?}, remote_addr={:?}, peer_addr={:?}",
+        conn.host(),
+        conn.realip_remote_addr().unwrap_or(&String::new()),
+        conn.peer_addr().unwrap_or(&String::new())
+    );
+    if duration > Duration::milliseconds(5000) {
+        #[derive(serde::Deserialize)]
+        struct Data {
+            #[serde(default)]
+            query: serde_json::Value,
+            #[serde(default)]
+            operation_name: serde_json::Value,
+            #[serde(default)]
+            variables: serde_json::Value,
+        }
+
+        match serde_json::to_value(&req).and_then(serde_json::from_value) {
+            Ok(Data {
+                query,
+                operation_name,
+                variables,
+            }) => warn!(
+                "Long graphql request query={}, operation={:?}, variables={}, duration={}",
+                query,
+                operation_name,
+                variables,
+                duration_hhmmssfff(duration),
+            ),
+            Err(e) => error!("Failed to format long query for printing: {}", e),
+        }
+    }
+
+    Ok(HttpResponse::Ok().json(&resp))
 }
 
 fn main() {
     indexer_core::run(|| {
+        let opts = Opts::parse();
+        debug!("{:#?}", opts);
         let Opts {
             server,
+            db,
             twitter_bearer_token,
-            asset_proxy_endpoint,
-            asset_proxy_count,
-        } = Opts::parse();
+            asset_proxy,
+            search,
+            solana_endpoint,
+            follow_wallets_exclusions,
+            featured_listings_auction_houses,
+            featured_listings_seller_exclusions,
+            marketplaces_store_address_exclusions,
+        } = opts;
 
         let (addr,) = server.into_parts();
         info!("Listening on {}", addr);
 
         let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
-        let shared = Arc::new(SharedData {
-            asset_proxy_endpoint,
-            asset_proxy_count,
-            twitter_bearer_token,
-        });
 
         // TODO: db_ty indicates if any actions that mutate the database can be run
-        let (db_pool, _db_ty) =
-            db::connect(db::ConnectMode::Read).context("Failed to connect to Postgres")?;
-        let db_pool = Arc::new(db_pool);
+        let (db, _db_ty) =
+            db::connect(db, db::ConnectMode::Read).context("Failed to connect to Postgres")?;
+        let db = Arc::new(db);
+        let search = search.into_client();
+        let rpc = RpcClient::new(solana_endpoint);
+
+        let shared = web::Data::new(SharedData {
+            schema: schema::create(),
+            db,
+            asset_proxy,
+            twitter_bearer_token,
+            search,
+            rpc,
+            follow_wallets_exclusions,
+            featured_listings_auction_houses,
+            featured_listings_seller_exclusions,
+            marketplaces_store_address_exclusions,
+        });
 
         let version_extension = "/v1";
 
-        // Should look something like "/..."
-        let graphiql_uri = version_extension.to_owned();
-        assert!(graphiql_uri.starts_with('/'));
+        let redirect_data = web::Data::new(RedirectData {
+            route: "/v0",
+            new_route: "/v1",
+        });
 
-        let schema = Arc::new(schema::create());
+        // Should look something like "/..."
+        let graphiql_data = web::Data::new(GraphiqlData {
+            uri: version_extension.to_owned(),
+        });
+        assert!(graphiql_data.uri.starts_with('/'));
 
         actix_web::rt::System::new()
             .block_on(
                 HttpServer::new(move || {
                     App::new()
-                        .app_data(actix_web::web::Data::new(schema.clone()))
-                        .wrap(middleware::Logger::default())
                         .wrap(
                             Cors::default()
                                 .allow_any_origin()
@@ -140,14 +226,18 @@ fn main() {
                         )
                         .service(
                             web::resource(version_extension)
-                                .route(web::post().to(graphql(db_pool.clone(), shared.clone()))),
+                                .app_data(shared.clone())
+                                .route(web::post().to(graphql)),
                         )
                         .service(
-                            web::resource("/v0").to(redirect_version("/v0", version_extension)),
+                            web::resource(redirect_data.route)
+                                .app_data(redirect_data.clone())
+                                .to(redirect_version),
                         )
                         .service(
                             web::resource("/graphiql")
-                                .route(web::get().to(graphiql(graphiql_uri.clone()))),
+                                .app_data(graphiql_data.clone())
+                                .route(web::get().to(graphiql)),
                         )
                 })
                 .bind(addr)?

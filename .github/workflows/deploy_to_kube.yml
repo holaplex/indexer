@@ -1,0 +1,140 @@
+name: Kubernetes deployment
+
+on:
+  push:
+    branches: [ dev, master ]
+
+jobs:
+  build:
+    name: Building and Pushing Image
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push Geyser consumer image
+        id: build-geyser-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+
+        run: |
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          app=geyser-consumer
+          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:$app-${GITHUB_REF##*/}-$git_hash"
+          docker build -t $image_tag --target $app .
+          echo "Pushing image to ECR..."
+          docker push $image_tag
+          echo "::set-output name=image::$image_tag"
+
+      - name: Build, tag, and push HTTP consumer image
+        id: build-http-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+
+        run: |
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          app=http-consumer
+          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:$app-${GITHUB_REF##*/}-$git_hash"
+          docker build -t $image_tag --target $app .
+          echo "Pushing image to ECR..."
+          docker push $image_tag
+          echo "::set-output name=image::$image_tag"
+
+      - name: Build, tag, and push Meilisearch consumer image
+        id: build-search-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+
+        run: |
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          app=search-consumer
+          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:$app-${GITHUB_REF##*/}-$git_hash"
+          docker build -t $image_tag --target $app .
+          echo "Pushing image to ECR..."
+          docker push $image_tag
+          echo "::set-output name=image::$image_tag"
+
+      - name: Build, tag, and push GraphQL image
+        id: build-graphql-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+
+        run: |
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          app=graphql
+          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:$app-${GITHUB_REF##*/}-$git_hash"
+          docker build -t $image_tag --target $app .
+          echo "Pushing image to ECR..."
+          docker push $image_tag
+          echo "::set-output name=image::$image_tag"
+
+      - name: Build, tag, and push Legacy indexer image
+        id: build-legacy-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+
+        run: |
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          app=legacy-storefronts
+          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:$app-${GITHUB_REF##*/}-$git_hash"
+          docker build -t $image_tag --target $app .
+          echo "Pushing image to ECR..."
+          docker push $image_tag
+          echo "::set-output name=image::$image_tag"
+
+      - name: Triggering deployment manifest update in kubes repository (main)
+        if: github.ref == 'refs/heads/master'
+        uses: actions/github-script@v6
+        env:
+          BRANCH: ${{ github.ref_name }}
+        with:
+          github-token: ${{ secrets.ACTIONS_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'holaplex',
+              repo: 'kubes',
+              workflow_id: 'indexer.yaml',
+              ref: 'main'
+            })
+
+      - name: Triggering deployment manifest update in kubes repository (dev)
+        if: github.ref == 'refs/heads/dev'
+        uses: actions/github-script@v6
+        env:
+          BRANCH: ${{ github.ref_name }}
+        with:
+          github-token: ${{ secrets.ACTIONS_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'holaplex',
+              repo: 'kubes',
+              workflow_id: 'indexer.yaml',
+              ref: process.env.BRANCH
+            })

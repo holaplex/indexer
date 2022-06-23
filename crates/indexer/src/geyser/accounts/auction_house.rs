@@ -44,7 +44,7 @@ pub(crate) async fn process(
             bs58::encode(account_data.auction_house_treasury).into_string(),
         ),
         treasury_withdrawal_destination: Owned(
-            bs58::encode(account_data.auction_house_treasury).into_string(),
+            bs58::encode(account_data.treasury_withdrawal_destination).into_string(),
         ),
         fee_withdrawal_destination: Owned(
             bs58::encode(account_data.fee_withdrawal_destination).into_string(),

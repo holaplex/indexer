@@ -16,15 +16,38 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
         let conn = self.db()?;
 
         let rows: Vec<models::SampleNft> = sql_query(
-                "SELECT sample_metadatas.creator_address, sample_metadatas.address, sample_metadatas.name, sample_metadatas.seller_fee_basis_points, sample_metadatas.mint_address, sample_metadatas.primary_sale_happened, sample_metadatas.description, sample_metadatas.image
+            "SELECT DISTINCT ON (sample_metadatas.address)
+                    sample_metadatas.creator_address,
+                    sample_metadatas.address,
+                    sample_metadatas.name,
+                    sample_metadatas.seller_fee_basis_points,
+                    sample_metadatas.mint_address,
+                    sample_metadatas.primary_sale_happened,
+                    sample_metadatas.update_authority_address,
+                    sample_metadatas.uri,
+                    sample_metadatas.description,
+                    sample_metadatas.image,
+                    sample_metadatas.category,
+                    sample_metadatas.model
                 FROM store_creators
                 JOIN LATERAL (
-                    SELECT metadatas.address AS address, metadatas.name AS name, metadatas.seller_fee_basis_points AS seller_fee_basis_points, metadatas.mint_address AS mint_address, metadatas.primary_sale_happened AS primary_sale_happened, metadata_jsons.description AS description, metadata_jsons.image AS image, store_creators.creator_address AS creator_address
+                    SELECT
+                        metadatas.address AS address,
+                        metadatas.name AS name,
+                        metadatas.seller_fee_basis_points AS seller_fee_basis_points,
+                        metadatas.mint_address AS mint_address,
+                        metadatas.primary_sale_happened AS primary_sale_happened,
+                        metadatas.update_authority_address AS update_authority_address,
+                        metadatas.uri AS uri,
+                        metadata_jsons.description AS description,
+                        metadata_jsons.image AS image,
+                        metadata_jsons.category AS category,
+                        metadata_jsons.model AS model,
+                        store_creators.creator_address AS creator_address
                     FROM metadatas
                     INNER JOIN metadata_jsons ON (metadatas.address = metadata_jsons.metadata_address)
                     INNER JOIN metadata_creators ON (metadatas.address = metadata_creators.metadata_address)
                     WHERE metadata_creators.creator_address = store_creators.creator_address
-                    ORDER BY metadatas.address DESC
                     LIMIT 3
                 ) AS sample_metadatas ON true
                 WHERE store_creators.creator_address = ANY($1);",
@@ -42,8 +65,12 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                      seller_fee_basis_points,
                      mint_address,
                      primary_sale_happened,
+                     update_authority_address,
+                     uri,
                      description,
                      image,
+                     category,
+                     model,
                  }| {
                     (
                         creator_address,
@@ -53,8 +80,13 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                             seller_fee_basis_points,
                             mint_address,
                             primary_sale_happened,
+                            update_authority_address,
+                            uri,
                             description,
                             image,
+                            category,
+                            model,
+                            slot: None,
                         }
                         .try_into(),
                     )

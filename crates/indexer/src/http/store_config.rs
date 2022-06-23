@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use indexer_core::db::{
-    insert_into,
+    delete, insert_into,
     models::{StoreConfigJson, StoreCreator},
     tables::{store_config_jsons, store_creators},
 };
@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use super::Client;
 use crate::prelude::*;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Creator {
     pub address: String,
 }
@@ -27,7 +27,7 @@ pub struct Metadata {
 pub struct Address {
     pub owner: String,
     pub auction_house: String,
-    pub store: String,
+    pub store: Option<String>,
     pub store_config: String,
 }
 
@@ -67,14 +67,9 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
     // TODO: parse failure shouldn't be an error, this stuff will be unstructured
     let json = client
         .http()
-        .get(url)
-        .timeout(client.timeout())
-        .send()
+        .run(|h| async move { h.get(url).send().await?.json::<SettingUri>().await })
         .await
-        .context("Store config JSON request failed")?
-        .json::<SettingUri>()
-        .await
-        .context("Failed to parse store config JSON")?;
+        .context("Store config JSON request failed")?;
 
     let addr = bs58::encode(config_key).into_string();
 
@@ -92,18 +87,32 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         subdomain: Owned(json.subdomain),
         owner_address: Owned(json.address.owner),
         auction_house_address: Owned(json.address.auction_house),
-        store_address: Some(Owned(json.address.store)),
+        store_address: json.address.store.map(Owned),
     };
 
     client
         .db()
         .run(move |db| {
-            insert_into(store_config_jsons::table)
+            use indexer_core::db::{DatabaseErrorKind, Error};
+
+            match insert_into(store_config_jsons::table)
                 .values(&row)
                 .on_conflict(store_config_jsons::config_address)
                 .do_update()
                 .set(&row)
                 .execute(db)
+            {
+                Ok(_) => Ok(()),
+                Err(Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
+                    warn!(
+                        "Rejecting storefront upsert for {:?} (subdomain {:?}) \
+                        violating unique constraint",
+                        row.name, row.subdomain
+                    );
+                    Ok(())
+                },
+                Err(e) => Err(e),
+            }
         })
         .await
         .context("failed to insert store config json")?;
@@ -112,22 +121,40 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         client
             .db()
             .run(move |db| {
-                creators.into_iter().try_for_each(|creator| {
-                    let row = StoreCreator {
-                        store_config_address: Owned(addr.clone()),
-                        creator_address: Owned(creator.address),
-                    };
+                let remove_creators = store_creators::table
+                    .filter(store_creators::store_config_address.eq(addr.clone()))
+                    .select(store_creators::creator_address)
+                    .get_results::<String>(db)
+                    .unwrap_or_else(|_| Vec::new())
+                    .into_iter()
+                    .filter(|address| !creators.clone().into_iter().any(|c| &c.address == address))
+                    .collect::<Vec<_>>();
 
-                    insert_into(store_creators::table)
-                        .values(&row)
-                        .on_conflict((
-                            store_creators::store_config_address,
-                            store_creators::creator_address,
-                        ))
-                        .do_update()
-                        .set(&row)
-                        .execute(db)
-                        .map(|_| ())
+                db.build_transaction().read_write().run(|| {
+                    delete(
+                        store_creators::table
+                            .filter(store_creators::creator_address.eq(any(remove_creators)))
+                            .filter(store_creators::store_config_address.eq(addr.clone())),
+                    )
+                    .execute(db)?;
+
+                    creators.into_iter().try_for_each(|creator| {
+                        let row = StoreCreator {
+                            store_config_address: Owned(addr.clone()),
+                            creator_address: Owned(creator.address),
+                        };
+
+                        insert_into(store_creators::table)
+                            .values(&row)
+                            .on_conflict((
+                                store_creators::store_config_address,
+                                store_creators::creator_address,
+                            ))
+                            .do_update()
+                            .set(&row)
+                            .execute(db)
+                            .map(|_| ())
+                    })
                 })
             })
             .await

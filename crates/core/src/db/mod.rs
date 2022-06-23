@@ -12,14 +12,15 @@ pub mod tables {
     pub use super::schema::*;
 }
 
-use std::env;
-
 pub use diesel::{
     backend::Backend,
-    debug_query, insert_into,
-    pg::{upsert::excluded, Pg},
+    debug_query, delete, expression, insert_into,
+    pg::{
+        upsert::{excluded, on_constraint},
+        Pg,
+    },
     query_dsl,
-    result::Error,
+    result::{DatabaseErrorKind, Error},
     select, serialize, sql_query, sql_types, update, Queryable,
 };
 use diesel::{pg, r2d2};
@@ -64,6 +65,26 @@ pub enum ConnectionType {
     Write,
 }
 
+/// Arguments for establishing a database connection
+#[derive(Debug, clap::Args)]
+pub struct ConnectArgs {
+    /// Connection string for a read-only database
+    #[clap(long, env, conflicts_with("database-write-url"))]
+    database_read_url: Option<String>,
+
+    /// Connection string for a writable database
+    #[clap(long, env, conflicts_with("database-read-url"))]
+    database_write_url: Option<String>,
+
+    /// Fallback database connection string
+    #[clap(
+        long,
+        env,
+        required_unless_present_any(["database-read-url", "database-write-url"])
+    )]
+    database_url: Option<String>,
+}
+
 impl From<ConnectMode> for ConnectionType {
     fn from(mode: ConnectMode) -> Self {
         match mode {
@@ -73,30 +94,42 @@ impl From<ConnectMode> for ConnectionType {
     }
 }
 
-/// Create a pooled connection to the Postgres database.  This will check for
-/// the presence of `DATABASE_(READ|WRITE)_URL` (depending on the mode
-/// specified) or else `DATABASE_URL`.
+/// Create a pooled connection to the Postgres database, using the given CLI
+/// arguments and a hint indicating if the database is writable.
 ///
 /// # Errors
-/// This function fails if neither of the above environment variables are found,
-/// if Diesel fails to construct a connection pool, or if any pending database
-/// migrations fail to run.
-pub fn connect(mode: ConnectMode) -> Result<(Pool, ConnectionType)> {
-    let mode_env = match mode {
-        ConnectMode::Read => "DATABASE_READ_URL",
-        ConnectMode::Write => "DATABASE_WRITE_URL",
+/// This function fails if Diesel fails to construct a connection pool or if any
+/// pending database migrations fail to run.
+pub fn connect(args: ConnectArgs, mode: ConnectMode) -> Result<(Pool, ConnectionType)> {
+    let ConnectArgs {
+        database_read_url,
+        database_write_url,
+        database_url,
+    } = args;
+
+    let mode_url = match mode {
+        ConnectMode::Read => database_read_url,
+        ConnectMode::Write => database_write_url,
     };
 
-    let (ty, url) = env::var_os(mode_env)
-        .map(|v| (mode.into(), v))
-        .or_else(|| env::var_os("DATABASE_URL").map(|v| (ConnectionType::Default, v)))
-        .ok_or_else(|| anyhow!("No value found for {} or DATABASE_URL", mode_env))?;
-    let url = url.to_string_lossy().into_owned();
+    let (ty, url) = mode_url
+        .map(|u| (mode.into(), u))
+        .or_else(|| database_url.map(|u| (ConnectionType::Default, u)))
+        .ok_or_else(|| {
+            anyhow!(
+                "Invalid database URL, expected a {} connection string",
+                match mode {
+                    ConnectMode::Read => "read-only",
+                    ConnectMode::Write => "writable",
+                }
+            )
+        })?;
 
     debug!("Connecting to db: {:?}", url);
 
     let man = ConnectionManager::new(url);
     let pool = Pool::builder()
+        .max_size(num_cpus::get().try_into().unwrap_or(u32::MAX))
         .min_idle(Some(1))
         .idle_timeout(Some(std::time::Duration::from_secs(60)))
         .build(man)

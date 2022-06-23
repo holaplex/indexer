@@ -13,7 +13,7 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
     let accounts = util::account_data_as_info(
         update.key,
         update.data,
-        pubkeys::auction(),
+        pubkeys::AUCTION,
         0,
         |account_info| {
             let auction = if account_info.data_len() >= BASE_AUCTION_DATA_SIZE {

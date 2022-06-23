@@ -1,4 +1,4 @@
-use scalars::Volume;
+use scalars::U64;
 
 use super::prelude::*;
 
@@ -6,9 +6,10 @@ use super::prelude::*;
 pub struct MintStats {
     pub auction_house: String,
     pub mint: String,
-    pub floor: Option<Volume>,
-    pub average: Option<Volume>,
-    pub volume_24hr: Option<Volume>,
+    pub floor: Option<U64>,
+    pub average: Option<U64>,
+    pub volume_24hr: Option<U64>,
+    pub volume_total: Option<U64>,
 }
 
 impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
@@ -21,6 +22,7 @@ impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
             floor,
             average,
             volume_24hr,
+            volume_total,
         }: models::MintStats,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -29,13 +31,14 @@ impl<'a> TryFrom<models::MintStats<'a>> for MintStats {
             floor: floor.map(TryInto::try_into).transpose()?,
             average: average.map(TryInto::try_into).transpose()?,
             volume_24hr: volume_24hr.map(TryInto::try_into).transpose()?,
+            volume_total: volume_total.map(TryInto::try_into).transpose()?,
         })
     }
 }
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct MarketStats {
-    pub nfts: Option<Volume>,
+    pub nfts: Option<U64>,
 }
 
 impl<'a> TryFrom<models::MarketStats<'a>> for MarketStats {

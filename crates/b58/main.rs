@@ -6,7 +6,7 @@ use std::{
 };
 
 use bs58::{decode, encode};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 struct Opts {
@@ -22,7 +22,7 @@ struct Opts {
     command: Command,
 }
 
-#[derive(Parser)]
+#[derive(Subcommand)]
 enum Command {
     Encode,
     Decode,

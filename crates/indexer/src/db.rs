@@ -9,9 +9,6 @@ use crate::prelude::*;
 /// Handle to a database pool used by an indexer consumer
 pub struct Pool(db::Pool, db::ConnectionType);
 
-impl std::panic::UnwindSafe for Pool {}
-impl std::panic::RefUnwindSafe for Pool {}
-
 impl Pool {
     pub(crate) fn new((pool, ty): (db::Pool, db::ConnectionType)) -> Self {
         Self(pool, ty)
