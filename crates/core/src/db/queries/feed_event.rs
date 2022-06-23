@@ -347,7 +347,6 @@ pub fn list_relay(
 
     events_query.limit(limit);
 
-
     if let Some(event_types) = include_types {
         for event_type in event_types {
             match event_type {
@@ -378,8 +377,7 @@ pub fn list_relay(
 
     events_query.order_by(FeedEvents::CreatedAt, Order::Desc);
 
-    let events_query = events_query
-        .to_string(PostgresQueryBuilder);
+    let events_query = events_query.to_string(PostgresQueryBuilder);
 
     diesel::sql_query(events_query)
         .load(conn)
