@@ -138,14 +138,16 @@ impl QueryRoot {
         description = "Returns the latest on chain events using the graph_program.",
         arguments(
             limit(description = "The query record limit"),
-            offset(description = "The query record offset")
+            is_forward(description = "Data record needed forward or backward"),
+            cursor(description = "The query record offset")
         )
     )]
     fn latest_feed_events(
         &self,
         ctx: &AppContext,
         limit: i32,
-        offset: i32,
+        is_forward: bool,
+        cursor: String,
         exclude_types: Option<Vec<String>>,
     ) -> FieldResult<Vec<FeedEvent>> {
         let conn = ctx.shared.db.get().context("failed to connect to db")?;
@@ -158,10 +160,11 @@ impl QueryRoot {
                 .collect()
         });
 
-        let feed_events = queries::feed_event::list(
+        let feed_events = queries::feed_event::list_relay(
             &conn,
             limit.try_into()?,
-            offset.try_into()?,
+            is_forward,
+            cursor,
             None,
             exclude_types_parsed,
         )?;
