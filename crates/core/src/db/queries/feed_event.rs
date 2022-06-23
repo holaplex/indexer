@@ -345,6 +345,8 @@ pub fn list_relay(
         events_query.and_where(Expr::col((FeedEvents::Table, FeedEvents::CreatedAt)).lt(cursor));
     }
 
+    events_query.limit(limit);
+
     if let Some(event_types) = exclude_types {
         for event_type in event_types {
             match event_type {
@@ -384,7 +386,6 @@ pub fn list_relay(
         .expr(Expr::asterisk())
         .from(Alias::new("events"))
         .order_by(FeedEvents::CreatedAt, Order::Desc)
-        .limit(limit)
         .clone();
 
     let events_query = events_query
