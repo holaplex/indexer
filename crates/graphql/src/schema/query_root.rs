@@ -505,7 +505,7 @@ impl QueryRoot {
             .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
-    
+
     #[graphql(description = "Get an NFT by metadata address.")]
     fn nft(
         &self,
@@ -529,7 +529,9 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
-    #[graphql(description = "Get a list of NFTs by metadata address (list version of 'nfts' endpoint).")]
+    #[graphql(
+        description = "Get a list of NFTs by metadata address (list version of 'nfts' endpoint)."
+    )]
     fn nfts_by_metadata_address(
         &self,
         context: &AppContext,
