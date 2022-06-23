@@ -340,6 +340,18 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{SettingType as Settingtype, Mode};
 
+    metadata_collection_keys (id) {
+        metadata_address -> Varchar,
+        collection_address -> Varchar,
+        verified -> Bool,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{SettingType as Settingtype, Mode};
+
     metadata_collections (id) {
         metadata_address -> Varchar,
         name -> Nullable<Text>,
@@ -566,6 +578,7 @@ allow_tables_to_appear_in_same_query!(
     listing_metadatas,
     listing_receipts,
     master_editions,
+    metadata_collection_keys,
     metadata_collections,
     metadata_creators,
     metadata_jsons,

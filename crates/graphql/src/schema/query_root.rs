@@ -12,8 +12,8 @@ use objects::{
 };
 use scalars::PublicKey;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, metadata_jsons, metadatas,
-    store_config_jsons, storefronts,
+    auction_caches, auction_datas, auction_datas_ext, metadata_collection_keys, metadata_jsons,
+    metadatas, store_config_jsons, storefronts,
 };
 
 use super::prelude::*;
@@ -119,6 +119,45 @@ impl QueryRoot {
         let nfts = queries::metadatas::list(&conn, query_options)?;
 
         Ok(nfts.into_iter().map(Into::into).collect())
+    }
+
+    #[graphql(description = "Get a list of Collection NFTs by the update authoritys")]
+    fn collection_nfts(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Filter on update authority address")]
+        update_authority_address: PublicKey<Wallet>,
+        #[graphql(description = "Limit for query")] limit: i32,
+        #[graphql(description = "Offset for query")] offset: i32,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = context.db_pool.get().context("failed to connect to db")?;
+        let query = metadatas::table
+            .inner_join(
+                metadata_collection_keys::table
+                    .on(metadatas::mint_address.eq(metadata_collection_keys.collection_address)),
+            )
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .filter(metadata::mint_address.eq(update_authority_address))
+            .filter(metadata_collection_keys::verified.eq(true))
+            .select((
+                metadatas::address,
+                metadatas::name,
+                metadatas::seller_fee_basis_points,
+                metadatas::mint_address,
+                metadatas::primary_sale_happened,
+                metadata_jsons::description,
+                metadata_jsons::image,
+            ))
+            .distinct()
+            .order(metadatas::address.asc())
+            .limit(limit)
+            .offset(offset);
+
+        let rows: Vec<Nft> = query.load(&conn).context("failed to load nft(s)")?;
+
+        return Ok(rows.into_iter().map(Into::into).collect());
     }
 
     fn wallet(
