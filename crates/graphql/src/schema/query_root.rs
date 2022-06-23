@@ -121,9 +121,48 @@ impl QueryRoot {
 
         let feed_events = queries::feed_event::list(
             &conn,
-            wallet.to_string(),
             limit.try_into()?,
             offset.try_into()?,
+            Some(wallet.to_string()),
+            exclude_types_parsed,
+        )?;
+
+        feed_events
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    #[graphql(
+        description = "Returns the latest on chain events using the graph_program.",
+        arguments(
+            limit(description = "The query record limit"),
+            offset(description = "The query record offset")
+        )
+    )]
+    fn latest_feed_events(
+        &self,
+        ctx: &AppContext,
+        limit: i32,
+        offset: i32,
+        exclude_types: Option<Vec<String>>,
+    ) -> FieldResult<Vec<FeedEvent>> {
+        let conn = ctx.shared.db.get().context("failed to connect to db")?;
+
+        let exclude_types_parsed: Option<Vec<EventType>> = exclude_types.map(|v_types| {
+            v_types
+                .iter()
+                .map(|v| v.parse::<EventType>())
+                .filter_map(Result::ok)
+                .collect()
+        });
+
+        let feed_events = queries::feed_event::list(
+            &conn,
+            limit.try_into()?,
+            offset.try_into()?,
+            None,
             exclude_types_parsed,
         )?;
 

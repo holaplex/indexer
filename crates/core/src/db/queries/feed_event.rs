@@ -103,9 +103,9 @@ pub enum EventType {
 #[allow(clippy::too_many_lines)]
 pub fn list(
     conn: &Connection,
-    wallet: String,
     limit: u64,
     offset: u64,
+    wallet: Option<String>,
     exclude_types: Option<Vec<EventType>>,
 ) -> Result<Vec<CompleteFeedEvent>> {
     let mut events_query = Query::select()
@@ -182,9 +182,14 @@ pub fn list(
             Expr::tbl(ListingEvents::Table, ListingEvents::FeedEventId)
                 .equals(FeedEvents::Table, FeedEvents::Id),
         )
-        .and_where(Expr::col((GraphConnections::Table, GraphConnections::FromAccount)).eq(wallet))
         .order_by(FeedEvents::CreatedAt, Order::Desc)
         .clone();
+
+    if let Some(wallet) = wallet {
+        events_query.and_where(
+            Expr::col((GraphConnections::Table, GraphConnections::FromAccount)).eq(wallet),
+        );
+    }
 
     if let Some(event_types) = exclude_types {
         for event_type in event_types {
