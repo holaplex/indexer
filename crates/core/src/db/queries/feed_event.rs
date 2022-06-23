@@ -347,6 +347,7 @@ pub fn list_relay(
 
     events_query.limit(limit);
 
+
     if let Some(event_types) = exclude_types {
         for event_type in event_types {
             match event_type {
@@ -375,21 +376,9 @@ pub fn list_relay(
         }
     }
 
-    let events_cte = CommonTableExpression::new()
-        .query(events_query)
-        .table_name(Alias::new("events"))
-        .clone();
-
-    let with_clause = Query::with().cte(events_cte).clone();
-
-    let events_query = Query::select()
-        .expr(Expr::asterisk())
-        .from(Alias::new("events"))
-        .order_by(FeedEvents::CreatedAt, Order::Desc)
-        .clone();
+    events_query.order_by(FeedEvents::CreatedAt, Order::Desc);
 
     let events_query = events_query
-        .with(with_clause)
         .to_string(PostgresQueryBuilder);
 
     diesel::sql_query(events_query)
