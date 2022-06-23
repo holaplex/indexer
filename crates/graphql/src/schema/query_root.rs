@@ -153,7 +153,9 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
-    #[graphql(description = "Returns featured collection NFTs ordered by volume (sum of purchase prices)")]
+    #[graphql(
+        description = "Returns featured collection NFTs ordered by volume (sum of purchase prices)"
+    )]
     async fn collections_featured_by_volume(
         &self,
         context: &AppContext,
