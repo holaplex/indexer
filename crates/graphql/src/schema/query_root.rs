@@ -121,9 +121,9 @@ impl QueryRoot {
 
         let feed_events = queries::feed_event::list(
             &conn,
-            wallet.to_string(),
             limit.try_into()?,
             offset.try_into()?,
+            Some(wallet.to_string()),
             exclude_types_parsed,
         )?;
 
@@ -158,10 +158,11 @@ impl QueryRoot {
                 .collect()
         });
 
-        let feed_events = queries::feed_event::list_latest(
+        let feed_events = queries::feed_event::list(
             &conn,
             limit.try_into()?,
             offset.try_into()?,
+            None,
             exclude_types_parsed,
         )?;
 
