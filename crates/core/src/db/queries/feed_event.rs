@@ -185,8 +185,8 @@ pub fn list(
         .order_by(FeedEvents::CreatedAt, Order::Desc)
         .clone();
 
-    if wallet.is_some() {
-        events_query.and_where(Expr::col((GraphConnections::Table, GraphConnections::FromAccount)).eq(wallet.unwrap()));
+    if  let Some(wallet)  = wallet {
+        events_query.and_where(Expr::col((GraphConnections::Table, GraphConnections::FromAccount)).eq(wallet));
 
     }
 
