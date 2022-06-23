@@ -610,6 +610,33 @@ impl QueryRoot {
             .collect::<Vec<MetadataJson>>())
     }
 
+    #[graphql(description = "returns all the collections matching the search term")]
+    async fn search_collections(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Search term")] term: String,
+        #[graphql(description = "Query limit")] limit: i32,
+        #[graphql(description = "Query offset")] offset: i32,
+    ) -> FieldResult<Vec<MetadataJson>> {
+        let search = &context.shared.search;
+
+        let query_result = search
+            .index("collections")
+            .search()
+            .with_query(&term)
+            .with_offset(offset.try_into()?)
+            .with_limit(limit.try_into()?)
+            .execute::<Value>()
+            .await
+            .context("failed to load search result for collections")?
+            .hits;
+
+        Ok(query_result
+            .into_iter()
+            .map(|r| r.result.into())
+            .collect::<Vec<MetadataJson>>())
+    }
+
     #[graphql(description = "returns profiles matching the search term")]
     async fn profiles(
         &self,

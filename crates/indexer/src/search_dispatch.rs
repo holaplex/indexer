@@ -23,7 +23,6 @@ pub struct MetadataDocument {
 #[derive(Debug, Serialize, Clone)]
 pub struct CollectionDocument {
     pub name: String,
-    pub description: Option<String>,
     pub image: Option<String>,
     pub mint_address: String,
 }

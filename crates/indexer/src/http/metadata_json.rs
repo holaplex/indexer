@@ -715,31 +715,21 @@ async fn upsert_collection_metadata(
     mint_address: String,
     is_for_backfill: bool,
 ) -> Result<()> {
-    let (address, name, image, description) = client
+    let (address, name, image) = client
         .db()
         .run({
             let mint_address = mint_address.clone();
             move |db| {
-                let (address, name, image, description) = metadatas::table
+                let (address, name, image) = metadatas::table
                     .inner_join(
                         metadata_jsons::table
                             .on(metadatas::address.eq(metadata_jsons::metadata_address)),
                     )
                     .filter(metadatas::mint_address.eq(&mint_address))
-                    .select((
-                        metadatas::address,
-                        metadatas::name,
-                        metadata_jsons::image,
-                        metadata_jsons::description,
-                    ))
+                    .select((metadatas::address, metadatas::name, metadata_jsons::image))
                     .first(db)?;
 
-                Result::<(String, String, Option<String>, Option<String>)>::Ok((
-                    address,
-                    name,
-                    image,
-                    description,
-                ))
+                Result::<(String, String, Option<String>)>::Ok((address, name, image))
             }
         })
         .await
@@ -770,7 +760,6 @@ async fn upsert_collection_metadata(
         .search()
         .upsert_collection(is_for_backfill, address, CollectionDocument {
             name,
-            description,
             image,
             mint_address,
         })
