@@ -73,6 +73,10 @@ impl Client {
             .await
             .context("failed to create name service index")?;
 
+        create_index(meili.clone(), "collections", "id")
+            .await
+            .context("failed to create collections index")?;
+
         let (trigger_upsert, upsert_rx) = mpsc::channel(1);
         let (stop_tx, stop_rx) = oneshot::channel();
 
