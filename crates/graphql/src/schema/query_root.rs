@@ -552,25 +552,67 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
+    #[graphql(description = "Get an NFT by metadata address.")]
     fn nft(
         &self,
         context: &AppContext,
-        #[graphql(description = "Address of NFT")] address: String,
+        #[graphql(description = "Metadata address of NFT")] address: String,
     ) -> FieldResult<Option<Nft>> {
         let conn = context.shared.db.get()?;
-        let mut rows: Vec<models::Nft> = metadatas::table
+        metadatas::table
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .filter(metadatas::address.eq(address))
             .select(queries::metadatas::NftColumns::default())
-            .limit(1)
-            .load(&conn)
-            .context("Failed to load metadata")?;
-
-        rows.pop()
+            .first::<models::Nft>(&conn)
+            .optional()
+            .context("Failed to load NFT by metadata address.")?
             .map(TryInto::try_into)
             .transpose()
+            .map_err(Into::into)
+    }
+
+    #[graphql(description = "Get an NFT by mint address.")]
+    fn nft_by_mint_address(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Mint address of NFT")] address: String,
+    ) -> FieldResult<Option<Nft>> {
+        let conn = context.shared.db.get()?;
+        metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .filter(metadatas::mint_address.eq(address))
+            .select(queries::metadatas::NftColumns::default())
+            .first::<models::Nft>(&conn)
+            .optional()
+            .context("Failed to load NFT by mint address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
+    }
+
+    #[graphql(description = "Get a list of NFTs by mint address.")]
+    fn nfts_by_mint_address(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Mint addresses of NFTs")] addresses: Vec<PublicKey<Nft>>,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = context.shared.db.get()?;
+        let rows: Vec<models::Nft> = metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .filter(metadatas::mint_address.eq(any(addresses)))
+            .select(queries::metadatas::NftColumns::default())
+            .load(&conn)
+            .context("Failed to load NFTs")?;
+
+        rows.into_iter()
+            .map(Nft::try_from)
+            .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
 
