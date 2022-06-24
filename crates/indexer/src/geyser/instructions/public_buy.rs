@@ -4,7 +4,7 @@ use indexer_core::{
         custom_types::OfferEventLifecycleEnum,
         insert_into,
         models::{FeedEventWallet, Offer, OfferEvent, PublicBuyInstruction},
-        select,
+        on_constraint, select,
         tables::{
             current_metadata_owners, feed_event_wallets, feed_events, metadatas, offer_events,
             offers, public_buy_instructions,
@@ -92,29 +92,26 @@ async fn upsert_into_offers_table<'a>(
     client
         .db()
         .run(move |db| {
-            let offer = select(exists(
+            let offer_exists = select(exists(
                 offers::table.filter(
                     offers::trade_state
                         .eq(row.trade_state.clone())
                         .and(offers::metadata.eq(row.metadata.clone())),
                 ),
             ))
-            .get_result::<bool>(db);
+            .get_result::<bool>(db)?;
 
-            if Ok(true) == offer {
-                return Ok(None);
-            }
-
-            let offer_uuid = insert_into(offers::table)
+            let offer_id = insert_into(offers::table)
                 .values(&row)
-                .on_conflict_do_nothing()
+                .on_conflict(on_constraint("offers_unique_fields"))
+                .do_update()
+                .set(&row)
                 .returning(offers::id)
-                .get_results::<Uuid>(db)?
-                .get(0)
-                .context("failed to get inserted offer")?
-                .to_string();
+                .get_result::<Uuid>(db)?;
 
-            let uuid = offer_uuid.clone();
+            if offer_exists {
+                return Ok(());
+            }
 
             db.build_transaction().read_write().run(|| {
                 let metadata_owner: String = current_metadata_owners::table
@@ -136,7 +133,7 @@ async fn upsert_into_offers_table<'a>(
                     .values(&OfferEvent {
                         feed_event_id,
                         lifecycle: OfferEventLifecycleEnum::Created,
-                        bid_receipt_address: Owned(offer_uuid),
+                        offer_id,
                     })
                     .execute(db)
                     .context("failed to insert offer created event")?;
@@ -157,7 +154,7 @@ async fn upsert_into_offers_table<'a>(
                     .execute(db)
                     .context("Failed to insert offer feed event wallet for metadata owner")?;
 
-                Result::<_>::Ok(Some((feed_event_id, uuid)))
+                Result::<_>::Ok(())
             })
         })
         .await

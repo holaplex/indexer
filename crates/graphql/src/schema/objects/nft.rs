@@ -7,8 +7,8 @@ use indexer_core::{
     util::unix_timestamp,
 };
 use objects::{
-    auction_house::AuctionHouse, bid_receipt::BidReceipt, listing_receipt::ListingReceipt,
-    profile::TwitterProfile, purchase_receipt::PurchaseReceipt, wallet::Wallet,
+    ah_listing::Listing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
+    profile::TwitterProfile, wallet::Wallet,
 };
 use reqwest::Url;
 use scalars::{PublicKey, U64};
@@ -439,22 +439,22 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
-    pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<ListingReceipt>> {
-        ctx.listing_receipts_loader
+    pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<Listing>> {
+        ctx.ah_listings_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<PurchaseReceipt>> {
-        ctx.purchase_receipts_loader
+    pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<Purchase>> {
+        ctx.purchases_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<BidReceipt>> {
-        ctx.bid_receipts_loader
+    pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<Offer>> {
+        ctx.offers_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)

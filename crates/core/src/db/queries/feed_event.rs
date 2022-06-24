@@ -42,7 +42,7 @@ enum MintEvents {
 #[derive(Iden)]
 enum OfferEvents {
     Table,
-    BidReceiptAddress,
+    OfferId,
     FeedEventId,
     Lifecycle,
 }
@@ -50,7 +50,7 @@ enum OfferEvents {
 #[derive(Iden)]
 enum ListingEvents {
     Table,
-    ListingReceiptAddress,
+    ListingId,
     FeedEventId,
     Lifecycle,
 }
@@ -58,7 +58,7 @@ enum ListingEvents {
 #[derive(Iden)]
 enum PurchaseEvents {
     Table,
-    PurchaseReceiptAddress,
+    PurchaseId,
     FeedEventId,
 }
 
@@ -123,16 +123,13 @@ pub fn list(
             TwitterHandleNameServices::TwitterHandle,
         ))
         .column((MintEvents::Table, MintEvents::MetadataAddress))
-        .column((
-            PurchaseEvents::Table,
-            PurchaseEvents::PurchaseReceiptAddress,
-        ))
-        .column((OfferEvents::Table, OfferEvents::BidReceiptAddress))
+        .column((PurchaseEvents::Table, PurchaseEvents::PurchaseId))
+        .column((OfferEvents::Table, OfferEvents::OfferId))
         .expr_as(
             Expr::col((OfferEvents::Table, OfferEvents::Lifecycle)),
             Alias::new("offer_lifecycle"),
         )
-        .column((ListingEvents::Table, ListingEvents::ListingReceiptAddress))
+        .column((ListingEvents::Table, ListingEvents::ListingId))
         .expr_as(
             Expr::col((ListingEvents::Table, ListingEvents::Lifecycle)),
             Alias::new("listing_lifecycle"),
@@ -198,22 +195,16 @@ pub fn list(
                     Expr::col((FollowEvents::Table, FollowEvents::GraphConnectionAddress))
                         .is_null(),
                 ),
-                EventType::Offer => events_query.and_where(
-                    Expr::col((OfferEvents::Table, OfferEvents::BidReceiptAddress)).is_null(),
-                ),
+                EventType::Offer => events_query
+                    .and_where(Expr::col((OfferEvents::Table, OfferEvents::OfferId)).is_null()),
                 EventType::Mint => events_query.and_where(
                     Expr::col((MintEvents::Table, MintEvents::MetadataAddress)).is_null(),
                 ),
                 EventType::Purchase => events_query.and_where(
-                    Expr::col((
-                        PurchaseEvents::Table,
-                        PurchaseEvents::PurchaseReceiptAddress,
-                    ))
-                    .is_null(),
+                    Expr::col((PurchaseEvents::Table, PurchaseEvents::PurchaseId)).is_null(),
                 ),
                 EventType::Listing => events_query.and_where(
-                    Expr::col((ListingEvents::Table, ListingEvents::ListingReceiptAddress))
-                        .is_null(),
+                    Expr::col((ListingEvents::Table, ListingEvents::ListingId)).is_null(),
                 ),
             };
         }
