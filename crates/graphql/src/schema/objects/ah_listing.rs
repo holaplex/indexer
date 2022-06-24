@@ -1,10 +1,12 @@
+use indexer_core::uuid::Uuid;
 use objects::{auction_house::AuctionHouse, nft::Nft, wallet::Wallet};
 use scalars::{PublicKey, U64};
 
 use super::prelude::*;
 
 #[derive(Debug, Clone)]
-pub struct Listing {
+pub struct AhListing {
+    pub id: Uuid,
     pub trade_state: String,
     pub seller: PublicKey<Wallet>,
     pub auction_house: PublicKey<AuctionHouse>,
@@ -16,7 +18,11 @@ pub struct Listing {
 
 #[graphql_object(Context = AppContext)]
 #[graphql(description = "Auction house listing")]
-impl Listing {
+impl AhListing {
+    fn id(&self) -> &Uuid {
+        &self.id
+    }
+
     fn trade_state(&self) -> &str {
         &self.trade_state
     }
@@ -53,10 +59,11 @@ impl Listing {
     }
 }
 
-impl<'a> TryFrom<models::Listing<'a>> for Listing {
+impl<'a> TryFrom<models::Listing<'a>> for AhListing {
     type Error = std::num::TryFromIntError;
     fn try_from(
         models::Listing {
+            id,
             trade_state,
             auction_house,
             seller,
@@ -68,6 +75,7 @@ impl<'a> TryFrom<models::Listing<'a>> for Listing {
         }: models::Listing,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
+            id: id.unwrap_or_default(),
             trade_state: trade_state.into_owned(),
             auction_house: auction_house.into_owned().into(),
             seller: seller.into_owned().into(),

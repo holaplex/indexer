@@ -1,7 +1,7 @@
 use dataloaders::{Batcher, Loader, TwitterBatcher};
 use indexer_core::uuid::Uuid;
 use objects::{
-    ah_listing::Listing as AhListing,
+    ah_listing::AhListing,
     ah_offer::Offer as AhOffer,
     ah_purchase::Purchase as AhPurchase,
     auction_house::AuctionHouse,

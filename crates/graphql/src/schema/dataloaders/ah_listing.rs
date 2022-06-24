@@ -1,13 +1,13 @@
 use indexer_core::uuid::Uuid;
-use objects::{ah_listing::Listing, nft::Nft};
+use objects::{ah_listing::AhListing, nft::Nft};
 use scalars::PublicKey;
 use tables::{current_metadata_owners, listings, metadatas};
 
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<Uuid, Option<Listing>> for Batcher {
-    async fn load(&mut self, addresses: &[Uuid]) -> TryBatchMap<Uuid, Option<Listing>> {
+impl TryBatchFn<Uuid, Option<AhListing>> for Batcher {
+    async fn load(&mut self, addresses: &[Uuid]) -> TryBatchMap<Uuid, Option<AhListing>> {
         let conn = self.db()?;
 
         let rows: Vec<models::Listing> = listings::table
@@ -24,11 +24,11 @@ impl TryBatchFn<Uuid, Option<Listing>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Nft>, Vec<Listing>> for Batcher {
+impl TryBatchFn<PublicKey<Nft>, Vec<AhListing>> for Batcher {
     async fn load(
         &mut self,
         addresses: &[PublicKey<Nft>],
-    ) -> TryBatchMap<PublicKey<Nft>, Vec<Listing>> {
+    ) -> TryBatchMap<PublicKey<Nft>, Vec<AhListing>> {
         let conn = self.db()?;
 
         let rows: Vec<models::Listing> = listings::table

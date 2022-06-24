@@ -1,8 +1,8 @@
 use indexer_core::{db::models, uuid::Uuid};
 use juniper::GraphQLUnion;
 use objects::{
-    ah_listing::Listing, ah_offer::Offer, ah_purchase::Purchase, graph_connection::GraphConnection,
-    nft::Nft, profile::TwitterProfile, wallet::Wallet,
+    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase,
+    graph_connection::GraphConnection, nft::Nft, profile::TwitterProfile, wallet::Wallet,
 };
 
 use super::prelude::*;
@@ -207,7 +207,7 @@ impl ListingEvent {
         &self.listing_id
     }
 
-    pub async fn listing(&self, ctx: &AppContext) -> FieldResult<Option<Listing>> {
+    pub async fn listing(&self, ctx: &AppContext) -> FieldResult<Option<AhListing>> {
         ctx.ah_listing_loader
             .load(self.listing_id)
             .await

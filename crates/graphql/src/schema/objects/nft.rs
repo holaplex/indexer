@@ -7,7 +7,7 @@ use indexer_core::{
     util::unix_timestamp,
 };
 use objects::{
-    ah_listing::Listing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
+    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
     profile::TwitterProfile, wallet::Wallet,
 };
 use reqwest::Url;
@@ -439,7 +439,7 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
-    pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<Listing>> {
+    pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>> {
         ctx.ah_listings_loader
             .load(self.address.clone().into())
             .await
