@@ -33,7 +33,6 @@ http = [
   "indexer-rabbitmq/http-indexer",
   "indexer-rabbitmq/producer",
   "indexer-rabbitmq/search-indexer",
-  
 ]
 reqwest-client = [
   "reqwest",
