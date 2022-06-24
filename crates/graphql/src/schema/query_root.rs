@@ -513,17 +513,15 @@ impl QueryRoot {
         #[graphql(description = "Metadata address of NFT")] address: String,
     ) -> FieldResult<Option<Nft>> {
         let conn = context.shared.db.get()?;
-        let mut rows: Vec<models::Nft> = metadatas::table
+        metadatas::table
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .filter(metadatas::address.eq(address))
             .select(queries::metadatas::NftColumns::default())
-            .limit(1)
-            .load(&conn)
-            .context("Failed to load metadata")?;
-
-        rows.pop()
+            .first::<models::Nft>(&conn)
+            .optional()
+            .context("Failed to load NFT by metadata address.")?
             .map(TryInto::try_into)
             .transpose()
             .map_err(Into::into)
@@ -536,17 +534,15 @@ impl QueryRoot {
         #[graphql(description = "Mint address of NFT")] address: String,
     ) -> FieldResult<Option<Nft>> {
         let conn = context.shared.db.get()?;
-        let mut rows: Vec<models::Nft> = metadatas::table
+        metadatas::table
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .filter(metadatas::mint_address.eq(address))
             .select(queries::metadatas::NftColumns::default())
-            .limit(1)
-            .load(&conn)
-            .context("Failed to load metadata")?;
-
-        rows.pop()
+            .first::<models::Nft>(&conn)
+            .optional()
+            .context("Failed to load NFT by mint address.")?
             .map(TryInto::try_into)
             .transpose()
             .map_err(Into::into)
