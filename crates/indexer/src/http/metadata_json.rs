@@ -744,15 +744,10 @@ async fn upsert_collection_metadata(
         .await;
 
     match document {
-        Err(e)
-            if matches!(
-                &e,
-                Meilisearch(MeilisearchError {
-                    error_code: MeiliSearchErrorCode::DocumentNotFound,
-                    ..
-                })
-            ) =>
-        {
+        Err(Meilisearch(MeilisearchError {
+            error_code: MeiliSearchErrorCode::DocumentNotFound,
+            ..
+        })) => {
             let image = image
                 .clone()
                 .and_then(|i| Url::parse(&i).ok())
@@ -776,9 +771,7 @@ async fn upsert_collection_metadata(
                 .await
                 .context("Failed to dispatch collection document job")?;
         },
-        Err(e) => {
-            bail!("Failed to fetch collection document {}", e);
-        },
+        Err(e) => return Err(e).context("Failed to fetch collection document"),
         Ok(_) => return Ok(()),
     }
 
