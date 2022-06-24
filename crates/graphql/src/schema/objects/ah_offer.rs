@@ -12,6 +12,7 @@ pub struct Offer {
     pub metadata: PublicKey<Nft>,
     pub auction_house: PublicKey<AuctionHouse>,
     pub price: U64,
+    pub purchase_id: Option<Uuid>,
     pub trade_state_bump: i32,
     pub token_account: Option<String>,
     pub created_at: DateTime<Utc>,
@@ -44,6 +45,10 @@ impl Offer {
 
     fn price(&self) -> U64 {
         self.price
+    }
+
+    fn purchase_id(&self) -> Option<Uuid> {
+        self.purchase_id
     }
 
     fn trade_state_bump(&self) -> i32 {
@@ -85,6 +90,7 @@ impl<'a> TryFrom<models::Offer<'a>> for Offer {
             metadata,
             token_account,
             price,
+            purchase_id,
             token_size,
             trade_state_bump,
             created_at,
@@ -98,6 +104,7 @@ impl<'a> TryFrom<models::Offer<'a>> for Offer {
             buyer: buyer.into_owned().into(),
             metadata: metadata.into_owned().into(),
             price: price.try_into()?,
+            purchase_id,
             token_account: token_account.map(Cow::into_owned),
             auction_house: auction_house.into_owned().into(),
             trade_state_bump: trade_state_bump.into(),
