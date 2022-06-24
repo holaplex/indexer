@@ -598,13 +598,13 @@ impl NftCount {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, GraphQLObject)]
 pub struct MetadataJson {
     pub address: String,
     pub name: String,
     pub mint_address: String,
     pub image: Option<String>,
-    pub creator_address: String,
+    pub creator_address: Option<String>,
     pub creator_twitter_handle: Option<String>,
 }
 
@@ -630,40 +630,12 @@ impl From<serde_json::Value> for MetadataJson {
             creator_address: value
                 .get("creator_address")
                 .and_then(Value::as_str)
-                .map(Into::into)
-                .unwrap_or_default(),
+                .map(Into::into),
             creator_twitter_handle: value
                 .get("creator_twitter_handle")
                 .and_then(Value::as_str)
                 .map(Into::into),
         }
-    }
-}
-
-#[graphql_object(Context = AppContext)]
-impl MetadataJson {
-    pub fn address(&self) -> &str {
-        &self.address
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn mint_address(&self) -> &str {
-        &self.mint_address
-    }
-
-    pub fn image(&self) -> Option<&str> {
-        self.image.as_deref()
-    }
-
-    pub fn creator_address(&self) -> &str {
-        &self.creator_address
-    }
-
-    pub fn creator_twitter_handle(&self) -> Option<&str> {
-        self.creator_twitter_handle.as_deref()
     }
 }
 

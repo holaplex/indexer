@@ -3,7 +3,7 @@
 pub use meilisearch_sdk::*;
 
 /// Arguments for constructing a Meilisearch client
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, Clone, clap::Parser)]
 pub struct Args {
     /// Meilisearch database endpoint
     #[clap(long, env)]
