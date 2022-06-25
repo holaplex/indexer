@@ -202,9 +202,10 @@ impl Client {
         }
 
         info!(
-            "Selected upsert interval: {}",
+            "Selected upsert interval: {} duration={}",
             chrono::Duration::from_std(interval)
-                .map_or_else(|_| "???".into(), util::duration_hhmmssfff)
+                .map_or_else(|_| "???".into(), util::duration_hhmmssfff),
+            interval.as_secs_f64()
         );
 
         let elapsed = Local::now() - start;
