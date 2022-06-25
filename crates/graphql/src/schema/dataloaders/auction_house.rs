@@ -48,7 +48,7 @@ impl TryBatchFn<PublicKey<StoreConfig>, Vec<AuctionHouse>> for Batcher {
 
         Ok(rows
             .into_iter()
-            .map(|c| (c.0.clone(), c.1.try_into()))
+            .map(|(k,v)| (k, v.try_into()))
             .batch(addresses))
     }
 }
