@@ -18,6 +18,8 @@ pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
     account_data: ConnectionV2,
+    slot: u64,
+    write_version: u64,
 ) -> Result<()> {
     let row = DbGraphConnection {
         address: Owned(bs58::encode(key).into_string()),
@@ -28,6 +30,8 @@ pub(crate) async fn process(
             .disconnected_at
             .map(util::unix_timestamp)
             .transpose()?,
+        slot: slot.try_into()?,
+        write_version: write_version.try_into()?,
     };
 
     client

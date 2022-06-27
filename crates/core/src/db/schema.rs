@@ -640,6 +640,8 @@ table! {
         to_account -> Varchar,
         connected_at -> Timestamp,
         disconnected_at -> Nullable<Timestamp>,
+        slot -> Int8,
+        write_version -> Int8,
     }
 }
 

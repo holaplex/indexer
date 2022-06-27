@@ -758,6 +758,10 @@ pub struct GraphConnection<'a> {
     pub connected_at: NaiveDateTime,
     /// Graph Connection 'disconnected_at'
     pub disconnected_at: Option<NaiveDateTime>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `candy_machines` table
