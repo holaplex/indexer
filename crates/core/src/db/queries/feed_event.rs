@@ -30,6 +30,7 @@ enum GraphConnections {
     Table,
     ToAccount,
     FromAccount,
+    DisconnectedAt,
 }
 
 #[derive(Iden)]
@@ -183,9 +184,13 @@ pub fn list(
         .clone();
 
     if let Some(wallet) = wallet {
-        events_query.and_where(
-            Expr::col((GraphConnections::Table, GraphConnections::FromAccount)).eq(wallet),
-        );
+        events_query
+            .and_where(
+                Expr::col((GraphConnections::Table, GraphConnections::FromAccount)).eq(wallet),
+            )
+            .and_where(
+                Expr::col((GraphConnections::Table, GraphConnections::DisconnectedAt)).is_null(),
+            );
     }
 
     if let Some(event_types) = exclude_types {
