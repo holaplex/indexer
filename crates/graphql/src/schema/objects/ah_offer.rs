@@ -39,10 +39,6 @@ impl Offer {
         &self.metadata
     }
 
-    fn auction_house(&self) -> &PublicKey<AuctionHouse> {
-        &self.auction_house
-    }
-
     fn price(&self) -> U64 {
         self.price
     }
@@ -74,6 +70,14 @@ impl Offer {
     pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_loader
             .load(self.metadata.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
+        context
+            .auction_house_loader
+            .load(self.auction_house.clone())
             .await
             .map_err(Into::into)
     }
