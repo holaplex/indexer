@@ -35,7 +35,7 @@ pub fn by_volume(
 fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
     format!(
         r"
-    select
+    SELECT
         metadatas.address,
         metadatas.name,
         metadatas.seller_fee_basis_points,
@@ -48,19 +48,19 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
         metadata_jsons.image,
         metadata_jsons.category,
         metadata_jsons.model
-    from metadata_jsons
-    inner join metadatas on (metadatas.address = metadata_jsons.metadata_address)
-    inner join (
-        select metadata_collection_keys.collection_address as collection, sum(purchase_receipts.price) as volume
-            from purchase_receipts
-            inner join metadatas on (purchase_receipts.metadata = metadatas.address)
-            inner join metadata_collection_keys on (metadatas.address = metadata_collection_keys.metadata_address)
-            where ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
-            group by metadata_collection_keys.collection_address
-            order by volume {order_direction}
-            limit $2
-            offset $3
-    ) a on (a.collection = metadatas.mint_address)
+    FROM metadata_jsons
+    INNER JOIN metadatas ON (metadatas.address = metadata_jsons.metadata_address)
+    INNER JOIN (
+        SELECT metadata_collection_keys.collection_address AS collection, SUM(purchase_receipts.price) AS volume
+            FROM purchase_receipts
+            INNER JOIN metadatas on (purchase_receipts.metadata = metadatas.address)
+            INNER JOIN metadata_collection_keys on (metadatas.address = metadata_collection_keys.metadata_address)
+            WHERE ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
+            GROUP BY metadata_collection_keys.collection_address
+            ORDER BY volume {order_direction}
+            LIMIT $2
+            OFFSET $3
+    ) a ON (a.collection = metadatas.mint_address)
     -- $1: addresses::text[]
     -- $2: limit::integer
     -- $3: offset::integer",
