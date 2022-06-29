@@ -110,7 +110,10 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
             FROM listing_receipts
             INNER JOIN metadatas on (listing_receipts.metadata = metadatas.address)
             INNER JOIN metadata_collection_keys on (metadatas.address = metadata_collection_keys.metadata_address)
-            WHERE ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
+            WHERE 
+                ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
+                AND listing_receipts.purchase_receipt IS NULL
+                AND listing_receipts.canceled_at IS NULL
             GROUP BY metadata_collection_keys.collection_address
             ORDER BY market_cap {order_direction}
             LIMIT $2
