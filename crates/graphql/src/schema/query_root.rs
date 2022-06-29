@@ -173,9 +173,8 @@ impl QueryRoot {
         let addresses: Option<Vec<String>> = match term {
             Some(term) => {
                 let search = &context.shared.search;
-                //TODO refactor for collections
                 let search_result = search
-                    .index("metadatas")
+                    .index("collections")
                     .search()
                     .with_query(&term)
                     .with_offset(offset.try_into()?)
