@@ -24,7 +24,7 @@ pub fn by_volume(
     limit: impl ToSql<Integer, Pg>,
     offset: impl ToSql<Integer, Pg>,
 ) -> Result<Vec<Nft>> {
-    diesel::sql_query(make_by_volume_query_string(&order_direction))
+    diesel::sql_query(make_by_volume_query_string(order_direction))
         .bind(addresses)
         .bind(limit)
         .bind(offset)
@@ -32,8 +32,9 @@ pub fn by_volume(
         .context("Failed to load collections by volume")
 }
 
-fn make_by_volume_query_string(order_direction: &OrderDirection) -> String {
-    format!(r"
+fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
+    format!(
+        r"
     select
         metadatas.address,
         metadatas.name,
@@ -62,5 +63,7 @@ fn make_by_volume_query_string(order_direction: &OrderDirection) -> String {
     ) a on (a.collection = metadatas.mint_address)
     -- $1: addresses::text[]
     -- $2: limit::integer
-    -- $3: offset::integer", order_direction = order_direction)
+    -- $3: offset::integer",
+        order_direction = order_direction
+    )
 }

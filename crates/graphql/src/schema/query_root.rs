@@ -729,7 +729,7 @@ impl QueryRoot {
         #[graphql(offset = "Return results starting from this index")] offset: i32,
     ) -> FieldResult<Vec<Nft>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
-    
+
         let addresses: Option<Vec<String>> = match term {
             Some(term) => {
                 let search = &context.shared.search;
@@ -743,7 +743,7 @@ impl QueryRoot {
                     .await
                     .context("failed to load search result for collections")?
                     .hits;
-    
+
                 Some(
                     search_result
                         .into_iter()
@@ -755,7 +755,7 @@ impl QueryRoot {
         };
 
         println!("{:?}", addresses);
-    
+
         let collections = queries::collections::by_volume(
             &conn,
             addresses,
@@ -763,7 +763,7 @@ impl QueryRoot {
             limit,
             offset,
         )?;
-    
+
         collections
             .into_iter()
             .map(TryInto::try_into)
