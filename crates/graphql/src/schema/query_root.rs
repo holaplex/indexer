@@ -714,6 +714,62 @@ impl QueryRoot {
     }
 
     #[graphql(
+        description = "Returns featured collection NFTs ordered by market cap (floor price * number of active listings)"
+    )]
+    async fn collections_featured_by_market_cap(
+        &self,
+        context: &AppContext,
+        #[graphql(
+            term = "Return collections whose metadata match this term (case insensitive); sorting occurs among limited search results (rather than searching after sorting)"
+        )]
+        term: Option<String>,
+        #[graphql(order_direction = "Sort ascending or descending")]
+        order_direction: OrderDirection,
+        #[graphql(limit = "Return at most this many results")] limit: i32,
+        #[graphql(offset = "Return results starting from this index")] offset: i32,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = context.shared.db.get().context("failed to connect to db")?;
+
+        let addresses: Option<Vec<String>> = match term {
+            Some(term) => {
+                let search = &context.shared.search;
+                let search_result = search
+                    .index("collections")
+                    .search()
+                    .with_query(&term)
+                    .with_offset(offset.try_into()?)
+                    .with_limit(limit.try_into()?)
+                    .execute::<Value>()
+                    .await
+                    .context("failed to load search result for collections")?
+                    .hits;
+
+                Some(
+                    search_result
+                        .into_iter()
+                        .map(|r| MetadataJson::from(r.result).mint_address)
+                        .collect(),
+                )
+            },
+            None => None,
+        };
+
+        let collections = queries::collections::by_market_cap(
+            &conn,
+            addresses,
+            order_direction.into(),
+            limit,
+            offset,
+        )?;
+
+        collections
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    #[graphql(
         description = "Returns featured collection NFTs ordered by volume (sum of purchase prices)"
     )]
     async fn collections_featured_by_volume(
