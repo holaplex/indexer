@@ -2,7 +2,7 @@ name: Kubernetes deployment
 
 on:
   push:
-    branches: [ dev, master ]
+    branches: [ dev, master, anshul/multi-spl-token]
 
 jobs:
   build:
@@ -125,7 +125,7 @@ jobs:
             })
 
       - name: Triggering deployment manifest update in kubes repository (dev)
-        if: github.ref == 'refs/heads/dev'
+        if: github.ref != 'refs/heads/master'
         uses: actions/github-script@v6
         env:
           BRANCH: ${{ github.ref_name }}
