@@ -2,6 +2,7 @@
 
 mod accounts;
 mod client;
+mod instructions;
 mod programs;
 
 use std::{collections::HashSet, sync::Arc};
@@ -102,6 +103,10 @@ pub async fn process_message<H: std::hash::BuildHasher>(
                 bs58::encode(update.owner).into_string()
             );
             Ok(())
+        },
+        Message::InstructionNotify(ins) if ins.program == pubkeys::AUCTION_HOUSE => {
+            programs::auction_house::process_instruction(client, &ins.data, &ins.accounts, ins.slot)
+                .await
         },
         Message::InstructionNotify { .. } => Ok(()),
     }

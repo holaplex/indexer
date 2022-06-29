@@ -1,11 +1,14 @@
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
-    db::queries,
+    db::{
+        queries,
+        tables::{bid_receipts, listing_receipts, metadata_jsons},
+    },
     util::unix_timestamp,
 };
 use objects::{
-    auction_house::AuctionHouse, bid_receipt::BidReceipt, listing_receipt::ListingReceipt,
-    profile::TwitterProfile, purchase_receipt::PurchaseReceipt, wallet::Wallet,
+    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
+    profile::TwitterProfile, wallet::Wallet,
 };
 use reqwest::Url;
 use scalars::{PublicKey, U64};
@@ -16,8 +19,8 @@ use super::prelude::*;
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
     pub metadata_address: String,
-    pub value: String,
-    pub trait_type: String,
+    pub value: Option<String>,
+    pub trait_type: Option<String>,
 }
 
 #[graphql_object(Context = AppContext)]
@@ -26,12 +29,12 @@ impl NftAttribute {
         &self.metadata_address
     }
 
-    pub fn value(&self) -> &str {
-        &self.value
+    pub fn value(&self) -> Option<&str> {
+        self.value.as_deref()
     }
 
-    pub fn trait_type(&self) -> &str {
-        &self.trait_type
+    pub fn trait_type(&self) -> Option<&str> {
+        self.trait_type.as_deref()
     }
 }
 
@@ -48,12 +51,8 @@ impl<'a> TryFrom<models::MetadataAttribute<'a>> for NftAttribute {
     ) -> Result<Self> {
         Ok(Self {
             metadata_address: metadata_address.into_owned(),
-            value: value
-                .ok_or_else(|| anyhow!("Missing attribute value"))?
-                .into_owned(),
-            trait_type: trait_type
-                .ok_or_else(|| anyhow!("Missing attribute trait type"))?
-                .into_owned(),
+            value: value.map(Cow::into_owned),
+            trait_type: trait_type.map(Cow::into_owned),
         })
     }
 }
@@ -440,22 +439,22 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
-    pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<ListingReceipt>> {
-        ctx.listing_receipts_loader
+    pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>> {
+        ctx.ah_listings_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<PurchaseReceipt>> {
-        ctx.purchase_receipts_loader
+    pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<Purchase>> {
+        ctx.purchases_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<BidReceipt>> {
-        ctx.bid_receipts_loader
+    pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<Offer>> {
+        ctx.offers_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
@@ -468,8 +467,8 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
-    pub async fn collections(&self, ctx: &AppContext) -> FieldResult<Vec<CollectionNft>> {
-        ctx.nft_collections_loader
+    pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNft>> {
+        ctx.nft_collection_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
@@ -599,13 +598,13 @@ impl NftCount {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, GraphQLObject)]
 pub struct MetadataJson {
     pub address: String,
     pub name: String,
     pub mint_address: String,
     pub image: Option<String>,
-    pub creator_address: String,
+    pub creator_address: Option<String>,
     pub creator_twitter_handle: Option<String>,
 }
 
@@ -631,8 +630,7 @@ impl From<serde_json::Value> for MetadataJson {
             creator_address: value
                 .get("creator_address")
                 .and_then(Value::as_str)
-                .map(Into::into)
-                .unwrap_or_default(),
+                .map(Into::into),
             creator_twitter_handle: value
                 .get("creator_twitter_handle")
                 .and_then(Value::as_str)
@@ -641,29 +639,49 @@ impl From<serde_json::Value> for MetadataJson {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct NftsStats;
+
 #[graphql_object(Context = AppContext)]
-impl MetadataJson {
-    pub fn address(&self) -> &str {
-        &self.address
+impl NftsStats {
+    #[graphql(description = "The total number of indexed NFTs")]
+    fn total_nfts(&self, context: &AppContext) -> FieldResult<i32> {
+        let conn = context.shared.db.get()?;
+
+        let count: i64 = metadata_jsons::table
+            .count()
+            .get_result(&conn)
+            .context("failed to load total NFTs count")?;
+
+        Ok(count.try_into()?)
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
+    #[graphql(description = "The total number of buy-now listings")]
+    fn buy_now_listings(&self, context: &AppContext) -> FieldResult<i32> {
+        let conn = context.shared.db.get()?;
+
+        let count: i64 = listing_receipts::table
+            .filter(listing_receipts::price.is_not_null())
+            .filter(listing_receipts::purchase_receipt.is_null())
+            .filter(listing_receipts::canceled_at.is_null())
+            .count()
+            .get_result(&conn)
+            .context("failed to load listed nfts count")?;
+
+        Ok(count.try_into()?)
     }
 
-    pub fn mint_address(&self) -> &str {
-        &self.mint_address
-    }
+    #[graphql(description = "The total number of NFTs with active offers")]
+    fn nfts_with_active_offers(&self, context: &AppContext) -> FieldResult<i32> {
+        let conn = context.shared.db.get()?;
 
-    pub fn image(&self) -> Option<&str> {
-        self.image.as_deref()
-    }
+        let count: i64 = bid_receipts::table
+            .filter(bid_receipts::purchase_receipt.is_null())
+            .filter(bid_receipts::canceled_at.is_null())
+            .count()
+            .get_result(&conn)
+            .context("failed to load listed nfts count")?;
 
-    pub fn creator_address(&self) -> &str {
-        &self.creator_address
-    }
-
-    pub fn creator_twitter_handle(&self) -> Option<&str> {
-        self.creator_twitter_handle.as_deref()
+        Ok(count.try_into()?)
     }
 }

@@ -660,6 +660,10 @@ pub struct BidReceipt<'a> {
     pub created_at: NaiveDateTime,
     /// Canceled_at timestamp
     pub canceled_at: Option<NaiveDateTime>,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write_version
+    pub write_version: i64,
 }
 
 /// A row in the `listing_receipts` table
@@ -693,6 +697,10 @@ pub struct ListingReceipt<'a> {
     pub created_at: NaiveDateTime,
     /// Canceled_at timestamp
     pub canceled_at: Option<NaiveDateTime>,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write_version
+    pub write_version: i64,
 }
 
 /// A row in the `purchase_receipts` table
@@ -719,6 +727,10 @@ pub struct PurchaseReceipt<'a> {
     pub bump: i16,
     /// Created at
     pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write_version
+    pub write_version: i64,
 }
 
 /// A row in the `store_creators` table
@@ -746,6 +758,10 @@ pub struct GraphConnection<'a> {
     pub connected_at: NaiveDateTime,
     /// Graph Connection 'disconnected_at'
     pub disconnected_at: Option<NaiveDateTime>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `candy_machines` table
@@ -1834,18 +1850,18 @@ pub struct CompleteFeedEvent {
     /// metadata address that triggered the mint event
     #[sql_type = "Nullable<VarChar>"]
     pub metadata_address: Option<String>,
-    /// purchase receipt address that triggered the purchase event
-    #[sql_type = "Nullable<VarChar>"]
-    pub purchase_receipt_address: Option<String>,
-    #[sql_type = "Nullable<VarChar>"]
-    /// bid receipt address that triggered the offer event
-    pub bid_receipt_address: Option<String>,
+    /// purchase id that triggered the purchase event
+    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
+    pub purchase_id: Option<Uuid>,
+    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
+    /// offer id that triggered the offer event
+    pub offer_id: Option<Uuid>,
     /// the lifecycle of the offer event
     #[sql_type = "Nullable<OfferEventLifecycle>"]
     pub offer_lifecycle: Option<OfferEventLifecycleEnum>,
-    /// listing receipt address that triggered the listing event
-    #[sql_type = "Nullable<Text>"]
-    pub listing_receipt_address: Option<String>,
+    /// listing id that triggered the listing event
+    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
+    pub listing_id: Option<Uuid>,
     /// the lifecycle of the listing event
     #[sql_type = "Nullable<ListingEventLifecycle>"]
     pub listing_lifecycle: Option<ListingEventLifecycleEnum>,
@@ -1885,11 +1901,11 @@ pub struct MintEvent<'a> {
 }
 
 /// A row in the `offer_events` table
-#[derive(Debug, Clone, Queryable, Insertable)]
+#[derive(Debug, Clone, Copy, Queryable, Insertable)]
 #[table_name = "offer_events"]
-pub struct OfferEvent<'a> {
-    /// foreign key to `bid_recipts` address
-    pub bid_receipt_address: Cow<'a, str>,
+pub struct OfferEvent {
+    /// foreign key to `offers` id
+    pub offer_id: Uuid,
     /// foreign key to `feed_events`
     pub feed_event_id: Uuid,
     ///  enum of offer lifecycle
@@ -1897,11 +1913,11 @@ pub struct OfferEvent<'a> {
 }
 
 /// A row in the `listing_events` table
-#[derive(Debug, Clone, Queryable, Insertable)]
+#[derive(Debug, Clone, Copy, Queryable, Insertable)]
 #[table_name = "listing_events"]
-pub struct ListingEvent<'a> {
-    /// foreign key to `listing_receipts` address
-    pub listing_receipt_address: Cow<'a, str>,
+pub struct ListingEvent {
+    /// foreign key to `listings` id
+    pub listing_id: Uuid,
     /// foreign key to `feed_events`
     pub feed_event_id: Uuid,
     /// enum of listing lifecycle
@@ -1909,11 +1925,11 @@ pub struct ListingEvent<'a> {
 }
 
 /// A row in the `purchase_events` table
-#[derive(Debug, Clone, Queryable, Insertable)]
+#[derive(Debug, Clone, Copy, Queryable, Insertable)]
 #[table_name = "purchase_events"]
-pub struct PurchaseEvent<'a> {
-    /// foreign key to `purchase_receipts` address
-    pub purchase_receipt_address: Cow<'a, str>,
+pub struct PurchaseEvent {
+    /// foreign key to `purchases` id
+    pub purchase_id: Uuid,
     /// foreign key to `feed_events`
     pub feed_event_id: Uuid,
 }
@@ -1937,4 +1953,404 @@ pub struct WalletTotal {
     pub followers: i64,
     /// wallet following
     pub following: i64,
+}
+
+/// A row in the `buy_instructions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct BuyInstruction<'a> {
+    /// wallet address
+    pub wallet: Cow<'a, str>,
+    /// Wallet used to pay for the Bid
+    pub payment_account: Cow<'a, str>,
+    /// Transfer authority pubkey
+    pub transfer_authority: Cow<'a, str>,
+    /// Treasury mint pubkey
+    pub treasury_mint: Cow<'a, str>,
+    /// Nft Token account pubkey
+    pub token_account: Cow<'a, str>,
+    /// Metadata account pubkey
+    pub metadata: Cow<'a, str>,
+    /// Escrow account pubkey where funds are deposited
+    pub escrow_payment_account: Cow<'a, str>,
+    /// Authority account pubkey
+    pub authority: Cow<'a, str>,
+    /// Auction house pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Auction house fee account pubkey
+    pub auction_house_fee_account: Cow<'a, str>,
+    /// Buyer trade state account pubkey
+    pub buyer_trade_state: Cow<'a, str>,
+    /// trade state bump
+    pub trade_state_bump: i16,
+    /// escrow payment bump
+    pub escrow_payment_bump: i16,
+    /// buyer price in lamports
+    pub buyer_price: i64,
+    /// Token size (usually 1)
+    pub token_size: i64,
+    /// Timestamp when 'Buy' instruction was received
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+/// A row in the `public_buy_instructions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct PublicBuyInstruction<'a> {
+    /// wallet address
+    pub wallet: Cow<'a, str>,
+    /// Wallet used to pay for the Bid
+    pub payment_account: Cow<'a, str>,
+    /// Transfer authority pubkey
+    pub transfer_authority: Cow<'a, str>,
+    /// Treasury mint pubkey
+    pub treasury_mint: Cow<'a, str>,
+    /// Nft Token account pubkey
+    pub token_account: Cow<'a, str>,
+    /// Metadata account pubkey
+    pub metadata: Cow<'a, str>,
+    /// Escrow account pubkey where funds are deposited
+    pub escrow_payment_account: Cow<'a, str>,
+    /// Authority account pubkey
+    pub authority: Cow<'a, str>,
+    /// Auction house pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Auction house fee account pubkey
+    pub auction_house_fee_account: Cow<'a, str>,
+    /// Buyer trade state account pubkey
+    pub buyer_trade_state: Cow<'a, str>,
+    /// trade state bump
+    pub trade_state_bump: i16,
+    /// escrow payment bump
+    pub escrow_payment_bump: i16,
+    /// buyer price in lamports
+    pub buyer_price: i64,
+    /// Token size (usually 1)
+    pub token_size: i64,
+    /// Timestamp when 'Buy' instruction was received
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+/// A row in the `sell_instructions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct SellInstruction<'a> {
+    /// wallet address
+    pub wallet: Cow<'a, str>,
+    /// Nft Token account pubkey
+    pub token_account: Cow<'a, str>,
+    /// Metadata account pubkey
+    pub metadata: Cow<'a, str>,
+    /// Authority account pubkey
+    pub authority: Cow<'a, str>,
+    /// Auction house pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Auction house fee account pubkey
+    pub auction_house_fee_account: Cow<'a, str>,
+    /// Seller trade state pubkey
+    pub seller_trade_state: Cow<'a, str>,
+    /// free_seller_trade_state pubkey
+    pub free_seller_trader_state: Cow<'a, str>,
+    /// Program address signing the transaction
+    pub program_as_signer: Cow<'a, str>,
+    /// trade state bump
+    pub trade_state_bump: i16,
+    /// free trade state bump
+    pub free_trade_state_bump: i16,
+    /// program_as_signer bump
+    pub program_as_signer_bump: i16,
+    /// Buyer price in lamports
+    pub buyer_price: i64,
+    /// Token size (usually 1)
+    pub token_size: i64,
+    /// Timestamp when 'Sell' instruction was received
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+/// A row in the `execute_sale_instructions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct ExecuteSaleInstruction<'a> {
+    /// Buyer walllet address
+    pub buyer: Cow<'a, str>,
+    /// seller wallet address
+    pub seller: Cow<'a, str>,
+    /// Nft Token account address
+    pub token_account: Cow<'a, str>,
+    /// Token mint address
+    pub token_mint: Cow<'a, str>,
+    /// Metadata account address
+    pub metadata: Cow<'a, str>,
+    /// Treasury mint address
+    pub treasury_mint: Cow<'a, str>,
+    /// Escrow payment account address
+    pub escrow_payment_account: Cow<'a, str>,
+    /// Seller payment receipt account address
+    pub seller_payment_receipt_account: Cow<'a, str>,
+    /// Buyer receipt token account addres
+    pub buyer_receipt_token_account: Cow<'a, str>,
+    /// Authority account address
+    pub authority: Cow<'a, str>,
+    /// Auction house program address
+    pub auction_house: Cow<'a, str>,
+    /// Auction house fee account address
+    pub auction_house_fee_account: Cow<'a, str>,
+    /// Auction house treasury account address
+    pub auction_house_treasury: Cow<'a, str>,
+    /// Buyer trade state account address
+    pub buyer_trade_state: Cow<'a, str>,
+    /// Seller trade state account address
+    pub seller_trade_state: Cow<'a, str>,
+    /// Free trade state account address
+    pub free_trade_state: Cow<'a, str>,
+    /// Program address signing the transaction
+    pub program_as_signer: Cow<'a, str>,
+    /// Escrow payment bump
+    pub escrow_payment_bump: i16,
+    /// Free Trade state bump
+    pub free_trade_state_bump: i16,
+    /// Program address bump
+    pub program_as_signer_bump: i16,
+    /// Buyer price in lamports
+    pub buyer_price: i64,
+    /// Token size (usually 1)
+    pub token_size: i64,
+    /// Timestamp when 'ExecuteSale' instruction was received
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+/// A row in the `cancel_instructions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct CancelInstruction<'a> {
+    /// wallet address
+    pub wallet: Cow<'a, str>,
+    /// Nft Token account pubkey
+    pub token_account: Cow<'a, str>,
+    /// Token mint address
+    pub token_mint: Cow<'a, str>,
+    /// Authority account address
+    pub authority: Cow<'a, str>,
+    /// Auction house program address
+    pub auction_house: Cow<'a, str>,
+    /// Auction house fee account address
+    pub auction_house_fee_account: Cow<'a, str>,
+    /// Trade state account address
+    pub trade_state: Cow<'a, str>,
+    /// Buyer price in lamports
+    pub buyer_price: i64,
+    /// Token size (usually 1)
+    pub token_size: i64,
+    /// Timestamp when 'Cancel' instruction was received
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+/// A row in the `deposit_instructions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct DepositInstruction<'a> {
+    /// wallet address
+    pub wallet: Cow<'a, str>,
+    /// Wallet used to deposit the funds into account
+    pub payment_account: Cow<'a, str>,
+    /// Transfer authority pubkey
+    pub transfer_authority: Cow<'a, str>,
+    /// Escrow account pubkey where funds are deposited
+    pub escrow_payment_account: Cow<'a, str>,
+    /// Treasury mint pubkey
+    pub treasury_mint: Cow<'a, str>,
+    /// Authority account pubkey
+    pub authority: Cow<'a, str>,
+    /// Auction house program pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Auction house fee account pubkey
+    pub auction_house_fee_account: Cow<'a, str>,
+    /// escrow payment bump
+    pub escrow_payment_bump: i16,
+    /// Amount in lamports deposited
+    pub amount: i64,
+    /// Timestamp when 'Deposit' instruction was received
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+/// A row in the `withdraw_instructions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct WithdrawInstruction<'a> {
+    /// wallet address
+    pub wallet: Cow<'a, str>,
+    /// Receipt account address
+    pub receipt_account: Cow<'a, str>,
+    /// Escrow account pubkey from where the funds are withdrawn
+    pub escrow_payment_account: Cow<'a, str>,
+    /// Treasury mint pubkey
+    pub treasury_mint: Cow<'a, str>,
+    /// Authority account pubkey
+    pub authority: Cow<'a, str>,
+    /// Auction house program pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Auction house fee account pubkey
+    pub auction_house_fee_account: Cow<'a, str>,
+    /// escrow payment bump
+    pub escrow_payment_bump: i16,
+    /// Amount in lamports withdrawn
+    pub amount: i64,
+    /// Timestamp when 'Withdraw' instruction was received
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+/// A row in the `withdraw_from_fee_instructions` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct WithdrawFromFeeInstruction<'a> {
+    /// Authority account pubkey
+    pub authority: Cow<'a, str>,
+    /// Wallet where the fee is deposited
+    pub fee_withdrawal_destination: Cow<'a, str>,
+    /// Auction house fee account pubkey
+    pub auction_house_fee_account: Cow<'a, str>,
+    /// Auction house program pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Amount in lamports withdrawn
+    pub amount: i64,
+    /// Timestamp when 'WithdrawFromFee' instruction was received
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+/// A row in the `withdraw_from_treasury` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct WithdrawFromTreasuryInstruction<'a> {
+    /// Treasury mint account pubkey
+    pub treasury_mint: Cow<'a, str>,
+    /// Authority account pubkey
+    pub authority: Cow<'a, str>,
+    /// Treasury withdrawl wallet pubkey
+    pub treasury_withdrawal_destination: Cow<'a, str>,
+    /// Auction house treasury account pubkey
+    pub auction_house_treasury: Cow<'a, str>,
+    /// Auction house program pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Amount in lamports withdrawn
+    pub amount: i64,
+    /// Timestamp when 'WithdrawFromTreasury' instruction was received
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+/// A row in the `offers` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Offer<'a> {
+    /// Random Uuid primary key from offers table
+    /// Optional so that it can be generated randomly when other fields are inserted into table
+    /// Deserialzed as Uuid as id field is primary key so not null
+    #[diesel(deserialize_as = "Uuid")]
+    pub id: Option<Uuid>,
+    /// Trade State account pubkey
+    pub trade_state: Cow<'a, str>,
+    /// Auction house account pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Buyer address
+    pub buyer: Cow<'a, str>,
+    /// Metadata address
+    pub metadata: Cow<'a, str>,
+    /// Token account address
+    pub token_account: Option<Cow<'a, str>>,
+    /// Purchase receipt address
+    pub purchase_id: Option<Uuid>,
+    /// Price
+    pub price: i64,
+    /// Token size
+    pub token_size: i64,
+    /// Trade State bump
+    pub trade_state_bump: i16,
+    /// Created_at timestamp
+    pub created_at: NaiveDateTime,
+    /// Canceled_at timestamp
+    pub canceled_at: Option<NaiveDateTime>,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write_version
+    pub write_version: Option<i64>,
+}
+
+/// A row in the `purchases` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Purchase<'a> {
+    /// Random Uuid primary key from offers table
+    /// Optional so that it can be generated randomly when other fields are inserted into table
+    /// Deserialzed as Uuid as id field is primary key so not null
+    #[diesel(deserialize_as = "Uuid")]
+    pub id: Option<Uuid>,
+    /// Buyer account pubkey
+    pub buyer: Cow<'a, str>,
+    /// Seller account pubkey
+    pub seller: Cow<'a, str>,
+    /// Auction House account pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Metadata
+    pub metadata: Cow<'a, str>,
+    /// Token size
+    pub token_size: i64,
+    /// Price
+    pub price: i64,
+    /// Created at
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write_version
+    pub write_version: Option<i64>,
+}
+
+/// A row in the `listings` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct Listing<'a> {
+    /// Random Uuid primary key from offers table
+    /// Optional so that it can be generated randomly when other fields are inserted into table
+    /// Deserialzed as Uuid as id field is primary key so not null
+    #[diesel(deserialize_as = "Uuid")]
+    pub id: Option<Uuid>,
+    /// Trade state account pubkey
+    pub trade_state: Cow<'a, str>,
+    /// Auction House pubkey
+    pub auction_house: Cow<'a, str>,
+    /// Seller account pubkey
+    pub seller: Cow<'a, str>,
+    /// Metadata Address
+    pub metadata: Cow<'a, str>,
+    /// PurchaseReceipt account address
+    pub purchase_id: Option<Uuid>,
+    /// Price
+    pub price: i64,
+    /// Token Size
+    pub token_size: i64,
+    /// Trade State Bump
+    pub trade_state_bump: i16,
+    /// Created_at timestamp
+    pub created_at: NaiveDateTime,
+    /// Canceled_at timestamp
+    pub canceled_at: Option<NaiveDateTime>,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write_version
+    pub write_version: Option<i64>,
 }

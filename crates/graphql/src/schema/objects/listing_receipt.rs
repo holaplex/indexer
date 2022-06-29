@@ -103,6 +103,7 @@ impl<'a> TryFrom<models::ListingReceipt<'a>> for ListingReceipt {
             purchase_receipt,
             token_size,
             bump,
+            ..
         }: models::ListingReceipt,
     ) -> Result<Self, Self::Error> {
         Ok(Self {

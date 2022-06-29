@@ -16,8 +16,8 @@ use objects::{
     listing::{Listing, ListingColumns, ListingRow},
     listing_receipt::ListingReceipt,
     marketplace::Marketplace,
-    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator},
-    profile::TwitterProfile,
+    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
+    profile::{ProfilesStats, TwitterProfile},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
@@ -140,9 +140,9 @@ impl QueryRoot {
 
         let feed_events = queries::feed_event::list(
             &conn,
-            wallet.to_string(),
             limit.try_into()?,
             offset.try_into()?,
+            Some(wallet.to_string()),
             exclude_types_parsed,
         )?;
 
@@ -154,56 +154,41 @@ impl QueryRoot {
     }
 
     #[graphql(
-        description = "Returns featured collection NFTs ordered by volume (sum of purchase prices)"
+        description = "Returns the latest on chain events using the graph_program.",
+        arguments(
+            limit(description = "The query record limit"),
+            is_forward(description = "Data record needed forward or backward"),
+            cursor(description = "The query record offset")
+        )
     )]
-    async fn collections_featured_by_volume(
+    fn latest_feed_events(
         &self,
-        context: &AppContext,
-        #[graphql(
-            term = "Return collections whose metadata match this term (case insensitive); sorting occurs among limited search results (rather than searching after sorting)"
-        )]
-        term: Option<String>,
-        #[graphql(order_direction = "Sort ascending or descending")]
-        order_direction: OrderDirection,
-        #[graphql(limit = "Return at most this many results")] limit: i32,
-        #[graphql(offset = "Return results starting from this index")] offset: i32,
-    ) -> FieldResult<Vec<Nft>> {
-        let conn = context.shared.db.get().context("failed to connect to db")?;
+        ctx: &AppContext,
+        limit: i32,
+        is_forward: bool,
+        cursor: String,
+        include_types: Option<Vec<String>>,
+    ) -> FieldResult<Vec<FeedEvent>> {
+        let conn = ctx.shared.db.get().context("failed to connect to db")?;
 
-        let addresses: Option<Vec<String>> = match term {
-            Some(term) => {
-                let search = &context.shared.search;
-                let search_result = search
-                    .index("collections")
-                    .search()
-                    .with_query(&term)
-                    .with_offset(offset.try_into()?)
-                    .with_limit(limit.try_into()?)
-                    .execute::<Value>()
-                    .await
-                    .context("failed to load search result for collections")?
-                    .hits;
+        let include_types_parsed: Option<Vec<EventType>> = include_types.map(|v_types| {
+            v_types
+                .iter()
+                .map(|v| v.parse::<EventType>())
+                .filter_map(Result::ok)
+                .collect()
+        });
 
-                // TODO refactor for collections
-                Some(
-                    search_result
-                        .into_iter()
-                        .map(|r| MetadataJson::from(r.result).address)
-                        .collect(),
-                )
-            },
-            None => None,
-        };
-
-        let collections = queries::collections::by_volume(
+        let feed_events = queries::feed_event::list_relay(
             &conn,
-            addresses,
-            order_direction.into(),
-            limit,
-            offset,
+            limit.try_into()?,
+            is_forward,
+            cursor,
+            None,
+            include_types_parsed,
         )?;
 
-        collections
+        feed_events
             .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
@@ -368,6 +353,9 @@ impl QueryRoot {
         #[graphql(description = "Filter on creator address")] creators: Option<
             Vec<PublicKey<Wallet>>,
         >,
+        #[graphql(description = "Filter on update authorities")] update_authorities: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
         #[graphql(description = "Filter on offerers address")] offerers: Option<
             Vec<PublicKey<Wallet>>,
         >,
@@ -426,6 +414,7 @@ impl QueryRoot {
             addresses,
             owners: owners.map(|a| a.into_iter().map(Into::into).collect()),
             creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
+            update_authorities: update_authorities.map(|a| a.into_iter().map(Into::into).collect()),
             offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed,
@@ -440,6 +429,11 @@ impl QueryRoot {
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
+    }
+
+    #[graphql(description = "Stats aggregated across all indexed NFTs")]
+    fn nfts_stats(&self) -> NftsStats {
+        NftsStats
     }
 
     fn featured_listings(
@@ -504,6 +498,49 @@ impl QueryRoot {
         Ok(Wallet::new(address, twitter_handle))
     }
 
+    fn wallets(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Addresses of the wallets")] addresses: Vec<PublicKey<Wallet>>,
+    ) -> FieldResult<Vec<Wallet>> {
+        if addresses.is_empty() {
+            return Err(FieldError::new(
+                "You must supply at least one address to query.",
+                graphql_value!({ "addresses": "Vec<String>"}),
+            ));
+        }
+
+        let conn = context.shared.db.get()?;
+
+        let twitter_handles = queries::twitter_handle_name_service::get_multiple(
+            &conn,
+            addresses.iter().map(ToString::to_string).collect(),
+        )?;
+
+        let wallets = twitter_handles.into_iter().fold(
+            addresses
+                .into_iter()
+                .map(|a| (a, None))
+                .collect::<HashMap<_, _>>(),
+            |mut h,
+             models::TwitterHandle {
+                 wallet_address,
+                 twitter_handle,
+                 ..
+             }| {
+                *h.entry(wallet_address.into_owned().into()).or_insert(None) =
+                    Some(twitter_handle.into_owned());
+
+                h
+            },
+        );
+
+        Ok(wallets
+            .into_iter()
+            .map(|(k, v)| Wallet::new(k, v))
+            .collect())
+    }
+
     fn listings(&self, context: &AppContext) -> FieldResult<Vec<Listing>> {
         let now = Local::now().naive_utc();
         let conn = context.shared.db.get()?;
@@ -534,25 +571,67 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
+    #[graphql(description = "Get an NFT by metadata address.")]
     fn nft(
         &self,
         context: &AppContext,
-        #[graphql(description = "Address of NFT")] address: String,
+        #[graphql(description = "Metadata address of NFT")] address: String,
     ) -> FieldResult<Option<Nft>> {
         let conn = context.shared.db.get()?;
-        let mut rows: Vec<models::Nft> = metadatas::table
+        metadatas::table
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .filter(metadatas::address.eq(address))
             .select(queries::metadatas::NftColumns::default())
-            .limit(1)
-            .load(&conn)
-            .context("Failed to load metadata")?;
-
-        rows.pop()
+            .first::<models::Nft>(&conn)
+            .optional()
+            .context("Failed to load NFT by metadata address.")?
             .map(TryInto::try_into)
             .transpose()
+            .map_err(Into::into)
+    }
+
+    #[graphql(description = "Get an NFT by mint address.")]
+    fn nft_by_mint_address(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Mint address of NFT")] address: String,
+    ) -> FieldResult<Option<Nft>> {
+        let conn = context.shared.db.get()?;
+        metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .filter(metadatas::mint_address.eq(address))
+            .select(queries::metadatas::NftColumns::default())
+            .first::<models::Nft>(&conn)
+            .optional()
+            .context("Failed to load NFT by mint address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
+    }
+
+    #[graphql(description = "Get a list of NFTs by mint address.")]
+    fn nfts_by_mint_address(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Mint addresses of NFTs")] addresses: Vec<PublicKey<Nft>>,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = context.shared.db.get()?;
+        let rows: Vec<models::Nft> = metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .filter(metadatas::mint_address.eq(any(addresses)))
+            .select(queries::metadatas::NftColumns::default())
+            .load(&conn)
+            .context("Failed to load NFTs")?;
+
+        rows.into_iter()
+            .map(Nft::try_from)
+            .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
 
@@ -634,6 +713,91 @@ impl QueryRoot {
             .collect::<Vec<MetadataJson>>())
     }
 
+    #[graphql(
+        description = "Returns featured collection NFTs ordered by volume (sum of purchase prices)"
+    )]
+    async fn collections_featured_by_volume(
+        &self,
+        context: &AppContext,
+        #[graphql(
+            term = "Return collections whose metadata match this term (case insensitive); sorting occurs among limited search results (rather than searching after sorting)"
+        )]
+        term: Option<String>,
+        #[graphql(order_direction = "Sort ascending or descending")]
+        order_direction: OrderDirection,
+        #[graphql(limit = "Return at most this many results")] limit: i32,
+        #[graphql(offset = "Return results starting from this index")] offset: i32,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = context.shared.db.get().context("failed to connect to db")?;
+    
+        let addresses: Option<Vec<String>> = match term {
+            Some(term) => {
+                let search = &context.shared.search;
+                let search_result = search
+                    .index("collections")
+                    .search()
+                    .with_query(&term)
+                    .with_offset(offset.try_into()?)
+                    .with_limit(limit.try_into()?)
+                    .execute::<Value>()
+                    .await
+                    .context("failed to load search result for collections")?
+                    .hits;
+    
+                Some(
+                    search_result
+                        .into_iter()
+                        .map(|r| MetadataJson::from(r.result).mint_address)
+                        .collect(),
+                )
+            },
+            None => None,
+        };
+
+        println!("{:?}", addresses);
+    
+        let collections = queries::collections::by_volume(
+            &conn,
+            addresses,
+            order_direction.into(),
+            limit,
+            offset,
+        )?;
+    
+        collections
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    #[graphql(description = "returns all the collections matching the search term")]
+    async fn search_collections(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Search term")] term: String,
+        #[graphql(description = "Query limit")] limit: i32,
+        #[graphql(description = "Query offset")] offset: i32,
+    ) -> FieldResult<Vec<MetadataJson>> {
+        let search = &context.shared.search;
+
+        let query_result = search
+            .index("collections")
+            .search()
+            .with_query(&term)
+            .with_offset(offset.try_into()?)
+            .with_limit(limit.try_into()?)
+            .execute::<Value>()
+            .await
+            .context("failed to load search result for collections")?
+            .hits;
+
+        Ok(query_result
+            .into_iter()
+            .map(|r| r.result.into())
+            .collect::<Vec<MetadataJson>>())
+    }
+
     #[graphql(description = "returns profiles matching the search term")]
     async fn profiles(
         &self,
@@ -659,6 +823,11 @@ impl QueryRoot {
             .into_iter()
             .map(|r| r.result.into())
             .collect::<Vec<Wallet>>())
+    }
+
+    #[graphql(description = "returns stats about profiles")]
+    async fn profiles_stats(&self) -> ProfilesStats {
+        ProfilesStats
     }
 
     #[graphql(

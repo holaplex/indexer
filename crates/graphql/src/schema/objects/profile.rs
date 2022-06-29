@@ -52,3 +52,21 @@ impl TwitterProfile {
         &self.description
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct ProfilesStats;
+
+#[graphql_object(Context = AppContext)]
+impl ProfilesStats {
+    #[graphql(description = "The total number of indexed profiles")]
+    fn total_profiles(&self, context: &AppContext) -> FieldResult<i32> {
+        let conn = context.shared.db.get()?;
+
+        let count: i64 = twitter_handle_name_services::table
+            .count()
+            .get_result(&conn)
+            .context("failed to load total profiles count")?;
+
+        Ok(count.try_into()?)
+    }
+}
