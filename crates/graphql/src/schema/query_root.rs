@@ -754,8 +754,6 @@ impl QueryRoot {
             None => None,
         };
 
-        println!("{:?}", addresses);
-
         let collections = queries::collections::by_volume(
             &conn,
             addresses,
