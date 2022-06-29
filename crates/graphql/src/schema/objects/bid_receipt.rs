@@ -112,6 +112,7 @@ impl<'a> TryFrom<models::BidReceipt<'a>> for BidReceipt {
             trade_state_bump,
             created_at,
             canceled_at,
+            ..
         }: models::BidReceipt,
     ) -> Result<Self, Self::Error> {
         Ok(Self {

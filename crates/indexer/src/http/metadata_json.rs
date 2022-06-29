@@ -1,7 +1,7 @@
 use std::fmt::{self, Debug, Display};
 
 use indexer_core::{
-    assets::{proxy_url, proxy_url_hinted, AssetHint, AssetIdentifier},
+    assets::{proxy_url, proxy_url_hinted, AssetIdentifier},
     db::{
         insert_into,
         models::{
@@ -9,19 +9,25 @@ use indexer_core::{
             MetadataJson as DbMetadataJson,
         },
         tables::{
-            attributes, files, metadata_collections, metadata_creators, metadata_jsons, metadatas,
-            twitter_handle_name_services,
+            attributes, files, metadata_collection_keys, metadata_collections, metadata_creators,
+            metadata_jsons, metadatas, twitter_handle_name_services,
         },
         update, Connection,
     },
     hash::HashMap,
+    meilisearch::errors::{
+        Error::Meilisearch, ErrorCode as MeiliSearchErrorCode, MeilisearchError,
+    },
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::Client;
-use crate::{prelude::*, search_dispatch::MetadataDocument};
+use crate::{
+    prelude::*,
+    search_dispatch::{CollectionDocument, MetadataDocument},
+};
 
 type SlotInfo = (i64, i64);
 
@@ -173,25 +179,26 @@ async fn fetch_json(
 
 async fn try_locate_json(
     client: &Client,
-    url: &Url,
-    id: &AssetIdentifier,
+    id: &AssetIdentifier<'_>,
     meta_key: Pubkey,
 ) -> Result<Option<(MetadataJsonResult, Vec<u8>, Url)>> {
     // Set to true for fallback
     const TRY_LAST_RESORT: bool = false;
+    // Set to true to fetch links with no fingerprint
+    const FETCH_NON_PERMAWEB: bool = true;
 
     let mut resp = Ok(None);
 
-    for hint in id
-        .ipfs
-        .iter()
-        .map(|_| AssetHint::Ipfs)
-        .chain(id.arweave.iter().map(|_| AssetHint::Arweave))
-    {
-        let url = proxy_url_hinted(client.proxy_args(), id, hint, None)
-            .map(|u| u.unwrap_or_else(|| unreachable!()));
+    for (fingerprint, hint) in id.fingerprints_hinted() {
+        let url = if let Some(hint) = hint {
+            proxy_url_hinted(client.proxy_args(), id, hint, None)
+                .map(|u| u.unwrap_or_else(|| unreachable!()))
+        } else if FETCH_NON_PERMAWEB {
+            Ok(id.url.clone())
+        } else {
+            continue;
+        };
         let url_str = url.as_ref().map_or("???", Url::as_str).to_owned();
-        let fingerprint = id.fingerprint(Some(hint)).unwrap_or_else(|| unreachable!());
 
         match fetch_json(client, meta_key, url).await {
             Ok((url, json)) => {
@@ -215,19 +222,19 @@ async fn try_locate_json(
         Ok(None) => {
             trace!(
                 "Not fetching unparseable url {:?} for {}",
-                url.as_str(),
+                id.url.as_str(),
                 meta_key
             );
 
             None
         },
         Err(()) if TRY_LAST_RESORT => {
-            let (url, json) = fetch_json(client, meta_key, Ok(url.clone()))
+            let (url, json) = fetch_json(client, meta_key, Ok(id.url.clone()))
                 .await
                 .with_context(|| {
                     format!(
                         "Last-resort metadata fetch {:?} for {} failed",
-                        url.as_str(),
+                        id.url.as_str(),
                         meta_key,
                     )
                 })?;
@@ -237,7 +244,7 @@ async fn try_locate_json(
         Err(()) => {
             bail!(
                 "Cached metadata fetch {:?} for {} failed (not trying last-resort)",
-                url.as_str(),
+                id.url.as_str(),
                 meta_key
             )
         },
@@ -403,19 +410,6 @@ fn process_files(
             continue;
         };
 
-        let existing_slot_info = files::table
-            .filter(files::metadata_address.eq(addr))
-            .select((files::slot, files::write_version))
-            .get_result::<SlotInfo>(db)
-            .optional()
-            .context("Failed to check for existing file")?;
-
-        if let Some(info) = existing_slot_info {
-            if info >= slot_info {
-                continue;
-            }
-        }
-
         let (slot, write_version) = slot_info;
         let row = DbFile {
             metadata_address: Borrowed(addr),
@@ -444,19 +438,6 @@ fn process_attributes(
     slot_info: SlotInfo,
 ) -> Result<()> {
     for Attribute { trait_type, value } in attributes.unwrap_or_else(Vec::new) {
-        let existing_slot_info = attributes::table
-            .filter(attributes::metadata_address.eq(addr))
-            .select((attributes::slot, attributes::write_version))
-            .get_result::<SlotInfo>(db)
-            .optional()
-            .context("Failed to check for existing attribute")?;
-
-        if let Some(info) = existing_slot_info {
-            if info >= slot_info {
-                continue;
-            }
-        }
-
         let (slot, write_version) = slot_info;
         let row = MetadataAttributeWrite {
             metadata_address: Borrowed(addr),
@@ -491,22 +472,6 @@ fn process_collection(
     slot_info: SlotInfo,
 ) -> Result<()> {
     if let Some(Collection { name, family }) = collection {
-        let existing_slot_info = metadata_collections::table
-            .filter(metadata_collections::metadata_address.eq(addr))
-            .select((
-                metadata_collections::slot,
-                metadata_collections::write_version,
-            ))
-            .get_result::<SlotInfo>(db)
-            .optional()
-            .context("Failed to check for existing collection")?;
-
-        if let Some(info) = existing_slot_info {
-            if info >= slot_info {
-                return Ok(());
-            }
-        }
-
         let (slot, write_version) = slot_info;
         let row = MetadataCollection {
             metadata_address: Borrowed(addr),
@@ -599,7 +564,8 @@ pub async fn process<'a>(
         first_verified_creator.map(|address| bs58::encode(address).into_string());
 
     if let Some((fingerprint, json, existing_slot_info)) = existing_row {
-        if existing_slot_info > slot_info || id.fingerprints().any(|f| fingerprint == f) {
+        if existing_slot_info > slot_info || id.fingerprints_hinted().any(|(f, _)| fingerprint == f)
+        {
             trace!(
                 "Skipping already-indexed metadata JSON for {} (seen at slot_info={:?})",
                 meta_key,
@@ -616,7 +582,7 @@ pub async fn process<'a>(
 
     trace!("{:?} -> {:?}", url.as_str(), id);
 
-    if let Some((json, fingerprint, url)) = try_locate_json(client, &url, &id, meta_key).await? {
+    if let Some((json, fingerprint, url)) = try_locate_json(client, &id, meta_key).await? {
         match json {
             MetadataJsonResult::Full(value) => {
                 process_full(
@@ -674,49 +640,139 @@ async fn dispatch_metadata_document(
         .or_else(|| image.map(|s| Ok(s.into())))
         .transpose()?;
 
-    if let Ok((name, mint_address, creator_address, creator_twitter_handle)) = client
+    if let Ok((name, mint_address, collection_address, creator_address, creator_twitter_handle)) =
+        client
+            .db()
+            .run({
+                let addr = addr.clone();
+                move |db| {
+                    let (name, mint_address, collection_address): (String, String, Option<String>) =
+                        metadatas::table
+                            .left_join(metadata_collection_keys::table.on(
+                                metadatas::address.eq(metadata_collection_keys::metadata_address),
+                            ))
+                            .filter(metadatas::address.eq(&addr))
+                            .select((
+                                metadatas::name,
+                                metadatas::mint_address,
+                                metadata_collection_keys::collection_address.nullable(),
+                            ))
+                            .first(db)
+                            .context("failed to load mint and name for search doc")?;
+
+                    let (creator_address, creator_twitter_handle) = metadata_creators::table
+                        .left_join(
+                            twitter_handle_name_services::table
+                                .on(metadata_creators::creator_address
+                                    .eq(twitter_handle_name_services::wallet_address)),
+                        )
+                        .filter(metadata_creators::metadata_address.eq(&addr))
+                        .filter(metadata_creators::verified.eq(true))
+                        .filter(metadata_creators::position.eq(0))
+                        .select((
+                            metadata_creators::creator_address,
+                            twitter_handle_name_services::twitter_handle.nullable(),
+                        ))
+                        .first(db)
+                        .context("failed to load creators for search document")?;
+
+                    Result::<_>::Ok((
+                        name,
+                        mint_address,
+                        collection_address,
+                        creator_address,
+                        creator_twitter_handle,
+                    ))
+                }
+            })
+            .await
+            .map_err(|e| warn!("Failed to get search document data for metadata: {:?}", e))
+    {
+        let document = MetadataDocument {
+            name,
+            mint_address,
+            image,
+            creator_address,
+            creator_twitter_handle,
+            collection_address: collection_address.clone(),
+        };
+
+        client
+            .search()
+            .upsert_metadata(is_for_backfill, addr, document)
+            .await
+            .context("Failed to dispatch metadata JSON document job")?;
+
+        if let Some(addr) = collection_address {
+            upsert_collection_metadata(client, addr, is_for_backfill)
+                .await
+                .context("failed to index collection metadata")?;
+        }
+    }
+
+    Ok(())
+}
+
+async fn upsert_collection_metadata(
+    client: &Client,
+    mint_address: String,
+    is_for_backfill: bool,
+) -> Result<()> {
+    let (address, name, image) = client
         .db()
         .run({
-            let addr = addr.clone();
+            let mint_address = mint_address.clone();
             move |db| {
-                let (name, mint_address) = metadatas::table
-                    .filter(metadatas::address.eq(&addr))
-                    .select((metadatas::name, metadatas::mint_address))
-                    .first(db)
-                    .context("failed to load mint and name for search doc")?;
-
-                let (creator_address, creator_twitter_handle) = metadata_creators::table
-                    .left_join(
-                        twitter_handle_name_services::table.on(metadata_creators::creator_address
-                            .eq(twitter_handle_name_services::wallet_address)),
+                let (address, name, image): (String, String, Option<String>) = metadatas::table
+                    .inner_join(
+                        metadata_jsons::table
+                            .on(metadatas::address.eq(metadata_jsons::metadata_address)),
                     )
-                    .filter(metadata_creators::metadata_address.eq(&addr))
-                    .filter(metadata_creators::verified.eq(true))
-                    .filter(metadata_creators::position.eq(0))
-                    .select((
-                        metadata_creators::creator_address,
-                        twitter_handle_name_services::twitter_handle.nullable(),
-                    ))
-                    .first(db)
-                    .context("failed to load creators for search document")?;
+                    .filter(metadatas::mint_address.eq(&mint_address))
+                    .select((metadatas::address, metadatas::name, metadata_jsons::image))
+                    .first(db)?;
 
-                Result::<_>::Ok((name, mint_address, creator_address, creator_twitter_handle))
+                Result::<_>::Ok((address, name, image))
             }
         })
         .await
-        .map_err(|e| warn!("Failed to get search document data for metadata: {:?}", e))
-    {
-        client
-            .search()
-            .upsert_metadata(is_for_backfill, addr, MetadataDocument {
-                name,
-                mint_address,
-                image,
-                creator_address,
-                creator_twitter_handle,
-            })
-            .await
-            .context("Failed to dispatch metadata JSON document job")?;
+        .context("failed to fetch collection metadata")?;
+
+    let document = client
+        .search()
+        .get_document("collections".to_string(), address.clone())
+        .await;
+
+    match document {
+        Err(Meilisearch(MeilisearchError {
+            error_code: MeiliSearchErrorCode::DocumentNotFound,
+            ..
+        })) => {
+            let image = image
+                .clone()
+                .and_then(|i| Url::parse(&i).ok())
+                .and_then(|u| {
+                    let id = AssetIdentifier::new(&u);
+
+                    proxy_url(client.proxy_args(), &id, Some(("width", "200")))
+                        .map(|o| o.map(|u| u.to_string()))
+                        .transpose()
+                })
+                .or_else(|| image.map(Ok))
+                .transpose()?;
+
+            client
+                .search()
+                .upsert_collection(is_for_backfill, address, CollectionDocument {
+                    name,
+                    image,
+                    mint_address,
+                })
+                .await
+                .context("Failed to dispatch collection document job")?;
+        },
+        Err(e) => return Err(e).context("Failed to fetch collection document"),
+        Ok(_) => return Ok(()),
     }
 
     Ok(())

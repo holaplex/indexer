@@ -35,6 +35,7 @@ enum Metadatas {
     MintAddress,
     PrimarySaleHappened,
     SellerFeeBasisPoints,
+    UpdateAuthorityAddress,
     Uri,
     Slot,
 }
@@ -105,8 +106,12 @@ enum MetadataCollectionKeys {
 /// List query options
 #[derive(Debug)]
 pub struct ListQueryOptions {
+    /// NFT metadata addresses (combines with other filters)
+    pub addresses: Option<Vec<String>>,
     /// nft owners
     pub owners: Option<Vec<String>>,
+    /// nft update_authorities
+    pub update_authorities: Option<Vec<String>>,
     /// auction houses
     pub auction_houses: Option<Vec<String>>,
     /// nft creators
@@ -132,6 +137,7 @@ pub type NftColumns = (
     metadatas::seller_fee_basis_points,
     metadatas::mint_address,
     metadatas::primary_sale_happened,
+    metadatas::update_authority_address,
     metadatas::uri,
     metadatas::slot,
     metadata_jsons::description,
@@ -148,7 +154,9 @@ pub type NftColumns = (
 pub fn list(
     conn: &Connection,
     ListQueryOptions {
+        addresses,
         owners,
+        update_authorities,
         creators,
         auction_houses,
         offerers,
@@ -189,6 +197,7 @@ pub fn list(
             (Metadatas::Table, Metadatas::Address),
             (Metadatas::Table, Metadatas::Name),
             (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+            (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
             (Metadatas::Table, Metadatas::MintAddress),
             (Metadatas::Table, Metadatas::PrimarySaleHappened),
             (Metadatas::Table, Metadatas::Uri),
@@ -234,8 +243,16 @@ pub fn list(
         .order_by((ListingReceipts::Table, ListingReceipts::Price), Order::Asc)
         .take();
 
+    if let Some(addresses) = addresses {
+        query.and_where(Expr::col(Metadatas::Address).is_in(addresses));
+    }
+
     if let Some(owners) = owners {
         query.and_where(Expr::col(CurrentMetadataOwners::OwnerAddress).is_in(owners));
+    }
+
+    if let Some(update_authorities) = update_authorities {
+        query.and_where(Expr::col(Metadatas::UpdateAuthorityAddress).is_in(update_authorities));
     }
 
     if let Some(creators) = creators {

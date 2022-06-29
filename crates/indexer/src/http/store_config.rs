@@ -102,12 +102,26 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
     client
         .db()
         .run(move |db| {
-            insert_into(store_config_jsons::table)
+            use indexer_core::db::{DatabaseErrorKind, Error};
+
+            match insert_into(store_config_jsons::table)
                 .values(&row)
                 .on_conflict(store_config_jsons::config_address)
                 .do_update()
                 .set(&row)
                 .execute(db)
+            {
+                Ok(_) => Ok(()),
+                Err(Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
+                    warn!(
+                        "Rejecting storefront upsert for {:?} (subdomain {:?}) \
+                        violating unique constraint",
+                        row.name, row.subdomain
+                    );
+                    Ok(())
+                },
+                Err(e) => Err(e),
+            }
         })
         .await
         .context("failed to insert store config json")?;

@@ -1377,7 +1377,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15bf3650200d8bffa99015595e10f1fbd17de07abbc25bb067da79e769939bfa"
 dependencies = [
  "borsh-derive",
- "hashbrown 0.11.2",
+ "hashbrown",
 ]
 
 [[package]]
@@ -2045,36 +2045,12 @@ dependencies = [
 
 [[package]]
 name = "darling"
-version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0d720b8683f8dd83c65155f0530560cba68cd2bf395f6513a483caee57ff7f4"
-dependencies = [
- "darling_core 0.13.1",
- "darling_macro 0.13.1",
-]
-
-[[package]]
-name = "darling"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4529658bdda7fd6769b8614be250cdcfc3aeb0ee72fe66f9e41e5e5eb73eac02"
 dependencies = [
- "darling_core 0.14.1",
- "darling_macro 0.14.1",
-]
-
-[[package]]
-name = "darling_core"
-version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a340f241d2ceed1deb47ae36c4144b2707ec7dd0b649f894cb39bb595986324"
-dependencies = [
- "fnv",
- "ident_case",
- "proc-macro2 1.0.38",
- "quote 1.0.18",
- "strsim 0.10.0",
- "syn 1.0.93",
+ "darling_core",
+ "darling_macro",
 ]
 
 [[package]]
@@ -2093,22 +2069,11 @@ dependencies = [
 
 [[package]]
 name = "darling_macro"
-version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72c41b3b7352feb3211a0d743dc5700a4e3b60f51bd2b368892d1e0f9a95f44b"
-dependencies = [
- "darling_core 0.13.1",
- "quote 1.0.18",
- "syn 1.0.93",
-]
-
-[[package]]
-name = "darling_macro"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddfc69c5bfcbd2fc09a0f38451d2daf0e372e367986a83906d1b0dbc88134fb5"
 dependencies = [
- "darling_core 0.14.1",
+ "darling_core",
  "quote 1.0.18",
  "syn 1.0.93",
 ]
@@ -2804,16 +2769,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hashbrown"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db0d4cf898abf0081f964436dc980e96670a0f36863e4b83aaacdb65c9d7ccc3"
-dependencies = [
- "ahash",
- "serde",
-]
-
-[[package]]
 name = "heck"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3019,6 +2974,7 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-rabbitmq"
 version = "0.1.0"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.4.0#33be3446ea1be28b72c7fe1d6251d1f8eb4cea6b"
 dependencies = [
  "clap 3.1.12",
  "futures-util",
@@ -3031,31 +2987,6 @@ dependencies = [
  "solana-program",
  "strum 0.23.0",
  "thiserror",
-]
-
-[[package]]
-name = "holaplex-indexer-rabbitmq-geyser"
-version = "0.3.1"
-dependencies = [
- "anyhow",
- "bs58 0.4.0",
- "hashbrown 0.12.1",
- "holaplex-indexer-rabbitmq",
- "hostname",
- "log",
- "parking_lot 0.12.0",
- "reqwest",
- "serde",
- "serde_json",
- "serde_with",
- "solana-geyser-plugin-interface",
- "solana-logger",
- "solana-metrics",
- "solana-program",
- "spl-token",
- "tokio",
- "tokio-executor-trait",
- "tokio-reactor-trait",
 ]
 
 [[package]]
@@ -3189,7 +3120,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "282a6247722caba404c065016bbfa522806e51714c34f5dfc3e4a3a46fcb4223"
 dependencies = [
  "autocfg",
- "hashbrown 0.11.2",
+ "hashbrown",
  "serde",
 ]
 
@@ -3311,6 +3242,18 @@ dependencies = [
  "log",
  "serde",
  "serde_derive",
+ "serde_json",
+]
+
+[[package]]
+name = "jsonwebtoken"
+version = "8.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1aa4b4af834c6cfd35d8763d359661b90f2e45d8f750a0849156c7f4671af09c"
+dependencies = [
+ "base64 0.13.0",
+ "ring",
+ "serde",
  "serde_json",
 ]
 
@@ -3572,15 +3515,16 @@ checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
 
 [[package]]
 name = "meilisearch-sdk"
-version = "0.15.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4eae404a5052ee03460ad87998e00cc78e5c68ec3eb23f673f1c13007d150697"
+checksum = "e980fc979f653877693451f5b31d065a6f607c45988ac117a8316c90f73c7cdc"
 dependencies = [
  "async-trait",
  "futures",
  "isahc",
  "iso8601-duration",
  "js-sys",
+ "jsonwebtoken",
  "log",
  "serde",
  "serde_json",
@@ -4816,7 +4760,7 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "878cf3d57f0e5bfacd425cdaccc58b4c06d68a7b71c63fc28710a20c88676808"
 dependencies = [
- "darling 0.14.1",
+ "darling",
  "heck 0.4.0",
  "quote 1.0.18",
  "syn 1.0.93",
@@ -4926,29 +4870,6 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "serde_with"
-version = "1.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec1e6ec4d8950e5b1e894eac0d360742f3b1407a6078a604a731c4b3f49cefbc"
-dependencies = [
- "rustversion",
- "serde",
- "serde_with_macros",
-]
-
-[[package]]
-name = "serde_with_macros"
-version = "1.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12e47be9471c72889ebafb5e14d5ff930d89ae7a67bbdb5f8abb564f845a927e"
-dependencies = [
- "darling 0.13.1",
- "proc-macro2 1.0.38",
- "quote 1.0.18",
- "syn 1.0.93",
 ]
 
 [[package]]
@@ -5349,18 +5270,6 @@ dependencies = [
  "num-traits",
  "sol-did",
  "solana-program",
- "thiserror",
-]
-
-[[package]]
-name = "solana-geyser-plugin-interface"
-version = "1.9.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d12be721a265ba5e3eda85cf3779f1db01811a49f286817b209163af329027ce"
-dependencies = [
- "log",
- "solana-sdk",
- "solana-transaction-status",
  "thiserror",
 ]
 

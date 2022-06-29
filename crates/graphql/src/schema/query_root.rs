@@ -1,4 +1,5 @@
 use indexer_core::db::{
+    expression::dsl::all,
     queries::{self, feed_event::EventType},
     tables::twitter_handle_name_services,
 };
@@ -14,8 +15,8 @@ use objects::{
     listing::{Listing, ListingColumns, ListingRow},
     listing_receipt::ListingReceipt,
     marketplace::Marketplace,
-    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator},
-    profile::TwitterProfile,
+    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
+    profile::{ProfilesStats, TwitterProfile},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
@@ -23,7 +24,7 @@ use scalars::PublicKey;
 use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, bid_receipts, graph_connections,
-    listing_receipts, metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
+    metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
 };
 
 use super::prelude::*;
@@ -70,7 +71,7 @@ impl QueryRoot {
                 (wallet_totals::all_columns),
                 twitter_handle_name_services::twitter_handle.nullable(),
             ))
-            .filter(wallet_totals::address.ne_all(&ctx.shared.follow_wallets_exclusions))
+            .filter(wallet_totals::address.ne(all(&ctx.shared.follow_wallets_exclusions)))
             .order(wallet_totals::followers.desc())
             .limit(limit.try_into()?)
             .offset(offset.try_into()?)
@@ -120,10 +121,52 @@ impl QueryRoot {
 
         let feed_events = queries::feed_event::list(
             &conn,
-            wallet,
             limit.try_into()?,
             offset.try_into()?,
+            Some(wallet.to_string()),
             exclude_types_parsed,
+        )?;
+
+        feed_events
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    #[graphql(
+        description = "Returns the latest on chain events using the graph_program.",
+        arguments(
+            limit(description = "The query record limit"),
+            is_forward(description = "Data record needed forward or backward"),
+            cursor(description = "The query record offset")
+        )
+    )]
+    fn latest_feed_events(
+        &self,
+        ctx: &AppContext,
+        limit: i32,
+        is_forward: bool,
+        cursor: String,
+        include_types: Option<Vec<String>>,
+    ) -> FieldResult<Vec<FeedEvent>> {
+        let conn = ctx.shared.db.get().context("failed to connect to db")?;
+
+        let include_types_parsed: Option<Vec<EventType>> = include_types.map(|v_types| {
+            v_types
+                .iter()
+                .map(|v| v.parse::<EventType>())
+                .filter_map(Result::ok)
+                .collect()
+        });
+
+        let feed_events = queries::feed_event::list_relay(
+            &conn,
+            limit.try_into()?,
+            is_forward,
+            cursor,
+            None,
+            include_types_parsed,
         )?;
 
         feed_events
@@ -284,11 +327,14 @@ impl QueryRoot {
         })
     }
 
-    fn nfts(
+    async fn nfts(
         &self,
         context: &AppContext,
         #[graphql(description = "Filter on owner address")] owners: Option<Vec<PublicKey<Wallet>>>,
         #[graphql(description = "Filter on creator address")] creators: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
+        #[graphql(description = "Filter on update authorities")] update_authorities: Option<
             Vec<PublicKey<Wallet>>,
         >,
         #[graphql(description = "Filter on offerers address")] offerers: Option<
@@ -299,6 +345,10 @@ impl QueryRoot {
         #[graphql(description = "Filter nfts associated to the list of auction houses")]
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
         #[graphql(description = "Filter on a collection")] collection: Option<PublicKey<Nft>>,
+        #[graphql(
+            description = "Return NFTs whose metadata contain this search term (case-insensitive)"
+        )]
+        term: Option<String>,
         #[graphql(description = "Limit for query")] limit: i32,
         #[graphql(description = "Offset for query")] offset: i32,
     ) -> FieldResult<Vec<Nft>> {
@@ -307,18 +357,45 @@ impl QueryRoot {
             && creators.is_none()
             && auction_houses.is_none()
             && offerers.is_none()
+            && term.is_none()
         {
             return Err(FieldError::new(
                 "No filter provided! Please provide at least one of the filters",
-                graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, offerers: Vec<PublicKey>, auction_houses: Vec<PublicKey>" }),
+                graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, offerers: Vec<PublicKey>, auction_houses: Vec<PublicKey>, term: String" }),
             ));
         }
 
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
+        let addresses = match term {
+            Some(term) => {
+                let search = &context.shared.search;
+                let search_result = search
+                    .index("metadatas")
+                    .search()
+                    .with_query(&term)
+                    .with_offset(offset.try_into()?)
+                    .with_limit(limit.try_into()?)
+                    .execute::<Value>()
+                    .await
+                    .context("failed to load search result for metadata json")?
+                    .hits;
+
+                Some(
+                    search_result
+                        .into_iter()
+                        .map(|r| MetadataJson::from(r.result).address)
+                        .collect(),
+                )
+            },
+            None => None,
+        };
+
         let query_options = queries::metadatas::ListQueryOptions {
+            addresses,
             owners: owners.map(|a| a.into_iter().map(Into::into).collect()),
             creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
+            update_authorities: update_authorities.map(|a| a.into_iter().map(Into::into).collect()),
             offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed,
@@ -335,35 +412,53 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
+    #[graphql(description = "Stats aggregated across all indexed NFTs")]
+    fn nfts_stats(&self) -> NftsStats {
+        NftsStats
+    }
+
     fn featured_listings(
         &self,
         context: &AppContext,
+        #[graphql(description = "Return listings only from these auction houses")]
+        auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
+        #[graphql(description = "Return listings not from these sellers")]
+        seller_exclusions: Option<Vec<PublicKey<Wallet>>>,
+        #[graphql(description = "Return at most this many listings per seller")]
+        limit_per_seller: Option<i32>,
         #[graphql(description = "Limit for query")] limit: i32,
-        #[graphql(description = "Offset for query")] offset: i32,
+        #[graphql(description = "Offset for query")] offset: Option<i32>,
     ) -> FieldResult<Vec<ListingReceipt>> {
         let conn = context.shared.db.get().context("Failed to connect to DB")?;
 
-        let listings: Vec<models::ListingReceipt> = listing_receipts::table
-            .inner_join(
-                wallet_totals::table.on(wallet_totals::address.eq(listing_receipts::seller)),
-            )
-            .select(listing_receipts::all_columns)
-            .filter(listing_receipts::canceled_at.is_null())
-            .filter(listing_receipts::purchase_receipt.is_null())
-            .filter(
-                listing_receipts::auction_house
-                    .eq_any(&context.shared.featured_listings_auction_houses),
-            )
-            .filter(
-                listing_receipts::seller
-                    .ne_all(&context.shared.featured_listings_seller_exclusions),
-            )
-            .filter(listing_receipts::seller.eq(wallet_totals::address))
-            .order(wallet_totals::followers.desc())
-            .limit(limit.into())
-            .offset(offset.into())
-            .load(&conn)
-            .context("Failed to load listings")?;
+        let auction_houses = auction_houses.unwrap_or_else(|| {
+            context
+                .shared
+                .featured_listings_auction_houses
+                .iter()
+                .map(|a| PublicKey::from(a.clone()))
+                .collect()
+        });
+        let seller_exclusions = seller_exclusions.unwrap_or_else(|| {
+            context
+                .shared
+                .featured_listings_seller_exclusions
+                .iter()
+                .map(|s| PublicKey::from(s.clone()))
+                .collect()
+        });
+        let limit_per_seller = limit_per_seller.unwrap_or(5);
+        let offset = offset.unwrap_or(0);
+
+        // choose listings whose NFT's creators have a lot of followers
+        let listings = queries::featured_listings::list(
+            &conn,
+            auction_houses,
+            seller_exclusions,
+            limit_per_seller,
+            limit,
+            offset,
+        )?;
 
         listings
             .into_iter()
@@ -382,6 +477,49 @@ impl QueryRoot {
         let twitter_handle = queries::twitter_handle_name_service::get(&conn, &address)?;
 
         Ok(Wallet::new(address, twitter_handle))
+    }
+
+    fn wallets(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Addresses of the wallets")] addresses: Vec<PublicKey<Wallet>>,
+    ) -> FieldResult<Vec<Wallet>> {
+        if addresses.is_empty() {
+            return Err(FieldError::new(
+                "You must supply at least one address to query.",
+                graphql_value!({ "addresses": "Vec<String>"}),
+            ));
+        }
+
+        let conn = context.shared.db.get()?;
+
+        let twitter_handles = queries::twitter_handle_name_service::get_multiple(
+            &conn,
+            addresses.iter().map(ToString::to_string).collect(),
+        )?;
+
+        let wallets = twitter_handles.into_iter().fold(
+            addresses
+                .into_iter()
+                .map(|a| (a, None))
+                .collect::<HashMap<_, _>>(),
+            |mut h,
+             models::TwitterHandle {
+                 wallet_address,
+                 twitter_handle,
+                 ..
+             }| {
+                *h.entry(wallet_address.into_owned().into()).or_insert(None) =
+                    Some(twitter_handle.into_owned());
+
+                h
+            },
+        );
+
+        Ok(wallets
+            .into_iter()
+            .map(|(k, v)| Wallet::new(k, v))
+            .collect())
     }
 
     fn listings(&self, context: &AppContext) -> FieldResult<Vec<Listing>> {
@@ -414,25 +552,67 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
+    #[graphql(description = "Get an NFT by metadata address.")]
     fn nft(
         &self,
         context: &AppContext,
-        #[graphql(description = "Address of NFT")] address: String,
+        #[graphql(description = "Metadata address of NFT")] address: String,
     ) -> FieldResult<Option<Nft>> {
         let conn = context.shared.db.get()?;
-        let mut rows: Vec<models::Nft> = metadatas::table
+        metadatas::table
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .filter(metadatas::address.eq(address))
             .select(queries::metadatas::NftColumns::default())
-            .limit(1)
-            .load(&conn)
-            .context("Failed to load metadata")?;
-
-        rows.pop()
+            .first::<models::Nft>(&conn)
+            .optional()
+            .context("Failed to load NFT by metadata address.")?
             .map(TryInto::try_into)
             .transpose()
+            .map_err(Into::into)
+    }
+
+    #[graphql(description = "Get an NFT by mint address.")]
+    fn nft_by_mint_address(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Mint address of NFT")] address: String,
+    ) -> FieldResult<Option<Nft>> {
+        let conn = context.shared.db.get()?;
+        metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .filter(metadatas::mint_address.eq(address))
+            .select(queries::metadatas::NftColumns::default())
+            .first::<models::Nft>(&conn)
+            .optional()
+            .context("Failed to load NFT by mint address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
+    }
+
+    #[graphql(description = "Get a list of NFTs by mint address.")]
+    fn nfts_by_mint_address(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Mint addresses of NFTs")] addresses: Vec<PublicKey<Nft>>,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = context.shared.db.get()?;
+        let rows: Vec<models::Nft> = metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .filter(metadatas::mint_address.eq(any(addresses)))
+            .select(queries::metadatas::NftColumns::default())
+            .load(&conn)
+            .context("Failed to load NFTs")?;
+
+        rows.into_iter()
+            .map(Nft::try_from)
+            .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
 
@@ -475,6 +655,10 @@ impl QueryRoot {
         let conn = context.shared.db.get()?;
         let mut rows: Vec<models::StoreConfigJson> = store_config_jsons::table
             .filter(store_config_jsons::subdomain.eq(subdomain))
+            .filter(
+                store_config_jsons::store_address
+                    .ne(all(&context.shared.marketplaces_store_address_exclusions)),
+            )
             .select(store_config_jsons::all_columns)
             .limit(1)
             .load(&conn)
@@ -510,6 +694,33 @@ impl QueryRoot {
             .collect::<Vec<MetadataJson>>())
     }
 
+    #[graphql(description = "returns all the collections matching the search term")]
+    async fn search_collections(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Search term")] term: String,
+        #[graphql(description = "Query limit")] limit: i32,
+        #[graphql(description = "Query offset")] offset: i32,
+    ) -> FieldResult<Vec<MetadataJson>> {
+        let search = &context.shared.search;
+
+        let query_result = search
+            .index("collections")
+            .search()
+            .with_query(&term)
+            .with_offset(offset.try_into()?)
+            .with_limit(limit.try_into()?)
+            .execute::<Value>()
+            .await
+            .context("failed to load search result for collections")?
+            .hits;
+
+        Ok(query_result
+            .into_iter()
+            .map(|r| r.result.into())
+            .collect::<Vec<MetadataJson>>())
+    }
+
     #[graphql(description = "returns profiles matching the search term")]
     async fn profiles(
         &self,
@@ -535,6 +746,58 @@ impl QueryRoot {
             .into_iter()
             .map(|r| r.result.into())
             .collect::<Vec<Wallet>>())
+    }
+
+    #[graphql(description = "returns stats about profiles")]
+    async fn profiles_stats(&self) -> ProfilesStats {
+        ProfilesStats
+    }
+
+    #[graphql(
+        description = "Get multiple marketplaces; results will be in alphabetical order by subdomain"
+    )]
+    fn marketplaces(
+        &self,
+        context: &AppContext,
+        #[graphql(
+            description = "Return these marketplaces; results will be in alphabetical order by subdomain."
+        )]
+        subdomains: Option<Vec<String>>,
+        #[graphql(description = "Limit for query")] limit: Option<i32>,
+        #[graphql(description = "Offset for query")] offset: Option<i32>,
+    ) -> FieldResult<Vec<Marketplace>> {
+        let too_many_filters = subdomains.is_some() && (limit.is_some() || offset.is_some());
+        let not_enough_filters = subdomains.is_none() && limit.is_none();
+        if too_many_filters || not_enough_filters {
+            return Err(FieldError::new(
+                "You must supply either a limit (and optionally offset) or subdomains",
+                graphql_value!({ "Filters": "subdomains: Vec<String>, limit: i32, offset: i32" }),
+            ));
+        }
+
+        let conn = context.shared.db.get()?;
+        let mut query = store_config_jsons::table
+            .select(store_config_jsons::all_columns)
+            .filter(
+                store_config_jsons::store_address
+                    .ne(all(&context.shared.marketplaces_store_address_exclusions)),
+            )
+            .order(store_config_jsons::name.asc())
+            .into_boxed();
+
+        if let Some(subdomains) = subdomains {
+            query = query.filter(store_config_jsons::subdomain.eq(any(subdomains)));
+        } else {
+            query = query
+                .limit(limit.unwrap_or_else(|| unreachable!()).into())
+                .offset(offset.unwrap_or(0).into());
+        }
+
+        let rows: Vec<models::StoreConfigJson> = query
+            .load(&conn)
+            .context("Failed to load store config JSON")?;
+
+        Ok(rows.into_iter().map(Into::into).collect())
     }
 
     fn denylist() -> Denylist {
