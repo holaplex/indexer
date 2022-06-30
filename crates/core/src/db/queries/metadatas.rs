@@ -269,7 +269,9 @@ pub fn list(
         );
     }
 
-    if offerers.is_some() || (with_offers.is_some() && with_offers.unwrap_or(false)) {
+    let with_offers = with_offers.unwrap_or(false);
+
+    if offerers.is_some() || with_offers {
         let mut bid_receipts_conditions = Condition::all().add(
             Expr::tbl(BidReceipts::Table, BidReceipts::Metadata)
                 .equals(Metadatas::Table, Metadatas::Address),
@@ -282,7 +284,7 @@ pub fn list(
                 .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null());
         }
 
-        if let Some(true) = with_offers {
+        if with_offers {
             bid_receipts_conditions = bid_receipts_conditions
                 .add(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
                 .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null());
