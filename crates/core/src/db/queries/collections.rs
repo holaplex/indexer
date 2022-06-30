@@ -32,7 +32,6 @@ pub fn by_volume(
         .context("Failed to load collections by volume")
 }
 
-
 fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
     format!(
         r"
@@ -46,7 +45,7 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
                 ORDER BY volume {order_direction}
                 LIMIT $2
                 OFFSET $3
-        ) SELECT 
+        ) SELECT
             metadatas.address,
             metadatas.name,
             metadatas.seller_fee_basis_points,
@@ -60,7 +59,7 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
             metadata_jsons.category,
             metadata_jsons.model
         FROM metadata_jsons, volume_table, metadatas
-        WHERE 
+        WHERE
             volume_table.collection = metadatas.mint_address
             AND metadatas.address = metadata_jsons.metadata_address
     -- $1: addresses::text[]
