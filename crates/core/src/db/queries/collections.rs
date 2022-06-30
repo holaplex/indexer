@@ -32,35 +32,37 @@ pub fn by_volume(
         .context("Failed to load collections by volume")
 }
 
+
 fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
     format!(
         r"
-    SELECT
-        metadatas.address,
-        metadatas.name,
-        metadatas.seller_fee_basis_points,
-        metadatas.update_authority_address,
-        metadatas.mint_address,
-        metadatas.primary_sale_happened,
-        metadatas.uri,
-        metadatas.slot,
-        metadata_jsons.description,
-        metadata_jsons.image,
-        metadata_jsons.category,
-        metadata_jsons.model
-    FROM metadata_jsons
-    INNER JOIN metadatas ON (metadatas.address = metadata_jsons.metadata_address)
-    INNER JOIN (
-        SELECT metadata_collection_keys.collection_address AS collection, SUM(purchase_receipts.price) AS volume
-            FROM purchase_receipts
-            INNER JOIN metadatas on (purchase_receipts.metadata = metadatas.address)
-            INNER JOIN metadata_collection_keys on (metadatas.address = metadata_collection_keys.metadata_address)
-            WHERE ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
-            GROUP BY metadata_collection_keys.collection_address
-            ORDER BY volume {order_direction}
-            LIMIT $2
-            OFFSET $3
-    ) a ON (a.collection = metadatas.mint_address)
+        WITH volume_table (collection, volume) as (
+            SELECT metadata_collection_keys.collection_address AS collection, SUM(purchase_receipts.price) AS volume
+                FROM purchase_receipts
+                INNER JOIN metadatas on (purchase_receipts.metadata = metadatas.address)
+                INNER JOIN metadata_collection_keys on (metadatas.address = metadata_collection_keys.metadata_address)
+                WHERE ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
+                GROUP BY metadata_collection_keys.collection_address
+                ORDER BY volume {order_direction}
+                LIMIT $2
+                OFFSET $3
+        ) SELECT 
+            metadatas.address,
+            metadatas.name,
+            metadatas.seller_fee_basis_points,
+            metadatas.update_authority_address,
+            metadatas.mint_address,
+            metadatas.primary_sale_happened,
+            metadatas.uri,
+            metadatas.slot,
+            metadata_jsons.description,
+            metadata_jsons.image,
+            metadata_jsons.category,
+            metadata_jsons.model
+        FROM metadata_jsons, volume_table, metadatas
+        WHERE 
+            volume_table.collection = metadatas.mint_address
+            AND metadatas.address = metadata_jsons.metadata_address
     -- $1: addresses::text[]
     -- $2: limit::integer
     -- $3: offset::integer",
