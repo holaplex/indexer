@@ -85,29 +85,14 @@ pub fn by_market_cap(
         .bind(limit)
         .bind(offset)
         .load(conn)
-        .context("Failed to load collections by volume")
+        .context("Failed to load collections by market cap")
 }
 
 fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
     format!(
         r"
-    SELECT
-        metadatas.address,
-        metadatas.name,
-        metadatas.seller_fee_basis_points,
-        metadatas.update_authority_address,
-        metadatas.mint_address,
-        metadatas.primary_sale_happened,
-        metadatas.uri,
-        metadatas.slot,
-        metadata_jsons.description,
-        metadata_jsons.image,
-        metadata_jsons.category,
-        metadata_jsons.model
-    FROM metadata_jsons
-    INNER JOIN metadatas ON (metadatas.address = metadata_jsons.metadata_address)
-    INNER JOIN (
-        SELECT metadata_collection_keys.collection_address AS collection, MIN(listings.price) * COUNT(listings.price) AS market_cap
+        WITH market_cap_table (collection, market_cap) as (
+            SELECT metadata_collection_keys.collection_address AS collection, MIN(listings.price) * COUNT(listings.price) AS market_cap
             FROM listings
             INNER JOIN metadatas on (listings.metadata = metadatas.address)
             INNER JOIN metadata_collection_keys on (metadatas.address = metadata_collection_keys.metadata_address)
@@ -119,7 +104,23 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
             ORDER BY market_cap {order_direction}
             LIMIT $2
             OFFSET $3
-    ) a ON (a.collection = metadatas.mint_address)
+        ) SELECT
+            metadatas.address,
+            metadatas.name,
+            metadatas.seller_fee_basis_points,
+            metadatas.update_authority_address,
+            metadatas.mint_address,
+            metadatas.primary_sale_happened,
+            metadatas.uri,
+            metadatas.slot,
+            metadata_jsons.description,
+            metadata_jsons.image,
+            metadata_jsons.category,
+            metadata_jsons.model
+        FROM metadata_jsons, market_cap_table, metadatas
+        WHERE
+            market_cap_table.collection = metadatas.mint_address
+            AND metadatas.address = metadata_jsons.metadata_address
     -- $1: addresses::text[]
     -- $2: limit::integer
     -- $3: offset::integer",
