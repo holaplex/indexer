@@ -1,5 +1,6 @@
-use indexer_core::db::{
-    insert_into, models::TwitterHandle, tables::twitter_handle_name_services, update,
+use indexer_core::{
+    db::{insert_into, models::TwitterHandle, tables::twitter_handle_name_services, update},
+    pubkeys::CARDINAL_TWITTER_NAMESPACE,
 };
 use namespaces::state::Entry;
 
@@ -13,6 +14,10 @@ pub(crate) async fn process(
     write_version: u64,
     entry: Entry,
 ) -> Result<()> {
+    if entry.namespace != CARDINAL_TWITTER_NAMESPACE {
+        return Ok(());
+    }
+
     let slot = i64::try_from(slot)?;
     let write_version = i64::try_from(write_version)?;
 
