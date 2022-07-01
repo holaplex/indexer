@@ -38,7 +38,7 @@ impl MintStats {
 
     pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
         context
-            .auction_house_loader
+            .store_auction_houses_loader
             .load(self.auction_house.clone())
             .await
             .map_err(Into::into)

@@ -79,8 +79,8 @@ impl Marketplace {
     }
 
     #[deprecated(note = "Use `auction_houses` instead")]
-    pub fn auction_house_address(&self) -> Option<PublicKey<AuctionHouse>> {
-        self.auction_house_address.clone()
+    pub fn auction_house_address(&self) -> &Option<PublicKey<AuctionHouse>> {
+        &self.auction_house_address
     }
 
     pub fn store_address(&self) -> &Option<PublicKey<Storefront>> {
@@ -94,7 +94,7 @@ impl Marketplace {
             None => return Ok(None),
         };
         context
-            .auction_house_loader
+            .store_auction_houses_loader
             .load(ah)
             .await
             .map_err(Into::into)

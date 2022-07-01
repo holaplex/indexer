@@ -1,4 +1,5 @@
 //! GraphQL server to read from `holaplex-indexer`
+
 #![deny(
     clippy::disallowed_method,
     clippy::suspicious,

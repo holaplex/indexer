@@ -52,6 +52,7 @@ pub struct Theme {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct SettingUri {
     meta: Metadata,
     theme: Theme,
@@ -60,7 +61,7 @@ struct SettingUri {
     creators: Option<Vec<Creator>>,
     #[serde(flatten)]
     extra: HashMap<String, serde_json::Value>,
-    auctionHouses: Option<Vec<AuctionHouse>>,
+    auction_houses: Option<Vec<AuctionHouse>>,
 }
 
 #[allow(clippy::too_many_lines)]
