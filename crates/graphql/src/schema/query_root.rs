@@ -1,5 +1,4 @@
 use indexer_core::db::{
-    self,
     expression::dsl::all,
     queries::{self, feed_event::EventType},
     tables::twitter_handle_name_services,
@@ -28,7 +27,7 @@ use tables::{
     metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
 };
 
-use super::prelude::*;
+use super::{prelude::*, enums::OrderDirection};
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
@@ -41,24 +40,6 @@ struct AttributeFilter {
 impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
     fn from(AttributeFilter { trait_type, values }: AttributeFilter) -> Self {
         Self { trait_type, values }
-    }
-}
-
-#[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]
-#[graphql(description = "Sorts results ascending or descending")]
-pub enum OrderDirection {
-    #[graphql(name = "DESC")]
-    Desc,
-    #[graphql(name = "ASC")]
-    Asc,
-}
-
-impl From<OrderDirection> for db::custom_types::OrderDirection {
-    fn from(other: OrderDirection) -> Self {
-        match other {
-            OrderDirection::Desc => Self::Desc,
-            OrderDirection::Asc => Self::Asc,
-        }
     }
 }
 

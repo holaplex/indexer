@@ -7,6 +7,7 @@ pub(self) mod dataloaders;
 pub(self) mod objects;
 mod query_root;
 pub(self) mod scalars;
+pub mod enums;
 
 pub(self) mod prelude {
     pub use std::{collections::HashMap, sync::Arc};
