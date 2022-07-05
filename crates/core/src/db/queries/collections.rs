@@ -87,11 +87,15 @@ pub fn by_market_cap(
     conn: &Connection,
     addresses: impl ToSql<Nullable<Array<Text>>, Pg>,
     order_direction: OrderDirection,
+    start_date: NaiveDateTime,
+    end_date: NaiveDateTime,
     limit: impl ToSql<Integer, Pg>,
     offset: impl ToSql<Integer, Pg>,
 ) -> Result<Vec<Nft>> {
     diesel::sql_query(make_by_market_cap_query_string(order_direction))
         .bind(addresses)
+        .bind::<Timestamp, _>(start_date)
+        .bind::<Timestamp, _>(end_date)
         .bind(limit)
         .bind(offset)
         .load(conn)
@@ -110,10 +114,12 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
             WHERE
                 ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
                 AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
+                AND listings.created_at >= $2
+                AND listings.created_at <= $3
             GROUP BY metadata_collection_keys.collection_address
             ORDER BY market_cap {order_direction}
-            LIMIT $2
-            OFFSET $3
+            LIMIT $4
+            OFFSET $5
         ) SELECT
             metadatas.address,
             metadatas.name,
@@ -132,8 +138,10 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
             market_cap_table.collection = metadatas.mint_address
             AND metadatas.address = metadata_jsons.metadata_address
     -- $1: addresses::text[]
-    -- $2: limit::integer
-    -- $3: offset::integer",
+    -- $2: start date::timestamp
+    -- $3: end date::timestamp
+    -- $4: limit::integer
+    -- $5: offset::integer",
         order_direction = order_direction
     )
 }
