@@ -36,9 +36,9 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
     format!(
         r"
         WITH volume_table (collection, volume) as (
-            SELECT metadata_collection_keys.collection_address AS collection, SUM(purchase_receipts.price) AS volume
-                FROM purchase_receipts
-                INNER JOIN metadatas on (purchase_receipts.metadata = metadatas.address)
+            SELECT metadata_collection_keys.collection_address AS collection, SUM(purchases.price) AS volume
+                FROM purchases
+                INNER JOIN metadatas on (purchases.metadata = metadatas.address)
                 INNER JOIN metadata_collection_keys on (metadatas.address = metadata_collection_keys.metadata_address)
                 WHERE ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
                 GROUP BY metadata_collection_keys.collection_address
