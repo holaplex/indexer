@@ -87,15 +87,15 @@ pub fn by_market_cap(
     conn: &Connection,
     addresses: impl ToSql<Nullable<Array<Text>>, Pg>,
     order_direction: OrderDirection,
-    start_date: NaiveDateTime,
-    end_date: NaiveDateTime,
+    start_date: DateTime<Utc>,
+    end_date: DateTime<Utc>,
     limit: impl ToSql<Integer, Pg>,
     offset: impl ToSql<Integer, Pg>,
 ) -> Result<Vec<Nft>> {
     diesel::sql_query(make_by_market_cap_query_string(order_direction))
         .bind(addresses)
-        .bind::<Timestamp, _>(start_date)
-        .bind::<Timestamp, _>(end_date)
+        .bind::<Timestamp, _>(start_date.naive_utc())
+        .bind::<Timestamp, _>(end_date.naive_utc())
         .bind(limit)
         .bind(offset)
         .load(conn)
