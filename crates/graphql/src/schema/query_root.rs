@@ -706,6 +706,10 @@ impl QueryRoot {
         term: Option<String>,
         #[graphql(order_direction = "Sort ascending or descending")]
         order_direction: OrderDirection,
+        #[graphql(start_date = "Compute volume over sales starting from this date (ISO 8601 format like 2022-07-04T17:06:10Z)")]
+        start_date: DateTime<Utc>,
+        #[graphql(end_date = "Compute volume over sales ending at this date (ISO 8601 format like 2022-07-04T17:06:10Z)")]
+        end_date: DateTime<Utc>,
         #[graphql(limit = "Return at most this many results")] limit: i32,
         #[graphql(offset = "Return results starting from this index")] offset: i32,
     ) -> FieldResult<Vec<Nft>> {
@@ -738,6 +742,8 @@ impl QueryRoot {
             &conn,
             addresses,
             order_direction.into(),
+            start_date.naive_utc(),
+            end_date.naive_utc(),
             limit,
             offset,
         )?;
