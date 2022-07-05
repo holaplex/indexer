@@ -92,7 +92,7 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
     format!(
         r"
         WITH market_cap_table (collection, market_cap) as (
-            SELECT metadata_collection_keys.collection_address AS collection, MIN(listings.price) * COUNT(listings.price) AS market_cap
+            SELECT metadata_collection_keys.collection_address AS collection, MIN(listings.price) * COUNT( DISTINCT metadata_collection_keys.metadata_address) AS market_cap
             FROM listings
             INNER JOIN metadatas on (listings.metadata = metadatas.address)
             INNER JOIN metadata_collection_keys on (metadatas.address = metadata_collection_keys.metadata_address)
