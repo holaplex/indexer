@@ -174,7 +174,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
             .context("failed to insert store creator")?;
     }
 
-    if let Some(auction_houses) = json.auctionHouses {
+    if let Some(auction_houses) = json.auction_houses {
         client
             .db()
             .run(move |db| {
