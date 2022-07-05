@@ -341,8 +341,12 @@ impl QueryRoot {
             Vec<PublicKey<Wallet>>,
         >,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
-        #[graphql(description = "Filter only listed nfts")] listed: Option<bool>,
-        #[graphql(description = "Filter nfts associated to the list of auction houses")]
+        #[graphql(description = "Filter only listed NFTs")] listed: Option<bool>,
+        #[graphql(
+            description = "Filter only NFTs with active offers; rejected if flag is 'false'"
+        )]
+        with_offers: Option<bool>,
+        #[graphql(description = "Filter NFTs associated to the list of auction houses")]
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
         #[graphql(description = "Filter on a collection")] collection: Option<PublicKey<Nft>>,
         #[graphql(
@@ -362,6 +366,13 @@ impl QueryRoot {
             return Err(FieldError::new(
                 "No filter provided! Please provide at least one of the filters",
                 graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, offerers: Vec<PublicKey>, auction_houses: Vec<PublicKey>, term: String" }),
+            ));
+        }
+
+        if let Some(false) = with_offers {
+            return Err(FieldError::new(
+                "with_offers == false is not currently supported",
+                graphql_value!({ "invalid_parameter": "with_offers" }),
             ));
         }
 
@@ -399,6 +410,7 @@ impl QueryRoot {
             offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed,
+            with_offers,
             auction_houses: auction_houses.map(|a| a.into_iter().map(Into::into).collect()),
             collection: collection.map(Into::into),
             limit: limit.try_into()?,
