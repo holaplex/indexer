@@ -697,17 +697,30 @@ impl QueryRoot {
     #[graphql(
         description = "Returns featured collection NFTs ordered by market cap (floor price * number of active listings)"
     )]
+    #[graphql(
+        description = "Returns featured collection NFTs ordered by market cap (floor price * number of NFTs in collection)",
+        arguments(
+            term(
+                description = "Return collections whose metadata match this term (case insensitive); sorting occurs among limited search results (rather than searching after sorting)"
+            ),
+            order_direction(description = "Choose (and sort) ascending or descending by volume"),
+            start_date(
+                description = "Compute volume over sales starting from this date (ISO 8601 format like 2022-07-04T17:06:10Z)"
+            ),
+            end_date(
+                description = "Compute volume over sales ending at this date (ISO 8601 format like 2022-07-04T17:06:10Z)"
+            ),
+            limit(description = "Return at most this many results"),
+            offset(description = "Return results starting from this index"),
+        )
+    )]
     async fn collections_featured_by_market_cap(
         &self,
         context: &AppContext,
-        #[graphql(
-            term = "Return collections whose metadata match this term (case insensitive); sorting occurs among limited search results (rather than searching after sorting)"
-        )]
         term: Option<String>,
-        #[graphql(order_direction = "Sort ascending or descending")]
         order_direction: OrderDirection,
-        #[graphql(limit = "Return at most this many results")] limit: i32,
-        #[graphql(offset = "Return results starting from this index")] offset: i32,
+        limit: i32,
+        offset: i32,
     ) -> FieldResult<Vec<Nft>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
