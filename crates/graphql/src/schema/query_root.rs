@@ -750,8 +750,8 @@ impl QueryRoot {
             &conn,
             addresses,
             order_direction.into(),
-            start_date.naive_utc(),
-            end_date.naive_utc(),
+            start_date,
+            end_date,
             limit,
             offset,
         )?;
