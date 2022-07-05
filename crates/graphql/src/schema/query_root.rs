@@ -697,10 +697,16 @@ impl QueryRoot {
     #[graphql(
         description = "Returns featured collection NFTs ordered by volume (sum of purchase prices)",
         arguments(
-            term(description = "Return collections whose metadata match this term (case insensitive); sorting occurs among limited search results (rather than searching after sorting)"),
+            term(
+                description = "Return collections whose metadata match this term (case insensitive); sorting occurs among limited search results (rather than searching after sorting)"
+            ),
             order_direction(description = "Choose (and sort) ascending or descending by volume"),
-            start_date(description = "Compute volume over sales starting from this date (ISO 8601 format like 2022-07-04T17:06:10Z)"),
-            end_date(description = "Compute volume over sales ending at this date (ISO 8601 format like 2022-07-04T17:06:10Z)"),
+            start_date(
+                description = "Compute volume over sales starting from this date (ISO 8601 format like 2022-07-04T17:06:10Z)"
+            ),
+            end_date(
+                description = "Compute volume over sales ending at this date (ISO 8601 format like 2022-07-04T17:06:10Z)"
+            ),
             limit(description = "Return at most this many results"),
             offset(description = "Return results starting from this index"),
         )
