@@ -61,13 +61,13 @@ enum CurrentMetadataOwners {
 }
 
 #[derive(Iden)]
-enum ListingReceipts {
+enum Listings {
     Table,
     Price,
     Metadata,
     AuctionHouse,
     Seller,
-    PurchaseReceipt,
+    PurchaseId,
     CanceledAt,
 }
 
@@ -81,13 +81,13 @@ enum MetadataCreators {
 
 #[derive(Iden)]
 
-enum BidReceipts {
+enum Offers {
     Table,
     Buyer,
     Price,
     Metadata,
     CanceledAt,
-    PurchaseReceipt,
+    PurchaseId,
     AuctionHouse,
 }
 
@@ -193,29 +193,24 @@ pub fn list(
         offset,
     }: ListQueryOptions,
 ) -> Result<Vec<Nft>> {
-    let mut listing_receipts_query = Query::select()
+    let mut listings_query = Query::select()
         .columns(vec![
-            (ListingReceipts::Table, ListingReceipts::Metadata),
-            (ListingReceipts::Table, ListingReceipts::Price),
-            (ListingReceipts::Table, ListingReceipts::Seller),
+            (Listings::Table, Listings::Metadata),
+            (Listings::Table, Listings::Price),
+            (Listings::Table, Listings::Seller),
         ])
-        .from(ListingReceipts::Table)
-        .order_by(
-            (ListingReceipts::Table, ListingReceipts::Price),
-            Order::Desc,
-        )
+        .from(Listings::Table)
+        .order_by((Listings::Table, Listings::Price), Order::Desc)
         .cond_where(
             Condition::all()
-                .add(Expr::tbl(ListingReceipts::Table, ListingReceipts::PurchaseReceipt).is_null())
-                .add(Expr::tbl(ListingReceipts::Table, ListingReceipts::CanceledAt).is_null()),
+                .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
+                .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null()),
         )
         .take();
 
-    if let Some(ref auction_houses) = auction_houses {
-        listing_receipts_query.and_where(
-            Expr::col((ListingReceipts::Table, ListingReceipts::AuctionHouse))
-                .is_in(auction_houses.iter().map(String::as_str)),
-        );
+    if let Some(auction_houses) = auction_houses.clone() {
+        listings_query
+            .and_where(Expr::col((Listings::Table, Listings::AuctionHouse)).is_in(auction_houses));
     }
 
     let mut query = Query::select()
@@ -252,24 +247,22 @@ pub fn list(
         )
         .join_lateral(
             JoinType::LeftJoin,
-            listing_receipts_query,
-            ListingReceipts::Table,
+            listings_query.take(),
+            Listings::Table,
             Condition::all()
                 .add(
-                    Expr::tbl(ListingReceipts::Table, ListingReceipts::Metadata)
+                    Expr::tbl(Listings::Table, Listings::Metadata)
                         .equals(Metadatas::Table, Metadatas::Address),
                 )
-                .add(
-                    Expr::tbl(ListingReceipts::Table, ListingReceipts::Seller).equals(
-                        CurrentMetadataOwners::Table,
-                        CurrentMetadataOwners::OwnerAddress,
-                    ),
-                ),
+                .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
+                    CurrentMetadataOwners::Table,
+                    CurrentMetadataOwners::OwnerAddress,
+                )),
         )
         .and_where(Expr::col(Metadatas::Burned).eq(false))
         .limit(limit)
         .offset(offset)
-        .order_by((ListingReceipts::Table, ListingReceipts::Price), Order::Asc)
+        .order_by((Listings::Table, Listings::Price), Order::Asc)
         .take();
 
     if let Some(addresses) = addresses {
@@ -299,12 +292,10 @@ pub fn list(
         query.conditions(
             listed,
             |q| {
-                q.and_where(
-                    Expr::col((ListingReceipts::Table, ListingReceipts::Price)).is_not_null(),
-                );
+                q.and_where(Expr::col((Listings::Table, Listings::Price)).is_not_null());
             },
             |q| {
-                q.and_where(Expr::col((ListingReceipts::Table, ListingReceipts::Price)).is_null());
+                q.and_where(Expr::col((Listings::Table, Listings::Price)).is_null());
             },
         );
     }
@@ -312,45 +303,42 @@ pub fn list(
     let with_offers = with_offers.unwrap_or(false);
 
     if offerers.is_some() || with_offers {
-        let mut bid_receipts_conditions = Condition::all().add(
-            Expr::tbl(BidReceipts::Table, BidReceipts::Metadata)
-                .equals(Metadatas::Table, Metadatas::Address),
+        let mut offers_conditions = Condition::all().add(
+            Expr::tbl(Offers::Table, Offers::Metadata).equals(Metadatas::Table, Metadatas::Address),
         );
 
         if let Some(offerers) = offerers {
-            bid_receipts_conditions = bid_receipts_conditions
-                .add(Expr::col((BidReceipts::Table, BidReceipts::Buyer)).is_in(offerers))
-                .add(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
-                .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null());
+            offers_conditions = offers_conditions
+                .add(Expr::col((Offers::Table, Offers::Buyer)).is_in(offerers))
+                .add(Expr::tbl(Offers::Table, Offers::PurchaseId).is_null())
+                .add(Expr::tbl(Offers::Table, Offers::CanceledAt).is_null());
         }
 
         if with_offers {
-            bid_receipts_conditions = bid_receipts_conditions
-                .add(Expr::tbl(BidReceipts::Table, BidReceipts::PurchaseReceipt).is_null())
-                .add(Expr::tbl(BidReceipts::Table, BidReceipts::CanceledAt).is_null());
+            offers_conditions = offers_conditions
+                .add(Expr::tbl(Offers::Table, Offers::PurchaseId).is_null())
+                .add(Expr::tbl(Offers::Table, Offers::CanceledAt).is_null());
         }
 
-        let mut bid_receipts_query = Query::select()
+        let mut offers_query = Query::select()
             .columns(vec![
-                (BidReceipts::Table, BidReceipts::Metadata),
-                (BidReceipts::Table, BidReceipts::Price),
+                (Offers::Table, Offers::Metadata),
+                (Offers::Table, Offers::Price),
             ])
-            .from(BidReceipts::Table)
-            .cond_where(bid_receipts_conditions)
+            .from(Offers::Table)
+            .cond_where(offers_conditions)
             .take();
 
         if let Some(auction_houses) = auction_houses {
-            bid_receipts_query.and_where(
-                Expr::col((BidReceipts::Table, BidReceipts::AuctionHouse)).is_in(auction_houses),
-            );
+            offers_query
+                .and_where(Expr::col((Offers::Table, Offers::AuctionHouse)).is_in(auction_houses));
         }
 
         query.join_lateral(
             JoinType::InnerJoin,
-            bid_receipts_query,
-            BidReceipts::Table,
-            Expr::tbl(BidReceipts::Table, BidReceipts::Metadata)
-                .equals(Metadatas::Table, Metadatas::Address),
+            offers_query.take(),
+            Offers::Table,
+            Expr::tbl(Offers::Table, Offers::Metadata).equals(Metadatas::Table, Metadatas::Address),
         );
     }
 
@@ -404,21 +392,21 @@ pub fn list(
 }
 
 const ACTIVITES_QUERY: &str = r"
-    SELECT listing_receipts.address as address, metadata, auction_house, price, auction_house, created_at,
+    SELECT listings.id as id, metadata, auction_house, price, auction_house, created_at,
     array[seller] as wallets,
     array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
     'listing' as activity_type
-        FROM listing_receipts
+        FROM listings
         LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listing_receipts.seller)
         WHERE metadata = ANY($1)
     UNION
-    SELECT purchase_receipts.address as address, metadata, auction_house, price, auction_house, created_at,
+    SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at,
     array[seller, buyer] as wallets,
     array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
     'purchase' as activity_type
-        FROM purchase_receipts
-        LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchase_receipts.seller)
-        LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchase_receipts.buyer)
+        FROM purchases
+        LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchases.seller)
+        LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
         WHERE metadata = ANY($1)
     ORDER BY created_at DESC;
  -- $1: addresses::text[]";

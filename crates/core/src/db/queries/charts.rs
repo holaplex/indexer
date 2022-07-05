@@ -102,12 +102,12 @@ select series as date,
 from generate_series($3::date, $4::date, '1 day'::interval) as series
 left join (
     select date_trunc('day', created_at) as created_at_day, price
-    from purchase_receipts pr
+    from purchases p
     inner join metadatas md
-    on pr.metadata = md.address
+    on p.metadata = md.address
     inner join metadata_creators mc
     on md.address = mc.metadata_address
-        where pr.auction_house = ANY($1) and ($2 is null OR mc.creator_address = ANY($2)) and pr.created_at >= $3 and pr.created_at <= $4
+        where p.auction_house = ANY($1) and ($2 is null OR mc.creator_address = ANY($2)) and p.created_at >= $3 and p.created_at <= $4
 ) as i
 on i.created_at_day = series
 group by date

@@ -279,12 +279,12 @@ pub struct Nft {
     pub model: Option<String>,
 }
 
-/// Union of `listing_receipts` and `purchase_receipts` for an `NFTActivity`
+/// Union of `listings` and `purchases` for an `NFTActivity`
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct NftActivity {
-    /// The address of the activity
-    #[sql_type = "VarChar"]
-    pub address: String,
+    /// The id of the activity
+    #[sql_type = "diesel::sql_types::Uuid"]
+    pub id: Uuid,
 
     /// The metadata associated of the activity
     #[sql_type = "VarChar"]
@@ -2347,8 +2347,9 @@ pub struct Purchase<'a> {
 }
 
 /// A row in the `listings` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
 #[diesel(treat_none_as_null = true)]
+#[table_name = "listings"]
 pub struct Listing<'a> {
     /// Random Uuid primary key from offers table
     /// Optional so that it can be generated randomly when other fields are inserted into table

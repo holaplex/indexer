@@ -5,6 +5,7 @@ use indexer_core::{
         tables::{bid_receipts, listing_receipts, metadata_jsons},
     },
     util::unix_timestamp,
+    uuid::Uuid,
 };
 use objects::{
     ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
@@ -207,7 +208,7 @@ impl NftOwner {
 
 #[derive(Debug, Clone)]
 pub struct NftActivity {
-    pub address: String,
+    pub id: Uuid,
     pub metadata: PublicKey<Nft>,
     pub auction_house: PublicKey<AuctionHouse>,
     pub price: U64,
@@ -221,7 +222,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
 
     fn try_from(
         models::NftActivity {
-            address,
+            id,
             metadata,
             auction_house,
             price,
@@ -232,7 +233,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
         }: models::NftActivity,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            address,
+            id,
             metadata: metadata.into(),
             auction_house: auction_house.into(),
             price: price.try_into()?,
@@ -249,8 +250,8 @@ impl TryFrom<models::NftActivity> for NftActivity {
 
 #[graphql_object(Context = AppContext)]
 impl NftActivity {
-    fn address(&self) -> &str {
-        &self.address
+    fn id(&self) -> &Uuid {
+        &self.id
     }
 
     fn metadata(&self) -> &PublicKey<Nft> {

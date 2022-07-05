@@ -22,25 +22,25 @@ const MINT_QUERY: &str = r"
 select
     auction_house,
     mint,
-    min(listing_price) filter (where listing_canceled_at is null and listing_purchase_receipt is null)::bigint as floor,
+    min(listing_price) filter (where listing_canceled_at is null and listing_purchase_id is null)::bigint as floor,
     round(avg(purchase_price))::bigint as average,
     sum(purchase_price) filter (where ($2 - purchased_at) < interval '24 hr')::bigint as volume_24hr,
     sum(purchase_price)::bigint as volume_total
 
-from (select lr.auction_house as auction_house,
-        lr.price as listing_price, pr.price as purchase_price,
-        pr.created_at as purchased_at,
-        lr.created_at as listed_at,
-        lr.purchase_receipt as listing_purchase_receipt,
-        lr.canceled_at as listing_canceled_at,
+from (select l.auction_house as auction_house,
+        l.price as listing_price, p.price as purchase_price,
+        p.created_at as purchased_at,
+        l.created_at as listed_at,
+        l.purchase_id as listing_purchase_id,
+        l.canceled_at as listing_canceled_at,
         ah.treasury_mint as mint
-from listing_receipts lr
+from listings l
     inner join auction_houses ah
-        on (lr.auction_house = ah.address)
-    left join purchase_receipts pr
-        on (lr.purchase_receipt = pr.address)
+        on (l.auction_house = ah.address)
+    left join purchases p
+        on (l.purchase_id = p.id)
 
-where lr.auction_house = ANY($1)
+where l.auction_house = ANY($1)
 ) as auction_house_stats
 group by auction_house, mint;
  -- $1: auction_house_addresses::text[]
@@ -92,31 +92,31 @@ const COLLECTION_QUERY: &str = r"
 select
     auction_house,
     mint,
-    min(listing_price) filter (where listing_canceled_at is null and listing_purchase_receipt is null)::bigint as floor,
+    min(listing_price) filter (where listing_canceled_at is null and listing_purchase_id is null)::bigint as floor,
     round(avg(purchase_price))::bigint as average,
     sum(purchase_price) filter (where ($3 - purchased_at) < interval '24 hr')::bigint as volume_24hr,
     sum(purchase_price)::bigint as volume_total
 
 from (
-    select lr.auction_house as auction_house,
+    select l.auction_house as auction_house,
         mc.creator_address as creator_address,
-        lr.price as listing_price, pr.price as purchase_price,
-        pr.created_at as purchased_at,
-        lr.created_at as listed_at,
-        lr.purchase_receipt as listing_purchase_receipt,
-        lr.canceled_at as listing_canceled_at,
+        l.price as listing_price, p.price as purchase_price,
+        p.created_at as purchased_at,
+        l.created_at as listed_at,
+        l.purchase_id as listing_purchase_id,
+        l.canceled_at as listing_canceled_at,
         ah.treasury_mint as mint
-from listing_receipts lr
+from listings l
     inner join auction_houses ah
-        on (lr.auction_house = ah.address)
+        on (l.auction_house = ah.address)
     inner join metadatas md
-        on (lr.metadata = md.address)
+        on (l.metadata = md.address)
     inner join metadata_creators mc
         on (md.address = mc.metadata_address)
-    left join purchase_receipts pr
-        on (lr.purchase_receipt = pr.address)
+    left join purchases p
+        on (l.purchase_id = p.id)
 
-where lr.auction_house = ANY($1)
+where l.auction_house = ANY($1)
     and mc.creator_address = $2
     and mc.verified
 ) as collection_stats
