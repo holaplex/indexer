@@ -718,8 +718,7 @@ impl QueryRoot {
                     .index("collections")
                     .search()
                     .with_query(&term)
-                    .with_offset(offset.try_into()?)
-                    .with_limit(limit.try_into()?)
+                    .with_limit(1000)
                     .execute::<Value>()
                     .await
                     .context("failed to load search result for collections")?
