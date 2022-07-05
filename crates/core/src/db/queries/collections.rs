@@ -10,7 +10,7 @@ use diesel::{
 };
 
 use crate::{
-    db::{custom_types::{OrderDirection}, models::Nft, Connection},
+    db::{custom_types::OrderDirection, models::Nft, Connection},
     error::Result,
 };
 
