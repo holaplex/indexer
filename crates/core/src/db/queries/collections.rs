@@ -99,8 +99,6 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
             INNER JOIN auction_houses on (listings.auction_house = auction_houses.address)
             WHERE
                 ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
-                AND listings.purchase_id IS NULL
-                AND listings.canceled_at IS NULL
                 AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
             GROUP BY metadata_collection_keys.collection_address
             ORDER BY market_cap {order_direction}
