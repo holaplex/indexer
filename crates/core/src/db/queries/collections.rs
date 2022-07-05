@@ -45,8 +45,10 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
                 FROM purchases
                 INNER JOIN metadatas on (purchases.metadata = metadatas.address)
                 INNER JOIN metadata_collection_keys on (metadatas.address = metadata_collection_keys.metadata_address)
+                INNER JOIN auction_houses on (purchases.auction_house = auction_houses.address)
                 WHERE
                     ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
+                    AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
                     AND purchases.created_at >= $2
                     AND purchases.created_at <= $3
                 GROUP BY metadata_collection_keys.collection_address
