@@ -4,10 +4,10 @@ use juniper::{EmptyMutation, EmptySubscription, RootNode};
 
 mod context;
 pub(self) mod dataloaders;
+pub mod enums;
 pub(self) mod objects;
 mod query_root;
 pub(self) mod scalars;
-pub mod enums;
 
 pub(self) mod prelude {
     pub use std::{collections::HashMap, sync::Arc};
