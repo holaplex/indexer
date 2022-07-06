@@ -68,7 +68,7 @@ pub(crate) async fn process(
     Ok(())
 }
 
-async fn upsert_into_offers_table<'a>(
+pub async fn upsert_into_offers_table<'a>(
     client: &Client,
     data: PublicBuyInstruction<'static>,
 ) -> Result<()> {

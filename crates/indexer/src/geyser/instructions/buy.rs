@@ -25,6 +25,7 @@ pub(crate) async fn process(
 ) -> Result<()> {
     let params = Buy::try_from_slice(data).context("failed to deserialize")?;
 
+
     if accounts.len() != 14 {
         debug!("invalid accounts for BuyInstruction");
         return Ok(());
@@ -68,7 +69,7 @@ pub(crate) async fn process(
     Ok(())
 }
 
-async fn upsert_into_offers_table<'a>(
+pub async fn upsert_into_offers_table<'a>(
     client: &Client,
     data: BuyInstruction<'static>,
 ) -> Result<()> {
