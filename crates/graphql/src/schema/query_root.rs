@@ -695,6 +695,77 @@ impl QueryRoot {
     }
 
     #[graphql(
+        description = "Returns featured collection NFTs ordered by market cap (floor price * number of NFTs in collection)",
+        arguments(
+            term(
+                description = "Return collections whose metadata match this term (case insensitive); sorting occurs among limited search results (rather than searching after sorting)"
+            ),
+            order_direction(
+                description = "Choose (and sort) ascending or descending by market cap"
+            ),
+            start_date(
+                description = "Compute market cap over NFTs listed later than this date (ISO 8601 format like 2022-07-04T17:06:10Z)"
+            ),
+            end_date(
+                description = "Compute market cap over NFTs listed earlier than this date (ISO 8601 format like 2022-07-04T17:06:10Z)"
+            ),
+            limit(description = "Return at most this many results"),
+            offset(description = "Return results starting from this index"),
+        )
+    )]
+    async fn collections_featured_by_market_cap(
+        &self,
+        context: &AppContext,
+        term: Option<String>,
+        order_direction: OrderDirection,
+        start_date: DateTime<Utc>,
+        end_date: DateTime<Utc>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = context.shared.db.get().context("failed to connect to db")?;
+
+        let addresses: Option<Vec<String>> = match term {
+            Some(term) => {
+                let search = &context.shared.search;
+                let search_result = search
+                    .index("collections")
+                    .search()
+                    .with_query(&term)
+                    .with_limit(1000)
+                    .execute::<Value>()
+                    .await
+                    .context("failed to load search result for collections")?
+                    .hits;
+
+                Some(
+                    search_result
+                        .into_iter()
+                        .map(|r| MetadataJson::from(r.result).mint_address)
+                        .collect(),
+                )
+            },
+            None => None,
+        };
+
+        let collections = queries::collections::by_market_cap(
+            &conn,
+            addresses,
+            order_direction.into(),
+            start_date,
+            end_date,
+            limit,
+            offset,
+        )?;
+
+        collections
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    #[graphql(
         description = "Returns featured collection NFTs ordered by volume (sum of purchase prices)",
         arguments(
             term(
