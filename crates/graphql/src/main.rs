@@ -89,7 +89,7 @@ pub(crate) struct SharedData {
     pub featured_listings_auction_houses: Vec<String>,
     pub featured_listings_seller_exclusions: Vec<String>,
     pub marketplaces_store_address_exclusions: Vec<String>,
-    pre_query_search_limit: usize,
+    pub pre_query_search_limit: usize,
 }
 
 #[allow(clippy::unused_async)]
