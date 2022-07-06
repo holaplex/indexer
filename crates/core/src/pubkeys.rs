@@ -43,6 +43,9 @@ pub static TRIBECA_LOCKED_VOTER: Pubkey = pubkey!("LocktDzaV1W2Bm9DeZeiyz4J9zs4f
 pub static TRIBECA_GOVERN: Pubkey = pubkey!("Govz1VyoyLD5BL6CSCxUJLVLsQHRwjfFj1prNsdNg5Jw");
 /// Strata token bonding program key
 pub static TOKEN_BONDING: Pubkey = pubkey!("TBondmkCYxaPCKG4CHYfVTcwQ8on31xnJrPzk8F8WsS");
+/// Cardinal .twitter namespace pubkey
+pub static CARDINAL_TWITTER_NAMESPACE: Pubkey =
+    pubkey!("2zwXjjGEUrFMyE2CF2Ju4CJwMzwdbBMYnF2boEzgPhGu");
 
 /// Find the address of a store given its owner's address
 pub fn find_store_address(owner: impl Borrow<Pubkey>) -> (Pubkey, u8) {
