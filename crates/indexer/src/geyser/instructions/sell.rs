@@ -66,7 +66,7 @@ pub(crate) async fn process(
     Ok(())
 }
 
-async fn upsert_into_listings_table<'a>(
+pub async fn upsert_into_listings_table<'a>(
     client: &Client,
     data: SellInstruction<'static>,
 ) -> Result<()> {
