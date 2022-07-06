@@ -374,8 +374,7 @@ impl QueryRoot {
                     .index("metadatas")
                     .search()
                     .with_query(&term)
-                    .with_offset(offset.try_into()?)
-                    .with_limit(limit.try_into()?)
+                    .with_limit(context.shared.pre_query_search_limit)
                     .execute::<Value>()
                     .await
                     .context("failed to load search result for metadata json")?
