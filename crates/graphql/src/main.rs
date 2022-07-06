@@ -64,6 +64,9 @@ struct Opts {
 
     #[clap(long, env, use_value_delimiter(true))]
     marketplaces_store_address_exclusions: Vec<String>,
+
+    #[clap(long, env)]
+    pre_query_search_limit: usize,
 }
 
 struct GraphiqlData {
@@ -86,6 +89,7 @@ pub(crate) struct SharedData {
     pub featured_listings_auction_houses: Vec<String>,
     pub featured_listings_seller_exclusions: Vec<String>,
     pub marketplaces_store_address_exclusions: Vec<String>,
+    pre_query_search_limit: usize,
 }
 
 #[allow(clippy::unused_async)]
@@ -169,6 +173,7 @@ fn main() {
             featured_listings_auction_houses,
             featured_listings_seller_exclusions,
             marketplaces_store_address_exclusions,
+            pre_query_search_limit,
         } = opts;
 
         let (addr,) = server.into_parts();
@@ -194,6 +199,7 @@ fn main() {
             featured_listings_auction_houses,
             featured_listings_seller_exclusions,
             marketplaces_store_address_exclusions,
+            pre_query_search_limit,
         });
 
         let version_extension = "/v1";

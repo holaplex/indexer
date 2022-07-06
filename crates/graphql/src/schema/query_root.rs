@@ -732,7 +732,7 @@ impl QueryRoot {
                     .index("collections")
                     .search()
                     .with_query(&term)
-                    .with_limit(1000)
+                    .with_limit(context.shared.pre_query_search_limit)
                     .execute::<Value>()
                     .await
                     .context("failed to load search result for collections")?
@@ -801,7 +801,7 @@ impl QueryRoot {
                     .index("collections")
                     .search()
                     .with_query(&term)
-                    .with_limit(1000)
+                    .with_limit(context.shared.pre_query_search_limit)
                     .execute::<Value>()
                     .await
                     .context("failed to load search result for collections")?
