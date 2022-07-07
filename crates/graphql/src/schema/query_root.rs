@@ -349,7 +349,7 @@ impl QueryRoot {
         #[graphql(description = "Filter NFTs associated to the list of auction houses")]
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
         #[graphql(description = "Filter on one or more collections")] collections: Option<
-            PublicKey<Nft>,
+            Vec<PublicKey<Nft>>,
         >,
         #[graphql(
             description = "Return NFTs whose metadata contain this search term (case-insensitive)"
@@ -358,7 +358,7 @@ impl QueryRoot {
         #[graphql(description = "Limit for query")] limit: i32,
         #[graphql(description = "Offset for query")] offset: i32,
     ) -> FieldResult<Vec<Nft>> {
-        if collection.is_none()
+        if collections.is_none()
             && owners.is_none()
             && creators.is_none()
             && auction_houses.is_none()
@@ -366,8 +366,15 @@ impl QueryRoot {
             && term.is_none()
         {
             return Err(FieldError::new(
-                "No filter provided! Please provide at least one of the filters",
-                graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, offerers: Vec<PublicKey>, auction_houses: Vec<PublicKey>, term: String" }),
+                "No filter provided! Please provide at least one of the following arguments",
+                graphql_value!([
+                    "collections",
+                    "owners",
+                    "creators",
+                    "auction_houses",
+                    "offerers",
+                    "term"
+                ]),
             ));
         }
 
@@ -406,15 +413,15 @@ impl QueryRoot {
 
         let query_options = queries::metadatas::ListQueryOptions {
             addresses,
-            owners: owners.map(|a| a.into_iter().map(Into::into).collect()),
-            creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
+            owners: owners.map(|o| o.into_iter().map(Into::into).collect()),
+            creators: creators.map(|c| c.into_iter().map(Into::into).collect()),
             update_authorities: update_authorities.map(|a| a.into_iter().map(Into::into).collect()),
-            offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
+            offerers: offerers.map(|o| o.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed,
             with_offers,
-            auction_houses: auction_houses.map(|a| a.into_iter().map(Into::into).collect()),
-            collection: collection.map(Into::into),
+            auction_houses: auction_houses.map(|h| h.into_iter().map(Into::into).collect()),
+            collections: collections.map(|c| c.into_iter().map(Into::into).collect()),
             limit: limit.try_into()?,
             offset: offset.try_into()?,
         };
