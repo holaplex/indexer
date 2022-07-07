@@ -124,8 +124,8 @@ pub struct ListQueryOptions {
     pub listed: Option<bool>,
     /// nfts with active offers
     pub with_offers: Option<bool>,
-    /// nft in a specific colleciton
-    pub collection: Option<String>,
+    /// nft in one or more specific collections
+    pub collections: Vec<String>,
     /// limit to apply to query
     pub limit: u64,
     /// offset to apply to query
@@ -165,7 +165,7 @@ pub fn list(
         attributes,
         listed,
         with_offers,
-        collection,
+        collections,
         limit,
         offset,
     }: ListQueryOptions,
@@ -351,7 +351,7 @@ pub fn list(
         }
     }
 
-    if let Some(collection) = collection {
+    if !collections.is_empty() {
         query.inner_join(
             MetadataCollectionKeys::Table,
             Expr::tbl(
@@ -366,7 +366,7 @@ pub fn list(
                 MetadataCollectionKeys::Table,
                 MetadataCollectionKeys::CollectionAddress,
             ))
-            .eq(collection),
+            .is_in(collections),
         );
     }
 

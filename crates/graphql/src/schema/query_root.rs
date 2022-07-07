@@ -348,7 +348,9 @@ impl QueryRoot {
         with_offers: Option<bool>,
         #[graphql(description = "Filter NFTs associated to the list of auction houses")]
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
-        #[graphql(description = "Filter on a collection")] collection: Option<PublicKey<Nft>>,
+        #[graphql(description = "Filter on one or more collections")] collections: Option<
+            PublicKey<Nft>,
+        >,
         #[graphql(
             description = "Return NFTs whose metadata contain this search term (case-insensitive)"
         )]
