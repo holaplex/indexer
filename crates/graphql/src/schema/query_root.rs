@@ -348,6 +348,9 @@ impl QueryRoot {
         with_offers: Option<bool>,
         #[graphql(description = "Filter NFTs associated to the list of auction houses")]
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
+        #[deprecated = "Deprecated in favor of the collections argument"] collection: Option<
+            PublicKey<Nft>,
+        >,
         #[graphql(description = "Filter on one or more collections")] collections: Option<
             Vec<PublicKey<Nft>>,
         >,
@@ -358,6 +361,18 @@ impl QueryRoot {
         #[graphql(description = "Limit for query")] limit: i32,
         #[graphql(description = "Offset for query")] offset: i32,
     ) -> FieldResult<Vec<Nft>> {
+        let collections = match (collections, collection) {
+            (c, None) => c,
+            (None, Some(c)) => Some(vec![c]),
+            (Some(_), Some(_)) => {
+                return Err(FieldError::new(
+                    "The collection argument is deprecated and cannot be combined with the \
+                    collections argument",
+                    graphql_value!(None),
+                ));
+            },
+        };
+
         if collections.is_none()
             && owners.is_none()
             && creators.is_none()
