@@ -4,6 +4,8 @@ use std::borrow::Borrow;
 
 use solana_program::{pubkey, pubkey::Pubkey};
 
+/// SOL MINT
+pub static SOL: Pubkey = pubkey!("So11111111111111111111111111111111111111112");
 /// Metaplex token metadata program key
 pub static METADATA: Pubkey = pubkey!("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 /// Metaplex token vault program key
