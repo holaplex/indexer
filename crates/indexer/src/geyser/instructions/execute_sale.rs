@@ -60,7 +60,23 @@ pub(crate) async fn process(
         slot: slot.try_into()?,
     };
 
-    upsert_into_purchases_table(client, row.clone())
+    let purchase: PurchaseData  = {
+        purchase: Purchase {
+            id: None,
+            seller: row.seller,
+            auction_house: row.auction_house,
+            metadata: row.metadata,
+            token_size: row.token_size,
+            price: row.buyer_price,
+            created_at: row.created_at,
+            slot: row.slot,
+        }
+        seller_trade_state: row.seller_trade_state,
+        buyer_trade_state: row.buyer_trade_state,
+
+    }
+
+    upsert_into_purchases_table(client, purchase)
         .await
         .context("failed to insert purchase!")?;
 
@@ -76,20 +92,27 @@ pub(crate) async fn process(
     Ok(())
 }
 
+pub struct PurchaseData {
+    pub purchase: Purchase<'static>,
+    pub seller_trade_state: String,
+    pub buyer_trade_state: String,
+}
+
 pub async fn upsert_into_purchases_table<'a>(
     client: &Client,
-    data: ExecuteSaleInstruction<'static>,
+    data: PurchaseData,
 ) -> Result<()> {
+
     let row = Purchase {
         id: None,
-        buyer: data.buyer.clone(),
-        seller: data.seller.clone(),
-        auction_house: data.auction_house.clone(),
-        metadata: data.metadata.clone(),
-        token_size: data.token_size,
-        price: data.buyer_price,
-        created_at: data.created_at,
-        slot: data.slot,
+        buyer: data.purchase.buyer.clone(),
+        seller: data.purchase.seller.clone(),
+        auction_house: data.purchase.auction_house.clone(),
+        metadata: data.purchase.metadata.clone(),
+        token_size: data.purchase.token_size,
+        price: data.purchase.price,
+        created_at: data.purchase.created_at,
+        slot: data.purchase.slot,
         write_version: None,
     };
 
