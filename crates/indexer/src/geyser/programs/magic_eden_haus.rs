@@ -29,7 +29,7 @@ struct MEInstructionData {
     _expiry: u64,
 }
 
-pub(crate) async fn process_execute_sale(
+async fn process_execute_sale(
     client: &Client,
     mut data: &[u8],
     accounts: &[Pubkey],
@@ -63,7 +63,7 @@ pub(crate) async fn process_execute_sale(
     Ok(())
 }
 
-pub(crate) async fn process_sale(
+async fn process_sale(
     client: &Client,
     mut data: &[u8],
     accounts: &[Pubkey],
@@ -95,7 +95,7 @@ pub(crate) async fn process_sale(
     Ok(())
 }
 
-pub(crate) async fn process_buy(
+async fn process_buy(
     client: &Client,
     mut data: &[u8],
     accounts: &[Pubkey],
@@ -104,7 +104,6 @@ pub(crate) async fn process_buy(
     let params = MEInstructionData::deserialize(&mut data)
         .context("failed to deserialize ME Buy instruction")?;
 
-    // ME2 accounts
     if accounts.len() != 12 {
         debug!("invalid accounts for BuyInstruction");
         return Ok(());
@@ -134,17 +133,12 @@ pub(crate) async fn process_buy(
     Ok(())
 }
 
-pub(crate) async fn process_cancel_sale(
-    client: &Client,
-    accounts: &[Pubkey],
-    slot: u64,
-) -> Result<()> {
+async fn process_cancel_sale(client: &Client, accounts: &[Pubkey], slot: u64) -> Result<()> {
     let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
-
     let canceled_at = Utc::now().naive_utc();
     let trade_state = accts[6].clone();
     let slot: i64 = slot.try_into()?;
-    dbg!("canceled sale");
+
     client
         .db()
         .run(move |db| {
@@ -167,17 +161,12 @@ pub(crate) async fn process_cancel_sale(
     Ok(())
 }
 
-pub(crate) async fn process_cancel_buy(
-    client: &Client,
-    accounts: &[Pubkey],
-    slot: u64,
-) -> Result<()> {
+async fn process_cancel_buy(client: &Client, accounts: &[Pubkey], slot: u64) -> Result<()> {
     let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
-
     let canceled_at = Utc::now().naive_utc();
     let trade_state = accts[5].clone();
     let slot: i64 = slot.try_into()?;
-    dbg!("canceled buy");
+
     client
         .db()
         .run(move |db| {
