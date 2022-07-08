@@ -97,13 +97,13 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         // Message::AccountUpdate(update) if update.owner == pubkeys::TOKEN_BONDING => {
         //     programs::token_bonding::process(client, update).await
         // },
-        // Message::AccountUpdate(update) => {
-        //     debug!(
-        //         "Unhandled account update for program {}",
-        //         bs58::encode(update.owner).into_string()
-        //     );
-        //     Ok(())
-        // },
+        Message::AccountUpdate(update) => {
+            // debug!(
+            //     "Unhandled account update for program {}",
+            //     bs58::encode(update.owner).into_string()
+            // );
+            Ok(())
+        },
         // Message::InstructionNotify(ins) if ins.program == pubkeys::AUCTION_HOUSE => {
         //     programs::auction_house::process_instruction(client, &ins.data, &ins.accounts, ins.slot)
         //         .await
@@ -113,10 +113,14 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         //         .await
         // },
         Message::InstructionNotify(ins) if ins.program == pubkeys::ME_HAUS => {
-            programs::magic_eden_haus::process_instruction(client, &ins.data, &ins.accounts, ins.slot)
-                .await
+            programs::magic_eden_haus::process_instruction(
+                client,
+                &ins.data,
+                &ins.accounts,
+                ins.slot,
+            )
+            .await
         },
         Message::InstructionNotify { .. } => Ok(()),
-        Message::AccountUpdate { .. } => Ok(()),
     }
 }
