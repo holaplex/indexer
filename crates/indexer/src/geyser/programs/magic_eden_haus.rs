@@ -39,7 +39,7 @@ pub(crate) async fn process_sale(
     let row = SellInstruction {
         wallet: Owned(accts[0].clone()),
         token_account: Owned(accts[3].clone()),
-        metadata: Owned(accts[4].clone()),
+        metadata: Owned(accts[5].clone()),
         authority: Owned(accts[6].clone()),
         auction_house: Owned(accts[7].clone()),
         // TODO: make this optional
