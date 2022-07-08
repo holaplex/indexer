@@ -25,7 +25,6 @@ geyser = [
   "indexer-rabbitmq/search-indexer",
 ]
 http = [
-  "base64",
   "cid",
   "reqwest-client",
   "search-dispatch",
@@ -97,7 +96,6 @@ cardinal-paid-claim-approver = { version = "^1.0.3", features = ["no-entrypoint"
 namespaces = { version = "0.1.0", features = ["no-entrypoint"] }
 
 # HTTP indexer
-base64 = { version = "0.13.0", optional = true }
 cid = { version = "0.7.0", optional = true }
 reqwest = { version = "0.11.6", features = ["json", "gzip", "brotli", "deflate"], optional = true }
 serde_json = { version = "1.0.79", optional = true }

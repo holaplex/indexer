@@ -15,7 +15,7 @@ pub struct AssetIdentifier<'a> {
     /// The CID of a potential IPFS asset
     pub ipfs: Option<(Cid, String)>,
     /// The transaction ID of a potential Arweave asset
-    pub arweave: Option<ArTxid>,
+    pub arweave: Option<(ArTxid, String)>,
     /// The URL that was parsed
     pub url: &'a Url,
 }
@@ -54,16 +54,17 @@ impl<'a> AssetIdentifier<'a> {
         let mut arweave = Ok(None);
 
         Self::visit_url(url, |s, i| {
-            if let Some(c) = Self::try_ipfs(s) {
-                let path = i
-                    .and_then(|i| url.path_segments().map(|s| (i, s)))
-                    .map_or_else(String::new, |(i, s)| s.skip(i).intersperse("/").collect());
+            let slice_path = || {
+                i.and_then(|i| url.path_segments().map(|s| (i, s)))
+                    .map_or_else(String::new, |(i, s)| s.skip(i).intersperse("/").collect())
+            };
 
-                Self::advance_heuristic(&mut ipfs, (c, path));
+            if let Some(c) = Self::try_ipfs(s) {
+                Self::advance_heuristic(&mut ipfs, (c, slice_path()));
             }
 
             if let Some(t) = Self::try_arweave(s) {
-                Self::advance_heuristic(&mut arweave, t);
+                Self::advance_heuristic(&mut arweave, (t, slice_path()));
             }
         });
 
@@ -139,9 +140,8 @@ impl<'a> AssetIdentifier<'a> {
             (Some((cid, path)), Some(_), Some(AssetHint::Ipfs)) | (Some((cid, path)), None, _) => {
                 Some(Cow::Owned(Self::fingerprint_ipfs(cid, path)))
             },
-            (Some(_), Some(txid), Some(AssetHint::Arweave)) | (None, Some(txid), _) => {
-                Some(Cow::Borrowed(Self::fingerprint_arweave(txid)))
-            },
+            (Some(_), Some((txid, path)), Some(AssetHint::Arweave))
+            | (None, Some((txid, path)), _) => Some(Self::fingerprint_arweave(txid, path)),
             (None, None, _) if allow_indet => {
                 Some(Cow::Owned(Self::fingerprint_indeterminate(self.url)))
             },
@@ -161,12 +161,11 @@ impl<'a> AssetIdentifier<'a> {
                     Some(AssetHint::Ipfs),
                 )
             })
-            .chain(self.arweave.iter().map(|t| {
-                (
-                    Cow::Borrowed(Self::fingerprint_arweave(t)),
-                    Some(AssetHint::Arweave),
-                )
-            }))
+            .chain(
+                self.arweave
+                    .iter()
+                    .map(|(t, p)| (Self::fingerprint_arweave(t, p), Some(AssetHint::Arweave))),
+            )
             .chain(std::iter::once_with(|| {
                 (Cow::Owned(Self::fingerprint_indeterminate(self.url)), None)
             }))
@@ -187,8 +186,19 @@ impl<'a> AssetIdentifier<'a> {
         }
     }
 
-    fn fingerprint_arweave(txid: &ArTxid) -> &[u8] {
-        &txid.0
+    fn fingerprint_arweave<'b>(txid: &'b ArTxid, path: &'_ str) -> Cow<'b, [u8]> {
+        if path.is_empty() {
+            Cow::Borrowed(&txid.0)
+        } else {
+            use cid::multihash::StatefulHasher;
+
+            let mut h = cid::multihash::Sha2_256::default();
+
+            h.update(&txid.0);
+            h.update(path.as_bytes());
+
+            Cow::Owned(h.finalize().as_ref().to_vec())
+        }
     }
 
     fn fingerprint_indeterminate(url: &Url) -> Vec<u8> {
@@ -282,16 +292,28 @@ mod cdn {
         hint: impl Into<Option<AssetHint>>,
         query: impl IntoIterator<Item = (&'a str, &'a str)>,
     ) -> Result<Option<Url>> {
-        match (id.arweave, &id.ipfs, hint.into()) {
+        match (&id.arweave, &id.ipfs, hint.into()) {
             (Some(_), Some(_), None) => {
                 warn!("Ambiguous asset ID {:?} encountered", id);
                 Ok(None)
             },
             (None, None, _) => Ok(None),
-            (Some(txid), None, _) | (Some(txid), Some(_), Some(AssetHint::Arweave)) => {
+            (Some((txid, path)), None, _)
+            | (Some((txid, path)), Some(_), Some(AssetHint::Arweave)) => {
                 let txid = base64::encode_config(&txid.0, base64::URL_SAFE_NO_PAD);
 
-                format_impl(args, id, AssetHint::Arweave, ["arweave", &txid], query).map(Some)
+                format_impl(
+                    args,
+                    id,
+                    AssetHint::Arweave,
+                    ["arweave", &txid],
+                    query.into_iter().chain(if path.is_empty() {
+                        None
+                    } else {
+                        Some(("path", &**path))
+                    }),
+                )
+                .map(Some)
             },
             (None, Some((cid, path)), _) | (Some(_), Some((cid, path)), Some(AssetHint::Ipfs)) => {
                 let cid = cid.to_string();
