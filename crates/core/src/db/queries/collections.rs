@@ -107,22 +107,34 @@ pub fn by_market_cap(
 fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
     format!(
         r"
-        WITH market_cap_table (collection, market_cap) as (
-            SELECT metadata_collection_keys.collection_address AS collection, MIN(listings.price) * COUNT( DISTINCT metadata_collection_keys.metadata_address) AS market_cap
-            FROM listings
-            INNER JOIN metadatas on (listings.metadata = metadatas.address)
-            INNER JOIN metadata_collection_keys on (metadatas.address = metadata_collection_keys.metadata_address)
-            INNER JOIN auction_houses on (listings.auction_house = auction_houses.address)
-            WHERE
-                ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
-                AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
-                AND listings.created_at >= $2
-                AND listings.created_at <= $3
-            GROUP BY metadata_collection_keys.collection_address
+        WITH market_cap_table (collection, market_cap) AS (
+            SELECT components.collection, components.floor_price * components.nft_count AS market_cap
+            FROM (
+                SELECT floor_prices.collection, MIN(floor_prices.floor_price) AS floor_price, COUNT( DISTINCT metadata_collection_keys.metadata_address) as nft_count
+                FROM (
+                    SELECT metadata_collection_keys.collection_address AS collection, MIN(listings.price) AS floor_price
+                    FROM listings
+                    INNER JOIN metadatas on (listings.metadata = metadatas.address)
+                    INNER JOIN metadata_collection_keys on (metadatas.address = metadata_collection_keys.metadata_address)
+                    INNER JOIN auction_houses on (listings.auction_house = auction_houses.address)
+                    WHERE
+                        ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
+                        AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
+                        AND listings.created_at >= $2
+                        AND listings.created_at <= $3
+                        AND listings.purchase_id IS NULL
+                        AND listings.canceled_at IS NULL
+                    GROUP BY metadata_collection_keys.collection_address
+                ) floor_prices
+                INNER JOIN metadata_collection_keys on (metadata_collection_keys.collection_address = floor_prices.collection)
+                GROUP BY floor_prices.collection
+            ) components
             ORDER BY market_cap {order_direction}
             LIMIT $4
             OFFSET $5
-        ) SELECT
+        )
+        
+        SELECT
             metadatas.address,
             metadatas.name,
             metadatas.seller_fee_basis_points,
@@ -135,10 +147,9 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
             metadata_jsons.image,
             metadata_jsons.category,
             metadata_jsons.model
-        FROM metadata_jsons, market_cap_table, metadatas
-        WHERE
-            market_cap_table.collection = metadatas.mint_address
-            AND metadatas.address = metadata_jsons.metadata_address
+        FROM metadatas
+        INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
+        INNER JOIN market_cap_table ON (market_cap_table.collection = metadatas.mint_address)
     -- $1: addresses::text[]
     -- $2: start date::timestamp
     -- $3: end date::timestamp
