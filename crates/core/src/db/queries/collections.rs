@@ -133,7 +133,6 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
             LIMIT $4
             OFFSET $5
         )
-        
         SELECT
             metadatas.address,
             metadatas.name,
