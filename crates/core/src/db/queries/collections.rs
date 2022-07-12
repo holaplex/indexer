@@ -110,7 +110,7 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
         WITH market_cap_table (collection, market_cap) AS (
             SELECT components.collection, components.floor_price * components.nft_count AS market_cap
             FROM (
-                SELECT floor_prices.collection, MIN(floor_prices.floor_price) AS floor_price, COUNT( DISTINCT metadata_collection_keys.metadata_address) as nft_count
+                SELECT floor_prices.collection, MIN(floor_prices.floor_price) AS floor_price, COUNT( metadata_collection_keys.metadata_address) as nft_count
                 FROM (
                     SELECT metadata_collection_keys.collection_address AS collection, MIN(listings.price) AS floor_price
                     FROM listings
