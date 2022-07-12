@@ -57,7 +57,7 @@ impl TryBatchFn<PublicKey<Wallet>, Option<Wallet>> for Batcher {
 
         let wallets = twitter_handles.into_iter().fold(
             addresses
-                .into_iter()
+                .iter()
                 .map(|a| (a.clone(), None))
                 .collect::<HashMap<_, _>>(),
             |mut h,
