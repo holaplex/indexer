@@ -256,9 +256,17 @@ pub struct Nft {
     #[sql_type = "Nullable<Text>"]
     pub description: Option<String>,
 
-    /// Metadata Image url
+    /// Metadata image URL
     #[sql_type = "Nullable<Text>"]
     pub image: Option<String>,
+
+    /// Metadata animation URL
+    #[sql_type = "Nullable<Text>"]
+    pub animation_url: Option<String>,
+
+    /// Metadata external URL
+    #[sql_type = "Nullable<Text>"]
+    pub external_url: Option<String>,
 
     /// Metadata Category
     #[sql_type = "Nullable<Text>"]
@@ -348,9 +356,17 @@ pub struct SampleNft {
     #[sql_type = "Nullable<Text>"]
     pub description: Option<String>,
 
-    /// Metadata Image url
+    /// Metadata image URL
     #[sql_type = "Nullable<Text>"]
     pub image: Option<String>,
+
+    /// Metadata animation URL
+    #[sql_type = "Nullable<Text>"]
+    pub animation_url: Option<String>,
+
+    /// Metadata external URL
+    #[sql_type = "Nullable<Text>"]
+    pub external_url: Option<String>,
 
     /// Metadata category
     #[sql_type = "Nullable<Text>"]

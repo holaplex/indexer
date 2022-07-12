@@ -576,7 +576,7 @@ impl QueryRoot {
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .filter(metadatas::address.eq(address))
-            .select(queries::metadatas::NftColumns::default())
+            .select(queries::metadatas::NFT_COLUMNS)
             .first::<models::Nft>(&conn)
             .optional()
             .context("Failed to load NFT by metadata address.")?
@@ -597,7 +597,7 @@ impl QueryRoot {
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .filter(metadatas::mint_address.eq(address))
-            .select(queries::metadatas::NftColumns::default())
+            .select(queries::metadatas::NFT_COLUMNS)
             .first::<models::Nft>(&conn)
             .optional()
             .context("Failed to load NFT by mint address.")?
@@ -618,7 +618,7 @@ impl QueryRoot {
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .filter(metadatas::mint_address.eq(any(addresses)))
-            .select(queries::metadatas::NftColumns::default())
+            .select(queries::metadatas::NFT_COLUMNS)
             .load(&conn)
             .context("Failed to load NFTs")?;
 

@@ -1,4 +1,4 @@
-use indexer_core::db::queries::metadatas::NftColumns;
+use indexer_core::db::queries::metadatas::NFT_COLUMNS;
 use objects::{
     listing::{Bid, Listing, ListingColumns, ListingRow},
     nft::Nft,
@@ -81,7 +81,7 @@ impl TryBatchFn<PublicKey<Listing>, Vec<(usize, Nft)>> for Batcher {
             .select((
                 listing_metadatas::listing_address,
                 listing_metadatas::metadata_index,
-                NftColumns::default(),
+                NFT_COLUMNS,
             ))
             .load(&conn)
             .context("Failed to load listing NFTs")?;

@@ -51,7 +51,7 @@ impl TryBatchFn<PublicKey<Nft>, Option<CollectionNft>> for Batcher {
             .filter(metadata_collection_keys::metadata_address.eq(any(addresses)))
             .select((
                 metadata_collection_keys::metadata_address,
-                queries::metadatas::NftColumns::default(),
+                queries::metadatas::NFT_COLUMNS,
             ))
             .load(&conn)
             .context("Failed to load Collection NFTs")?;
@@ -233,7 +233,7 @@ impl TryBatchFn<PublicKey<Nft>, Option<Nft>> for Batcher {
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .filter(metadatas::address.eq(any(addresses)))
-            .select(queries::metadatas::NftColumns::default())
+            .select(queries::metadatas::NFT_COLUMNS)
             .load(&conn)
             .context("Failed to load NFTs")?;
 
