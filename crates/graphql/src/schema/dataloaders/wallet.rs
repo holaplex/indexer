@@ -43,11 +43,11 @@ impl TryBatchFn<String, Option<TwitterProfile>> for TwitterBatcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Wallet>, Option<Wallet>> for Batcher {
+impl TryBatchFn<PublicKey<Wallet>, Option<String>> for Batcher {
     async fn load(
         &mut self,
         addresses: &[PublicKey<Wallet>],
-    ) -> TryBatchMap<PublicKey<Wallet>, Option<Wallet>> {
+    ) -> TryBatchMap<PublicKey<Wallet>, Option<String>> {
         let conn = self.db()?;
 
         let twitter_handles = queries::twitter_handle_name_service::get_multiple(
@@ -55,27 +55,15 @@ impl TryBatchFn<PublicKey<Wallet>, Option<Wallet>> for Batcher {
             addresses.iter().map(ToString::to_string).collect(),
         )?;
 
-        let wallets = twitter_handles.into_iter().fold(
-            addresses
-                .iter()
-                .map(|a| (a.clone(), None))
-                .collect::<HashMap<_, _>>(),
-            |mut h,
-             models::TwitterHandle {
-                 wallet_address,
-                 twitter_handle,
-                 ..
-             }| {
-                *h.entry(wallet_address.into_owned().into()).or_insert(None) =
-                    Some(twitter_handle.into_owned());
-
-                h
-            },
-        );
-
-        Ok(wallets
+        Ok(twitter_handles
             .into_iter()
-            .map(|(k, v)| (k.clone(), Wallet::new(k, v)))
+            .map(
+                |models::TwitterHandle {
+                     wallet_address,
+                     twitter_handle,
+                     ..
+                 }| (wallet_address.into_owned(), twitter_handle.into_owned()),
+            )
             .batch(addresses))
     }
 }

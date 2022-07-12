@@ -63,9 +63,8 @@ impl FollowEvent {
             .map_err(Into::into)
     }
 
-    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Option<Wallet>> {
-        ctx.wallet_loader
-            .load(self.wallet_address.clone())
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
             .await
             .map_err(Into::into)
     }
@@ -117,9 +116,8 @@ impl PurchaseEvent {
             .map_err(Into::into)
     }
 
-    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Option<Wallet>> {
-        ctx.wallet_loader
-            .load(self.wallet_address.clone())
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
             .await
             .map_err(Into::into)
     }
@@ -176,9 +174,8 @@ impl OfferEvent {
             .map_err(Into::into)
     }
 
-    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Option<Wallet>> {
-        ctx.wallet_loader
-            .load(self.wallet_address.clone())
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
             .await
             .map_err(Into::into)
     }
@@ -235,9 +232,8 @@ impl ListingEvent {
             .map_err(Into::into)
     }
 
-    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Option<Wallet>> {
-        ctx.wallet_loader
-            .load(self.wallet_address.clone())
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
             .await
             .map_err(Into::into)
     }
@@ -280,9 +276,8 @@ impl MintEvent {
             .map_err(Into::into)
     }
 
-    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Option<Wallet>> {
-        ctx.wallet_loader
-            .load(self.wallet_address.clone())
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
             .await
             .map_err(Into::into)
     }
