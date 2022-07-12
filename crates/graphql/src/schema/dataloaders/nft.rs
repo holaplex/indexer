@@ -1,4 +1,4 @@
-use indexer_core::db::{queries, tables::metadata_collection_keys};
+use indexer_core::db::{queries, tables::{metadata_collection_keys, buy_instructions::metadata, metadata_jsons::animation_url}};
 use objects::{
     listing_receipt::ListingReceipt,
     nft::{CollectionNft, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
@@ -208,11 +208,32 @@ impl TryBatchFn<PublicKey<Nft>, Vec<NftFile>> for Batcher {
     ) -> TryBatchMap<PublicKey<Nft>, Vec<NftFile>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::MetadataFile> = files::table
-            .filter(files::metadata_address.eq(any(addresses)))
+        let rows: Vec<models::MetadataFile> = metadata::table
+            .filter(metadata::metadata_address.eq(any(addresses)))
             .load(&conn)
             .context("Failed to load NFT files")?;
 
+        Ok(rows
+            .into_iter()
+            .map(|a| (a.metadata_address.clone(), a.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<Nft>, Vec<String>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Nft>],
+    ) -> TryBatchMap<PublicKey<Nft>, Vec<String>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::MetadataFile> = metadata::table
+            .select(animation_url)
+            .filter(metadata::metadata_address.eq(any(addresses)))
+            .load(&conn)
+            .context("Failed to load animation urls")?;
+        
         Ok(rows
             .into_iter()
             .map(|a| (a.metadata_address.clone(), a.try_into()))
