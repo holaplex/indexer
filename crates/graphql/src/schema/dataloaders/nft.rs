@@ -231,9 +231,9 @@ impl TryBatchFn<PublicKey<Nft>, Vec<String>> for Batcher {
     ) -> TryBatchMap<PublicKey<Nft>, Vec<String>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::MetadataFile> = metadata::table
+        let rows: Vec<models::MetadataFile> = metadata_jsons::table
             .select(animation_url)
-            .filter(metadata::metadata_address.eq(any(addresses)))
+            .filter(metadata::metadata_json.eq(any(addresses)))
             .load(&conn)
             .context("Failed to load animation urls")?;
 

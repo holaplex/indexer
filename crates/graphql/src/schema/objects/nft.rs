@@ -432,6 +432,13 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
+    pub async fn animation_url(&self, ctx: &AppContext) -> FieldResult<Option<String>> {
+        ctx.nft_animation_url_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
     pub async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
         ctx.nft_activities_loader
             .load(self.address.clone().into())
