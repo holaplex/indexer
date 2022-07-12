@@ -186,6 +186,8 @@ pub struct Metadata<'a> {
     pub token_standard: Option<TokenStandardEnum>,
     /// Solana slot number
     pub slot: Option<i64>,
+    /// Indicates whether the NFT was burned
+    pub burned: bool,
 }
 
 /// A row in the `storefronts` table

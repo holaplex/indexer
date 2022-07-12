@@ -38,6 +38,7 @@ enum Metadatas {
     UpdateAuthorityAddress,
     Uri,
     Slot,
+    Burned,
 }
 
 #[derive(Iden)]
@@ -265,6 +266,7 @@ pub fn list(
                     ),
                 ),
         )
+        .and_where(Expr::col(Metadatas::Burned).eq(false))
         .limit(limit)
         .offset(offset)
         .order_by((ListingReceipts::Table, ListingReceipts::Price), Order::Asc)

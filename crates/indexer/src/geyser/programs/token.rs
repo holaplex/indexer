@@ -16,3 +16,18 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
     }
     process_token(client, update).await
 }
+
+pub(crate) async fn process_instruction(
+    client: &Client,
+    data: &[u8],
+    accounts: &[Pubkey],
+    slot: u64,
+) -> Result<()> {
+    let (&discriminator, _) = data.split_first().context("invalid token program ins")?;
+
+    if discriminator == 8 {
+        token::process_burn_instruction(client, accounts, slot).await?;
+    }
+
+    Ok(())
+}
