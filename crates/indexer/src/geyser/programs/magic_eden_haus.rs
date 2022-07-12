@@ -38,7 +38,7 @@ async fn process_execute_sale(
     let params = MEInstructionData::deserialize(&mut data)
         .context("failed to deserialize ME ExecuteSale instruction")?;
 
-    let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
     upsert_into_purchases_table(
         client,
@@ -72,7 +72,7 @@ async fn process_sale(
     let params = MEInstructionData::deserialize(&mut data)
         .context("failed to deserialize ME Sell instruction")?;
 
-    let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
     upsert_into_listings_table(client, Listing {
         id: None,
@@ -109,7 +109,7 @@ async fn process_buy(
         return Ok(());
     }
 
-    let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
     upsert_into_offers_table(client, Offer {
         id: None,
@@ -134,10 +134,10 @@ async fn process_buy(
 }
 
 async fn process_cancel_sale(client: &Client, accounts: &[Pubkey], slot: u64) -> Result<()> {
-    let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
     let canceled_at = Utc::now().naive_utc();
     let trade_state = accts[6].clone();
-    let slot: i64 = slot.try_into()?;
+    let slot = i64::try_from(slot)?;
 
     client
         .db()
@@ -162,10 +162,10 @@ async fn process_cancel_sale(client: &Client, accounts: &[Pubkey], slot: u64) ->
 }
 
 async fn process_cancel_buy(client: &Client, accounts: &[Pubkey], slot: u64) -> Result<()> {
-    let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
     let canceled_at = Utc::now().naive_utc();
     let trade_state = accts[5].clone();
-    let slot: i64 = slot.try_into()?;
+    let slot = i64::try_from(slot)?;
 
     client
         .db()
@@ -195,13 +195,13 @@ pub(crate) async fn process_instruction(
     accounts: &[Pubkey],
     slot: u64,
 ) -> Result<()> {
-    let discriminator: [u8; 8] = data[..8].try_into()?;
-    let params = data[8..].to_vec();
+    let (discriminator, params) = data.split_at(8);
+    let discriminator = <[u8; 8]>::try_from(discriminator)?;
 
     match discriminator {
-        BUY => process_buy(client, &params, accounts, slot).await,
-        SELL => process_sale(client, &params, accounts, slot).await,
-        EXECUTE_SALE => process_execute_sale(client, &params, accounts, slot).await,
+        BUY => process_buy(client, params, accounts, slot).await,
+        SELL => process_sale(client, params, accounts, slot).await,
+        EXECUTE_SALE => process_execute_sale(client, params, accounts, slot).await,
         CANCEL_SELL => process_cancel_sale(client, accounts, slot).await,
         CANCEL_BUY => process_cancel_buy(client, accounts, slot).await,
         _ => Ok(()),

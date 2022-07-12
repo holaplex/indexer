@@ -29,7 +29,7 @@ pub(crate) async fn process(
         return Ok(());
     }
 
-    let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
     let row = SellInstruction {
         wallet: Owned(accts[0].clone()),

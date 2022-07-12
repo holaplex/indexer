@@ -92,7 +92,7 @@ pub(crate) async fn process(
     Ok(())
 }
 
-pub async fn upsert_into_purchases_table<'a>(
+pub(crate) async fn upsert_into_purchases_table<'a>(
     client: &Client,
     data: Purchase<'static>,
     buyer_trade_state: String,
