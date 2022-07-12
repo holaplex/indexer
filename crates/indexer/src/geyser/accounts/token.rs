@@ -111,7 +111,7 @@ pub(crate) async fn process_burn_instruction(
                 .execute(db)
         })
         .await
-        .context("failed to insert cancel instruction ")?;
+        .context("failed to update metadata")?;
 
     Ok(())
 }
