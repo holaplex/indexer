@@ -1,4 +1,7 @@
-use indexer_core::db::{queries, tables::{metadata_collection_keys, buy_instructions::metadata, metadata_jsons::animation_url}};
+use indexer_core::db::{
+    queries,
+    tables::{buy_instructions::metadata, metadata_collection_keys, metadata_jsons::animation_url},
+};
 use objects::{
     listing_receipt::ListingReceipt,
     nft::{CollectionNft, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
@@ -233,7 +236,7 @@ impl TryBatchFn<PublicKey<Nft>, Vec<String>> for Batcher {
             .filter(metadata::metadata_address.eq(any(addresses)))
             .load(&conn)
             .context("Failed to load animation urls")?;
-        
+
         Ok(rows
             .into_iter()
             .map(|a| (a.metadata_address.clone(), a.try_into()))
