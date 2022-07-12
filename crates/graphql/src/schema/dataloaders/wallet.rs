@@ -75,7 +75,7 @@ impl TryBatchFn<PublicKey<Wallet>, Option<Wallet>> for Batcher {
 
         Ok(wallets
             .into_iter()
-            .map(|(k, v)| (k.clone(), Wallet::new(k.clone(), v)))
+            .map(|(k, v)| (k.clone(), Wallet::new(k, v)))
             .batch(addresses))
     }
 }
