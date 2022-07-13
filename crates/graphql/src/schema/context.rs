@@ -15,10 +15,11 @@ use objects::{
     stats::{MarketStats, MintStats},
     store_creator::StoreCreator,
     storefront::Storefront,
+    wallet::Wallet,
 };
 use scalars::{markers::StoreConfig, PublicKey};
 
-use super::{objects::wallet::Wallet, prelude::*};
+use super::prelude::*;
 
 #[derive(Clone)]
 pub struct AppContext {

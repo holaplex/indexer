@@ -1,9 +1,9 @@
 use futures_util::future::join_all;
-use indexer_core::db::queries::{self};
-use objects::profile::TwitterProfile;
+use indexer_core::db::queries;
+use objects::{profile::TwitterProfile, wallet::Wallet};
+use scalars::PublicKey;
 
 use super::prelude::*;
-use crate::schema::{objects::wallet::Wallet, scalars::PublicKey};
 
 #[async_trait]
 impl TryBatchFn<String, Option<TwitterProfile>> for TwitterBatcher {
