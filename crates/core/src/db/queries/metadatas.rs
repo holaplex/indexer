@@ -46,6 +46,8 @@ enum MetadataJsons {
     MetadataAddress,
     Description,
     Image,
+    AnimationUrl,
+    ExternalUrl,
     Category,
     Model,
 }
@@ -229,6 +231,8 @@ pub fn list(
         .columns(vec![
             (MetadataJsons::Table, MetadataJsons::Description),
             (MetadataJsons::Table, MetadataJsons::Image),
+            (MetadataJsons::Table, MetadataJsons::AnimationUrl),
+            (MetadataJsons::Table, MetadataJsons::ExternalUrl),
             (MetadataJsons::Table, MetadataJsons::Category),
             (MetadataJsons::Table, MetadataJsons::Model),
         ])
