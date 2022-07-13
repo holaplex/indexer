@@ -16,7 +16,6 @@ pub struct Marketplace {
     pub logo_url: String,
     pub banner_url: String,
     pub owner_address: String,
-    pub auction_house_address: Option<PublicKey<AuctionHouse>>,
     pub store_address: Option<PublicKey<Storefront>>,
 }
 
@@ -30,7 +29,6 @@ impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
             banner_url,
             subdomain,
             owner_address,
-            auction_house_address,
             store_address,
         }: models::StoreConfigJson,
     ) -> Self {
@@ -42,7 +40,6 @@ impl<'a> From<models::StoreConfigJson<'a>> for Marketplace {
             logo_url: logo_url.into_owned(),
             banner_url: banner_url.into_owned(),
             owner_address: owner_address.into_owned(),
-            auction_house_address: auction_house_address.map(Into::into),
             store_address: store_address.map(Into::into),
         }
     }
@@ -78,26 +75,8 @@ impl Marketplace {
         &self.owner_address
     }
 
-    #[deprecated(note = "Use `auction_houses` instead")]
-    pub fn auction_house_address(&self) -> &Option<PublicKey<AuctionHouse>> {
-        &self.auction_house_address
-    }
-
     pub fn store_address(&self) -> &Option<PublicKey<Storefront>> {
         &self.store_address
-    }
-
-    #[deprecated(note = "Use `auction_houses` instead")]
-    pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
-        let ah = match self.auction_house_address {
-            Some(ref t) => t.clone(),
-            None => return Ok(None),
-        };
-        context
-            .store_auction_houses_loader
-            .load(ah)
-            .await
-            .map_err(Into::into)
     }
 
     pub async fn auction_houses(&self, context: &AppContext) -> FieldResult<Vec<AuctionHouse>> {

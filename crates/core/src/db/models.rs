@@ -579,8 +579,6 @@ pub struct StoreConfigJson<'a> {
     pub subdomain: Cow<'a, str>,
     /// Storefront owner address
     pub owner_address: Cow<'a, str>,
-    /// Auction house account address
-    pub auction_house_address: Option<Cow<'a, str>>,
     /// Storefront address
     pub store_address: Option<Cow<'a, str>>,
 }

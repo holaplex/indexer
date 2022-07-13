@@ -31,8 +31,6 @@ pub struct Metadata {
 #[serde(rename_all = "camelCase")]
 pub struct Address {
     pub owner: String,
-    #[deprecated(note = "Use `auction_houses` instead")]
-    pub auction_house: Option<String>,
     pub store: Option<String>,
     pub store_config: String,
 }
@@ -87,7 +85,6 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         return Ok(());
     }
 
-    #[allow(deprecated)]
     let row = StoreConfigJson {
         config_address: Owned(addr.clone()),
         name: Owned(json.meta.name),
@@ -96,7 +93,6 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         banner_url: Owned(json.theme.banner.url),
         subdomain: Owned(json.subdomain),
         owner_address: Owned(json.address.owner),
-        auction_house_address: json.address.auction_house.map(Owned),
         store_address: json.address.store.map(Owned),
     };
 
@@ -133,16 +129,16 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
             .run({
                 let addr = addr.clone();
                 move |db| {
-                    let remove_creators = store_creators::table
-                        .filter(store_creators::store_config_address.eq(&addr))
-                        .select(store_creators::creator_address)
-                        .get_results::<String>(db)
-                        .unwrap_or_else(|_| Vec::new())
-                        .into_iter()
-                        .filter(|address| !creators.iter().any(|c| &c.address == address))
-                        .collect::<Vec<_>>();
-
                     db.build_transaction().read_write().run(|| {
+                        let remove_creators = store_creators::table
+                            .filter(store_creators::store_config_address.eq(&addr))
+                            .select(store_creators::creator_address)
+                            .get_results::<String>(db)
+                            .unwrap_or_else(|_| Vec::new())
+                            .into_iter()
+                            .filter(|address| !creators.iter().any(|c| &c.address == address))
+                            .collect::<Vec<_>>();
+
                         delete(
                             store_creators::table
                                 .filter(store_creators::creator_address.eq(any(remove_creators)))
@@ -178,16 +174,16 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         client
             .db()
             .run(move |db| {
-                let remove_ahs = store_auction_houses::table
-                    .filter(store_auction_houses::store_config_address.eq(&addr))
-                    .select(store_auction_houses::auction_house_address)
-                    .get_results::<String>(db)
-                    .unwrap_or_else(|_| Vec::new())
-                    .into_iter()
-                    .filter(|house| !auction_houses.iter().any(|h| &h.address == house))
-                    .collect::<Vec<_>>();
-
                 db.build_transaction().read_write().run(|| {
+                    let remove_ahs = store_auction_houses::table
+                        .filter(store_auction_houses::store_config_address.eq(&addr))
+                        .select(store_auction_houses::auction_house_address)
+                        .get_results::<String>(db)
+                        .unwrap_or_else(|_| Vec::new())
+                        .into_iter()
+                        .filter(|house| !auction_houses.iter().any(|h| &h.address == house))
+                        .collect::<Vec<_>>();
+
                     delete(
                         store_auction_houses::table
                             .filter(store_auction_houses::auction_house_address.eq(any(remove_ahs)))
