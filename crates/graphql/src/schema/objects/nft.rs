@@ -297,6 +297,8 @@ pub struct Nft {
     pub uri: String,
     pub description: String,
     pub image: String,
+    pub animation_url: Option<String>,
+    pub external_url: Option<String>,
     pub category: String,
     pub model: Option<String>,
     pub slot: Option<i32>,
@@ -316,6 +318,8 @@ impl TryFrom<models::Nft> for Nft {
             uri,
             description,
             image,
+            animation_url,
+            external_url,
             category,
             model,
             slot,
@@ -331,6 +335,8 @@ impl TryFrom<models::Nft> for Nft {
             uri,
             description: description.unwrap_or_else(String::new),
             image: image.unwrap_or_else(String::new),
+            animation_url,
+            external_url,
             category: category.unwrap_or_else(String::new),
             model,
             slot: slot.map(TryInto::try_into).transpose()?,
@@ -409,6 +415,14 @@ If no value is provided, it will return XSmall")))]
             proxy_url(&ctx.shared.asset_proxy, &id, Some(("width", &*width_str)))?
                 .map_or_else(|| self.image.clone(), |u| u.to_string()),
         )
+    }
+
+    pub fn animation_url(&self) -> Option<&str> {
+        self.animation_url.as_deref()
+    }
+
+    pub fn external_url(&self) -> Option<&str> {
+        self.external_url.as_deref()
     }
 
     pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {

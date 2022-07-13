@@ -144,6 +144,26 @@ pub type NftColumns = (
     metadatas::slot,
     metadata_jsons::description,
     metadata_jsons::image,
+    metadata_jsons::animation_url,
+    metadata_jsons::external_url,
+    metadata_jsons::category,
+    metadata_jsons::model,
+);
+
+/// The column set for an NFT
+pub const NFT_COLUMNS: NftColumns = (
+    metadatas::address,
+    metadatas::name,
+    metadatas::seller_fee_basis_points,
+    metadatas::mint_address,
+    metadatas::primary_sale_happened,
+    metadatas::update_authority_address,
+    metadatas::uri,
+    metadatas::slot,
+    metadata_jsons::description,
+    metadata_jsons::image,
+    metadata_jsons::animation_url,
+    metadata_jsons::external_url,
     metadata_jsons::category,
     metadata_jsons::model,
 );
