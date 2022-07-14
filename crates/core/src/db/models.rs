@@ -2380,3 +2380,60 @@ pub struct Listing<'a> {
     /// Solana write_version
     pub write_version: Option<i64>,
 }
+
+/// A row in the `cardinal_entries` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[table_name = "cardinal_entries"]
+#[diesel(treat_none_as_null = true)]
+pub struct CardinalEntry<'a> {
+    /// 'Entry' account pubkey
+    pub address: Cow<'a, str>,
+    /// 'Namespace' account pubkey
+    pub namespace: Cow<'a, str>,
+    /// entry name
+    pub name: Cow<'a, str>,
+    /// wallet pubkey
+    pub data: Option<Cow<'a, str>>,
+    /// 'ReverseEntry' account pubkey
+    pub reverse_entry: Option<Cow<'a, str>>,
+    /// Mint address
+    pub mint: Cow<'a, str>,
+    /// indicates whether the entry is claimed
+    pub is_claimed: bool,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write version
+    pub write_version: i64,
+}
+
+/// A row in the `cardinal_namespaces` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct CardinalNamespace<'a> {
+    /// 'CardinalNamespace' account pubkey
+    pub address: Cow<'a, str>,
+    /// Namespace name
+    pub name: Cow<'a, str>,
+    /// update authority pubkey
+    pub update_authority: Cow<'a, str>,
+    /// rent authority pubkey
+    pub rent_authority: Cow<'a, str>,
+    /// approve authority pubkey
+    pub approve_authority: Option<Cow<'a, str>>,
+    /// Schema
+    pub schema: i16,
+    /// Daily payment amount
+    pub payment_amount_daily: i64,
+    /// Spl mint address
+    pub payment_mint: Cow<'a, str>,
+    /// minimum rental seconds
+    pub min_rental_seconds: i64,
+    /// maximum rental seconds
+    pub max_rental_seconds: Option<i64>,
+    /// indicates whether namespace entries can be transfered
+    pub transferable_entries: bool,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write version
+    pub write_version: i64,
+}
