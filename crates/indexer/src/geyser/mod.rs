@@ -117,6 +117,9 @@ pub async fn process_message<H: std::hash::BuildHasher>(
             )
             .await
         },
+        Message::InstructionNotify(ins) if ins.program == pubkeys::TOKEN => {
+            programs::token::process_instruction(client, &ins.data, &ins.accounts, ins.slot).await
+        },
         Message::InstructionNotify { .. } => Ok(()),
     }
 }
