@@ -645,6 +645,65 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    geno_habitat_datas (address) {
+        address -> Varchar,
+        habitat_mint -> Varchar,
+        level -> Int2,
+        element -> Int2,
+        genesis -> Bool,
+        renewal_timestamp -> Timestamp,
+        expiry_timestamp -> Timestamp,
+        next_day_timestamp -> Timestamp,
+        crystals_refined -> Int2,
+        harvester -> Bytea,
+        ki_harvested -> Int8,
+        seeds_spawned -> Bool,
+        is_sub_habitat -> Bool,
+        parent_habitat -> Nullable<Varchar>,
+        sub_habitat_0 -> Nullable<Varchar>,
+        sub_habitat_1 -> Nullable<Varchar>,
+        harvester_royalty_bips -> Int4,
+        harvester_open_market -> Bool,
+        total_ki_harvested -> Int8,
+        total_crystals_refined -> Int8,
+        terraforming_habitat -> Nullable<Varchar>,
+        active -> Bool,
+        durability -> Int4,
+        habitats_terraformed -> Int4,
+        sequence -> Int8,
+        guild -> Nullable<Int4>,
+        sub_habitat_cooldown_timestamp -> Timestamp,
+        slot -> Int8,
+        write_version -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    geno_rental_agreements (habitat_address) {
+        habitat_address -> Varchar,
+        alchemist -> Nullable<Varchar>,
+        rental_period -> Int8,
+        rent -> Int8,
+        rent_token -> Varchar,
+        rent_token_decimals -> Int2,
+        last_rent_payment -> Timestamp,
+        next_payment_due -> Timestamp,
+        grace_period -> Int8,
+        open_market -> Bool,
+        slot -> Int8,
+        write_version -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     governance_parameters (governor_address) {
         governor_address -> Varchar,
         voting_delay -> Int8,
@@ -1468,6 +1527,7 @@ joinable!(cardinal_token_manager_invalidators -> cardinal_token_managers (token_
 joinable!(feed_event_wallets -> feed_events (feed_event_id));
 joinable!(follow_events -> feed_events (feed_event_id));
 joinable!(follow_events -> graph_connections (graph_connection_address));
+joinable!(geno_rental_agreements -> geno_habitat_datas (habitat_address));
 joinable!(listing_events -> feed_events (feed_event_id));
 joinable!(mint_events -> feed_events (feed_event_id));
 joinable!(offer_events -> feed_events (feed_event_id));
@@ -1510,6 +1570,8 @@ allow_tables_to_appear_in_same_query!(
     feed_events,
     files,
     follow_events,
+    geno_habitat_datas,
+    geno_rental_agreements,
     governance_parameters,
     governors,
     graph_connections,
