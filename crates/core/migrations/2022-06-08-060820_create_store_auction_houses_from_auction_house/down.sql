@@ -1,0 +1,1 @@
+truncate store_auction_houses;

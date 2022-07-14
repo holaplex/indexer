@@ -30,10 +30,6 @@ impl AhListing {
         &self.trade_state
     }
 
-    fn auction_house(&self) -> &PublicKey<AuctionHouse> {
-        &self.auction_house
-    }
-
     fn seller(&self) -> &PublicKey<Wallet> {
         &self.seller
     }
@@ -69,6 +65,14 @@ impl AhListing {
     pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_loader
             .load(self.metadata.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
+        context
+            .store_auction_houses_loader
+            .load(self.auction_house.clone())
             .await
             .map_err(Into::into)
     }

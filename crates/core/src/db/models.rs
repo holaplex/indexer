@@ -595,8 +595,6 @@ pub struct StoreConfigJson<'a> {
     pub subdomain: Cow<'a, str>,
     /// Storefront owner address
     pub owner_address: Cow<'a, str>,
-    /// Auction house account address
-    pub auction_house_address: Cow<'a, str>,
     /// Storefront address
     pub store_address: Option<Cow<'a, str>>,
 }
@@ -1971,6 +1969,16 @@ pub struct WalletTotal {
     pub following: i64,
 }
 
+/// A row in the `store_auction_houses` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "store_auction_houses"]
+pub struct StoreAuctionHouse<'a> {
+    /// Store Config account address
+    pub store_config_address: Cow<'a, str>,
+    /// Auction House address
+    pub auction_house_address: Cow<'a, str>,
+}
 /// A row in the `buy_instructions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]

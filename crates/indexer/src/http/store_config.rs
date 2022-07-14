@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use indexer_core::db::{
     delete, insert_into,
-    models::{StoreConfigJson, StoreCreator},
-    tables::{store_config_jsons, store_creators},
+    models::{StoreAuctionHouse, StoreConfigJson, StoreCreator},
+    tables::{store_auction_houses, store_config_jsons, store_creators},
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
@@ -13,6 +13,11 @@ use crate::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Creator {
+    pub address: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct AuctionHouse {
     pub address: String,
 }
 
@@ -26,7 +31,6 @@ pub struct Metadata {
 #[serde(rename_all = "camelCase")]
 pub struct Address {
     pub owner: String,
-    pub auction_house: String,
     pub store: Option<String>,
     pub store_config: String,
 }
@@ -46,6 +50,7 @@ pub struct Theme {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct SettingUri {
     meta: Metadata,
     theme: Theme,
@@ -54,8 +59,10 @@ struct SettingUri {
     creators: Option<Vec<Creator>>,
     #[serde(flatten)]
     extra: HashMap<String, serde_json::Value>,
+    auction_houses: Option<Vec<AuctionHouse>>,
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Result<()> {
     let url = Url::parse(&uri_str).context("Couldn't parse store config URL")?;
 
@@ -86,7 +93,6 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
         banner_url: Owned(json.theme.banner.url),
         subdomain: Owned(json.subdomain),
         owner_address: Owned(json.address.owner),
-        auction_house_address: Owned(json.address.auction_house),
         store_address: json.address.store.map(Owned),
     };
 
@@ -120,35 +126,82 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
     if let Some(creators) = json.creators {
         client
             .db()
-            .run(move |db| {
-                let remove_creators = store_creators::table
-                    .filter(store_creators::store_config_address.eq(addr.clone()))
-                    .select(store_creators::creator_address)
-                    .get_results::<String>(db)
-                    .unwrap_or_else(|_| Vec::new())
-                    .into_iter()
-                    .filter(|address| !creators.clone().into_iter().any(|c| &c.address == address))
-                    .collect::<Vec<_>>();
+            .run({
+                let addr = addr.clone();
+                move |db| {
+                    db.build_transaction().read_write().run(|| {
+                        let remove_creators = store_creators::table
+                            .filter(store_creators::store_config_address.eq(&addr))
+                            .select(store_creators::creator_address)
+                            .get_results::<String>(db)
+                            .unwrap_or_else(|_| Vec::new())
+                            .into_iter()
+                            .filter(|address| !creators.iter().any(|c| &c.address == address))
+                            .collect::<Vec<_>>();
 
+                        delete(
+                            store_creators::table
+                                .filter(store_creators::creator_address.eq(any(remove_creators)))
+                                .filter(store_creators::store_config_address.eq(&addr)),
+                        )
+                        .execute(db)?;
+
+                        creators.into_iter().try_for_each(|creator| {
+                            let row = StoreCreator {
+                                store_config_address: Borrowed(&addr),
+                                creator_address: Owned(creator.address),
+                            };
+
+                            insert_into(store_creators::table)
+                                .values(&row)
+                                .on_conflict((
+                                    store_creators::store_config_address,
+                                    store_creators::creator_address,
+                                ))
+                                .do_update()
+                                .set(&row)
+                                .execute(db)
+                                .map(|_| ())
+                        })
+                    })
+                }
+            })
+            .await
+            .context("failed to insert store creator")?;
+    }
+
+    if let Some(auction_houses) = json.auction_houses {
+        client
+            .db()
+            .run(move |db| {
                 db.build_transaction().read_write().run(|| {
+                    let remove_ahs = store_auction_houses::table
+                        .filter(store_auction_houses::store_config_address.eq(&addr))
+                        .select(store_auction_houses::auction_house_address)
+                        .get_results::<String>(db)
+                        .unwrap_or_else(|_| Vec::new())
+                        .into_iter()
+                        .filter(|house| !auction_houses.iter().any(|h| &h.address == house))
+                        .collect::<Vec<_>>();
+
                     delete(
-                        store_creators::table
-                            .filter(store_creators::creator_address.eq(any(remove_creators)))
-                            .filter(store_creators::store_config_address.eq(addr.clone())),
+                        store_auction_houses::table
+                            .filter(store_auction_houses::auction_house_address.eq(any(remove_ahs)))
+                            .filter(store_auction_houses::store_config_address.eq(&addr)),
                     )
                     .execute(db)?;
 
-                    creators.into_iter().try_for_each(|creator| {
-                        let row = StoreCreator {
-                            store_config_address: Owned(addr.clone()),
-                            creator_address: Owned(creator.address),
+                    auction_houses.into_iter().try_for_each(|ah| {
+                        let row = StoreAuctionHouse {
+                            store_config_address: Borrowed(&addr),
+                            auction_house_address: Owned(ah.address),
                         };
 
-                        insert_into(store_creators::table)
+                        insert_into(store_auction_houses::table)
                             .values(&row)
                             .on_conflict((
-                                store_creators::store_config_address,
-                                store_creators::creator_address,
+                                store_auction_houses::store_config_address,
+                                store_auction_houses::auction_house_address,
                             ))
                             .do_update()
                             .set(&row)
@@ -158,7 +211,7 @@ pub async fn process(client: &Client, config_key: Pubkey, uri_str: String) -> Re
                 })
             })
             .await
-            .context("failed to insert store creator")?;
+            .context("failed to insert auction house")?;
     }
 
     Ok(())

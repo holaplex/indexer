@@ -25,7 +25,8 @@ pub struct AppContext {
     pub(crate) shared: Arc<SharedData>,
 
     // Data loaders
-    pub auction_house_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
+    pub store_auction_houses_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
+    pub auction_houses_loader: Loader<PublicKey<StoreConfig>, Vec<AuctionHouse>>,
     pub listing_loader: Loader<PublicKey<Listing>, Option<Listing>>,
     pub listing_bids_loader: Loader<PublicKey<Listing>, Vec<Bid>>,
     pub listing_nfts_loader: Loader<PublicKey<Listing>, Vec<(usize, Nft)>>,
@@ -66,7 +67,8 @@ impl AppContext {
         let twitter_batcher = TwitterBatcher::new(shared.clone());
 
         Self {
-            auction_house_loader: Loader::new(batcher.clone()),
+            store_auction_houses_loader: Loader::new(batcher.clone()),
+            auction_houses_loader: Loader::new(batcher.clone()),
             listing_loader: Loader::new(batcher.clone()),
             listing_bids_loader: Loader::new(batcher.clone()),
             listing_nfts_loader: Loader::new(batcher.clone()),

@@ -1167,6 +1167,17 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    store_auction_houses (store_config_address, auction_house_address) {
+        store_config_address -> Varchar,
+        auction_house_address -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     store_config_jsons (config_address) {
         config_address -> Varchar,
         name -> Text,
@@ -1175,7 +1186,6 @@ table! {
         banner_url -> Text,
         subdomain -> Text,
         owner_address -> Varchar,
-        auction_house_address -> Varchar,
         store_address -> Nullable<Varchar>,
     }
 }
@@ -1492,6 +1502,7 @@ allow_tables_to_appear_in_same_query!(
     sell_instructions,
     smart_wallet_owners,
     smart_wallets,
+    store_auction_houses,
     store_config_jsons,
     store_configs,
     store_creators,
