@@ -12,6 +12,7 @@ use objects::{
     creator::Creator,
     denylist::Denylist,
     feed_event::FeedEvent,
+    genopets::GenoHabitat,
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
@@ -24,8 +25,8 @@ use scalars::PublicKey;
 use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
-    current_metadata_owners, graph_connections, metadata_jsons, metadatas, store_config_jsons,
-    storefronts, wallet_totals,
+    current_metadata_owners, geno_habitat_datas, graph_connections, metadata_jsons, metadatas,
+    store_config_jsons, storefronts, wallet_totals,
 };
 
 use super::{enums::OrderDirection, prelude::*};
@@ -978,6 +979,22 @@ impl QueryRoot {
             .map(TryInto::try_into)
             .transpose()
             .map_err(Into::into)
+    }
+
+    fn geno_habitat(
+        &self,
+        context: &AppContext,
+        address: PublicKey<GenoHabitat>,
+    ) -> FieldResult<Option<GenoHabitat>> {
+        let conn = context.shared.db.get()?;
+
+        let row = geno_habitat_datas::table
+            .filter(geno_habitat_datas::address.eq(address))
+            .first::<models::GenoHabitatData>(&conn)
+            .optional()
+            .context("Failed to load Genopets habitat")?;
+
+        Ok(row.map(Into::into))
     }
 
     fn denylist() -> Denylist {
