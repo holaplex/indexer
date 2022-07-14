@@ -146,6 +146,7 @@ async fn process_cancel_sale(client: &Client, accounts: &[Pubkey], slot: u64) ->
                 listings::table.filter(
                     listings::trade_state
                         .eq(trade_state)
+                        .and(listings::purchase_id.is_null())
                         .and(listings::canceled_at.is_null()),
                 ),
             )
@@ -174,6 +175,7 @@ async fn process_cancel_buy(client: &Client, accounts: &[Pubkey], slot: u64) -> 
                 offers::table.filter(
                     offers::trade_state
                         .eq(trade_state)
+                        .and(offers::purchase_id.is_null())
                         .and(offers::canceled_at.is_null()),
                 ),
             )
