@@ -39,6 +39,7 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         |ty, update: &AccountUpdate| !(update.is_startup && ignore_on_startup.contains(&ty));
 
     match msg {
+        // Accounts
         Message::AccountUpdate(update)
             if update.owner == pubkeys::METADATA && check_ignore(IgnoreType::Metadata, &update) =>
         {
@@ -97,13 +98,11 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         Message::AccountUpdate(update) if update.owner == pubkeys::TOKEN_BONDING => {
             programs::token_bonding::process(client, update).await
         },
-        Message::AccountUpdate(update) => {
-            debug!(
-                "Unhandled account update for program {}",
-                bs58::encode(update.owner).into_string()
-            );
-            Ok(())
+        Message::AccountUpdate(update) if update.owner == genostub::ID => {
+            programs::genopets::process(client, update).await
         },
+
+        // Instructions
         Message::InstructionNotify(ins) if ins.program == pubkeys::AUCTION_HOUSE => {
             programs::auction_house::process_instruction(client, &ins.data, &ins.accounts, ins.slot)
                 .await
@@ -119,6 +118,15 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         },
         Message::InstructionNotify(ins) if ins.program == pubkeys::TOKEN => {
             programs::token::process_instruction(client, &ins.data, &ins.accounts, ins.slot).await
+        },
+
+        // Fallbacks
+        Message::AccountUpdate(update) => {
+            debug!(
+                "Unhandled account update for program {}",
+                bs58::encode(update.owner).into_string()
+            );
+            Ok(())
         },
         Message::InstructionNotify { .. } => Ok(()),
     }
