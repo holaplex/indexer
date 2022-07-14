@@ -127,8 +127,8 @@ pub struct ListQueryOptions {
     pub listed: Option<bool>,
     /// nfts with active offers
     pub with_offers: Option<bool>,
-    /// nft in a specific colleciton
-    pub collection: Option<String>,
+    /// nft in one or more specific collections
+    pub collections: Option<Vec<String>>,
     /// limit to apply to query
     pub limit: u64,
     /// offset to apply to query
@@ -188,7 +188,7 @@ pub fn list(
         attributes,
         listed,
         with_offers,
-        collection,
+        collections,
         limit,
         offset,
     }: ListQueryOptions,
@@ -211,10 +211,10 @@ pub fn list(
         )
         .take();
 
-    if let Some(auction_houses) = auction_houses.clone() {
+    if let Some(ref auction_houses) = auction_houses {
         listing_receipts_query.and_where(
             Expr::col((ListingReceipts::Table, ListingReceipts::AuctionHouse))
-                .is_in(auction_houses),
+                .is_in(auction_houses.iter().map(String::as_str)),
         );
     }
 
@@ -252,7 +252,7 @@ pub fn list(
         )
         .join_lateral(
             JoinType::LeftJoin,
-            listing_receipts_query.take(),
+            listing_receipts_query,
             ListingReceipts::Table,
             Condition::all()
                 .add(
@@ -347,7 +347,7 @@ pub fn list(
 
         query.join_lateral(
             JoinType::InnerJoin,
-            bid_receipts_query.take(),
+            bid_receipts_query,
             BidReceipts::Table,
             Expr::tbl(BidReceipts::Table, BidReceipts::Metadata)
                 .equals(Metadatas::Table, Metadatas::Address),
@@ -377,7 +377,7 @@ pub fn list(
         }
     }
 
-    if let Some(collection) = collection {
+    if let Some(collections) = collections {
         query.inner_join(
             MetadataCollectionKeys::Table,
             Expr::tbl(
@@ -392,7 +392,7 @@ pub fn list(
                 MetadataCollectionKeys::Table,
                 MetadataCollectionKeys::CollectionAddress,
             ))
-            .eq(collection),
+            .is_in(collections),
         );
     }
 
