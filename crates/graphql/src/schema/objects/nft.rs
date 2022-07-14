@@ -209,7 +209,7 @@ impl NftOwner {
 pub struct NftActivity {
     pub address: String,
     pub metadata: PublicKey<Nft>,
-    pub auction_house: String,
+    pub auction_house: PublicKey<AuctionHouse>,
     pub price: U64,
     pub created_at: DateTime<Utc>,
     pub wallets: Vec<Wallet>,
@@ -234,7 +234,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
         Ok(Self {
             address,
             metadata: metadata.into(),
-            auction_house,
+            auction_house: auction_house.into(),
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
             wallets: wallets
@@ -257,10 +257,6 @@ impl NftActivity {
         &self.metadata
     }
 
-    fn auction_house(&self) -> &str {
-        &self.auction_house
-    }
-
     fn price(&self) -> U64 {
         self.price
     }
@@ -280,6 +276,14 @@ impl NftActivity {
     pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_loader
             .load(self.metadata.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
+        context
+            .store_auction_houses_loader
+            .load(self.auction_house.clone())
             .await
             .map_err(Into::into)
     }

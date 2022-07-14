@@ -60,9 +60,25 @@ pub(crate) async fn process(
         slot: slot.try_into()?,
     };
 
-    upsert_into_purchases_table(client, row.clone())
-        .await
-        .context("failed to insert purchase!")?;
+    upsert_into_purchases_table(
+        client,
+        Purchase {
+            id: None,
+            buyer: row.buyer.clone(),
+            seller: row.seller.clone(),
+            auction_house: row.auction_house.clone(),
+            metadata: row.metadata.clone(),
+            token_size: row.token_size,
+            price: row.buyer_price,
+            created_at: row.created_at,
+            slot: row.slot,
+            write_version: None,
+        },
+        accts[13].clone(),
+        accts[14].clone(),
+    )
+    .await
+    .context("failed to insert purchase!")?;
 
     client
         .db()
@@ -76,35 +92,24 @@ pub(crate) async fn process(
     Ok(())
 }
 
-async fn upsert_into_purchases_table<'a>(
+pub(crate) async fn upsert_into_purchases_table<'a>(
     client: &Client,
-    data: ExecuteSaleInstruction<'static>,
+    data: Purchase<'static>,
+    buyer_trade_state: String,
+    seller_trade_state: String,
 ) -> Result<()> {
-    let row = Purchase {
-        id: None,
-        buyer: data.buyer.clone(),
-        seller: data.seller.clone(),
-        auction_house: data.auction_house.clone(),
-        metadata: data.metadata.clone(),
-        token_size: data.token_size,
-        price: data.buyer_price,
-        created_at: data.created_at,
-        slot: data.slot,
-        write_version: None,
-    };
-
     client
         .db()
         .run(move |db| {
             let purchase_exists = select(exists(
                 purchases::table.filter(
                     purchases::buyer
-                        .eq(row.buyer.clone())
-                        .and(purchases::seller.eq(row.seller.clone()))
-                        .and(purchases::auction_house.eq(row.auction_house.clone()))
-                        .and(purchases::metadata.eq(row.metadata.clone()))
-                        .and(purchases::price.eq(row.price))
-                        .and(purchases::token_size.eq(row.token_size)),
+                        .eq(data.buyer.clone())
+                        .and(purchases::seller.eq(data.seller.clone()))
+                        .and(purchases::auction_house.eq(data.auction_house.clone()))
+                        .and(purchases::metadata.eq(data.metadata.clone()))
+                        .and(purchases::price.eq(data.price))
+                        .and(purchases::token_size.eq(data.token_size)),
                 ),
             ))
             .get_result::<bool>(db)?;
@@ -114,17 +119,17 @@ async fn upsert_into_purchases_table<'a>(
             }
 
             let purchase_id = insert_into(purchases::table)
-                .values(&row)
+                .values(&data)
                 .on_conflict(on_constraint("purchases_unique_fields"))
                 .do_update()
-                .set(&row)
+                .set(&data)
                 .returning(purchases::id)
                 .get_result::<Uuid>(db)?;
 
             update(
                 listings::table.filter(
                     listings::trade_state
-                        .eq(data.seller_trade_state.clone())
+                        .eq(seller_trade_state.clone())
                         .and(listings::purchase_id.is_null())
                         .and(listings::canceled_at.is_null()),
                 ),
@@ -135,7 +140,7 @@ async fn upsert_into_purchases_table<'a>(
             update(
                 offers::table.filter(
                     offers::trade_state
-                        .eq(data.buyer_trade_state.clone())
+                        .eq(buyer_trade_state.clone())
                         .and(offers::purchase_id.is_null())
                         .and(offers::canceled_at.is_null()),
                 ),
@@ -160,7 +165,7 @@ async fn upsert_into_purchases_table<'a>(
 
                 insert_into(feed_event_wallets::table)
                     .values(&FeedEventWallet {
-                        wallet_address: row.seller,
+                        wallet_address: data.seller,
                         feed_event_id,
                     })
                     .execute(db)
@@ -168,7 +173,7 @@ async fn upsert_into_purchases_table<'a>(
 
                 insert_into(feed_event_wallets::table)
                     .values(&FeedEventWallet {
-                        wallet_address: row.buyer,
+                        wallet_address: data.buyer,
                         feed_event_id,
                     })
                     .execute(db)

@@ -30,7 +30,7 @@ pub(crate) async fn process(
         return Ok(());
     }
 
-    let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
     let row = BuyInstruction {
         wallet: Owned(accts[0].clone()),
@@ -52,15 +52,32 @@ pub(crate) async fn process(
         slot: slot.try_into()?,
     };
 
-    upsert_into_offers_table(client, row.clone())
-        .await
-        .context("failed to insert offer")?;
+    let values = row.clone();
+
+    upsert_into_offers_table(client, Offer {
+        id: None,
+        trade_state: row.buyer_trade_state,
+        auction_house: row.auction_house,
+        buyer: row.wallet,
+        metadata: row.metadata,
+        token_account: Some(row.token_account),
+        purchase_id: None,
+        price: row.buyer_price,
+        token_size: row.token_size,
+        trade_state_bump: row.trade_state_bump,
+        created_at: row.created_at,
+        canceled_at: None,
+        slot: row.slot,
+        write_version: None,
+    })
+    .await
+    .context("failed to insert offer")?;
 
     client
         .db()
         .run(move |db| {
             insert_into(buy_instructions::table)
-                .values(&row)
+                .values(&values)
                 .execute(db)
         })
         .await
@@ -68,44 +85,24 @@ pub(crate) async fn process(
     Ok(())
 }
 
-async fn upsert_into_offers_table<'a>(
-    client: &Client,
-    data: BuyInstruction<'static>,
-) -> Result<()> {
-    let row = Offer {
-        id: None,
-        trade_state: data.buyer_trade_state,
-        auction_house: data.auction_house,
-        buyer: data.wallet,
-        metadata: data.metadata,
-        token_account: Some(data.token_account),
-        purchase_id: None,
-        price: data.buyer_price,
-        token_size: data.token_size,
-        trade_state_bump: data.trade_state_bump,
-        created_at: data.created_at,
-        canceled_at: None,
-        slot: data.slot,
-        write_version: None,
-    };
-
+pub async fn upsert_into_offers_table<'a>(client: &Client, data: Offer<'static>) -> Result<()> {
     client
         .db()
         .run(move |db| {
             let offer_exists = select(exists(
                 offers::table.filter(
                     offers::trade_state
-                        .eq(row.trade_state.clone())
-                        .and(offers::metadata.eq(row.metadata.clone())),
+                        .eq(data.trade_state.clone())
+                        .and(offers::metadata.eq(data.metadata.clone())),
                 ),
             ))
             .get_result::<bool>(db)?;
 
             let offer_id = insert_into(offers::table)
-                .values(&row)
+                .values(&data)
                 .on_conflict(on_constraint("offers_unique_fields"))
                 .do_update()
-                .set(&row)
+                .set(&data)
                 .returning(offers::id)
                 .get_result::<Uuid>(db)?;
 
@@ -119,7 +116,7 @@ async fn upsert_into_offers_table<'a>(
                         metadatas::table
                             .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
                     )
-                    .filter(metadatas::address.eq(row.metadata.clone()))
+                    .filter(metadatas::address.eq(data.metadata.clone()))
                     .select(current_metadata_owners::owner_address)
                     .first(db)?;
 
@@ -140,7 +137,7 @@ async fn upsert_into_offers_table<'a>(
 
                 insert_into(feed_event_wallets::table)
                     .values(&FeedEventWallet {
-                        wallet_address: row.buyer,
+                        wallet_address: data.buyer,
                         feed_event_id,
                     })
                     .execute(db)

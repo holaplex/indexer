@@ -4,12 +4,18 @@ use std::borrow::Borrow;
 
 use solana_program::{pubkey, pubkey::Pubkey};
 
+/// SOL MINT
+pub static SOL: Pubkey = pubkey!("So11111111111111111111111111111111111111112");
 /// Metaplex token metadata program key
 pub static METADATA: Pubkey = pubkey!("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 /// Metaplex token vault program key
 pub static VAULT: Pubkey = pubkey!("vau1zxA2LbssAUEF7Gpw91zMM1LvXrvpzJtmZ58rPsn");
 /// Metaplex auction program key
 pub static AUCTION: Pubkey = pubkey!("auctxRXPeJoc4817jDhf4HbjnhEcr1cCXenosMhK5R8");
+/// ``MagicEden`` program key
+pub static ME_ESCROW: Pubkey = pubkey!("MEisE1HzehtrDpAAT8PnLHjpSSkRYakotTuJRPjTpo8");
+/// ``MagicEden`` program key 2
+pub static ME_HAUS: Pubkey = pubkey!("M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K");
 /// Metaplex auction processing program key
 pub static METAPLEX: Pubkey = pubkey!("p1exdMJcjVao65QdewkaZRUnU6VPSXhus9n2GzWfh98");
 /// SPL token program key

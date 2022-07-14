@@ -1,5 +1,7 @@
 use futures_util::future::join_all;
-use objects::profile::TwitterProfile;
+use indexer_core::db::queries;
+use objects::{profile::TwitterProfile, wallet::Wallet};
+use scalars::PublicKey;
 
 use super::prelude::*;
 
@@ -37,5 +39,31 @@ impl TryBatchFn<String, Option<TwitterProfile>> for TwitterBatcher {
             .filter_map(Result::ok)
             .map(|u| (u.handle.clone(), u))
             .batch(screen_names))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<Wallet>, Option<String>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Wallet>],
+    ) -> TryBatchMap<PublicKey<Wallet>, Option<String>> {
+        let conn = self.db()?;
+
+        let twitter_handles = queries::twitter_handle_name_service::get_multiple(
+            &conn,
+            addresses.iter().map(ToString::to_string).collect(),
+        )?;
+
+        Ok(twitter_handles
+            .into_iter()
+            .map(
+                |models::TwitterHandle {
+                     wallet_address,
+                     twitter_handle,
+                     ..
+                 }| (wallet_address.into_owned(), twitter_handle.into_owned()),
+            )
+            .batch(addresses))
     }
 }

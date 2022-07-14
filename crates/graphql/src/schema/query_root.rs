@@ -348,7 +348,12 @@ impl QueryRoot {
         with_offers: Option<bool>,
         #[graphql(description = "Filter NFTs associated to the list of auction houses")]
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
-        #[graphql(description = "Filter on a collection")] collection: Option<PublicKey<Nft>>,
+        #[deprecated = "Deprecated in favor of the collections argument"] collection: Option<
+            PublicKey<Nft>,
+        >,
+        #[graphql(description = "Filter on one or more collections")] collections: Option<
+            Vec<PublicKey<Nft>>,
+        >,
         #[graphql(
             description = "Return NFTs whose metadata contain this search term (case-insensitive)"
         )]
@@ -356,7 +361,19 @@ impl QueryRoot {
         #[graphql(description = "Limit for query")] limit: i32,
         #[graphql(description = "Offset for query")] offset: i32,
     ) -> FieldResult<Vec<Nft>> {
-        if collection.is_none()
+        let collections = match (collections, collection) {
+            (c, None) => c,
+            (None, Some(c)) => Some(vec![c]),
+            (Some(_), Some(_)) => {
+                return Err(FieldError::new(
+                    "The collection argument is deprecated and cannot be combined with the \
+                    collections argument",
+                    graphql_value!(None),
+                ));
+            },
+        };
+
+        if collections.is_none()
             && owners.is_none()
             && creators.is_none()
             && auction_houses.is_none()
@@ -364,8 +381,15 @@ impl QueryRoot {
             && term.is_none()
         {
             return Err(FieldError::new(
-                "No filter provided! Please provide at least one of the filters",
-                graphql_value!({ "Filters": "owners: Vec<PublicKey>, creators: Vec<PublicKey>, offerers: Vec<PublicKey>, auction_houses: Vec<PublicKey>, term: String" }),
+                "No filter provided! Please provide at least one of the following arguments",
+                graphql_value!([
+                    "collections",
+                    "owners",
+                    "creators",
+                    "auction_houses",
+                    "offerers",
+                    "term"
+                ]),
             ));
         }
 
@@ -403,15 +427,15 @@ impl QueryRoot {
 
         let query_options = queries::metadatas::ListQueryOptions {
             addresses,
-            owners: owners.map(|a| a.into_iter().map(Into::into).collect()),
-            creators: creators.map(|a| a.into_iter().map(Into::into).collect()),
+            owners: owners.map(|o| o.into_iter().map(Into::into).collect()),
+            creators: creators.map(|c| c.into_iter().map(Into::into).collect()),
             update_authorities: update_authorities.map(|a| a.into_iter().map(Into::into).collect()),
-            offerers: offerers.map(|a| a.into_iter().map(Into::into).collect()),
+            offerers: offerers.map(|o| o.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed,
             with_offers,
-            auction_houses: auction_houses.map(|a| a.into_iter().map(Into::into).collect()),
-            collection: collection.map(Into::into),
+            auction_houses: auction_houses.map(|h| h.into_iter().map(Into::into).collect()),
+            collections: collections.map(|c| c.into_iter().map(Into::into).collect()),
             limit: limit.try_into()?,
             offset: offset.try_into()?,
         };
@@ -490,7 +514,7 @@ impl QueryRoot {
         Ok(Wallet::new(address, twitter_handle))
     }
 
-    fn wallets(
+    async fn wallets(
         &self,
         context: &AppContext,
         #[graphql(description = "Addresses of the wallets")] addresses: Vec<PublicKey<Wallet>>,
@@ -502,35 +526,9 @@ impl QueryRoot {
             ));
         }
 
-        let conn = context.shared.db.get()?;
-
-        let twitter_handles = queries::twitter_handle_name_service::get_multiple(
-            &conn,
-            addresses.iter().map(ToString::to_string).collect(),
-        )?;
-
-        let wallets = twitter_handles.into_iter().fold(
-            addresses
-                .into_iter()
-                .map(|a| (a, None))
-                .collect::<HashMap<_, _>>(),
-            |mut h,
-             models::TwitterHandle {
-                 wallet_address,
-                 twitter_handle,
-                 ..
-             }| {
-                *h.entry(wallet_address.into_owned().into()).or_insert(None) =
-                    Some(twitter_handle.into_owned());
-
-                h
-            },
-        );
-
-        Ok(wallets
-            .into_iter()
-            .map(|(k, v)| Wallet::new(k, v))
-            .collect())
+        futures_util::future::try_join_all(addresses.into_iter().map(|a| context.wallet(a)))
+            .await
+            .map_err(Into::into)
     }
 
     fn listings(&self, context: &AppContext) -> FieldResult<Vec<Listing>> {
