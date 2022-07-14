@@ -62,6 +62,12 @@ impl FollowEvent {
             .await
             .map_err(Into::into)
     }
+
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -106,6 +112,12 @@ impl PurchaseEvent {
     pub async fn purchase(&self, ctx: &AppContext) -> FieldResult<Option<Purchase>> {
         ctx.purchase_loader
             .load(self.purchase_id)
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
             .await
             .map_err(Into::into)
     }
@@ -161,6 +173,12 @@ impl OfferEvent {
             .await
             .map_err(Into::into)
     }
+
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -213,6 +231,12 @@ impl ListingEvent {
             .await
             .map_err(Into::into)
     }
+
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 #[graphql_object(Context = AppContext)]
@@ -248,6 +272,12 @@ impl MintEvent {
     pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_loader
             .load(self.metadata_address.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
             .await
             .map_err(Into::into)
     }
