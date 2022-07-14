@@ -20,7 +20,7 @@ pub(crate) async fn process(
         debug!("invalid accounts for WithdrawFromTreasury instruction");
         return Ok(());
     }
-    let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
     let row = WithdrawFromTreasuryInstruction {
         treasury_mint: Owned(accts[0].clone()),

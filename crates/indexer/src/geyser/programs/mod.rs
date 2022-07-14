@@ -7,6 +7,7 @@ pub mod cardinal_token_manager;
 pub mod cardinal_use_invalidator;
 pub mod goki_smart_wallet;
 pub mod graph;
+pub mod magic_eden_haus;
 pub mod metadata;
 pub mod metaplex;
 pub mod name_service;

@@ -29,7 +29,7 @@ pub(crate) async fn process(
         return Ok(());
     }
 
-    let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
     let row = SellInstruction {
         wallet: Owned(accts[0].clone()),
@@ -50,15 +50,31 @@ pub(crate) async fn process(
         slot: slot.try_into()?,
     };
 
-    upsert_into_listings_table(client, row.clone())
-        .await
-        .context("failed to insert listing!")?;
+    let values = row.clone();
+
+    upsert_into_listings_table(client, Listing {
+        id: None,
+        trade_state: row.seller_trade_state.clone(),
+        auction_house: row.auction_house.clone(),
+        seller: row.wallet.clone(),
+        metadata: row.metadata.clone(),
+        purchase_id: None,
+        price: row.buyer_price,
+        token_size: row.token_size,
+        trade_state_bump: row.trade_state_bump,
+        created_at: row.created_at,
+        canceled_at: None,
+        slot: row.slot,
+        write_version: None,
+    })
+    .await
+    .context("failed to insert listing!")?;
 
     client
         .db()
         .run(move |db| {
             insert_into(sell_instructions::table)
-                .values(&row)
+                .values(&values)
                 .execute(db)
         })
         .await
@@ -66,26 +82,7 @@ pub(crate) async fn process(
     Ok(())
 }
 
-async fn upsert_into_listings_table<'a>(
-    client: &Client,
-    data: SellInstruction<'static>,
-) -> Result<()> {
-    let row = Listing {
-        id: None,
-        trade_state: data.seller_trade_state.clone(),
-        auction_house: data.auction_house.clone(),
-        seller: data.wallet.clone(),
-        metadata: data.metadata.clone(),
-        purchase_id: None,
-        price: data.buyer_price,
-        token_size: data.token_size,
-        trade_state_bump: data.trade_state_bump,
-        created_at: data.created_at,
-        canceled_at: None,
-        slot: data.slot,
-        write_version: None,
-    };
-
+pub async fn upsert_into_listings_table<'a>(client: &Client, row: Listing<'static>) -> Result<()> {
     client
         .db()
         .run(move |db| {
