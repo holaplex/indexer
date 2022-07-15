@@ -3,6 +3,7 @@
 pub mod activities;
 pub mod bonding_changes;
 pub mod charts;
+pub mod collections;
 pub mod featured_listings;
 pub mod feed_event;
 pub mod graph_connection;

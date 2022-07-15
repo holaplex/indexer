@@ -185,3 +185,15 @@ impl FromSql<ListingEventLifecycle, Pg> for ListingEventLifecycleEnum {
         from_bytes(bytes)
     }
 }
+
+/// Direction for ordering SQL query results by the "ORDER BY" variable(s)
+#[derive(Debug, Clone, Copy, strum::EnumString, strum::Display)]
+pub enum OrderDirection {
+    /// order results descending
+    #[strum(serialize = "DESC")]
+    Desc,
+
+    /// order results ascending
+    #[strum(serialize = "ASC")]
+    Asc,
+}
