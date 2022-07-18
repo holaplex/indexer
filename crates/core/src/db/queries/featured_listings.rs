@@ -9,22 +9,20 @@ use diesel::{
 };
 
 use crate::{
-    db::{models::ListingReceipt, Connection},
+    db::{models::Listing, Connection},
     error::Result,
 };
 
 const FEATURED_LISTINGS_QUERY: &str = r"
 SELECT
-    a.address,
+    a.id,
     a.trade_state,
-    a.bookkeeper,
     a.auction_house,
     a.seller,
     a.metadata,
-    a.purchase_receipt,
+    a.purchase_id,
     a.price,
     a.token_size,
-    a.bump,
     a.trade_state_bump,
     a.created_at,
     a.canceled_at,
@@ -34,25 +32,25 @@ SELECT
 FROM (
 
     SELECT
-        listing_receipts.*,
+        listings.*,
         row_number() OVER (
-            PARTITION BY listing_receipts.seller ORDER BY listing_receipts.price DESC
+            PARTITION BY listings.seller ORDER BY listings.price DESC
         ) as row
 
-    FROM listing_receipts, metadata_creators, wallet_totals
+    FROM listings, metadata_creators, wallet_totals
 
     WHERE
         metadata_creators.creator_address = wallet_totals.address
-        AND listing_receipts.metadata = metadata_creators.metadata_address
+        AND listings.metadata = metadata_creators.metadata_address
         AND metadata_creators.share > 0
         AND metadata_creators.verified = true
-        AND listing_receipts.purchase_receipt IS NULL
-        AND listing_receipts.canceled_at IS NULL
-        AND listing_receipts.auction_house = ANY($1)
-        AND (($2 IS NULL) OR NOT(listing_receipts.seller = ANY($2)))
+        AND listings.purchase_id IS NULL
+        AND listings.canceled_at IS NULL
+        AND listings.auction_house = ANY($1)
+        AND (($2 IS NULL) OR NOT(listings.seller = ANY($2)))
 
-    GROUP BY listing_receipts.metadata, listing_receipts.address
-    ORDER BY sum(wallet_totals.followers) DESC, listing_receipts.price DESC
+    GROUP BY listings.metadata, listings.id
+    ORDER BY sum(wallet_totals.followers) DESC, listings.price DESC
 
 ) as a
 
@@ -77,7 +75,7 @@ pub fn list(
     limit_per_seller: impl ToSql<Integer, Pg>,
     limit: impl ToSql<Integer, Pg>,
     offset: impl ToSql<Integer, Pg>,
-) -> Result<Vec<ListingReceipt>> {
+) -> Result<Vec<Listing>> {
     diesel::sql_query(FEATURED_LISTINGS_QUERY)
         .bind(auction_houses)
         .bind(seller_exclusions)

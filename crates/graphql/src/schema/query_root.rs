@@ -4,6 +4,7 @@ use indexer_core::db::{
     tables::twitter_handle_name_services,
 };
 use objects::{
+    ah_listing::AhListing,
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
     bonding_change::EnrichedBondingChange,
@@ -13,7 +14,6 @@ use objects::{
     feed_event::FeedEvent,
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
-    listing_receipt::ListingReceipt,
     marketplace::Marketplace,
     nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
     profile::{ProfilesStats, TwitterProfile},
@@ -463,7 +463,7 @@ impl QueryRoot {
         limit_per_seller: Option<i32>,
         #[graphql(description = "Limit for query")] limit: i32,
         #[graphql(description = "Offset for query")] offset: Option<i32>,
-    ) -> FieldResult<Vec<ListingReceipt>> {
+    ) -> FieldResult<Vec<AhListing>> {
         let conn = context.shared.db.get().context("Failed to connect to DB")?;
 
         let auction_houses = auction_houses.unwrap_or_else(|| {
