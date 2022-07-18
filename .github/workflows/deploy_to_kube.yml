@@ -2,12 +2,12 @@ name: Kubernetes deployment
 
 on:
   push:
-    branches: [ dev, master ]
+    branches: [ mpw/runner ]
 
 jobs:
   build:
     name: Building and Pushing Image
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
 
     steps:
       - name: Checkout
@@ -108,33 +108,3 @@ jobs:
           echo "Pushing image to ECR..."
           docker push $image_tag
           echo "::set-output name=image::$image_tag"
-
-      - name: Triggering deployment manifest update in kubes repository (main)
-        if: github.ref == 'refs/heads/master'
-        uses: actions/github-script@v6
-        env:
-          BRANCH: ${{ github.ref_name }}
-        with:
-          github-token: ${{ secrets.ACTIONS_TOKEN }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: 'holaplex',
-              repo: 'kubes',
-              workflow_id: 'indexer.yaml',
-              ref: 'main'
-            })
-
-      - name: Triggering deployment manifest update in kubes repository (dev)
-        if: github.ref == 'refs/heads/dev'
-        uses: actions/github-script@v6
-        env:
-          BRANCH: ${{ github.ref_name }}
-        with:
-          github-token: ${{ secrets.ACTIONS_TOKEN }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: 'holaplex',
-              repo: 'kubes',
-              workflow_id: 'indexer.yaml',
-              ref: process.env.BRANCH
-            })
