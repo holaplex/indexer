@@ -303,3 +303,19 @@ pub fn store_creators(
         .load(conn)
         .context("Failed to load store creators counts")
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::db::test::DATABASE;
+
+    #[test]
+    fn test_store_creators_minimal_passes() {
+        let pool = &DATABASE;
+
+        let _ = super::store_creators(
+            &pool.get().expect("failed to aquire database connection"),
+            Vec::<String>::new(),
+        )
+        .expect("failed query");
+    }
+}

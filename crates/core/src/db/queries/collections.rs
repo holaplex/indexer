@@ -235,3 +235,51 @@ pub fn collection_activities(
         .load(conn)
         .context("Failed to load collection activities")
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::{TimeZone, Utc};
+
+    use crate::db::test::DATABASE;
+
+    #[test]
+    fn test_collections_featured_by_marketcap_returns_non_empty() {
+        let pool = &DATABASE;
+
+        let result = super::by_market_cap(
+            &pool.get().expect("failed to aquire database connection"),
+            None::<Vec<String>>,
+            crate::db::custom_types::OrderDirection::Desc,
+            Utc.ymd(1901, 1, 1).and_hms(0, 0, 0),
+            Utc.ymd(3000, 1, 1).and_hms(0, 0, 0),
+            50,
+            0,
+        )
+        .expect("failed query");
+
+        assert!(!result.is_empty(), "expected at least one row");
+    }
+
+    #[test]
+    fn test_collections_featured_by_volume_returns_non_empty() {
+        let pool = &DATABASE;
+
+        let result = super::by_volume(
+            &pool.get().expect("failed to aquire database connection"),
+            None::<Vec<String>>,
+            crate::db::custom_types::OrderDirection::Desc,
+            Utc.ymd(1901, 1, 1).and_hms(0, 0, 0),
+            Utc.ymd(3000, 1, 1).and_hms(0, 0, 0),
+            50,
+            0,
+        )
+        .expect("failed query");
+
+        assert!(!result.is_empty(), "expected at least one row");
+    }
+
+    #[test]
+    fn test_collection_activities() {
+        todo!("Test collection_activities()");
+    }
+}
