@@ -67,6 +67,8 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
             metadatas.slot,
             metadata_jsons.description,
             metadata_jsons.image,
+            metadata_jsons.animation_url,
+            metadata_jsons.external_url,
             metadata_jsons.category,
             metadata_jsons.model
         FROM metadata_jsons, volume_table, metadatas
@@ -150,6 +152,8 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
             metadatas.slot,
             metadata_jsons.description,
             metadata_jsons.image,
+            metadata_jsons.animation_url,
+            metadata_jsons.external_url,
             metadata_jsons.category,
             metadata_jsons.model
         FROM metadatas
