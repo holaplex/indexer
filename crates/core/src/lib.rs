@@ -18,6 +18,7 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
+pub extern crate base64;
 pub extern crate chrono;
 pub extern crate clap;
 pub extern crate num_cpus;

@@ -5,10 +5,11 @@ use indexer_core::{
         tables::{bid_receipts, listing_receipts, metadata_jsons},
     },
     util::unix_timestamp,
+    uuid::Uuid,
 };
 use objects::{
-    auction_house::AuctionHouse, bid_receipt::BidReceipt, listing_receipt::ListingReceipt,
-    profile::TwitterProfile, purchase_receipt::PurchaseReceipt, wallet::Wallet,
+    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
+    profile::TwitterProfile, wallet::Wallet,
 };
 use reqwest::Url;
 use scalars::{PublicKey, U64};
@@ -207,9 +208,9 @@ impl NftOwner {
 
 #[derive(Debug, Clone)]
 pub struct NftActivity {
-    pub address: String,
+    pub id: Uuid,
     pub metadata: PublicKey<Nft>,
-    pub auction_house: String,
+    pub auction_house: PublicKey<AuctionHouse>,
     pub price: U64,
     pub created_at: DateTime<Utc>,
     pub wallets: Vec<Wallet>,
@@ -221,7 +222,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
 
     fn try_from(
         models::NftActivity {
-            address,
+            id,
             metadata,
             auction_house,
             price,
@@ -232,9 +233,9 @@ impl TryFrom<models::NftActivity> for NftActivity {
         }: models::NftActivity,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            address,
+            id,
             metadata: metadata.into(),
-            auction_house,
+            auction_house: auction_house.into(),
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
             wallets: wallets
@@ -249,16 +250,12 @@ impl TryFrom<models::NftActivity> for NftActivity {
 
 #[graphql_object(Context = AppContext)]
 impl NftActivity {
-    fn address(&self) -> &str {
-        &self.address
+    fn id(&self) -> &Uuid {
+        &self.id
     }
 
     fn metadata(&self) -> &PublicKey<Nft> {
         &self.metadata
-    }
-
-    fn auction_house(&self) -> &str {
-        &self.auction_house
     }
 
     fn price(&self) -> U64 {
@@ -283,6 +280,14 @@ impl NftActivity {
             .await
             .map_err(Into::into)
     }
+
+    pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
+        context
+            .store_auction_houses_loader
+            .load(self.auction_house.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -297,6 +302,8 @@ pub struct Nft {
     pub uri: String,
     pub description: String,
     pub image: String,
+    pub animation_url: Option<String>,
+    pub external_url: Option<String>,
     pub category: String,
     pub model: Option<String>,
     pub slot: Option<i32>,
@@ -316,6 +323,8 @@ impl TryFrom<models::Nft> for Nft {
             uri,
             description,
             image,
+            animation_url,
+            external_url,
             category,
             model,
             slot,
@@ -331,6 +340,8 @@ impl TryFrom<models::Nft> for Nft {
             uri,
             description: description.unwrap_or_else(String::new),
             image: image.unwrap_or_else(String::new),
+            animation_url,
+            external_url,
             category: category.unwrap_or_else(String::new),
             model,
             slot: slot.map(TryInto::try_into).transpose()?,
@@ -411,6 +422,14 @@ If no value is provided, it will return XSmall")))]
         )
     }
 
+    pub fn animation_url(&self) -> Option<&str> {
+        self.animation_url.as_deref()
+    }
+
+    pub fn external_url(&self) -> Option<&str> {
+        self.external_url.as_deref()
+    }
+
     pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
         ctx.nft_creators_loader
             .load(self.address.clone().into())
@@ -439,22 +458,22 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
-    pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<ListingReceipt>> {
-        ctx.listing_receipts_loader
+    pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>> {
+        ctx.ah_listings_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<PurchaseReceipt>> {
-        ctx.purchase_receipts_loader
+    pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<Purchase>> {
+        ctx.purchases_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<BidReceipt>> {
-        ctx.bid_receipts_loader
+    pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<Offer>> {
+        ctx.offers_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
@@ -598,13 +617,13 @@ impl NftCount {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, GraphQLObject)]
 pub struct MetadataJson {
     pub address: String,
     pub name: String,
     pub mint_address: String,
     pub image: Option<String>,
-    pub creator_address: String,
+    pub creator_address: Option<String>,
     pub creator_twitter_handle: Option<String>,
 }
 
@@ -630,40 +649,12 @@ impl From<serde_json::Value> for MetadataJson {
             creator_address: value
                 .get("creator_address")
                 .and_then(Value::as_str)
-                .map(Into::into)
-                .unwrap_or_default(),
+                .map(Into::into),
             creator_twitter_handle: value
                 .get("creator_twitter_handle")
                 .and_then(Value::as_str)
                 .map(Into::into),
         }
-    }
-}
-
-#[graphql_object(Context = AppContext)]
-impl MetadataJson {
-    pub fn address(&self) -> &str {
-        &self.address
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn mint_address(&self) -> &str {
-        &self.mint_address
-    }
-
-    pub fn image(&self) -> Option<&str> {
-        self.image.as_deref()
-    }
-
-    pub fn creator_address(&self) -> &str {
-        &self.creator_address
-    }
-
-    pub fn creator_twitter_handle(&self) -> Option<&str> {
-        self.creator_twitter_handle.as_deref()
     }
 }
 

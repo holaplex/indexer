@@ -1,3 +1,6 @@
+pub mod ah_listing;
+pub mod ah_offer;
+pub mod ah_purchase;
 pub mod auction_house;
 pub mod bid_receipt;
 pub mod collection;

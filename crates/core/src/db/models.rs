@@ -186,6 +186,8 @@ pub struct Metadata<'a> {
     pub token_standard: Option<TokenStandardEnum>,
     /// Solana slot number
     pub slot: Option<i64>,
+    /// Indicates whether the NFT was burned
+    pub burned: bool,
 }
 
 /// A row in the `storefronts` table
@@ -256,9 +258,17 @@ pub struct Nft {
     #[sql_type = "Nullable<Text>"]
     pub description: Option<String>,
 
-    /// Metadata Image url
+    /// Metadata image URL
     #[sql_type = "Nullable<Text>"]
     pub image: Option<String>,
+
+    /// Metadata animation URL
+    #[sql_type = "Nullable<Text>"]
+    pub animation_url: Option<String>,
+
+    /// Metadata external URL
+    #[sql_type = "Nullable<Text>"]
+    pub external_url: Option<String>,
 
     /// Metadata Category
     #[sql_type = "Nullable<Text>"]
@@ -269,12 +279,12 @@ pub struct Nft {
     pub model: Option<String>,
 }
 
-/// Union of `listing_receipts` and `purchase_receipts` for an `NFTActivity`
+/// Union of `listings` and `purchases` for an `NFTActivity`
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct NftActivity {
-    /// The address of the activity
-    #[sql_type = "VarChar"]
-    pub address: String,
+    /// The id of the activity
+    #[sql_type = "diesel::sql_types::Uuid"]
+    pub id: Uuid,
 
     /// The metadata associated of the activity
     #[sql_type = "VarChar"]
@@ -348,9 +358,17 @@ pub struct SampleNft {
     #[sql_type = "Nullable<Text>"]
     pub description: Option<String>,
 
-    /// Metadata Image url
+    /// Metadata image URL
     #[sql_type = "Nullable<Text>"]
     pub image: Option<String>,
+
+    /// Metadata animation URL
+    #[sql_type = "Nullable<Text>"]
+    pub animation_url: Option<String>,
+
+    /// Metadata external URL
+    #[sql_type = "Nullable<Text>"]
+    pub external_url: Option<String>,
 
     /// Metadata category
     #[sql_type = "Nullable<Text>"]
@@ -579,8 +597,6 @@ pub struct StoreConfigJson<'a> {
     pub subdomain: Cow<'a, str>,
     /// Storefront owner address
     pub owner_address: Cow<'a, str>,
-    /// Auction house account address
-    pub auction_house_address: Cow<'a, str>,
     /// Storefront address
     pub store_address: Option<Cow<'a, str>>,
 }
@@ -758,6 +774,10 @@ pub struct GraphConnection<'a> {
     pub connected_at: NaiveDateTime,
     /// Graph Connection 'disconnected_at'
     pub disconnected_at: Option<NaiveDateTime>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `candy_machines` table
@@ -1846,18 +1866,18 @@ pub struct CompleteFeedEvent {
     /// metadata address that triggered the mint event
     #[sql_type = "Nullable<VarChar>"]
     pub metadata_address: Option<String>,
-    /// purchase receipt address that triggered the purchase event
-    #[sql_type = "Nullable<VarChar>"]
-    pub purchase_receipt_address: Option<String>,
-    #[sql_type = "Nullable<VarChar>"]
-    /// bid receipt address that triggered the offer event
-    pub bid_receipt_address: Option<String>,
+    /// purchase id that triggered the purchase event
+    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
+    pub purchase_id: Option<Uuid>,
+    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
+    /// offer id that triggered the offer event
+    pub offer_id: Option<Uuid>,
     /// the lifecycle of the offer event
     #[sql_type = "Nullable<OfferEventLifecycle>"]
     pub offer_lifecycle: Option<OfferEventLifecycleEnum>,
-    /// listing receipt address that triggered the listing event
-    #[sql_type = "Nullable<Text>"]
-    pub listing_receipt_address: Option<String>,
+    /// listing id that triggered the listing event
+    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
+    pub listing_id: Option<Uuid>,
     /// the lifecycle of the listing event
     #[sql_type = "Nullable<ListingEventLifecycle>"]
     pub listing_lifecycle: Option<ListingEventLifecycleEnum>,
@@ -1897,11 +1917,11 @@ pub struct MintEvent<'a> {
 }
 
 /// A row in the `offer_events` table
-#[derive(Debug, Clone, Queryable, Insertable)]
+#[derive(Debug, Clone, Copy, Queryable, Insertable)]
 #[table_name = "offer_events"]
-pub struct OfferEvent<'a> {
-    /// foreign key to `bid_recipts` address
-    pub bid_receipt_address: Cow<'a, str>,
+pub struct OfferEvent {
+    /// foreign key to `offers` id
+    pub offer_id: Uuid,
     /// foreign key to `feed_events`
     pub feed_event_id: Uuid,
     ///  enum of offer lifecycle
@@ -1909,11 +1929,11 @@ pub struct OfferEvent<'a> {
 }
 
 /// A row in the `listing_events` table
-#[derive(Debug, Clone, Queryable, Insertable)]
+#[derive(Debug, Clone, Copy, Queryable, Insertable)]
 #[table_name = "listing_events"]
-pub struct ListingEvent<'a> {
-    /// foreign key to `listing_receipts` address
-    pub listing_receipt_address: Cow<'a, str>,
+pub struct ListingEvent {
+    /// foreign key to `listings` id
+    pub listing_id: Uuid,
     /// foreign key to `feed_events`
     pub feed_event_id: Uuid,
     /// enum of listing lifecycle
@@ -1921,11 +1941,11 @@ pub struct ListingEvent<'a> {
 }
 
 /// A row in the `purchase_events` table
-#[derive(Debug, Clone, Queryable, Insertable)]
+#[derive(Debug, Clone, Copy, Queryable, Insertable)]
 #[table_name = "purchase_events"]
-pub struct PurchaseEvent<'a> {
-    /// foreign key to `purchase_receipts` address
-    pub purchase_receipt_address: Cow<'a, str>,
+pub struct PurchaseEvent {
+    /// foreign key to `purchases` id
+    pub purchase_id: Uuid,
     /// foreign key to `feed_events`
     pub feed_event_id: Uuid,
 }
@@ -1951,6 +1971,16 @@ pub struct WalletTotal {
     pub following: i64,
 }
 
+/// A row in the `store_auction_houses` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "store_auction_houses"]
+pub struct StoreAuctionHouse<'a> {
+    /// Store Config account address
+    pub store_config_address: Cow<'a, str>,
+    /// Auction House address
+    pub auction_house_address: Cow<'a, str>,
+}
 /// A row in the `buy_instructions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -2317,8 +2347,9 @@ pub struct Purchase<'a> {
 }
 
 /// A row in the `listings` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
 #[diesel(treat_none_as_null = true)]
+#[table_name = "listings"]
 pub struct Listing<'a> {
     /// Random Uuid primary key from offers table
     /// Optional so that it can be generated randomly when other fields are inserted into table
@@ -2349,4 +2380,61 @@ pub struct Listing<'a> {
     pub slot: i64,
     /// Solana write_version
     pub write_version: Option<i64>,
+}
+
+/// A row in the `cardinal_entries` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[table_name = "cardinal_entries"]
+#[diesel(treat_none_as_null = true)]
+pub struct CardinalEntry<'a> {
+    /// 'Entry' account pubkey
+    pub address: Cow<'a, str>,
+    /// 'Namespace' account pubkey
+    pub namespace: Cow<'a, str>,
+    /// entry name
+    pub name: Cow<'a, str>,
+    /// wallet pubkey
+    pub data: Option<Cow<'a, str>>,
+    /// 'ReverseEntry' account pubkey
+    pub reverse_entry: Option<Cow<'a, str>>,
+    /// Mint address
+    pub mint: Cow<'a, str>,
+    /// indicates whether the entry is claimed
+    pub is_claimed: bool,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write version
+    pub write_version: i64,
+}
+
+/// A row in the `cardinal_namespaces` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct CardinalNamespace<'a> {
+    /// 'CardinalNamespace' account pubkey
+    pub address: Cow<'a, str>,
+    /// Namespace name
+    pub name: Cow<'a, str>,
+    /// update authority pubkey
+    pub update_authority: Cow<'a, str>,
+    /// rent authority pubkey
+    pub rent_authority: Cow<'a, str>,
+    /// approve authority pubkey
+    pub approve_authority: Option<Cow<'a, str>>,
+    /// Schema
+    pub schema: i16,
+    /// Daily payment amount
+    pub payment_amount_daily: i64,
+    /// Spl mint address
+    pub payment_mint: Cow<'a, str>,
+    /// minimum rental seconds
+    pub min_rental_seconds: i64,
+    /// maximum rental seconds
+    pub max_rental_seconds: Option<i64>,
+    /// indicates whether namespace entries can be transfered
+    pub transferable_entries: bool,
+    /// Solana slot number
+    pub slot: i64,
+    /// Solana write version
+    pub write_version: i64,
 }

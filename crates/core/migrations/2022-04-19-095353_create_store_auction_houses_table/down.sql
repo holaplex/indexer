@@ -1,0 +1,1 @@
+drop table store_auction_houses;

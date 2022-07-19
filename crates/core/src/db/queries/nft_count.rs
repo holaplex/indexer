@@ -15,9 +15,7 @@ use crate::{
     db::{
         any,
         models::StoreCreatorCount,
-        tables::{
-            bid_receipts, current_metadata_owners, listing_receipts, metadata_creators, metadatas,
-        },
+        tables::{current_metadata_owners, listings, metadata_creators, metadatas, offers},
         Connection,
     },
     error::prelude::*,
@@ -52,7 +50,7 @@ pub fn listed<C: ToSql<Text, Pg>, L: ToSql<Text, Pg>>(
         .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
         )
-        .inner_join(listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)))
+        .inner_join(listings::table.on(metadatas::address.eq(listings::metadata)))
         .inner_join(
             current_metadata_owners::table
                 .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
@@ -60,15 +58,15 @@ pub fn listed<C: ToSql<Text, Pg>, L: ToSql<Text, Pg>>(
         .into_boxed();
 
     if let Some(listed) = listed {
-        query = query.filter(listing_receipts::auction_house.eq(any(listed)));
+        query = query.filter(listings::auction_house.eq(any(listed)));
     }
 
     query
         .filter(metadata_creators::creator_address.eq(any(creators)))
         .filter(metadata_creators::verified.eq(true))
-        .filter(listing_receipts::purchase_receipt.is_null())
-        .filter(listing_receipts::canceled_at.is_null())
-        .filter(listing_receipts::seller.eq(current_metadata_owners::owner_address))
+        .filter(listings::purchase_id.is_null())
+        .filter(listings::canceled_at.is_null())
+        .filter(listings::seller.eq(current_metadata_owners::owner_address))
         .count()
         .get_result(conn)
         .context("failed to load listed nfts count")
@@ -171,10 +169,10 @@ where
                         Join<metadatas::table, metadata_creators::table, Inner>,
                         Eq<metadatas::address, metadata_creators::metadata_address>,
                     >,
-                    bid_receipts::table,
+                    offers::table,
                     Inner,
                 >,
-                Eq<metadatas::address, bid_receipts::metadata>,
+                Eq<metadatas::address, offers::metadata>,
             >,
         >,
 {
@@ -182,11 +180,11 @@ where
         .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
         )
-        .inner_join(bid_receipts::table.on(metadatas::address.eq(bid_receipts::metadata)))
+        .inner_join(offers::table.on(metadatas::address.eq(offers::metadata)))
         .into_boxed();
 
     if let Some(auction_houses) = auction_houses {
-        query = query.filter(bid_receipts::auction_house.eq(any(auction_houses)));
+        query = query.filter(offers::auction_house.eq(any(auction_houses)));
     }
 
     if let Some(creators) = creators {
@@ -195,9 +193,9 @@ where
 
     query
         .filter(metadata_creators::verified.eq(true))
-        .filter(bid_receipts::buyer.eq(wallet))
-        .filter(bid_receipts::purchase_receipt.is_null())
-        .filter(bid_receipts::canceled_at.is_null())
+        .filter(offers::buyer.eq(wallet))
+        .filter(offers::purchase_id.is_null())
+        .filter(offers::canceled_at.is_null())
         .count()
         .get_result(conn)
         .context("failed to load nfts count of open offers for a wallet")
@@ -223,10 +221,10 @@ where
                         Join<metadatas::table, metadata_creators::table, Inner>,
                         Eq<metadatas::address, metadata_creators::metadata_address>,
                     >,
-                    listing_receipts::table,
+                    listings::table,
                     Inner,
                 >,
-                Eq<metadatas::address, listing_receipts::metadata>,
+                Eq<metadatas::address, listings::metadata>,
             >,
         > + AppearsOnTable<
             JoinOn<
@@ -237,10 +235,10 @@ where
                                 Join<metadatas::table, metadata_creators::table, Inner>,
                                 Eq<metadatas::address, metadata_creators::metadata_address>,
                             >,
-                            listing_receipts::table,
+                            listings::table,
                             Inner,
                         >,
-                        Eq<metadatas::address, listing_receipts::metadata>,
+                        Eq<metadatas::address, listings::metadata>,
                     >,
                     current_metadata_owners::table,
                     Inner,
@@ -253,7 +251,7 @@ where
         .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
         )
-        .inner_join(listing_receipts::table.on(metadatas::address.eq(listing_receipts::metadata)))
+        .inner_join(listings::table.on(metadatas::address.eq(listings::metadata)))
         .inner_join(
             current_metadata_owners::table
                 .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
@@ -261,7 +259,7 @@ where
         .into_boxed();
 
     if let Some(listed) = listed {
-        query = query.filter(listing_receipts::auction_house.eq(any(listed)));
+        query = query.filter(listings::auction_house.eq(any(listed)));
     }
 
     if let Some(creators) = creators {
@@ -270,10 +268,10 @@ where
 
     query
         .filter(metadata_creators::verified.eq(true))
-        .filter(listing_receipts::purchase_receipt.is_null())
-        .filter(listing_receipts::canceled_at.is_null())
-        .filter(listing_receipts::seller.eq(wallet))
-        .filter(listing_receipts::seller.eq(current_metadata_owners::owner_address))
+        .filter(listings::purchase_id.is_null())
+        .filter(listings::canceled_at.is_null())
+        .filter(listings::seller.eq(wallet))
+        .filter(listings::seller.eq(current_metadata_owners::owner_address))
         .count()
         .get_result(conn)
         .context("failed to load listed nfts count")

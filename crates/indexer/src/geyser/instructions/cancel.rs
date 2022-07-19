@@ -24,7 +24,7 @@ pub(crate) async fn process(
         return Ok(());
     }
 
-    let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
     let row = CancelInstruction {
         wallet: Owned(accts[0].clone()),
@@ -66,7 +66,10 @@ pub(crate) async fn process(
                                 .and(listings::canceled_at.is_null()),
                         ),
                     )
-                    .set(listings::canceled_at.eq(Some(row.created_at)))
+                    .set((
+                        listings::canceled_at.eq(Some(row.created_at)),
+                        listings::slot.eq(row.slot),
+                    ))
                     .execute(db)
                 } else {
                     update(
@@ -77,7 +80,10 @@ pub(crate) async fn process(
                                 .and(offers::canceled_at.is_null()),
                         ),
                     )
-                    .set(offers::canceled_at.eq(Some(row.created_at)))
+                    .set((
+                        offers::canceled_at.eq(Some(row.created_at)),
+                        offers::slot.eq(row.slot),
+                    ))
                     .execute(db)
                 }
             })

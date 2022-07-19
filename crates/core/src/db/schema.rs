@@ -362,6 +362,46 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    cardinal_entries (address) {
+        address -> Varchar,
+        namespace -> Varchar,
+        name -> Text,
+        data -> Nullable<Varchar>,
+        reverse_entry -> Nullable<Varchar>,
+        mint -> Varchar,
+        is_claimed -> Bool,
+        slot -> Int8,
+        write_version -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    cardinal_namespaces (address) {
+        address -> Varchar,
+        name -> Text,
+        update_authority -> Varchar,
+        rent_authority -> Varchar,
+        approve_authority -> Nullable<Varchar>,
+        schema -> Int2,
+        payment_amount_daily -> Int8,
+        payment_mint -> Varchar,
+        min_rental_seconds -> Int8,
+        max_rental_seconds -> Nullable<Int8>,
+        transferable_entries -> Bool,
+        slot -> Int8,
+        write_version -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     cardinal_paid_claim_approvers (paid_claim_approver_address) {
         paid_claim_approver_address -> Varchar,
         paid_claim_approver_bump -> Int2,
@@ -640,6 +680,8 @@ table! {
         to_account -> Varchar,
         connected_at -> Timestamp,
         disconnected_at -> Nullable<Timestamp>,
+        slot -> Int8,
+        write_version -> Int8,
     }
 }
 
@@ -712,9 +754,9 @@ table! {
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
     listing_events (feed_event_id) {
-        listing_receipt_address -> Varchar,
         feed_event_id -> Uuid,
         lifecycle -> Listingeventlifecycle,
+        listing_id -> Uuid,
     }
 }
 
@@ -915,6 +957,7 @@ table! {
         edition_pda -> Varchar,
         token_standard -> Nullable<Token_standard>,
         slot -> Nullable<Int8>,
+        burned -> Bool,
     }
 }
 
@@ -935,9 +978,9 @@ table! {
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
     offer_events (feed_event_id) {
-        bid_receipt_address -> Varchar,
         feed_event_id -> Uuid,
         lifecycle -> Offereventlifecycle,
+        offer_id -> Uuid,
     }
 }
 
@@ -1060,8 +1103,8 @@ table! {
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
     purchase_events (feed_event_id) {
-        purchase_receipt_address -> Varchar,
         feed_event_id -> Uuid,
+        purchase_id -> Uuid,
     }
 }
 
@@ -1165,6 +1208,17 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    store_auction_houses (store_config_address, auction_house_address) {
+        store_config_address -> Varchar,
+        auction_house_address -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     store_config_jsons (config_address) {
         config_address -> Varchar,
         name -> Text,
@@ -1173,7 +1227,6 @@ table! {
         banner_url -> Text,
         subdomain -> Text,
         owner_address -> Varchar,
-        auction_house_address -> Varchar,
         store_address -> Nullable<Varchar>,
     }
 }
@@ -1416,12 +1469,9 @@ joinable!(feed_event_wallets -> feed_events (feed_event_id));
 joinable!(follow_events -> feed_events (feed_event_id));
 joinable!(follow_events -> graph_connections (graph_connection_address));
 joinable!(listing_events -> feed_events (feed_event_id));
-joinable!(listing_events -> listing_receipts (listing_receipt_address));
 joinable!(mint_events -> feed_events (feed_event_id));
-joinable!(offer_events -> bid_receipts (bid_receipt_address));
 joinable!(offer_events -> feed_events (feed_event_id));
 joinable!(purchase_events -> feed_events (feed_event_id));
-joinable!(purchase_events -> purchase_receipts (purchase_receipt_address));
 
 allow_tables_to_appear_in_same_query!(
     attributes,
@@ -1444,6 +1494,8 @@ allow_tables_to_appear_in_same_query!(
     candy_machine_whitelist_mint_settings,
     candy_machines,
     cardinal_claim_events,
+    cardinal_entries,
+    cardinal_namespaces,
     cardinal_paid_claim_approvers,
     cardinal_time_invalidators,
     cardinal_token_manager_invalidators,
@@ -1493,6 +1545,7 @@ allow_tables_to_appear_in_same_query!(
     sell_instructions,
     smart_wallet_owners,
     smart_wallets,
+    store_auction_houses,
     store_config_jsons,
     store_configs,
     store_creators,

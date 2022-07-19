@@ -73,6 +73,10 @@ impl Client {
             .await
             .context("failed to create name service index")?;
 
+        create_index(meili.clone(), "collections", "id")
+            .await
+            .context("failed to create collections index")?;
+
         let (trigger_upsert, upsert_rx) = mpsc::channel(1);
         let (stop_tx, stop_rx) = oneshot::channel();
 
@@ -131,34 +135,6 @@ impl Client {
         sample_size: usize,
         batch_size: usize,
     ) -> Result<Duration> {
-        #[derive(Debug, Clone)]
-        struct UpsertTimingDatapoint {
-            finished_at: DateTime<Utc>,
-            duration: Duration,
-        }
-
-        impl std::cmp::PartialEq<UpsertTimingDatapoint> for UpsertTimingDatapoint {
-            fn eq(&self, rhs: &Self) -> bool {
-                self.finished_at.eq(&rhs.finished_at) && self.duration.eq(&rhs.duration)
-            }
-        }
-
-        impl std::cmp::Eq for UpsertTimingDatapoint {}
-
-        impl std::cmp::Ord for UpsertTimingDatapoint {
-            fn cmp(&self, rhs: &Self) -> std::cmp::Ordering {
-                self.finished_at
-                    .cmp(&rhs.finished_at)
-                    .then_with(|| self.duration.cmp(&rhs.duration))
-            }
-        }
-
-        impl std::cmp::PartialOrd for UpsertTimingDatapoint {
-            fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
-                Some(self.cmp(rhs))
-            }
-        }
-
         let start = Local::now();
 
         let tasks = meili
@@ -180,19 +156,19 @@ impl Client {
                 };
 
                 // Reject outliers or non-upsert tasks
-                match update_type {
+                let count = match update_type {
                     TaskType::DocumentAddition {
                         details:
                             Some(DocumentAddition {
                                 indexed_documents: Some(count),
                                 ..
                             }),
-                    } if count >= batch_size / 2 => (),
+                    } => count,
                     _ => return None,
-                }
+                };
 
                 let finished_at = finished_at.unix_timestamp_nanos();
-                let finished_at = DateTime::from_utc(
+                let finished_at = DateTime::<Utc>::from_utc(
                     NaiveDateTime::from_timestamp_opt(
                         (finished_at / 1_000_000_000).try_into().ok()?,
                         finished_at.rem_euclid(1_000_000_000).try_into().ok()?,
@@ -200,16 +176,16 @@ impl Client {
                     Utc,
                 );
 
-                Some(UpsertTimingDatapoint {
-                    finished_at,
-                    duration,
-                })
+                Some((finished_at, count, duration))
             })
             .collect();
 
         let mut times: Vec<_> = std::iter::from_fn(|| set.pop())
             .take(sample_size)
-            .map(|u| u.duration)
+            .map(|(_, c, d)| {
+                #[allow(clippy::cast_precision_loss)]
+                d.mul_f64(batch_size as f64 / c as f64)
+            })
             .collect();
         times.sort_unstable();
 
@@ -230,9 +206,10 @@ impl Client {
         }
 
         info!(
-            "Selected upsert interval: {}",
+            "Selected upsert interval: {} duration={}",
             chrono::Duration::from_std(interval)
-                .map_or_else(|_| "???".into(), util::duration_hhmmssfff)
+                .map_or_else(|_| "???".into(), util::duration_hhmmssfff),
+            interval.as_secs_f64()
         );
 
         let elapsed = Local::now() - start;
@@ -380,7 +357,7 @@ impl Client {
 }
 
 async fn create_index(meili: MeiliClient, index_name: &str, primary_key: &str) -> Result<()> {
-    if let Ok(idx) = meili.get_index(index_name).await {
+    if let Ok(mut idx) = meili.get_index(index_name).await {
         ensure!(
             idx.get_primary_key()
                 .await

@@ -1,8 +1,8 @@
-use indexer_core::db::models;
+use indexer_core::{db::models, uuid::Uuid};
 use juniper::GraphQLUnion;
 use objects::{
-    bid_receipt::BidReceipt, graph_connection::GraphConnection, listing_receipt::ListingReceipt,
-    nft::Nft, profile::TwitterProfile, purchase_receipt::PurchaseReceipt, wallet::Wallet,
+    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase,
+    graph_connection::GraphConnection, nft::Nft, profile::TwitterProfile, wallet::Wallet,
 };
 
 use super::prelude::*;
@@ -62,6 +62,12 @@ impl FollowEvent {
             .await
             .map_err(Into::into)
     }
+
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -70,7 +76,7 @@ pub struct PurchaseEvent {
     feed_event_id: String,
     twitter_handle: Option<String>,
     wallet_address: PublicKey<Wallet>,
-    purchase_receipt_address: PublicKey<PurchaseReceipt>,
+    purchase_id: Uuid,
 }
 
 #[graphql_object(Context = AppContext)]
@@ -99,13 +105,19 @@ impl PurchaseEvent {
         &self.feed_event_id
     }
 
-    fn purchase_receipt_address(&self) -> &PublicKey<PurchaseReceipt> {
-        &self.purchase_receipt_address
+    fn purchase_id(&self) -> &Uuid {
+        &self.purchase_id
     }
 
-    pub async fn purchase(&self, ctx: &AppContext) -> FieldResult<Option<PurchaseReceipt>> {
-        ctx.purchase_receipt_loader
-            .load(self.purchase_receipt_address.clone())
+    pub async fn purchase(&self, ctx: &AppContext) -> FieldResult<Option<Purchase>> {
+        ctx.purchase_loader
+            .load(self.purchase_id)
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
             .await
             .map_err(Into::into)
     }
@@ -117,7 +129,7 @@ pub struct OfferEvent {
     feed_event_id: String,
     twitter_handle: Option<String>,
     wallet_address: PublicKey<Wallet>,
-    bid_receipt_address: PublicKey<BidReceipt>,
+    offer_id: Uuid,
     lifecycle: String,
 }
 
@@ -151,13 +163,19 @@ impl OfferEvent {
         &self.lifecycle
     }
 
-    fn bid_receipt_address(&self) -> &PublicKey<BidReceipt> {
-        &self.bid_receipt_address
+    fn offer_id(&self) -> &Uuid {
+        &self.offer_id
     }
 
-    pub async fn offer(&self, ctx: &AppContext) -> FieldResult<Option<BidReceipt>> {
-        ctx.bid_receipt_loader
-            .load(self.bid_receipt_address.clone())
+    pub async fn offer(&self, ctx: &AppContext) -> FieldResult<Option<Offer>> {
+        ctx.offer_loader
+            .load(self.offer_id)
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
             .await
             .map_err(Into::into)
     }
@@ -167,7 +185,7 @@ impl OfferEvent {
 pub struct ListingEvent {
     created_at: DateTime<Utc>,
     feed_event_id: String,
-    listing_receipt_address: PublicKey<ListingReceipt>,
+    listing_id: Uuid,
     twitter_handle: Option<String>,
     wallet_address: PublicKey<Wallet>,
     lifecycle: String,
@@ -203,13 +221,19 @@ impl ListingEvent {
         &self.lifecycle
     }
 
-    fn listing_receipt_address(&self) -> &PublicKey<ListingReceipt> {
-        &self.listing_receipt_address
+    fn listing_id(&self) -> &Uuid {
+        &self.listing_id
     }
 
-    pub async fn listing(&self, ctx: &AppContext) -> FieldResult<Option<ListingReceipt>> {
-        ctx.listing_receipt_loader
-            .load(self.listing_receipt_address.clone())
+    pub async fn listing(&self, ctx: &AppContext) -> FieldResult<Option<AhListing>> {
+        ctx.ah_listing_loader
+            .load(self.listing_id)
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
             .await
             .map_err(Into::into)
     }
@@ -251,6 +275,12 @@ impl MintEvent {
             .await
             .map_err(Into::into)
     }
+
+    pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
+        ctx.wallet(self.wallet_address.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 #[derive(derive_more::From, GraphQLUnion)]
@@ -279,19 +309,19 @@ impl TryFrom<models::CompleteFeedEvent> for FeedEvent {
             wallet_address,
             twitter_handle,
             metadata_address,
-            purchase_receipt_address,
-            bid_receipt_address,
+            purchase_id,
+            offer_id,
             offer_lifecycle,
-            listing_receipt_address,
+            listing_id,
             listing_lifecycle,
             graph_connection_address,
         }: models::CompleteFeedEvent,
     ) -> Result<Self, Self::Error> {
         match (
             metadata_address,
-            (bid_receipt_address, offer_lifecycle),
-            (listing_receipt_address, listing_lifecycle),
-            purchase_receipt_address,
+            (offer_id, offer_lifecycle),
+            (listing_id, listing_lifecycle),
+            purchase_id,
             graph_connection_address,
         ) {
             (Some(metadata_address), (None, None), (None, None), None, None) => {
@@ -303,31 +333,31 @@ impl TryFrom<models::CompleteFeedEvent> for FeedEvent {
                     wallet_address: wallet_address.into(),
                 }))
             },
-            (None, (Some(bid_receipt_address), Some(lifecycle)), (None, None), None, None) => {
+            (None, (Some(offer_id), Some(lifecycle)), (None, None), None, None) => {
                 Ok(Self::Offer(OfferEvent {
                     feed_event_id: id.to_string(),
                     created_at: DateTime::from_utc(created_at, Utc),
-                    bid_receipt_address: bid_receipt_address.into(),
+                    offer_id,
                     lifecycle: lifecycle.to_string(),
                     twitter_handle,
                     wallet_address: wallet_address.into(),
                 }))
             },
-            (None, (None, None), (Some(listing_receipt_address), Some(lifecycle)), None, None) => {
+            (None, (None, None), (Some(listing_id), Some(lifecycle)), None, None) => {
                 Ok(Self::Listing(ListingEvent {
                     feed_event_id: id.to_string(),
                     created_at: DateTime::from_utc(created_at, Utc),
-                    listing_receipt_address: listing_receipt_address.into(),
+                    listing_id,
                     lifecycle: lifecycle.to_string(),
                     twitter_handle,
                     wallet_address: wallet_address.into(),
                 }))
             },
-            (None, (None, None), (None, None), Some(purchase_receipt_address), None) => {
+            (None, (None, None), (None, None), Some(purchase_id), None) => {
                 Ok(Self::Purchase(PurchaseEvent {
                     feed_event_id: id.to_string(),
                     created_at: DateTime::from_utc(created_at, Utc),
-                    purchase_receipt_address: purchase_receipt_address.into(),
+                    purchase_id,
                     twitter_handle,
                     wallet_address: wallet_address.into(),
                 }))

@@ -30,6 +30,7 @@ enum GraphConnections {
     Table,
     ToAccount,
     FromAccount,
+    DisconnectedAt,
 }
 
 #[derive(Iden)]
@@ -42,7 +43,7 @@ enum MintEvents {
 #[derive(Iden)]
 enum OfferEvents {
     Table,
-    BidReceiptAddress,
+    OfferId,
     FeedEventId,
     Lifecycle,
 }
@@ -50,7 +51,7 @@ enum OfferEvents {
 #[derive(Iden)]
 enum ListingEvents {
     Table,
-    ListingReceiptAddress,
+    ListingId,
     FeedEventId,
     Lifecycle,
 }
@@ -58,7 +59,7 @@ enum ListingEvents {
 #[derive(Iden)]
 enum PurchaseEvents {
     Table,
-    PurchaseReceiptAddress,
+    PurchaseId,
     FeedEventId,
 }
 
@@ -103,9 +104,9 @@ pub enum EventType {
 #[allow(clippy::too_many_lines)]
 pub fn list(
     conn: &Connection,
-    wallet: String,
     limit: u64,
     offset: u64,
+    wallet: Option<String>,
     exclude_types: Option<Vec<EventType>>,
 ) -> Result<Vec<CompleteFeedEvent>> {
     let mut events_query = Query::select()
@@ -123,16 +124,13 @@ pub fn list(
             TwitterHandleNameServices::TwitterHandle,
         ))
         .column((MintEvents::Table, MintEvents::MetadataAddress))
-        .column((
-            PurchaseEvents::Table,
-            PurchaseEvents::PurchaseReceiptAddress,
-        ))
-        .column((OfferEvents::Table, OfferEvents::BidReceiptAddress))
+        .column((PurchaseEvents::Table, PurchaseEvents::PurchaseId))
+        .column((OfferEvents::Table, OfferEvents::OfferId))
         .expr_as(
             Expr::col((OfferEvents::Table, OfferEvents::Lifecycle)),
             Alias::new("offer_lifecycle"),
         )
-        .column((ListingEvents::Table, ListingEvents::ListingReceiptAddress))
+        .column((ListingEvents::Table, ListingEvents::ListingId))
         .expr_as(
             Expr::col((ListingEvents::Table, ListingEvents::Lifecycle)),
             Alias::new("listing_lifecycle"),
@@ -182,9 +180,18 @@ pub fn list(
             Expr::tbl(ListingEvents::Table, ListingEvents::FeedEventId)
                 .equals(FeedEvents::Table, FeedEvents::Id),
         )
-        .and_where(Expr::col((GraphConnections::Table, GraphConnections::FromAccount)).eq(wallet))
         .order_by(FeedEvents::CreatedAt, Order::Desc)
         .clone();
+
+    if let Some(wallet) = wallet {
+        events_query
+            .and_where(
+                Expr::col((GraphConnections::Table, GraphConnections::FromAccount)).eq(wallet),
+            )
+            .and_where(
+                Expr::col((GraphConnections::Table, GraphConnections::DisconnectedAt)).is_null(),
+            );
+    }
 
     if let Some(event_types) = exclude_types {
         for event_type in event_types {
@@ -193,22 +200,16 @@ pub fn list(
                     Expr::col((FollowEvents::Table, FollowEvents::GraphConnectionAddress))
                         .is_null(),
                 ),
-                EventType::Offer => events_query.and_where(
-                    Expr::col((OfferEvents::Table, OfferEvents::BidReceiptAddress)).is_null(),
-                ),
+                EventType::Offer => events_query
+                    .and_where(Expr::col((OfferEvents::Table, OfferEvents::OfferId)).is_null()),
                 EventType::Mint => events_query.and_where(
                     Expr::col((MintEvents::Table, MintEvents::MetadataAddress)).is_null(),
                 ),
                 EventType::Purchase => events_query.and_where(
-                    Expr::col((
-                        PurchaseEvents::Table,
-                        PurchaseEvents::PurchaseReceiptAddress,
-                    ))
-                    .is_null(),
+                    Expr::col((PurchaseEvents::Table, PurchaseEvents::PurchaseId)).is_null(),
                 ),
                 EventType::Listing => events_query.and_where(
-                    Expr::col((ListingEvents::Table, ListingEvents::ListingReceiptAddress))
-                        .is_null(),
+                    Expr::col((ListingEvents::Table, ListingEvents::ListingId)).is_null(),
                 ),
             };
         }
@@ -232,6 +233,138 @@ pub fn list(
     let events_query = events_query
         .with(with_clause)
         .to_string(PostgresQueryBuilder);
+
+    diesel::sql_query(events_query)
+        .load(conn)
+        .context("Failed to load feed events")
+}
+
+/// Return polymorphic list of feed events based on who the wallet is following
+///
+/// # Errors
+/// This function fails if the underlying query fails to execute.
+#[allow(clippy::too_many_lines)]
+pub fn list_relay(
+    conn: &Connection,
+    limit: u64,
+    is_forward: bool,
+    cursor: String,
+    wallet: Option<String>,
+    include_types: Option<Vec<EventType>>,
+) -> Result<Vec<CompleteFeedEvent>> {
+    let mut events_query = Query::select()
+        .distinct()
+        .columns(vec![
+            (FeedEvents::Table, FeedEvents::Id),
+            (FeedEvents::Table, FeedEvents::CreatedAt),
+        ])
+        .columns(vec![(
+            FeedEventWallets::Table,
+            FeedEventWallets::WalletAddress,
+        )])
+        .column((
+            TwitterHandleNameServices::Table,
+            TwitterHandleNameServices::TwitterHandle,
+        ))
+        .column((MintEvents::Table, MintEvents::MetadataAddress))
+        .column((PurchaseEvents::Table, PurchaseEvents::PurchaseId))
+        .column((OfferEvents::Table, OfferEvents::OfferId))
+        .expr_as(
+            Expr::col((OfferEvents::Table, OfferEvents::Lifecycle)),
+            Alias::new("offer_lifecycle"),
+        )
+        .column((ListingEvents::Table, ListingEvents::ListingId))
+        .expr_as(
+            Expr::col((ListingEvents::Table, ListingEvents::Lifecycle)),
+            Alias::new("listing_lifecycle"),
+        )
+        .column((FollowEvents::Table, FollowEvents::GraphConnectionAddress))
+        .from(FeedEvents::Table)
+        .inner_join(
+            FeedEventWallets::Table,
+            Expr::tbl(FeedEventWallets::Table, FeedEventWallets::FeedEventId)
+                .equals(FeedEvents::Table, FeedEvents::Id),
+        )
+        .inner_join(
+            GraphConnections::Table,
+            Expr::tbl(GraphConnections::Table, GraphConnections::ToAccount)
+                .equals(FeedEventWallets::Table, FeedEventWallets::WalletAddress),
+        )
+        .left_join(
+            TwitterHandleNameServices::Table,
+            Expr::tbl(
+                TwitterHandleNameServices::Table,
+                TwitterHandleNameServices::WalletAddress,
+            )
+            .equals(FeedEventWallets::Table, FeedEventWallets::WalletAddress),
+        )
+        .left_join(
+            FollowEvents::Table,
+            Expr::tbl(FollowEvents::Table, FollowEvents::FeedEventId)
+                .equals(FeedEvents::Table, FeedEvents::Id),
+        )
+        .left_join(
+            MintEvents::Table,
+            Expr::tbl(MintEvents::Table, MintEvents::FeedEventId)
+                .equals(FeedEvents::Table, FeedEvents::Id),
+        )
+        .left_join(
+            PurchaseEvents::Table,
+            Expr::tbl(PurchaseEvents::Table, PurchaseEvents::FeedEventId)
+                .equals(FeedEvents::Table, FeedEvents::Id),
+        )
+        .left_join(
+            OfferEvents::Table,
+            Expr::tbl(OfferEvents::Table, OfferEvents::FeedEventId)
+                .equals(FeedEvents::Table, FeedEvents::Id),
+        )
+        .left_join(
+            ListingEvents::Table,
+            Expr::tbl(ListingEvents::Table, ListingEvents::FeedEventId)
+                .equals(FeedEvents::Table, FeedEvents::Id),
+        )
+        .order_by(FeedEvents::CreatedAt, Order::Desc)
+        .clone();
+
+    if let Some(wallet) = wallet {
+        events_query.and_where(
+            Expr::col((GraphConnections::Table, GraphConnections::FromAccount)).eq(wallet),
+        );
+    }
+
+    if is_forward {
+        events_query.and_where(Expr::col((FeedEvents::Table, FeedEvents::CreatedAt)).gt(cursor));
+    } else {
+        events_query.and_where(Expr::col((FeedEvents::Table, FeedEvents::CreatedAt)).lt(cursor));
+    }
+
+    events_query.limit(limit);
+
+    if let Some(event_types) = include_types {
+        for event_type in event_types {
+            match event_type {
+                EventType::Follow => events_query.and_where(
+                    Expr::col((FollowEvents::Table, FollowEvents::GraphConnectionAddress))
+                        .is_not_null(),
+                ),
+                EventType::Offer => events_query
+                    .and_where(Expr::col((OfferEvents::Table, OfferEvents::OfferId)).is_not_null()),
+                EventType::Mint => events_query.and_where(
+                    Expr::col((MintEvents::Table, MintEvents::MetadataAddress)).is_not_null(),
+                ),
+                EventType::Purchase => events_query.and_where(
+                    Expr::col((PurchaseEvents::Table, PurchaseEvents::PurchaseId)).is_not_null(),
+                ),
+                EventType::Listing => events_query.and_where(
+                    Expr::col((ListingEvents::Table, ListingEvents::ListingId)).is_not_null(),
+                ),
+            };
+        }
+    }
+
+    events_query.order_by(FeedEvents::CreatedAt, Order::Desc);
+
+    let events_query = events_query.to_string(PostgresQueryBuilder);
 
     diesel::sql_query(events_query)
         .load(conn)

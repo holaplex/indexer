@@ -27,6 +27,8 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                     sample_metadatas.uri,
                     sample_metadatas.description,
                     sample_metadatas.image,
+                    sample_metadatas.animation_url,
+                    sample_metadatas.external_url,
                     sample_metadatas.category,
                     sample_metadatas.model
                 FROM store_creators
@@ -41,6 +43,8 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                         metadatas.uri AS uri,
                         metadata_jsons.description AS description,
                         metadata_jsons.image AS image,
+                        metadata_jsons.animation_url AS animation_url,
+                        metadata_jsons.external_url AS external_url,
                         metadata_jsons.category AS category,
                         metadata_jsons.model AS model,
                         store_creators.creator_address AS creator_address
@@ -69,6 +73,8 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                      uri,
                      description,
                      image,
+                     animation_url,
+                     external_url,
                      category,
                      model,
                  }| {
@@ -84,6 +90,8 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                             uri,
                             description,
                             image,
+                            animation_url,
+                            external_url,
                             category,
                             model,
                             slot: None,

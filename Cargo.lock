@@ -2868,7 +2868,6 @@ dependencies = [
  "anchor-lang 0.22.1",
  "anchor-lang 0.24.2",
  "async-trait",
- "base64 0.13.0",
  "borsh",
  "bs58 0.4.0",
  "cardinal-paid-claim-approver",
@@ -2954,7 +2953,6 @@ dependencies = [
  "actix-cors",
  "actix-web",
  "async-trait",
- "base64 0.13.0",
  "dataloader",
  "derive_more",
  "futures-util",
@@ -3246,6 +3244,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonwebtoken"
+version = "8.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1aa4b4af834c6cfd35d8763d359661b90f2e45d8f750a0849156c7f4671af09c"
+dependencies = [
+ "base64 0.13.0",
+ "ring",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "juniper"
 version = "0.15.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3503,15 +3513,16 @@ checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
 
 [[package]]
 name = "meilisearch-sdk"
-version = "0.15.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4eae404a5052ee03460ad87998e00cc78e5c68ec3eb23f673f1c13007d150697"
+checksum = "e980fc979f653877693451f5b31d065a6f607c45988ac117a8316c90f73c7cdc"
 dependencies = [
  "async-trait",
  "futures",
  "isahc",
  "iso8601-duration",
  "js-sys",
+ "jsonwebtoken",
  "log",
  "serde",
  "serde_json",
