@@ -114,10 +114,6 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
             ))
             .get_result::<bool>(db)?;
 
-            if purchase_exists {
-                return Ok(());
-            }
-
             let purchase_id = insert_into(purchases::table)
                 .values(&data)
                 .on_conflict(on_constraint("purchases_unique_fields"))
@@ -147,6 +143,10 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
             )
             .set(offers::purchase_id.eq(Some(purchase_id)))
             .execute(db)?;
+
+            if purchase_exists {
+                return Ok(());
+            }
 
             db.build_transaction().read_write().run(|| {
                 let feed_event_id = insert_into(feed_events::table)
