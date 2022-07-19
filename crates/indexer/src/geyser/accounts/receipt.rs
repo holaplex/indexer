@@ -52,10 +52,14 @@ pub(crate) async fn process_listing_receipt(
     client
         .db()
         .run(move |db| {
-            let listing_receipt_exists = select(exists(
-                listing_receipts::table.filter(listing_receipts::address.eq(row.address.clone())),
+            let listing_exists = select(exists(
+                listings::table.filter(
+                    listings::trade_state
+                        .eq(row.trade_state.clone())
+                        .and(listings::metadata.eq(row.metadata.clone())),
+                ),
             ))
-            .get_result::<bool>(db);
+            .get_result::<bool>(db)?;
 
             insert_into(listing_receipts::table)
                 .values(&row)
@@ -64,9 +68,6 @@ pub(crate) async fn process_listing_receipt(
                 .set(&row)
                 .execute(db)?;
 
-            if Ok(true) == listing_receipt_exists || row.purchase_receipt.is_some() {
-                return Ok(());
-            }
 
             let values = Listing {
                 id: None,
@@ -91,6 +92,10 @@ pub(crate) async fn process_listing_receipt(
                 .set(&values)
                 .returning(listings::id)
                 .get_result::<Uuid>(db)?;
+
+            if listing_exists || row.purchase_receipt.is_some() {
+                return Ok(());
+            }
 
             db.build_transaction().read_write().run(|| {
                 let feed_event_id = insert_into(feed_events::table)
@@ -150,14 +155,21 @@ pub(crate) async fn process_purchase_receipt(
         write_version: write_version.try_into()?,
     };
 
-    let purchase_receipt_exists = client
+    let purchase_exists = client
         .db()
         .run({
             let row = row.clone();
             move |db| {
-                let purchase_receipt_exists = select(exists(
-                    purchase_receipts::table
-                        .filter(purchase_receipts::address.eq(row.address.clone())),
+                let purchase_exists = select(exists(
+                    purchases::table.filter(
+                        purchases::buyer
+                            .eq(row.buyer.clone())
+                            .and(purchases::seller.eq(row.seller.clone()))
+                            .and(purchases::auction_house.eq(row.auction_house.clone()))
+                            .and(purchases::metadata.eq(row.metadata.clone()))
+                            .and(purchases::price.eq(row.price))
+                            .and(purchases::token_size.eq(row.token_size)),
+                    ),
                 ))
                 .get_result::<bool>(db)?;
 
@@ -168,17 +180,18 @@ pub(crate) async fn process_purchase_receipt(
                     .set(&row)
                     .execute(db)?;
 
-                Result::<bool>::Ok(purchase_receipt_exists)
+                Result::<bool>::Ok(purchase_exists)
             }
         })
         .await
         .context("failed to check if purchase receipt exists!")?;
 
-    if purchase_receipt_exists {
-        return Ok(());
-    }
 
     let purchase_id = upsert_into_purchases_table(client, row.clone()).await?;
+
+    if purchase_exists {
+        return Ok(());
+    }
 
     client
         .db()
@@ -252,13 +265,17 @@ pub(crate) async fn process_bid_receipt(
         write_version: write_version.try_into()?,
     };
 
-    let bid_receipt_exists = client
+    let offer_exists = client
         .db()
         .run({
             let row = row.clone();
             move |db| {
-                let bid_receipt_exists = select(exists(
-                    bid_receipts::table.filter(bid_receipts::address.eq(row.address.clone())),
+                let offer_exists = select(exists(
+                    offers::table.filter(
+                        offers::trade_state
+                            .eq(row.trade_state.clone())
+                            .and(offers::metadata.eq(row.metadata.clone())),
+                    ),
                 ))
                 .get_result::<bool>(db)?;
 
@@ -269,19 +286,19 @@ pub(crate) async fn process_bid_receipt(
                     .set(&row)
                     .execute(db)?;
 
-                Result::<bool>::Ok(bid_receipt_exists)
+                Result::<bool>::Ok(offer_exists)
             }
         })
         .await
         .context("failed to insert bid reciept")?;
 
-    if bid_receipt_exists || row.purchase_receipt.is_some() {
-        return Ok(());
-    }
-
     let offer_id = upsert_into_offers_table(client, row.clone())
         .await
         .context("failed to insert offer")?;
+
+    if offer_exists || row.purchase_receipt.is_some() {
+        return Ok(());
+    }
 
     let offer_event = client
         .db()
