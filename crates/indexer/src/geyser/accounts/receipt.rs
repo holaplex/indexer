@@ -79,7 +79,7 @@ pub(crate) async fn process_listing_receipt(
                 token_size: row.token_size,
                 trade_state_bump: row.trade_state_bump,
                 created_at: row.created_at,
-                canceled_at: None,
+                canceled_at: row.canceled_at,
                 slot: row.slot,
                 write_version: Some(row.write_version),
             };

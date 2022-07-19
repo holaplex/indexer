@@ -379,6 +379,7 @@ impl QueryRoot {
             && auction_houses.is_none()
             && offerers.is_none()
             && term.is_none()
+            && update_authorities.is_none()
         {
             return Err(FieldError::new(
                 "No filter provided! Please provide at least one of the following arguments",
@@ -388,7 +389,8 @@ impl QueryRoot {
                     "creators",
                     "auction_houses",
                     "offerers",
-                    "term"
+                    "term",
+                    "update_authorities"
                 ]),
             ));
         }
