@@ -1,13 +1,13 @@
-insert into purchases (buyer, seller, auction_house, metadata, token_size, price, created_at)
-select buyer, seller, auction_house, metadata, token_size, price, created_at
+insert into purchases (buyer, seller, auction_house, metadata, token_size, price, created_at, slot, write_version)
+select buyer, seller, auction_house, metadata, token_size, price, created_at, slot, write_version
 from purchase_receipts;
 
-insert into offers (trade_state, auction_house, buyer, metadata, token_account, price, token_size, trade_state_bump, created_at, canceled_at)
-select trade_state, auction_house, buyer, metadata, token_account, price, token_size, trade_state_bump, created_at, canceled_at
+insert into offers (trade_state, auction_house, buyer, metadata, token_account, price, token_size, trade_state_bump, created_at, canceled_at, slot, write_version)
+select trade_state, auction_house, buyer, metadata, token_account, price, token_size, trade_state_bump, created_at, canceled_at, slot, write_version
 from bid_receipts;
 
-insert into listings (trade_state, auction_house, seller, metadata, price, token_size, trade_state_bump, created_at, canceled_at)
-select trade_state, auction_house, seller, metadata, price, token_size, trade_state_bump, created_at, canceled_at
+insert into listings (trade_state, auction_house, seller, metadata, price, token_size, trade_state_bump, created_at, canceled_at, slot, write_version)
+select trade_state, auction_house, seller, metadata, price, token_size, trade_state_bump, created_at, canceled_at, slot, write_version
 from listing_receipts;
 
 update offers
