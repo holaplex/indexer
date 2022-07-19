@@ -68,7 +68,6 @@ pub(crate) async fn process_listing_receipt(
                 .set(&row)
                 .execute(db)?;
 
-
             let values = Listing {
                 id: None,
                 trade_state: row.trade_state.clone(),
@@ -185,7 +184,6 @@ pub(crate) async fn process_purchase_receipt(
         })
         .await
         .context("failed to check if purchase receipt exists!")?;
-
 
     let purchase_id = upsert_into_purchases_table(client, row.clone()).await?;
 
