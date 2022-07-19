@@ -397,7 +397,7 @@ const ACTIVITES_QUERY: &str = r"
     array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
     'listing' as activity_type
         FROM listings
-        LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listing_receipts.seller)
+        LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
         WHERE metadata = ANY($1)
     UNION
     SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at,
