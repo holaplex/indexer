@@ -216,7 +216,7 @@ pub struct Storefront<'a> {
     pub address: Cow<'a, str>,
 }
 
-/// Join of `metadatas` and `metadata_jsons` for an NFT
+/// Join of `metadatas`, `metadata_jsons` and `current_metadata_owners`  for an NFT
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct Nft {
     // Table metadata
@@ -277,6 +277,11 @@ pub struct Nft {
     /// Hint for what model the indexer parsed this NFT with
     #[sql_type = "Nullable<Text>"]
     pub model: Option<String>,
+
+    // Table Current metadata owners
+    /// TOken account address
+    #[sql_type = "Text"]
+    pub token_account_address: String,
 }
 
 /// Union of `listings` and `purchases` for an `NFTActivity`
@@ -315,7 +320,7 @@ pub struct NftActivity {
     pub activity_type: String,
 }
 
-/// Join of `metadatas` `metadata_jsons` `store_creators` for an collection preview
+/// Join of `metadatas` `metadata_jsons` `store_creators` `current_metadata_owners` for an collection preview
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct SampleNft {
     // Table store_creators
@@ -377,6 +382,11 @@ pub struct SampleNft {
     /// Hint for what model the indexer parsed this NFT with
     #[sql_type = "Nullable<Text>"]
     pub model: Option<String>,
+
+    // Table Current metadata owners
+    /// TOken account address
+    #[sql_type = "Text"]
+    pub token_account_address: String,
 }
 
 /// Join record for the RPC getListings query
