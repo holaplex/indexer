@@ -71,7 +71,7 @@ pub(crate) async fn process(
     let write_version =
         i64::try_from(write_version).context("Write version was too big to store")?;
 
-    let [ref _a, ref _b] = habitat.sub_habitats; // Sanity check
+    let _: [_; 2] = habitat.sub_habitats; // Sanity check
 
     let row = models::GenoHabitatData {
         address: Owned(addr.clone()),

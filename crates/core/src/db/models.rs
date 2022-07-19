@@ -2493,7 +2493,7 @@ pub struct GenoHabitatData<'a> {
 #[diesel(treat_none_as_null = true)]
 #[allow(missing_docs)]
 pub struct GenoRentalAgreement<'a> {
-    /// The address of the [`HabitatData`] this rental agreement belongs to
+    /// The address of the `HabitatData` this rental agreement belongs to
     pub habitat_address: Cow<'a, str>,
     pub alchemist: Option<Cow<'a, str>>,
     pub rental_period: i64,
