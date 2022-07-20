@@ -23,8 +23,8 @@ use objects::{
 use scalars::PublicKey;
 use serde_json::Value;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, bid_receipts, graph_connections,
-    metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
+    auction_caches, auction_datas, auction_datas_ext, bid_receipts, current_metadata_owners,
+    graph_connections, metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
 };
 
 use super::{enums::OrderDirection, prelude::*};
@@ -574,6 +574,10 @@ impl QueryRoot {
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+            )
             .filter(metadatas::address.eq(address))
             .select(queries::metadatas::NFT_COLUMNS)
             .first::<models::Nft>(&conn)
@@ -595,6 +599,10 @@ impl QueryRoot {
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+            )
             .filter(metadatas::mint_address.eq(address))
             .select(queries::metadatas::NFT_COLUMNS)
             .first::<models::Nft>(&conn)
@@ -615,6 +623,10 @@ impl QueryRoot {
         let rows: Vec<models::Nft> = metadatas::table
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
             )
             .filter(metadatas::mint_address.eq(any(addresses)))
             .select(queries::metadatas::NFT_COLUMNS)
