@@ -302,7 +302,7 @@ impl NftActivity {
 
 #[graphql_interface(for = [Nft])]
 #[async_trait]
-trait NftTraits {
+pub trait NftTraits {
     
     fn address(&self) -> &str;
     fn name(&self) -> &str;
@@ -584,7 +584,7 @@ impl NftTraits for Nft {
 
 
 #[graphql_interface(for = CollectionNft)]
-trait CollectionNftTraits {
+pub trait CollectionNftTraits {
     fn nft_count(&self, context: &AppContext) -> FieldResult<i32>;
 
     //TODO floor price
