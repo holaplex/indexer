@@ -31,6 +31,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                     sample_metadatas.external_url,
                     sample_metadatas.category,
                     sample_metadatas.model
+                    sample_metadatas.token_account_address
                 FROM store_creators
                 JOIN LATERAL (
                     SELECT
@@ -51,6 +52,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                     FROM metadatas
                     INNER JOIN metadata_jsons ON (metadatas.address = metadata_jsons.metadata_address)
                     INNER JOIN metadata_creators ON (metadatas.address = metadata_creators.metadata_address)
+                    INNER JOIN current_metadata_owners on (metadatas.address = current_metadata_owners.mint_address)
                     WHERE metadata_creators.creator_address = store_creators.creator_address
                     LIMIT 3
                 ) AS sample_metadatas ON true
@@ -68,6 +70,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                      name,
                      seller_fee_basis_points,
                      mint_address,
+                     token_account_address,
                      primary_sale_happened,
                      update_authority_address,
                      uri,
@@ -85,6 +88,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                             name,
                             seller_fee_basis_points,
                             mint_address,
+                            token_account_address,
                             primary_sale_happened,
                             update_authority_address,
                             uri,

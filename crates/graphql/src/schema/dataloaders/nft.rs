@@ -45,6 +45,10 @@ impl TryBatchFn<PublicKey<Nft>, Option<CollectionNft>> for Batcher {
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+            )
+            .inner_join(
                 metadata_collection_keys::table
                     .on(metadata_collection_keys::collection_address.eq(metadatas::mint_address)),
             )
@@ -231,6 +235,10 @@ impl TryBatchFn<PublicKey<Nft>, Option<Nft>> for Batcher {
         let rows: Vec<models::Nft> = metadatas::table
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
             )
             .filter(metadatas::address.eq(any(addresses)))
             .select(queries::metadatas::NFT_COLUMNS)

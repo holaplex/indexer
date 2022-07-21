@@ -12,7 +12,7 @@ use sea_query::{
 use crate::{
     db::{
         models::{Nft, NftActivity},
-        tables::{metadata_jsons, metadatas},
+        tables::{current_metadata_owners, metadata_jsons, metadatas},
         Connection,
     },
     error::prelude::*,
@@ -58,6 +58,7 @@ enum CurrentMetadataOwners {
     Table,
     OwnerAddress,
     MintAddress,
+    TokenAccountAddress,
 }
 
 #[derive(Iden)]
@@ -151,6 +152,7 @@ pub type NftColumns = (
     metadata_jsons::external_url,
     metadata_jsons::category,
     metadata_jsons::model,
+    current_metadata_owners::token_account_address,
 );
 
 /// The column set for an NFT
@@ -169,6 +171,7 @@ pub const NFT_COLUMNS: NftColumns = (
     metadata_jsons::external_url,
     metadata_jsons::category,
     metadata_jsons::model,
+    current_metadata_owners::token_account_address,
 );
 
 /// Handles queries for NFTs
@@ -232,6 +235,10 @@ pub fn list(
             (MetadataJsons::Table, MetadataJsons::Category),
             (MetadataJsons::Table, MetadataJsons::Model),
         ])
+        .columns(vec![(
+            CurrentMetadataOwners::Table,
+            CurrentMetadataOwners::TokenAccountAddress,
+        )])
         .from(MetadataJsons::Table)
         .inner_join(
             Metadatas::Table,
