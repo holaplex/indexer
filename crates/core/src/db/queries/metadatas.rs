@@ -415,6 +415,14 @@ const ACTIVITES_QUERY: &str = r"
         LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchases.seller)
         LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
         WHERE metadata = ANY($1)
+    UNION
+    SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at,
+    array[buyer] as wallets,
+    array[bth.twitter_handle] as wallet_twitter_handles,
+    'offer' as activity_type
+        FROM offers
+        LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = offers.buyer)
+        WHERE metadata = ANY($1)
     ORDER BY created_at DESC;
  -- $1: addresses::text[]";
 
