@@ -423,6 +423,7 @@ const ACTIVITES_QUERY: &str = r"
         FROM offers
         LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = offers.buyer)
         WHERE metadata = ANY($1)
+        AND offers.purchase_id IS NULL
     ORDER BY created_at DESC;
  -- $1: addresses::text[]";
 
