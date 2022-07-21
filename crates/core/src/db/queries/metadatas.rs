@@ -32,6 +32,7 @@ enum Metadatas {
     Table,
     Address,
     Name,
+    Symbol,
     MintAddress,
     PrimarySaleHappened,
     SellerFeeBasisPoints,
@@ -140,6 +141,7 @@ pub struct ListQueryOptions {
 pub type NftColumns = (
     metadatas::address,
     metadatas::name,
+    metadatas::symbol,
     metadatas::seller_fee_basis_points,
     metadatas::mint_address,
     metadatas::primary_sale_happened,
@@ -159,6 +161,7 @@ pub type NftColumns = (
 pub const NFT_COLUMNS: NftColumns = (
     metadatas::address,
     metadatas::name,
+    metadatas::symbol,
     metadatas::seller_fee_basis_points,
     metadatas::mint_address,
     metadatas::primary_sale_happened,
@@ -220,6 +223,7 @@ pub fn list(
         .columns(vec![
             (Metadatas::Table, Metadatas::Address),
             (Metadatas::Table, Metadatas::Name),
+            (Metadatas::Table, Metadatas::Symbol),
             (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
             (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
             (Metadatas::Table, Metadatas::MintAddress),

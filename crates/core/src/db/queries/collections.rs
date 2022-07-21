@@ -59,6 +59,7 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
         ) SELECT
             metadatas.address,
             metadatas.name,
+            metadatas.symbol,
             metadatas.seller_fee_basis_points,
             metadatas.update_authority_address,
             metadatas.mint_address,
@@ -145,6 +146,7 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
         SELECT
             metadatas.address,
             metadatas.name,
+            metadatas.symbol,
             metadatas.seller_fee_basis_points,
             metadatas.update_authority_address,
             metadatas.mint_address,

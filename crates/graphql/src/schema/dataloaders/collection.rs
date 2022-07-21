@@ -20,6 +20,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                     sample_metadatas.creator_address,
                     sample_metadatas.address,
                     sample_metadatas.name,
+                    sample_metadatas.symbol,
                     sample_metadatas.seller_fee_basis_points,
                     sample_metadatas.mint_address,
                     sample_metadatas.primary_sale_happened,
@@ -37,6 +38,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                     SELECT
                         metadatas.address AS address,
                         metadatas.name AS name,
+                        metadatas.symbol AS symbol,
                         metadatas.seller_fee_basis_points AS seller_fee_basis_points,
                         metadatas.mint_address AS mint_address,
                         metadatas.primary_sale_happened AS primary_sale_happened,
@@ -68,6 +70,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                      creator_address,
                      address,
                      name,
+                     symbol,
                      seller_fee_basis_points,
                      mint_address,
                      token_account_address,
@@ -86,6 +89,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                         models::Nft {
                             address,
                             name,
+                            symbol,
                             seller_fee_basis_points,
                             mint_address,
                             token_account_address,
