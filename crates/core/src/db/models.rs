@@ -228,7 +228,7 @@ pub struct Nft {
     #[sql_type = "Text"]
     pub name: String,
 
-    /// The name of this item
+    /// The symbol of this item
     #[sql_type = "Text"]
     pub symbol: String,
 
@@ -341,7 +341,7 @@ pub struct SampleNft {
     #[sql_type = "Text"]
     pub name: String,
 
-    /// The name of this item
+    /// The symbol of this item
     #[sql_type = "Text"]
     pub symbol: String,
 
