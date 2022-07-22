@@ -10,6 +10,7 @@ pub struct Purchase {
     pub buyer: PublicKey<Wallet>,
     pub seller: PublicKey<Wallet>,
     pub auction_house: PublicKey<AuctionHouse>,
+    pub marketplace_address: String,
     pub metadata: PublicKey<Nft>,
     pub token_size: i32,
     pub price: U64,
@@ -33,6 +34,10 @@ impl Purchase {
 
     fn metadata(&self) -> &PublicKey<Nft> {
         &self.metadata
+    }
+
+    fn marketplace_address(&self) -> &str {
+        &self.marketplace_address
     }
 
     fn price(&self) -> U64 {
@@ -83,6 +88,7 @@ impl<'a> TryFrom<models::Purchase<'a>> for Purchase {
             buyer: buyer.into_owned().into(),
             seller: seller.into_owned().into(),
             metadata: metadata.into_owned().into(),
+            marketplace_address: auction_house.to_string(),
             price: price.try_into()?,
             auction_house: auction_house.into_owned().into(),
             created_at: DateTime::from_utc(created_at, Utc),
