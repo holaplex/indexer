@@ -111,6 +111,7 @@ spl-token-bonding = { package = "spl-token-bonding", version = "3.2.5", features
 [dependencies.mpl-metaplex]
 git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
 rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
+features = ["no-entrypoint"]
 
 [dependencies.graph_program]
 git = "https://github.com/holaplex/graph-program.git"
@@ -122,6 +123,12 @@ git = "https://github.com/holaplex/indexer-geyser-plugin"
 tag = "v0.4.0"
 
 # Workspace dependencies
+[dependencies.genostub]
+package = "genostub"
+version = "=0.1.0"
+path = "../genostub"
+optional = true
+
 [dependencies.indexer-core]
 package = "holaplex-indexer-core"
 version = "=0.1.0"

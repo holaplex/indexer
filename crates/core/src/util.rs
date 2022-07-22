@@ -33,9 +33,20 @@ pub fn duration_hhmmssfff(duration: chrono::Duration) -> String {
 /// # Errors
 /// This function returns an error if the conversion would result in a numerical
 /// overflow.
+#[inline]
 pub fn unix_timestamp(utc: i64) -> Result<NaiveDateTime> {
     NaiveDateTime::from_timestamp_opt(utc, 0)
         .ok_or_else(|| anyhow!("Timestamp was too big to store"))
+}
+
+/// Convert an unsigned UNIX timestamp in seconds into a UTC [`NaiveDateTime`].
+///
+/// # Errors
+/// This function returns an error if the conversion would result in a numerical
+/// overflow.
+#[inline]
+pub fn unix_timestamp_unsigned(utc: u64) -> Result<NaiveDateTime> {
+    unix_timestamp(utc.try_into().context("Raw timestamp overflowed i64")?)
 }
 
 /// Returns a tuple of `(ends_at, ended)`
