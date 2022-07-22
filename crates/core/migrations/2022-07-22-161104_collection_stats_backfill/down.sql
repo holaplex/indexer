@@ -1,0 +1,1 @@
+truncate collection_stats;
