@@ -673,6 +673,7 @@ table! {
         sequence -> Int8,
         guild -> Nullable<Int4>,
         sub_habitat_cooldown_timestamp -> Timestamp,
+        harvester_settings_cooldown_timestamp -> Timestamp,
         slot -> Int8,
         write_version -> Int8,
     }

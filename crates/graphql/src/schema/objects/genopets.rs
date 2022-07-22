@@ -33,6 +33,7 @@ pub struct GenoHabitat {
     pub sequence: I64,
     pub guild: Option<i32>,
     pub sub_habitat_cooldown_timestamp: DateTime<Utc>,
+    pub harvester_settings_cooldown_timestamp: DateTime<Utc>,
 }
 
 #[graphql_object(Context = AppContext)]
@@ -141,6 +142,10 @@ impl GenoHabitat {
         &self.sub_habitat_cooldown_timestamp
     }
 
+    pub fn harvester_settings_cooldown_timestamp(&self) -> &DateTime<Utc> {
+        &self.harvester_settings_cooldown_timestamp
+    }
+
     pub async fn rental_agreement(
         &self,
         ctx: &AppContext,
@@ -182,6 +187,7 @@ impl<'a> From<models::GenoHabitatData<'a>> for GenoHabitat {
             sequence,
             guild,
             sub_habitat_cooldown_timestamp,
+            harvester_settings_cooldown_timestamp,
             slot: _,
             write_version: _,
         }: models::GenoHabitatData,
@@ -217,6 +223,10 @@ impl<'a> From<models::GenoHabitatData<'a>> for GenoHabitat {
             sequence: sequence.into(),
             guild,
             sub_habitat_cooldown_timestamp: DateTime::from_utc(sub_habitat_cooldown_timestamp, Utc),
+            harvester_settings_cooldown_timestamp: DateTime::from_utc(
+                harvester_settings_cooldown_timestamp,
+                Utc,
+            ),
         }
     }
 }

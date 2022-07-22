@@ -122,6 +122,10 @@ pub(crate) async fn process(
             habitat.sub_habitat_cooldown_timestamp,
         )
         .context("Failed to convert sub-habitat cooldown timestamp")?,
+        harvester_settings_cooldown_timestamp: util::unix_timestamp_unsigned(
+            habitat.harvester_settings_cooldown_timestamp,
+        )
+        .context("Failed to convert harvester settings cooldown timestamp")?,
         slot,
         write_version,
     };

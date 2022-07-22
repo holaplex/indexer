@@ -2482,6 +2482,7 @@ pub struct GenoHabitatData<'a> {
     pub sequence: i64,
     pub guild: Option<i32>,
     pub sub_habitat_cooldown_timestamp: NaiveDateTime,
+    pub harvester_settings_cooldown_timestamp: NaiveDateTime,
     /// The slot number of this account's last known update
     pub slot: i64,
     /// The write version of this account's last known update

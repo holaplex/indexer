@@ -52,4 +52,5 @@ pub struct HabitatData {
     pub sequence: u64,
     pub guild: Option<u16>,
     pub sub_habitat_cooldown_timestamp: u64,
+    pub harvester_settings_cooldown_timestamp: u64,
 }
