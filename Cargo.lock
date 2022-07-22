@@ -2930,6 +2930,7 @@ dependencies = [
  "diesel_migrations",
  "dotenv",
  "env_logger",
+ "lazy_static",
  "log",
  "md5",
  "meilisearch-sdk",
