@@ -1,8 +1,9 @@
+use async_trait::async_trait;
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     db::{
         queries,
-        tables::{bid_receipts, listing_receipts, metadata_jsons},
+        tables::{bid_receipts, listing_receipts, metadata_jsons, metadata_collection_keys},
     },
     util::unix_timestamp,
     uuid::Uuid,
@@ -14,6 +15,7 @@ use objects::{
 use reqwest::Url;
 use scalars::{PublicKey, U64};
 use serde_json::Value;
+use juniper::graphql_interface;
 
 use super::prelude::*;
 
@@ -290,8 +292,55 @@ impl NftActivity {
     }
 }
 
-#[derive(Debug, Clone)]
+
+#[graphql_interface(for = [Nft])]
+#[async_trait]
+pub trait NftTraits {
+    
+    fn address(&self) -> &str;
+    fn name(&self) -> &str;
+    fn seller_fee_basis_points(&self) -> i32;
+    fn mint_address(&self) -> &str;
+    fn token_account_address(&self) -> &str;
+    fn primary_sale_happened(&self) -> bool;
+    fn update_authority_address(&self) -> &str;
+    fn uri(&self) -> &str;
+    fn description(&self) -> &str;
+    fn animation_url(&self) -> Option<&str>;
+    fn external_url(&self) -> Option<&str>;
+    fn category(&self) -> &str;
+    fn model(&self) -> Option<String>;
+    fn slot(&self) -> Option<i32>;
+    
+    // #[graphql(arguments(width(description = r"Image width possible values are:
+    // - 0 (Original size)
+    // - 100 (Tiny)
+    // - 400 (XSmall)
+    // - 600 (Small)
+    // - 800 (Medium)
+    // - 1400 (Large)
+    
+    // Any other value will return the original image size.
+    
+    // If no value is provided, it will return XSmall")))]
+    fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String>;
+    async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>>;
+    async fn attributes(&self, ctx: &AppContext) -> FieldResult<Vec<NftAttribute>>;
+    async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>>;
+    async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>>;
+    async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>>;
+    async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<Purchase>>;
+    async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<Offer>>;
+    async fn files(&self, ctx: &AppContext) -> FieldResult<Vec<NftFile>>;
+    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNft>>;
+    async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>>;
+
+    fn parser(&self) -> Option<&str>;
+}
+
 /// An NFT
+#[derive(Debug, Clone, GraphQLObject)]
+#[graphql(impl = NftTraitsValue, Context = AppContext)] 
 pub struct Nft {
     pub address: String,
     pub name: String,
@@ -352,42 +401,66 @@ impl TryFrom<models::Nft> for Nft {
     }
 }
 
-#[graphql_object(Context = AppContext)]
-impl Nft {
-    pub fn address(&self) -> &str {
+
+#[async_trait]
+impl NftTraits for Nft {
+    fn uri(&self) -> &str {
+        &self.uri
+    }
+
+    fn slot(&self) -> Option<i32> {
+        self.slot
+    }
+
+    fn model(&self) -> Option<String> {
+        match &self.model {
+            Some(m) => return Some(m.to_string()),
+            _ => None,
+        }
+    }
+
+    fn address(&self) -> &str {
         &self.address
     }
 
-    pub fn name(&self) -> &str {
+    fn name(&self) -> &str {
         &self.name
     }
 
-    pub fn seller_fee_basis_points(&self) -> i32 {
+    fn seller_fee_basis_points(&self) -> i32 {
         self.seller_fee_basis_points
     }
 
-    pub fn mint_address(&self) -> &str {
+    fn mint_address(&self) -> &str {
         &self.mint_address
     }
 
-    pub fn token_account_address(&self) -> &str {
+    fn token_account_address(&self) -> &str {
         &self.token_account_address
     }
 
-    pub fn primary_sale_happened(&self) -> bool {
+    fn primary_sale_happened(&self) -> bool {
         self.primary_sale_happened
     }
 
-    pub fn update_authority_address(&self) -> &str {
+    fn update_authority_address(&self) -> &str {
         &self.update_authority_address
     }
 
-    pub fn description(&self) -> &str {
+    fn description(&self) -> &str {
         &self.description
     }
 
-    pub fn category(&self) -> &str {
+    fn category(&self) -> &str {
         &self.category
+    }
+
+    fn animation_url(&self) -> Option<&str> {
+        self.animation_url.as_deref()
+    }
+
+    fn external_url(&self) -> Option<&str> {
+        self.external_url.as_deref()
     }
 
     /// The JSON parser with which the NFT was processed by the indexer
@@ -397,22 +470,11 @@ impl Nft {
     /// - `"minimal"` (provided with an optional description of an error)
     ///   indicates the full model failed to parse and a more lenient fallback
     ///   parser with fewer fields was used instead.
-    pub fn parser(&self) -> Option<&str> {
+    fn parser(&self) -> Option<&str> {
         self.model.as_deref()
     }
 
-    #[graphql(arguments(width(description = r"Image width possible values are:
-- 0 (Original size)
-- 100 (Tiny)
-- 400 (XSmall)
-- 600 (Small)
-- 800 (Medium)
-- 1400 (Large)
-
-Any other value will return the original image size.
-
-If no value is provided, it will return XSmall")))]
-    pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
+    fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
         let url = Url::parse(&self.image);
         let id = if let Ok(ref url) = url {
             AssetIdentifier::new(url)
@@ -429,78 +491,70 @@ If no value is provided, it will return XSmall")))]
         )
     }
 
-    pub fn animation_url(&self) -> Option<&str> {
-        self.animation_url.as_deref()
-    }
-
-    pub fn external_url(&self) -> Option<&str> {
-        self.external_url.as_deref()
-    }
-
-    pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
+    async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
         ctx.nft_creators_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn attributes(&self, ctx: &AppContext) -> FieldResult<Vec<NftAttribute>> {
+    async fn attributes(&self, ctx: &AppContext) -> FieldResult<Vec<NftAttribute>> {
         ctx.nft_attributes_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>> {
+    async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>> {
         ctx.nft_owner_loader
             .load(self.mint_address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
+    async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
         ctx.nft_activities_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>> {
+    async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>> {
         ctx.ah_listings_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<Purchase>> {
+    async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<Purchase>> {
         ctx.purchases_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<Offer>> {
+    async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<Offer>> {
         ctx.offers_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn files(&self, ctx: &AppContext) -> FieldResult<Vec<NftFile>> {
+    async fn files(&self, ctx: &AppContext) -> FieldResult<Vec<NftFile>> {
         ctx.nft_files_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNft>> {
+    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNft>> {
         ctx.nft_collection_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
-    pub async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
+    async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
         if let Some(slot) = self.slot {
             let shared = ctx.shared.clone();
 
@@ -521,14 +575,170 @@ If no value is provided, it will return XSmall")))]
     }
 }
 
-#[derive(Debug, Clone)]
+
+#[graphql_interface(for = CollectionNft)]
+pub trait CollectionNftTraits: NftTraits {
+    fn nft_count(&self, context: &AppContext) -> FieldResult<i32>;
+    
+    //TODO floor price
+}
+
 pub struct CollectionNft(Nft);
+
+
+impl NftTraits for CollectionNftTraitsValue {
+    //TODO what to put here?
+}
+
+
+impl CollectionNftTraits for CollectionNft {
+    fn nft_count(&self, context: &AppContext) -> FieldResult<i32> {
+        let conn = context.shared.db.get()?;
+
+        let count: i64 = metadata_collection_keys::table.filter(metadata_collection_keys::collection_address.eq(&self.0.mint_address))
+            .count()
+            .get_result(&conn)
+            .context("failed to load NFT count")?;
+
+        Ok(count.try_into()?)
+    }
+}
+
+
+#[async_trait]
+impl NftTraits for CollectionNft {
+    fn uri(&self) -> &str {
+        self.0.uri()
+    }
+
+    fn slot(&self) -> Option<i32> {
+        self.0.slot()
+    }
+
+    fn model(&self) -> Option<String> {
+        self.0.model()
+    }
+
+    fn address(&self) -> &str {
+        self.0.address()
+    }
+
+    fn name(&self) -> &str {
+        self.0.name()
+    }
+
+    fn seller_fee_basis_points(&self) -> i32 {
+        self.0.seller_fee_basis_points()
+    }
+
+    fn mint_address(&self) -> &str {
+        &self.0.mint_address()
+    }
+
+    fn token_account_address(&self) -> &str {
+        self.0.token_account_address()
+    }
+
+    fn primary_sale_happened(&self) -> bool {
+        self.0.primary_sale_happened()
+    }
+
+    fn update_authority_address(&self) -> &str {
+        self.0.update_authority_address()
+    }
+
+    fn description(&self) -> &str {
+        self.0.description()
+    }
+
+    fn category(&self) -> &str {
+        self.0.category()
+    }
+
+    fn animation_url(&self) -> Option<&str> {
+        self.0.animation_url()
+    }
+
+    fn external_url(&self) -> Option<&str> {
+        self.0.external_url()
+    }
+
+    /// The JSON parser with which the NFT was processed by the indexer
+    ///
+    /// - `"full"` indicates the full Metaplex standard-compliant parser was
+    ///   used.
+    /// - `"minimal"` (provided with an optional description of an error)
+    ///   indicates the full model failed to parse and a more lenient fallback
+    ///   parser with fewer fields was used instead.
+    fn parser(&self) -> Option<&str> {
+        self.0.parser()
+    }
+
+    fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
+        self.0.image(width, ctx)
+    }
+
+    async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
+        self.0.creators(ctx).await
+    }
+
+    async fn attributes(&self, ctx: &AppContext) -> FieldResult<Vec<NftAttribute>> {
+        self.0.attributes(ctx).await
+    }
+
+    async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>> {
+        self.0.owner(ctx).await
+    }
+
+    async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
+        self.0.activities(ctx).await
+    }
+
+    async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>> {
+        self.0.listings(ctx).await
+    }
+
+    async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<Purchase>> {
+        self.0.purchases(ctx).await
+    }
+
+    async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<Offer>> {
+        self.0.offers(ctx).await
+    }
+
+    async fn files(&self, ctx: &AppContext) -> FieldResult<Vec<NftFile>> {
+        self.0.files(ctx).await
+    }
+
+    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNft>> {
+        self.0.collection(ctx).await
+    }
+
+    async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
+        self.0.created_at(ctx).await
+    }
+}
+
 
 impl TryFrom<models::Nft> for CollectionNft {
     type Error = <Nft as TryFrom<models::Nft>>::Error;
 
     fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
         value.try_into().map(Self)
+    }
+}
+
+impl TryFrom<models::Nft> for CollectionNftTraitsValue {
+    type Error = <Nft as TryFrom<models::Nft>>::Error;
+
+    fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
+        value.try_into().map(CollectionNftTraitsValue::CollectionNft)
+    }
+}
+
+impl Clone for CollectionNft {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
     }
 }
 
