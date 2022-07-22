@@ -70,11 +70,12 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
             metadata_jsons.animation_url,
             metadata_jsons.external_url,
             metadata_jsons.category,
-            metadata_jsons.model
-        FROM metadata_jsons, volume_table, metadatas
-        WHERE
-            volume_table.collection = metadatas.mint_address
-            AND metadatas.address = metadata_jsons.metadata_address
+            metadata_jsons.model,
+            current_metadata_owners.token_account_address
+        FROM metadatas
+        INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
+        INNER JOIN volume_table ON (volume_table.collection = metadatas.mint_address)
+        INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address)
     -- $1: addresses::text[]
     -- $2: start date::timestamp
     -- $3: end date::timestamp
@@ -155,10 +156,12 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
             metadata_jsons.animation_url,
             metadata_jsons.external_url,
             metadata_jsons.category,
-            metadata_jsons.model
+            metadata_jsons.model,
+            current_metadata_owners.token_account_address
         FROM metadatas
         INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
         INNER JOIN market_cap_table ON (market_cap_table.collection = metadatas.mint_address)
+        INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address)
     -- $1: addresses::text[]
     -- $2: start date::timestamp
     -- $3: end date::timestamp
