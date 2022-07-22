@@ -30,7 +30,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                     sample_metadatas.animation_url,
                     sample_metadatas.external_url,
                     sample_metadatas.category,
-                    sample_metadatas.model
+                    sample_metadatas.model,
                     sample_metadatas.token_account_address
                 FROM store_creators
                 JOIN LATERAL (
@@ -41,6 +41,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                         metadatas.mint_address AS mint_address,
                         metadatas.primary_sale_happened AS primary_sale_happened,
                         metadatas.update_authority_address AS update_authority_address,
+                        current_metadata_owners.token_account_address AS token_account_address,
                         metadatas.uri AS uri,
                         metadata_jsons.description AS description,
                         metadata_jsons.image AS image,
