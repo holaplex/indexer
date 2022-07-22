@@ -344,6 +344,7 @@ impl QueryRoot {
         >,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
         #[graphql(description = "Filter only listed NFTs")] listed: Option<bool>,
+        #[graphql(description = "Allow unverified NFTs")] allow_unverified: Option<bool>,
         #[graphql(
             description = "Filter only NFTs with active offers; rejected if flag is 'false'"
         )]
@@ -437,6 +438,7 @@ impl QueryRoot {
             offerers: offerers.map(|o| o.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed,
+            allow_unverified,
             with_offers,
             auction_houses: auction_houses.map(|h| h.into_iter().map(Into::into).collect()),
             collections: collections.map(|c| c.into_iter().map(Into::into).collect()),
