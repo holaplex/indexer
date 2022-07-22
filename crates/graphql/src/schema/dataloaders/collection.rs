@@ -16,7 +16,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
         let conn = self.db()?;
 
         let rows: Vec<models::SampleNft> = sql_query(
-            "SELECT DISTINCT ON (sample_metadatas.address)
+            "SELECT sample_metadatas.address,
                     sample_metadatas.creator_address,
                     sample_metadatas.address,
                     sample_metadatas.name,
@@ -53,7 +53,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                     FROM metadatas
                     INNER JOIN metadata_jsons ON (metadatas.address = metadata_jsons.metadata_address)
                     INNER JOIN metadata_creators ON (metadatas.address = metadata_creators.metadata_address)
-                    INNER JOIN current_metadata_owners on (metadatas.address = current_metadata_owners.mint_address)
+                    INNER JOIN current_metadata_owners on (metadatas.mint_address = current_metadata_owners.mint_address)
                     WHERE metadata_creators.creator_address = store_creators.creator_address
                     LIMIT 3
                 ) AS sample_metadatas ON true
