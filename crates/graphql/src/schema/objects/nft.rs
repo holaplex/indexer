@@ -584,13 +584,19 @@ impl NftTraits for Nft {
 
 
 #[graphql_interface(for = CollectionNft)]
-pub trait CollectionNftTraits {
+pub trait CollectionNftTraits: NftTraits {
     fn nft_count(&self, context: &AppContext) -> FieldResult<i32>;
-
+    
     //TODO floor price
 }
 
 pub struct CollectionNft(Nft);
+
+
+impl NftTraits for CollectionNftTraitsValue {
+    //TODO what to put here?
+}
+
 
 impl CollectionNftTraits for CollectionNft {
     fn nft_count(&self, context: &AppContext) -> FieldResult<i32> {
@@ -606,11 +612,134 @@ impl CollectionNftTraits for CollectionNft {
 }
 
 
+#[async_trait]
+impl NftTraits for CollectionNft {
+    fn uri(&self) -> &str {
+        self.0.uri()
+    }
+
+    fn slot(&self) -> Option<i32> {
+        self.0.slot()
+    }
+
+    fn model(&self) -> Option<String> {
+        self.0.model()
+    }
+
+    fn address(&self) -> &str {
+        self.0.address()
+    }
+
+    fn name(&self) -> &str {
+        self.0.name()
+    }
+
+    fn seller_fee_basis_points(&self) -> i32 {
+        self.0.seller_fee_basis_points()
+    }
+
+    fn mint_address(&self) -> &str {
+        &self.0.mint_address()
+    }
+
+    fn token_account_address(&self) -> &str {
+        self.0.token_account_address()
+    }
+
+    fn primary_sale_happened(&self) -> bool {
+        self.0.primary_sale_happened()
+    }
+
+    fn update_authority_address(&self) -> &str {
+        self.0.update_authority_address()
+    }
+
+    fn description(&self) -> &str {
+        self.0.description()
+    }
+
+    fn category(&self) -> &str {
+        self.0.category()
+    }
+
+    fn animation_url(&self) -> Option<&str> {
+        self.0.animation_url()
+    }
+
+    fn external_url(&self) -> Option<&str> {
+        self.0.external_url()
+    }
+
+    /// The JSON parser with which the NFT was processed by the indexer
+    ///
+    /// - `"full"` indicates the full Metaplex standard-compliant parser was
+    ///   used.
+    /// - `"minimal"` (provided with an optional description of an error)
+    ///   indicates the full model failed to parse and a more lenient fallback
+    ///   parser with fewer fields was used instead.
+    fn parser(&self) -> Option<&str> {
+        self.0.parser()
+    }
+
+    fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
+        self.0.image(width, ctx)
+    }
+
+    async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
+        self.0.creators(ctx).await
+    }
+
+    async fn attributes(&self, ctx: &AppContext) -> FieldResult<Vec<NftAttribute>> {
+        self.0.attributes(ctx).await
+    }
+
+    async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>> {
+        self.0.owner(ctx).await
+    }
+
+    async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
+        self.0.activities(ctx).await
+    }
+
+    async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>> {
+        self.0.listings(ctx).await
+    }
+
+    async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<Purchase>> {
+        self.0.purchases(ctx).await
+    }
+
+    async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<Offer>> {
+        self.0.offers(ctx).await
+    }
+
+    async fn files(&self, ctx: &AppContext) -> FieldResult<Vec<NftFile>> {
+        self.0.files(ctx).await
+    }
+
+    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNft>> {
+        self.0.collection(ctx).await
+    }
+
+    async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
+        self.0.created_at(ctx).await
+    }
+}
+
+
 impl TryFrom<models::Nft> for CollectionNft {
     type Error = <Nft as TryFrom<models::Nft>>::Error;
 
     fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
         value.try_into().map(Self)
+    }
+}
+
+impl TryFrom<models::Nft> for CollectionNftTraitsValue {
+    type Error = <Nft as TryFrom<models::Nft>>::Error;
+
+    fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
+        value.try_into().map(CollectionNftTraitsValue::CollectionNft)
     }
 }
 
