@@ -8,7 +8,7 @@ on:
 jobs:
   schema:
     name: Diesel schema check
-    runs-on: ubuntu-20.04
+    runs-on: rust-runner
 
     services:
       postgres:

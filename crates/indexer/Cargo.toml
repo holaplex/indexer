@@ -16,6 +16,7 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 [features]
 default = []
 geyser = [
+  "genostub",
   "reqwest-client",
   "search-dispatch",
   "serde_json",
