@@ -1,15 +1,15 @@
-use objects::{bid_receipt::BidReceipt, nft::Nft};
+use objects::{bid_receipt::BidReceipt, nft::BaseNft};
 use scalars::PublicKey;
 use tables::{bid_receipts, metadatas};
 
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Nft>, Vec<BidReceipt>> for Batcher {
+impl TryBatchFn<PublicKey<BaseNft>, Vec<BidReceipt>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<Nft>],
-    ) -> TryBatchMap<PublicKey<Nft>, Vec<BidReceipt>> {
+        addresses: &[PublicKey<BaseNft>],
+    ) -> TryBatchMap<PublicKey<BaseNft>, Vec<BidReceipt>> {
         let conn = self.db()?;
 
         let rows: Vec<models::BidReceipt> = bid_receipts::table

@@ -2,7 +2,7 @@ use indexer_core::{db::models, uuid::Uuid};
 use juniper::GraphQLUnion;
 use objects::{
     ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase,
-    graph_connection::GraphConnection, nft::Nft, profile::TwitterProfile, wallet::Wallet,
+    graph_connection::GraphConnection, nft::BaseNft, profile::TwitterProfile, wallet::Wallet,
 };
 
 use super::prelude::*;
@@ -14,7 +14,7 @@ pub struct MintEvent {
     feed_event_id: String,
     twitter_handle: Option<String>,
     wallet_address: PublicKey<Wallet>,
-    metadata_address: PublicKey<Nft>,
+    metadata_address: PublicKey<BaseNft>,
 }
 
 #[derive(Debug, Clone)]
@@ -265,11 +265,11 @@ impl MintEvent {
         &self.feed_event_id
     }
 
-    fn metadata_address(&self) -> &PublicKey<Nft> {
+    fn metadata_address(&self) -> &PublicKey<BaseNft> {
         &self.metadata_address
     }
 
-    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<BaseNft>> {
         ctx.nft_loader
             .load(self.metadata_address.clone())
             .await

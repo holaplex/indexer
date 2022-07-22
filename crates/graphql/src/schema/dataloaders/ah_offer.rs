@@ -1,5 +1,5 @@
 use indexer_core::uuid::Uuid;
-use objects::{ah_offer::Offer, nft::Nft};
+use objects::{ah_offer::Offer, nft::BaseNft};
 use scalars::PublicKey;
 use tables::{metadatas, offers};
 
@@ -24,11 +24,11 @@ impl TryBatchFn<Uuid, Option<Offer>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Nft>, Vec<Offer>> for Batcher {
+impl TryBatchFn<PublicKey<BaseNft>, Vec<Offer>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<Nft>],
-    ) -> TryBatchMap<PublicKey<Nft>, Vec<Offer>> {
+        addresses: &[PublicKey<BaseNft>],
+    ) -> TryBatchMap<PublicKey<BaseNft>, Vec<Offer>> {
         let conn = self.db()?;
 
         let rows: Vec<models::Offer> = offers::table

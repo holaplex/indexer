@@ -1,5 +1,5 @@
 use indexer_core::uuid::Uuid;
-use objects::{auction_house::AuctionHouse, nft::Nft, wallet::Wallet};
+use objects::{auction_house::AuctionHouse, nft::BaseNft, wallet::Wallet};
 use scalars::{PublicKey, U64};
 
 use super::prelude::*;
@@ -10,7 +10,7 @@ pub struct Purchase {
     pub buyer: PublicKey<Wallet>,
     pub seller: PublicKey<Wallet>,
     pub auction_house: PublicKey<AuctionHouse>,
-    pub metadata: PublicKey<Nft>,
+    pub metadata: PublicKey<BaseNft>,
     pub token_size: i32,
     pub price: U64,
     pub created_at: DateTime<Utc>,
@@ -31,7 +31,7 @@ impl Purchase {
         &self.seller
     }
 
-    fn metadata(&self) -> &PublicKey<Nft> {
+    fn metadata(&self) -> &PublicKey<BaseNft> {
         &self.metadata
     }
 
@@ -47,7 +47,7 @@ impl Purchase {
         self.token_size
     }
 
-    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<BaseNft>> {
         ctx.nft_loader
             .load(self.metadata.clone())
             .await
