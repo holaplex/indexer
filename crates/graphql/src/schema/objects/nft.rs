@@ -211,6 +211,7 @@ pub struct NftActivity {
     pub id: Uuid,
     pub metadata: PublicKey<Nft>,
     pub auction_house: PublicKey<AuctionHouse>,
+    pub marketplace_address: String,
     pub price: U64,
     pub created_at: DateTime<Utc>,
     pub wallets: Vec<Wallet>,
@@ -235,7 +236,8 @@ impl TryFrom<models::NftActivity> for NftActivity {
         Ok(Self {
             id,
             metadata: metadata.into(),
-            auction_house: auction_house.into(),
+            auction_house: auction_house.clone().into(),
+            marketplace_address: auction_house,
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
             wallets: wallets
@@ -256,6 +258,10 @@ impl NftActivity {
 
     fn metadata(&self) -> &PublicKey<Nft> {
         &self.metadata
+    }
+
+    fn marketplace_address(&self) -> &str {
+        &self.marketplace_address
     }
 
     fn price(&self) -> U64 {

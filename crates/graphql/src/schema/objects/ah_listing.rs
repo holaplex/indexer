@@ -9,6 +9,7 @@ pub struct AhListing {
     pub id: Uuid,
     pub trade_state: String,
     pub auction_house: PublicKey<AuctionHouse>,
+    pub marketplace_address: String,
     pub seller: PublicKey<Wallet>,
     pub metadata: PublicKey<Nft>,
     pub purchase_id: Option<Uuid>,
@@ -36,6 +37,10 @@ impl AhListing {
 
     fn metadata(&self) -> &PublicKey<Nft> {
         &self.metadata
+    }
+
+    fn marketplace_address(&self) -> &str {
+        &self.marketplace_address
     }
 
     fn purchase_id(&self) -> Option<Uuid> {
@@ -99,7 +104,8 @@ impl<'a> TryFrom<models::Listing<'a>> for AhListing {
         Ok(Self {
             id: id.unwrap_or_default(),
             trade_state: trade_state.into_owned(),
-            auction_house: auction_house.into_owned().into(),
+            auction_house: auction_house.clone().into_owned().into(),
+            marketplace_address: auction_house.to_string(),
             seller: seller.into_owned().into(),
             metadata: metadata.into_owned().into(),
             purchase_id,
