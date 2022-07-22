@@ -211,7 +211,7 @@ impl NftOwner {
 #[derive(Debug, Clone)]
 pub struct NftActivity {
     pub id: Uuid,
-    pub metadata: PublicKey<Nft>,
+    pub metadata: PublicKey<BaseNft>,
     pub auction_house: PublicKey<AuctionHouse>,
     pub marketplace_program_address: String,
     pub price: U64,
@@ -259,7 +259,7 @@ impl NftActivity {
         &self.id
     }
 
-    fn metadata(&self) -> &PublicKey<Nft> {
+    fn metadata(&self) -> &PublicKey<BaseNft> {
         &self.metadata
     }
 
@@ -283,7 +283,7 @@ impl NftActivity {
         &self.marketplace_program_address
     }
 
-    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<BaseNft>> {
         ctx.nft_loader
             .load(self.metadata.clone())
             .await
@@ -299,9 +299,9 @@ impl NftActivity {
     }
 }
 
-#[graphql_interface(for = [Nft])]
+#[graphql_interface(for = [BaseNft, CollectionNft])]
 #[async_trait]
-pub trait NftTraits {
+pub trait Nft {
     fn address(&self) -> &str;
     fn name(&self) -> &str;
     fn seller_fee_basis_points(&self) -> i32;
@@ -317,18 +317,22 @@ pub trait NftTraits {
     fn model(&self) -> Option<String>;
     fn slot(&self) -> Option<i32>;
 
-    // #[graphql(arguments(width(description = r"Image width possible values are:
-    // - 0 (Original size)
-    // - 100 (Tiny)
-    // - 400 (XSmall)
-    // - 600 (Small)
-    // - 800 (Medium)
-    // - 1400 (Large)
+    fn image(
+        &self,
+        #[graphql(desc = r"Image width possible values are:
+    - 0 (Original size)
+    - 100 (Tiny)
+    - 400 (XSmall)
+    - 600 (Small)
+    - 800 (Medium)
+    - 1400 (Large)
 
-    // Any other value will return the original image size.
+    Any other value will return the original image size.
 
-    // If no value is provided, it will return XSmall")))]
-    fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String>;
+    If no value is provided, it will return XSmall")]
+        width: Option<i32>,
+        ctx: &AppContext,
+    ) -> FieldResult<String>;
     async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>>;
     async fn attributes(&self, ctx: &AppContext) -> FieldResult<Vec<NftAttribute>>;
     async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>>;
@@ -345,8 +349,8 @@ pub trait NftTraits {
 
 /// An NFT
 #[derive(Debug, Clone, GraphQLObject)]
-#[graphql(impl = NftTraitsValue, Context = AppContext)]
-pub struct Nft {
+#[graphql(impl = NftValue, Context = AppContext)]
+pub struct BaseNft {
     pub address: String,
     pub name: String,
     pub seller_fee_basis_points: i32,
@@ -364,7 +368,7 @@ pub struct Nft {
     pub slot: Option<i32>,
 }
 
-impl TryFrom<models::Nft> for Nft {
+impl TryFrom<models::Nft> for BaseNft {
     type Error = std::num::TryFromIntError;
 
     fn try_from(
@@ -407,7 +411,7 @@ impl TryFrom<models::Nft> for Nft {
 }
 
 #[async_trait]
-impl NftTraits for Nft {
+impl Nft for BaseNft {
     fn uri(&self) -> &str {
         &self.uri
     }
@@ -576,25 +580,11 @@ impl NftTraits for Nft {
     }
 }
 
-#[graphql_interface(for = CollectionNft)]
-pub trait CollectionNftTraits {
-    fn nft_count(&self, context: &AppContext) -> FieldResult<i32>;
+#[derive(Debug, Clone)]
+pub struct CollectionNft(BaseNft);
 
-    fn floor_price(&self, context: &AppContext) -> FieldResult<Option<i32>>;
-}
-
-pub struct CollectionNft(Nft);
-
-// impl NftTraits for CollectionNftTraitsValue {
-//     //TODO what to put here?
-//     // migration to backfill and create table
-//     // will need index on metadata_collection
-//     //
-//     // hook to update counts on nft-added or deleted
-//     // hook to update floor on listing created or updated
-// }
-
-impl CollectionNftTraits for CollectionNft {
+#[graphql_object(impl = NftValue, Context = AppContext)]
+impl CollectionNft {
     fn nft_count(&self, context: &AppContext) -> FieldResult<i32> {
         let conn = context.shared.db.get()?;
 
@@ -624,10 +614,140 @@ impl CollectionNftTraits for CollectionNft {
             None => Ok(None),
         }
     }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn uri(&self) -> &str {
+        self.0.uri()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn slot(&self) -> Option<i32> {
+        self.0.slot()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn model(&self) -> Option<String> {
+        self.0.model()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn address(&self) -> &str {
+        self.0.address()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn name(&self) -> &str {
+        self.0.name()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn seller_fee_basis_points(&self) -> i32 {
+        self.0.seller_fee_basis_points()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn mint_address(&self) -> &str {
+        self.0.mint_address()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn token_account_address(&self) -> &str {
+        self.0.token_account_address()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn primary_sale_happened(&self) -> bool {
+        self.0.primary_sale_happened()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn update_authority_address(&self) -> &str {
+        self.0.update_authority_address()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn description(&self) -> &str {
+        self.0.description()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn category(&self) -> &str {
+        self.0.category()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn animation_url(&self) -> Option<&str> {
+        self.0.animation_url()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn external_url(&self) -> Option<&str> {
+        self.0.external_url()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn parser(&self) -> Option<&str> {
+        self.0.parser()
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
+        self.0.image(width, ctx)
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
+        self.0.creators(ctx).await
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    async fn attributes(&self, ctx: &AppContext) -> FieldResult<Vec<NftAttribute>> {
+        self.0.attributes(ctx).await
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>> {
+        self.0.owner(ctx).await
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
+        self.0.activities(ctx).await
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>> {
+        self.0.listings(ctx).await
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<Purchase>> {
+        self.0.purchases(ctx).await
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<Offer>> {
+        self.0.offers(ctx).await
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    async fn files(&self, ctx: &AppContext) -> FieldResult<Vec<NftFile>> {
+        self.0.files(ctx).await
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNft>> {
+        self.0.collection(ctx).await
+    }
+
+    #[graphql(deprecated = "use `...on Nft`")]
+    async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
+        self.0.created_at(ctx).await
+    }
 }
 
 #[async_trait]
-impl NftTraits for CollectionNft {
+impl Nft for CollectionNft {
     fn uri(&self) -> &str {
         self.0.uri()
     }
@@ -741,82 +861,10 @@ impl NftTraits for CollectionNft {
 }
 
 impl TryFrom<models::Nft> for CollectionNft {
-    type Error = <Nft as TryFrom<models::Nft>>::Error;
+    type Error = <BaseNft as TryFrom<models::Nft>>::Error;
 
     fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
         value.try_into().map(Self)
-    }
-}
-
-impl TryFrom<models::Nft> for CollectionNftTraitsValue {
-    type Error = <Nft as TryFrom<models::Nft>>::Error;
-
-    fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
-        value
-            .try_into()
-            .map(CollectionNftTraitsValue::CollectionNft)
-    }
-}
-
-impl Clone for CollectionNft {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
-    }
-}
-
-impl<S: juniper::ScalarValue> juniper::marker::IsOutputType<S> for CollectionNft {
-    fn mark() {
-        <Nft as juniper::marker::IsOutputType<S>>::mark();
-    }
-}
-
-impl<S: juniper::ScalarValue> juniper::marker::GraphQLObjectType<S> for CollectionNft {}
-
-impl<S: juniper::ScalarValue> juniper::GraphQLType<S> for CollectionNft {
-    fn name(_: &()) -> Option<&'static str> {
-        Some("CollectionNft")
-    }
-
-    fn meta<'r>(inf: &(), reg: &mut juniper::Registry<'r, S>) -> juniper::meta::MetaType<'r, S>
-    where
-        S: 'r,
-    {
-        <Nft as juniper::GraphQLType<S>>::meta(inf, reg)
-    }
-}
-
-impl<S: juniper::ScalarValue> juniper::GraphQLValue<S> for CollectionNft {
-    type Context = AppContext;
-    type TypeInfo = ();
-
-    fn type_name<'i>(&self, _: &'i ()) -> Option<&'i str> {
-        Some("CollectionNft")
-    }
-
-    fn resolve_field(
-        &self,
-        inf: &(),
-        field: &str,
-        args: &juniper::Arguments<'_, S>,
-        exec: &juniper::Executor<'_, '_, AppContext, S>,
-    ) -> juniper::ExecutionResult<S> {
-        self.0.resolve_field(inf, field, args, exec)
-    }
-
-    fn concrete_type_name(&self, _: &AppContext, _: &()) -> String {
-        "CollectionNft".into()
-    }
-}
-
-impl<S: juniper::ScalarValue + Send + Sync> juniper::GraphQLValueAsync<S> for CollectionNft {
-    fn resolve_field_async<'a>(
-        &'a self,
-        inf: &'a (),
-        field: &'a str,
-        args: &'a juniper::Arguments<'_, S>,
-        exec: &'a juniper::Executor<'_, '_, AppContext, S>,
-    ) -> juniper::BoxFuture<'a, juniper::ExecutionResult<S>> {
-        self.0.resolve_field_async(inf, field, args, exec)
     }
 }
 

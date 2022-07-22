@@ -1,4 +1,4 @@
-use objects::{nft::Nft, storefront::Storefront};
+use objects::{nft::BaseNft, storefront::Storefront};
 use scalars::U64;
 use tables::{auction_caches, auction_datas, auction_datas_ext};
 
@@ -171,7 +171,7 @@ impl Listing {
             .map_err(Into::into)
     }
 
-    pub async fn nfts(&self, ctx: &AppContext) -> FieldResult<Vec<Nft>> {
+    pub async fn nfts(&self, ctx: &AppContext) -> FieldResult<Vec<BaseNft>> {
         ctx.listing_nfts_loader
             .load(self.address.clone().into())
             .await

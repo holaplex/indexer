@@ -1,4 +1,4 @@
-use objects::nft::Nft;
+use objects::nft::BaseNft;
 
 use super::{prelude::*, profile::TwitterProfile};
 
@@ -23,7 +23,7 @@ impl StoreCreator {
         self.twitter_handle.as_deref()
     }
 
-    pub async fn preview(&self, context: &AppContext) -> FieldResult<Vec<Nft>> {
+    pub async fn preview(&self, context: &AppContext) -> FieldResult<Vec<BaseNft>> {
         context
             .collection_loader
             .load(self.creator_address.clone().into())
