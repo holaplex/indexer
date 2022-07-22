@@ -3,11 +3,12 @@ use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     db::{
         queries,
-        tables::{bid_receipts, listing_receipts, metadata_jsons, metadata_collection_keys},
+        tables::{bid_receipts, collection_stats, listing_receipts, metadata_jsons},
     },
     util::unix_timestamp,
     uuid::Uuid,
 };
+use juniper::graphql_interface;
 use objects::{
     ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
     profile::TwitterProfile, wallet::Wallet,
@@ -15,7 +16,6 @@ use objects::{
 use reqwest::Url;
 use scalars::{PublicKey, U64};
 use serde_json::Value;
-use juniper::graphql_interface;
 
 use super::prelude::*;
 
@@ -299,11 +299,9 @@ impl NftActivity {
     }
 }
 
-
 #[graphql_interface(for = [Nft])]
 #[async_trait]
 pub trait NftTraits {
-    
     fn address(&self) -> &str;
     fn name(&self) -> &str;
     fn seller_fee_basis_points(&self) -> i32;
@@ -318,7 +316,7 @@ pub trait NftTraits {
     fn category(&self) -> &str;
     fn model(&self) -> Option<String>;
     fn slot(&self) -> Option<i32>;
-    
+
     // #[graphql(arguments(width(description = r"Image width possible values are:
     // - 0 (Original size)
     // - 100 (Tiny)
@@ -326,9 +324,9 @@ pub trait NftTraits {
     // - 600 (Small)
     // - 800 (Medium)
     // - 1400 (Large)
-    
+
     // Any other value will return the original image size.
-    
+
     // If no value is provided, it will return XSmall")))]
     fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String>;
     async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>>;
@@ -347,7 +345,7 @@ pub trait NftTraits {
 
 /// An NFT
 #[derive(Debug, Clone, GraphQLObject)]
-#[graphql(impl = NftTraitsValue, Context = AppContext)] 
+#[graphql(impl = NftTraitsValue, Context = AppContext)]
 pub struct Nft {
     pub address: String,
     pub name: String,
@@ -408,7 +406,6 @@ impl TryFrom<models::Nft> for Nft {
     }
 }
 
-
 #[async_trait]
 impl NftTraits for Nft {
     fn uri(&self) -> &str {
@@ -420,10 +417,7 @@ impl NftTraits for Nft {
     }
 
     fn model(&self) -> Option<String> {
-        match &self.model {
-            Some(m) => return Some(m.to_string()),
-            _ => None,
-        }
+        self.model.as_ref().map(ToString::to_string)
     }
 
     fn address(&self) -> &str {
@@ -582,35 +576,55 @@ impl NftTraits for Nft {
     }
 }
 
-
 #[graphql_interface(for = CollectionNft)]
-pub trait CollectionNftTraits: NftTraits {
+pub trait CollectionNftTraits {
     fn nft_count(&self, context: &AppContext) -> FieldResult<i32>;
-    
-    //TODO floor price
+
+    fn floor_price(&self, context: &AppContext) -> FieldResult<Option<i32>>;
 }
 
 pub struct CollectionNft(Nft);
 
-
-impl NftTraits for CollectionNftTraitsValue {
-    //TODO what to put here?
-}
-
+// impl NftTraits for CollectionNftTraitsValue {
+//     //TODO what to put here?
+//     // migration to backfill and create table
+//     // will need index on metadata_collection
+//     //
+//     // hook to update counts on nft-added or deleted
+//     // hook to update floor on listing created or updated
+// }
 
 impl CollectionNftTraits for CollectionNft {
     fn nft_count(&self, context: &AppContext) -> FieldResult<i32> {
         let conn = context.shared.db.get()?;
 
-        let count: i64 = metadata_collection_keys::table.filter(metadata_collection_keys::collection_address.eq(&self.0.mint_address))
-            .count()
-            .get_result(&conn)
-            .context("failed to load NFT count")?;
+        let count = collection_stats::table
+            .filter(collection_stats::collection_address.eq(&self.0.mint_address))
+            .select(collection_stats::nft_count)
+            .get_result::<i64>(&conn)
+            .context("failed to load NFT count for this collection")?;
 
         Ok(count.try_into()?)
     }
-}
 
+    fn floor_price(&self, context: &AppContext) -> FieldResult<Option<i32>> {
+        let conn = context.shared.db.get()?;
+
+        let count = collection_stats::table
+            .filter(collection_stats::collection_address.eq(&self.0.mint_address))
+            .select(collection_stats::floor_price)
+            .get_result::<Option<i64>>(&conn)
+            .context("failed to load floor price for this collection")?;
+
+        match count {
+            Some(price) => {
+                let downcast = price.try_into()?;
+                Ok(Some(downcast))
+            },
+            None => Ok(None),
+        }
+    }
+}
 
 #[async_trait]
 impl NftTraits for CollectionNft {
@@ -639,7 +653,7 @@ impl NftTraits for CollectionNft {
     }
 
     fn mint_address(&self) -> &str {
-        &self.0.mint_address()
+        self.0.mint_address()
     }
 
     fn token_account_address(&self) -> &str {
@@ -726,7 +740,6 @@ impl NftTraits for CollectionNft {
     }
 }
 
-
 impl TryFrom<models::Nft> for CollectionNft {
     type Error = <Nft as TryFrom<models::Nft>>::Error;
 
@@ -739,7 +752,9 @@ impl TryFrom<models::Nft> for CollectionNftTraitsValue {
     type Error = <Nft as TryFrom<models::Nft>>::Error;
 
     fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
-        value.try_into().map(CollectionNftTraitsValue::CollectionNft)
+        value
+            .try_into()
+            .map(CollectionNftTraitsValue::CollectionNft)
     }
 }
 

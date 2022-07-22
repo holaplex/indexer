@@ -15,7 +15,9 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats, CollectionNft, CollectionNftTraitsValue},
+    nft::{
+        CollectionNftTraitsValue, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats,
+    },
     profile::{ProfilesStats, TwitterProfile},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
