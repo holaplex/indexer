@@ -126,8 +126,8 @@ pub struct ListQueryOptions {
     pub attributes: Option<Vec<AttributeFilter>>,
     /// nfts listed for sale
     pub listed: Option<bool>,
-    /// nfts from verified creators
-    pub verified_creators: Option<bool>,
+    /// return nfts from unverified creators
+    pub allow_unverified: Option<bool>,
     /// nfts with active offers
     pub with_offers: Option<bool>,
     /// nft in one or more specific collections
@@ -192,7 +192,7 @@ pub fn list(
         offerers,
         attributes,
         listed,
-        verified_creators,
+        allow_unverified,
         with_offers,
         collections,
         limit,
@@ -294,8 +294,11 @@ pub fn list(
                 Expr::tbl(Metadatas::Table, Metadatas::Address)
                     .equals(MetadataCreators::Table, MetadataCreators::MetadataAddress),
             )
-            .and_where(Expr::col(MetadataCreators::CreatorAddress).is_in(creators))
-            .and_where(Expr::col(MetadataCreators::Verified).eq(verified_creators.unwrap_or(true)));
+            .and_where(Expr::col(MetadataCreators::CreatorAddress).is_in(creators));
+    }
+
+    if !matches!(allow_unverified, Some(true)) {
+        query.and_where(Expr::col(MetadataCreators::Verified).eq(true));
     }
 
     if let Some(listed) = listed {
