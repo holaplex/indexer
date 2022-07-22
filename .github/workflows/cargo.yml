@@ -8,7 +8,7 @@ on:
 jobs:
   fmt:
     name: cargo fmt
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -24,7 +24,7 @@ jobs:
 
   debug-check:
     name: cargo check/doc/clippy (debug profile)
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     steps:
       - name: install dependencies
         run: |
@@ -64,7 +64,7 @@ jobs:
 
   release-check:
     name: cargo check/doc/clippy (release profile)
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     steps:
       - name: install dependencies
         run: |
