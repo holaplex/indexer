@@ -9,7 +9,7 @@ on:
 jobs:
   debug-build:
     name: cargo build/test (debug profile)
-    runs-on: rust-runner
+    runs-on: self-hosted
     steps:
       - name: install dependencies
         run: |
