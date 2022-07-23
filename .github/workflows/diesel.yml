@@ -3,12 +3,12 @@ name: Diesel Schema
 on:
   pull_request:
   push:
-    branches: [master, dev]
+    branches: [master, dev, mpw/ci-test]
 
 jobs:
   schema:
     name: Diesel schema check
-    runs-on: ubuntu-20.04
+    runs-on: indexer-test-runner
 
     services:
       postgres:
@@ -34,8 +34,6 @@ jobs:
 
       - name: install dependencies
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libpq-dev
           cargo install diesel_cli --no-default-features --features postgres
 
       - name: run check

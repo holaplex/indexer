@@ -5,8 +5,8 @@ use objects::{
 };
 use scalars::PublicKey;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, bids, listing_metadatas, metadata_jsons,
-    metadatas,
+    auction_caches, auction_datas, auction_datas_ext, bids, current_metadata_owners,
+    listing_metadatas, metadata_jsons, metadatas,
 };
 
 use super::prelude::*;
@@ -77,6 +77,10 @@ impl TryBatchFn<PublicKey<Listing>, Vec<(usize, Nft)>> for Batcher {
             .inner_join(
                 metadata_jsons::table
                     .on(listing_metadatas::metadata_address.eq(metadata_jsons::metadata_address)),
+            )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
             )
             .select((
                 listing_metadatas::listing_address,

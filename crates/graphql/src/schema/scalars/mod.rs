@@ -9,6 +9,7 @@ pub(self) mod prelude {
 
 pub mod markers {
     pub struct StoreConfig;
+    pub struct TokenMint;
 }
 
 pub use bigint::{I64, U64};

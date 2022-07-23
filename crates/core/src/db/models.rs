@@ -216,7 +216,7 @@ pub struct Storefront<'a> {
     pub address: Cow<'a, str>,
 }
 
-/// Join of `metadatas` and `metadata_jsons` for an NFT
+/// Join of `metadatas`, `metadata_jsons` and `current_metadata_owners`  for an NFT
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct Nft {
     // Table metadata
@@ -277,6 +277,11 @@ pub struct Nft {
     /// Hint for what model the indexer parsed this NFT with
     #[sql_type = "Nullable<Text>"]
     pub model: Option<String>,
+
+    // Table Current metadata owners
+    /// TOken account address
+    #[sql_type = "Text"]
+    pub token_account_address: String,
 }
 
 /// Union of `listings` and `purchases` for an `NFTActivity`
@@ -315,7 +320,7 @@ pub struct NftActivity {
     pub activity_type: String,
 }
 
-/// Join of `metadatas` `metadata_jsons` `store_creators` for an collection preview
+/// Join of `metadatas` `metadata_jsons` `store_creators` `current_metadata_owners` for an collection preview
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct SampleNft {
     // Table store_creators
@@ -377,6 +382,11 @@ pub struct SampleNft {
     /// Hint for what model the indexer parsed this NFT with
     #[sql_type = "Nullable<Text>"]
     pub model: Option<String>,
+
+    // Table Current metadata owners
+    /// TOken account address
+    #[sql_type = "Text"]
+    pub token_account_address: String,
 }
 
 /// Join record for the RPC getListings query
@@ -430,7 +440,7 @@ pub struct MetadataJson<'a> {
     /// Metadata Address
     pub metadata_address: Cow<'a, str>,
     /// Metadata URI fingerprint - Cid for IPFS and ArTxid for Arweave
-    pub fingerprint: Cow<'a, Vec<u8>>,
+    pub fingerprint: Cow<'a, [u8]>,
     /// Metadata timestamp
     pub updated_at: NaiveDateTime,
     /// Metadata description
@@ -2436,5 +2446,67 @@ pub struct CardinalNamespace<'a> {
     /// Solana slot number
     pub slot: i64,
     /// Solana write version
+    pub write_version: i64,
+}
+
+/// A row in the `geno_habitat_datas` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs, clippy::struct_excessive_bools)]
+pub struct GenoHabitatData<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    pub habitat_mint: Cow<'a, str>,
+    pub level: i16,
+    pub element: i16,
+    pub genesis: bool,
+    pub renewal_timestamp: NaiveDateTime,
+    pub expiry_timestamp: NaiveDateTime,
+    pub next_day_timestamp: NaiveDateTime,
+    pub crystals_refined: i16,
+    pub harvester: Cow<'a, [u8]>,
+    pub ki_harvested: i64,
+    pub seeds_spawned: bool,
+    pub is_sub_habitat: bool,
+    pub parent_habitat: Option<Cow<'a, str>>,
+    pub sub_habitat_0: Option<Cow<'a, str>>,
+    pub sub_habitat_1: Option<Cow<'a, str>>,
+    pub harvester_royalty_bips: i32,
+    pub harvester_open_market: bool,
+    pub total_ki_harvested: i64,
+    pub total_crystals_refined: i64,
+    pub terraforming_habitat: Option<Cow<'a, str>>,
+    pub active: bool,
+    pub durability: i32,
+    pub habitats_terraformed: i32,
+    pub sequence: i64,
+    pub guild: Option<i32>,
+    pub sub_habitat_cooldown_timestamp: NaiveDateTime,
+    pub harvester_settings_cooldown_timestamp: NaiveDateTime,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+/// A row in the `geno_rental_agreements` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct GenoRentalAgreement<'a> {
+    /// The address of the `HabitatData` this rental agreement belongs to
+    pub habitat_address: Cow<'a, str>,
+    pub alchemist: Option<Cow<'a, str>>,
+    pub rental_period: i64,
+    pub rent: i64,
+    pub rent_token: Cow<'a, str>,
+    pub rent_token_decimals: i16,
+    pub last_rent_payment: NaiveDateTime,
+    pub next_payment_due: NaiveDateTime,
+    pub grace_period: i64,
+    pub open_market: bool,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
     pub write_version: i64,
 }

@@ -297,6 +297,7 @@ pub struct Nft {
     pub name: String,
     pub seller_fee_basis_points: i32,
     pub mint_address: String,
+    pub token_account_address: String,
     pub primary_sale_happened: bool,
     pub update_authority_address: String,
     pub uri: String,
@@ -318,6 +319,7 @@ impl TryFrom<models::Nft> for Nft {
             name,
             seller_fee_basis_points,
             mint_address,
+            token_account_address,
             primary_sale_happened,
             update_authority_address,
             uri,
@@ -335,6 +337,7 @@ impl TryFrom<models::Nft> for Nft {
             name,
             seller_fee_basis_points,
             mint_address,
+            token_account_address,
             primary_sale_happened,
             update_authority_address,
             uri,
@@ -365,6 +368,10 @@ impl Nft {
 
     pub fn mint_address(&self) -> &str {
         &self.mint_address
+    }
+
+    pub fn token_account_address(&self) -> &str {
+        &self.token_account_address
     }
 
     pub fn primary_sale_happened(&self) -> bool {

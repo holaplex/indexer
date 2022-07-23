@@ -9,6 +9,7 @@ pub mod cardinal_time_invalidator;
 pub mod cardinal_token_manager;
 pub mod cardinal_use_invalidator;
 pub mod edition;
+pub mod geno_habitat_data;
 pub mod govern;
 pub mod graph;
 pub mod locked_voter;

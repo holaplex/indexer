@@ -12,7 +12,7 @@ use sea_query::{
 use crate::{
     db::{
         models::{Nft, NftActivity},
-        tables::{metadata_jsons, metadatas},
+        tables::{current_metadata_owners, metadata_jsons, metadatas},
         Connection,
     },
     error::prelude::*,
@@ -58,6 +58,7 @@ enum CurrentMetadataOwners {
     Table,
     OwnerAddress,
     MintAddress,
+    TokenAccountAddress,
 }
 
 #[derive(Iden)]
@@ -151,6 +152,7 @@ pub type NftColumns = (
     metadata_jsons::external_url,
     metadata_jsons::category,
     metadata_jsons::model,
+    current_metadata_owners::token_account_address,
 );
 
 /// The column set for an NFT
@@ -169,6 +171,7 @@ pub const NFT_COLUMNS: NftColumns = (
     metadata_jsons::external_url,
     metadata_jsons::category,
     metadata_jsons::model,
+    current_metadata_owners::token_account_address,
 );
 
 /// Handles queries for NFTs
@@ -232,6 +235,10 @@ pub fn list(
             (MetadataJsons::Table, MetadataJsons::Category),
             (MetadataJsons::Table, MetadataJsons::Model),
         ])
+        .columns(vec![(
+            CurrentMetadataOwners::Table,
+            CurrentMetadataOwners::TokenAccountAddress,
+        )])
         .from(MetadataJsons::Table)
         .inner_join(
             Metadatas::Table,
@@ -408,6 +415,15 @@ const ACTIVITES_QUERY: &str = r"
         LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchases.seller)
         LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
         WHERE metadata = ANY($1)
+    UNION
+    SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at,
+    array[buyer] as wallets,
+    array[bth.twitter_handle] as wallet_twitter_handles,
+    'offer' as activity_type
+        FROM offers
+        LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = offers.buyer)
+        WHERE metadata = ANY($1)
+        AND offers.purchase_id IS NULL
     ORDER BY created_at DESC;
  -- $1: addresses::text[]";
 

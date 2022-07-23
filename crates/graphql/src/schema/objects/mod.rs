@@ -8,6 +8,7 @@ pub mod chart;
 pub mod creator;
 pub mod denylist;
 pub mod feed_event;
+pub mod genopets;
 pub mod graph_connection;
 pub mod listing;
 pub mod listing_receipt;

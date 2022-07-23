@@ -2658,6 +2658,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "genostub"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang 0.24.2",
+]
+
+[[package]]
 name = "gethostname"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2877,6 +2884,7 @@ dependencies = [
  "cid",
  "crossbeam",
  "futures-util",
+ "genostub",
  "govern",
  "graph_program",
  "holaplex-indexer-core",

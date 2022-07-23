@@ -1,0 +1,18 @@
+[package]
+name = "genostub"
+version = "0.1.0"
+authors = [
+  "ryans <ryans@holaplex.com>",
+]
+edition = "2021"
+description = "Stubbed Anchor program"
+documentation = "https://docs.rs/holaplex-indexer"
+readme = "../../README.md"
+repository = "https://github.com/holaplex/indexer"
+license = ""
+keywords = ["solana", "metaplex", "holaplex", "web3"]
+categories = ["cryptography::cryptocurrencies", "web-programming"]
+publish = false
+
+[dependencies]
+anchor-lang = "0.24.2"

@@ -5,6 +5,7 @@ pub mod cardinal_paid_claim_approver;
 pub mod cardinal_time_invalidator;
 pub mod cardinal_token_manager;
 pub mod cardinal_use_invalidator;
+pub mod genopets;
 pub mod goki_smart_wallet;
 pub mod graph;
 pub mod magic_eden_haus;
