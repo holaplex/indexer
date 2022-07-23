@@ -3,7 +3,7 @@ name: Cargo fmt/lint
 on:
   pull_request:
   push:
-    branches: [dev, master]
+    branches: [dev, master, mpw/ci-test]
 
 jobs:
   fmt:

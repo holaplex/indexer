@@ -3,7 +3,7 @@ name: Diesel Schema
 on:
   pull_request:
   push:
-    branches: [master, dev]
+    branches: [master, dev, mpw/ci-test]
 
 jobs:
   schema:

@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [master]
   push:
-    branches: [dev, master]
+    branches: [dev, master, mpw/ci-test]
 
 jobs:
   debug-build:
