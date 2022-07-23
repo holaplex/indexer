@@ -8,7 +8,7 @@ on:
 jobs:
   fmt:
     name: cargo fmt
-    runs-on: rust-runner
+    runs-on: indexer-test-runner
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -24,13 +24,8 @@ jobs:
 
   debug-check:
     name: cargo check/doc/clippy (debug profile)
-    runs-on: self-hosted
+    runs-on: indexer-test-runner
     steps:
-      - name: install dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libudev-dev pkg-config libssl-dev libcurl4-gnutls-dev libz-dev
-
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -64,13 +59,8 @@ jobs:
 
   release-check:
     name: cargo check/doc/clippy (release profile)
-    runs-on: self-hosted
+    runs-on: indexer-test-runner
     steps:
-      - name: install dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libudev-dev pkg-config libssl-dev libcurl4-gnutls-dev libz-dev
-
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:

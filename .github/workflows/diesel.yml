@@ -8,7 +8,7 @@ on:
 jobs:
   schema:
     name: Diesel schema check
-    runs-on: rust-runner
+    runs-on: indexer-test-runner
 
     services:
       postgres:
@@ -34,8 +34,6 @@ jobs:
 
       - name: install dependencies
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libpq-dev
           cargo install diesel_cli --no-default-features --features postgres
 
       - name: run check
