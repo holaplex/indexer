@@ -1,0 +1,12 @@
+FROM summerwind/actions-runner:latest
+USER root
+RUN apt-get update -y && \
+  apt-get install -y \
+    libpq-dev \
+    libssl-dev \
+    libz-dev \
+    libudev-dev \
+    pkg-config \
+  && \
+  rm -rf /var/lib/apt/lists/*
+USER runner
