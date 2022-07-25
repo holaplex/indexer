@@ -348,9 +348,11 @@ pub trait NftExt {
     fn parser(&self) -> Option<&str>;
 }
 
+// forcing the Nft's Graph QL typename to be "NftExtValue" ensures that Apollo (client-side) will
+//  correctly associate Nfts with the NftExt trait
 /// An NFT
 #[derive(Debug, Clone, GraphQLObject)]
-#[graphql(name = "NftExt", impl = NftExtValue, Context = AppContext)]
+#[graphql(name = "NftExtValue", impl = NftExtValue, Context = AppContext)]
 pub struct Nft {
     pub address: String,
     pub name: String,
