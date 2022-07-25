@@ -16,8 +16,7 @@ use objects::{
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
     nft::{
-        BaseNft, CollectionNft, MetadataJson, NftActivity, NftCount, NftCreator, NftValue,
-        NftsStats,
+        CollectionNft, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftExtValue, NftsStats,
     },
     profile::{ProfilesStats, TwitterProfile},
     storefront::{Storefront, StorefrontColumns},
@@ -354,10 +353,10 @@ impl QueryRoot {
         #[graphql(description = "Filter NFTs associated to the list of auction houses")]
         auction_houses: Option<Vec<PublicKey<AuctionHouse>>>,
         #[deprecated = "Deprecated in favor of the collections argument"] collection: Option<
-            PublicKey<BaseNft>,
+            PublicKey<Nft>,
         >,
         #[graphql(description = "Filter on one or more collections")] collections: Option<
-            Vec<PublicKey<BaseNft>>,
+            Vec<PublicKey<Nft>>,
         >,
         #[graphql(
             description = "Return NFTs whose metadata contain this search term (case-insensitive)"
@@ -365,7 +364,7 @@ impl QueryRoot {
         term: Option<String>,
         #[graphql(description = "Limit for query")] limit: i32,
         #[graphql(description = "Offset for query")] offset: i32,
-    ) -> FieldResult<Vec<NftValue>> {
+    ) -> FieldResult<Vec<NftExtValue>> {
         let collections = match (collections, collection) {
             (c, None) => c,
             (None, Some(c)) => Some(vec![c]),
@@ -451,7 +450,7 @@ impl QueryRoot {
 
         nfts.into_iter()
             .map(TryInto::try_into)
-            .map(|r| r.map(NftValue::BaseNft))
+            .map(|r| r.map(NftExtValue::Nft))
             .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
@@ -575,7 +574,7 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(description = "Metadata address of NFT")] address: String,
-    ) -> FieldResult<Option<NftValue>> {
+    ) -> FieldResult<Option<NftExtValue>> {
         let conn = context.shared.db.get()?;
         metadatas::table
             .inner_join(
@@ -591,7 +590,7 @@ impl QueryRoot {
             .optional()
             .context("Failed to load NFT by metadata address.")?
             .map(TryInto::try_into)
-            .map(|r| r.map(NftValue::BaseNft))
+            .map(|r| r.map(NftExtValue::Nft))
             .transpose()
             .map_err(Into::into)
     }
@@ -601,7 +600,7 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(description = "Mint address of NFT")] address: String,
-    ) -> FieldResult<Option<NftValue>> {
+    ) -> FieldResult<Option<NftExtValue>> {
         let conn = context.shared.db.get()?;
         metadatas::table
             .inner_join(
@@ -617,7 +616,7 @@ impl QueryRoot {
             .optional()
             .context("Failed to load NFT by mint address.")?
             .map(TryInto::try_into)
-            .map(|r| r.map(NftValue::BaseNft))
+            .map(|r| r.map(NftExtValue::Nft))
             .transpose()
             .map_err(Into::into)
     }
@@ -626,8 +625,8 @@ impl QueryRoot {
     fn nfts_by_mint_address(
         &self,
         context: &AppContext,
-        #[graphql(description = "Mint addresses of NFTs")] addresses: Vec<PublicKey<BaseNft>>,
-    ) -> FieldResult<Vec<NftValue>> {
+        #[graphql(description = "Mint addresses of NFTs")] addresses: Vec<PublicKey<Nft>>,
+    ) -> FieldResult<Vec<NftExtValue>> {
         let conn = context.shared.db.get()?;
         let rows: Vec<models::Nft> = metadatas::table
             .inner_join(
@@ -643,8 +642,8 @@ impl QueryRoot {
             .context("Failed to load NFTs")?;
 
         rows.into_iter()
-            .map(BaseNft::try_from)
-            .map(|r| r.map(NftValue::BaseNft))
+            .map(Nft::try_from)
+            .map(|r| r.map(NftExtValue::Nft))
             .collect::<Result<_, _>>()
             .map_err(Into::into)
     }

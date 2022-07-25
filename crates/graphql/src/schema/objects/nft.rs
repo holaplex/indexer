@@ -211,7 +211,7 @@ impl NftOwner {
 #[derive(Debug, Clone)]
 pub struct NftActivity {
     pub id: Uuid,
-    pub metadata: PublicKey<BaseNft>,
+    pub metadata: PublicKey<Nft>,
     pub auction_house: PublicKey<AuctionHouse>,
     pub marketplace_program_address: String,
     pub price: U64,
@@ -259,7 +259,7 @@ impl NftActivity {
         &self.id
     }
 
-    fn metadata(&self) -> &PublicKey<BaseNft> {
+    fn metadata(&self) -> &PublicKey<Nft> {
         &self.metadata
     }
 
@@ -283,11 +283,12 @@ impl NftActivity {
         &self.marketplace_program_address
     }
 
-    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<BaseNft>> {
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<NftExtValue>> {
         ctx.nft_loader
             .load(self.metadata.clone())
             .await
             .map_err(Into::into)
+            .map(|o| o.map(Into::into))
     }
 
     pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
@@ -299,9 +300,9 @@ impl NftActivity {
     }
 }
 
-#[graphql_interface(for = [BaseNft, CollectionNft])]
+#[graphql_interface(for = [Nft, CollectionNft])]
 #[async_trait]
-pub trait Nft {
+pub trait NftExt {
     fn address(&self) -> &str;
     fn name(&self) -> &str;
     fn seller_fee_basis_points(&self) -> i32;
@@ -349,8 +350,8 @@ pub trait Nft {
 
 /// An NFT
 #[derive(Debug, Clone, GraphQLObject)]
-#[graphql(impl = NftValue, Context = AppContext)]
-pub struct BaseNft {
+#[graphql(name = "NftExt", impl = NftExtValue, Context = AppContext)]
+pub struct Nft {
     pub address: String,
     pub name: String,
     pub seller_fee_basis_points: i32,
@@ -368,7 +369,7 @@ pub struct BaseNft {
     pub slot: Option<i32>,
 }
 
-impl TryFrom<models::Nft> for BaseNft {
+impl TryFrom<models::Nft> for Nft {
     type Error = std::num::TryFromIntError;
 
     fn try_from(
@@ -411,7 +412,7 @@ impl TryFrom<models::Nft> for BaseNft {
 }
 
 #[async_trait]
-impl Nft for BaseNft {
+impl NftExt for Nft {
     fn uri(&self) -> &str {
         &self.uri
     }
@@ -581,9 +582,9 @@ impl Nft for BaseNft {
 }
 
 #[derive(Debug, Clone)]
-pub struct CollectionNft(BaseNft);
+pub struct CollectionNft(Nft);
 
-#[graphql_object(impl = NftValue, Context = AppContext)]
+#[graphql_object(impl = NftExtValue, Context = AppContext)]
 impl CollectionNft {
     fn nft_count(&self, context: &AppContext) -> FieldResult<i32> {
         let conn = context.shared.db.get()?;
@@ -615,139 +616,139 @@ impl CollectionNft {
         }
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn uri(&self) -> &str {
         self.0.uri()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn slot(&self) -> Option<i32> {
         self.0.slot()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn model(&self) -> Option<String> {
         self.0.model()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn address(&self) -> &str {
         self.0.address()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn name(&self) -> &str {
         self.0.name()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn seller_fee_basis_points(&self) -> i32 {
         self.0.seller_fee_basis_points()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn mint_address(&self) -> &str {
         self.0.mint_address()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn token_account_address(&self) -> &str {
         self.0.token_account_address()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn primary_sale_happened(&self) -> bool {
         self.0.primary_sale_happened()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn update_authority_address(&self) -> &str {
         self.0.update_authority_address()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn description(&self) -> &str {
         self.0.description()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn category(&self) -> &str {
         self.0.category()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn animation_url(&self) -> Option<&str> {
         self.0.animation_url()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn external_url(&self) -> Option<&str> {
         self.0.external_url()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn parser(&self) -> Option<&str> {
         self.0.parser()
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
         self.0.image(width, ctx)
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
         self.0.creators(ctx).await
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     async fn attributes(&self, ctx: &AppContext) -> FieldResult<Vec<NftAttribute>> {
         self.0.attributes(ctx).await
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>> {
         self.0.owner(ctx).await
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
         self.0.activities(ctx).await
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>> {
         self.0.listings(ctx).await
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<Purchase>> {
         self.0.purchases(ctx).await
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<Offer>> {
         self.0.offers(ctx).await
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     async fn files(&self, ctx: &AppContext) -> FieldResult<Vec<NftFile>> {
         self.0.files(ctx).await
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNft>> {
         self.0.collection(ctx).await
     }
 
-    #[graphql(deprecated = "use `...on Nft`")]
+    #[graphql(deprecated = "use `...on NftExt`")]
     async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
         self.0.created_at(ctx).await
     }
 }
 
 #[async_trait]
-impl Nft for CollectionNft {
+impl NftExt for CollectionNft {
     fn uri(&self) -> &str {
         self.0.uri()
     }
@@ -861,7 +862,7 @@ impl Nft for CollectionNft {
 }
 
 impl TryFrom<models::Nft> for CollectionNft {
-    type Error = <BaseNft as TryFrom<models::Nft>>::Error;
+    type Error = <Nft as TryFrom<models::Nft>>::Error;
 
     fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
         value.try_into().map(Self)

@@ -1,7 +1,7 @@
 use indexer_core::db::queries::metadatas::NFT_COLUMNS;
 use objects::{
     listing::{Bid, Listing, ListingColumns, ListingRow},
-    nft::BaseNft,
+    nft::Nft,
 };
 use scalars::PublicKey;
 use tables::{
@@ -62,11 +62,11 @@ impl TryBatchFn<PublicKey<Listing>, Vec<Bid>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Listing>, Vec<(usize, BaseNft)>> for Batcher {
+impl TryBatchFn<PublicKey<Listing>, Vec<(usize, Nft)>> for Batcher {
     async fn load(
         &mut self,
         keys: &[PublicKey<Listing>],
-    ) -> TryBatchMap<PublicKey<Listing>, Vec<(usize, BaseNft)>> {
+    ) -> TryBatchMap<PublicKey<Listing>, Vec<(usize, Nft)>> {
         let conn = self.db()?;
 
         let rows: Vec<(String, i32, models::Nft)> = listing_metadatas::table

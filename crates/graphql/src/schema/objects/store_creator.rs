@@ -1,4 +1,4 @@
-use objects::nft::BaseNft;
+use objects::nft::NftExtValue;
 
 use super::{prelude::*, profile::TwitterProfile};
 
@@ -23,12 +23,13 @@ impl StoreCreator {
         self.twitter_handle.as_deref()
     }
 
-    pub async fn preview(&self, context: &AppContext) -> FieldResult<Vec<BaseNft>> {
+    pub async fn preview(&self, context: &AppContext) -> FieldResult<Vec<NftExtValue>> {
         context
             .collection_loader
             .load(self.creator_address.clone().into())
             .await
             .map_err(Into::into)
+            .map(|o| o.into_iter().map(Into::into).collect())
     }
 
     pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {

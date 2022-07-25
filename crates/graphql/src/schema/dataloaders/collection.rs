@@ -2,17 +2,17 @@ use indexer_core::db::{
     sql_query,
     sql_types::{Array, Text},
 };
-use objects::{nft::BaseNft, store_creator::StoreCreator};
+use objects::{nft::Nft, store_creator::StoreCreator};
 use scalars::PublicKey;
 
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<PublicKey<StoreCreator>, Vec<BaseNft>> for Batcher {
+impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
     async fn load(
         &mut self,
         addresses: &[PublicKey<StoreCreator>],
-    ) -> TryBatchMap<PublicKey<StoreCreator>, Vec<BaseNft>> {
+    ) -> TryBatchMap<PublicKey<StoreCreator>, Vec<Nft>> {
         let conn = self.db()?;
 
         let rows: Vec<models::SampleNft> = sql_query(

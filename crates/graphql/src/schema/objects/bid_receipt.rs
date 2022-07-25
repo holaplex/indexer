@@ -1,5 +1,8 @@
 use objects::{
-    auction_house::AuctionHouse, nft::BaseNft, purchase_receipt::PurchaseReceipt, wallet::Wallet,
+    auction_house::AuctionHouse,
+    nft::{Nft, NftExtValue},
+    purchase_receipt::PurchaseReceipt,
+    wallet::Wallet,
 };
 use scalars::{PublicKey, U64};
 
@@ -10,7 +13,7 @@ pub struct BidReceipt {
     pub address: String,
     pub trade_state: String,
     pub buyer: PublicKey<Wallet>,
-    pub metadata: PublicKey<BaseNft>,
+    pub metadata: PublicKey<Nft>,
     pub auction_house: PublicKey<AuctionHouse>,
     pub price: U64,
     pub bookkeeper: PublicKey<Wallet>,
@@ -38,7 +41,7 @@ impl BidReceipt {
         &self.buyer
     }
 
-    fn metadata(&self) -> &PublicKey<BaseNft> {
+    fn metadata(&self) -> &PublicKey<Nft> {
         &self.metadata
     }
 
@@ -78,11 +81,12 @@ impl BidReceipt {
         self.bump
     }
 
-    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<BaseNft>> {
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<NftExtValue>> {
         ctx.nft_loader
             .load(self.metadata.clone())
             .await
             .map_err(Into::into)
+            .map(|o| o.map(Into::into))
     }
 
     pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {

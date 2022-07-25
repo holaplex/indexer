@@ -1,5 +1,9 @@
 use indexer_core::uuid::Uuid;
-use objects::{auction_house::AuctionHouse, nft::BaseNft, wallet::Wallet};
+use objects::{
+    auction_house::AuctionHouse,
+    nft::{Nft, NftExtValue},
+    wallet::Wallet,
+};
 use scalars::{PublicKey, U64};
 
 use super::prelude::*;
@@ -9,7 +13,7 @@ pub struct Offer {
     pub id: Uuid,
     pub trade_state: String,
     pub buyer: PublicKey<Wallet>,
-    pub metadata: PublicKey<BaseNft>,
+    pub metadata: PublicKey<Nft>,
     pub auction_house: PublicKey<AuctionHouse>,
     pub marketplace_program_address: String,
     pub price: U64,
@@ -36,7 +40,7 @@ impl Offer {
         &self.buyer
     }
 
-    fn metadata(&self) -> &PublicKey<BaseNft> {
+    fn metadata(&self) -> &PublicKey<Nft> {
         &self.metadata
     }
 
@@ -72,11 +76,12 @@ impl Offer {
         &self.marketplace_program_address
     }
 
-    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<BaseNft>> {
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<NftExtValue>> {
         ctx.nft_loader
             .load(self.metadata.clone())
             .await
             .map_err(Into::into)
+            .map(|o| o.map(Into::into))
     }
 
     pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {

@@ -2,10 +2,10 @@ use indexer_core::{db::models, uuid::Uuid};
 use juniper::GraphQLUnion;
 use objects::{
     ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase,
-    graph_connection::GraphConnection, nft::BaseNft, profile::TwitterProfile, wallet::Wallet,
+    graph_connection::GraphConnection, nft::NftExtValue, profile::TwitterProfile, wallet::Wallet,
 };
 
-use super::prelude::*;
+use super::{nft::Nft, prelude::*};
 use crate::schema::scalars::PublicKey;
 
 #[derive(Debug, Clone)]
@@ -14,7 +14,7 @@ pub struct MintEvent {
     feed_event_id: String,
     twitter_handle: Option<String>,
     wallet_address: PublicKey<Wallet>,
-    metadata_address: PublicKey<BaseNft>,
+    metadata_address: PublicKey<Nft>,
 }
 
 #[derive(Debug, Clone)]
@@ -265,15 +265,16 @@ impl MintEvent {
         &self.feed_event_id
     }
 
-    fn metadata_address(&self) -> &PublicKey<BaseNft> {
+    fn metadata_address(&self) -> &PublicKey<Nft> {
         &self.metadata_address
     }
 
-    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<BaseNft>> {
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<NftExtValue>> {
         ctx.nft_loader
             .load(self.metadata_address.clone())
             .await
             .map_err(Into::into)
+            .map(|o| o.map(Into::into))
     }
 
     pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
