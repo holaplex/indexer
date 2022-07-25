@@ -1,7 +1,6 @@
 use indexer_core::db::{
     expression::dsl::all,
     queries::{self, feed_event::EventType},
-    tables::twitter_handle_name_services,
 };
 use objects::{
     ah_listing::AhListing,
@@ -25,8 +24,9 @@ use scalars::PublicKey;
 use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
-    current_metadata_owners, geno_habitat_datas, graph_connections, metadata_jsons, metadatas,
-    store_config_jsons, storefronts, wallet_totals,
+    current_metadata_owners, geno_habitat_datas, geno_rental_agreements, graph_connections,
+    metadata_jsons, metadatas, store_config_jsons, storefronts, twitter_handle_name_services,
+    wallet_totals,
 };
 
 use super::{enums::OrderDirection, prelude::*};
@@ -997,6 +997,60 @@ impl QueryRoot {
             .context("Failed to load Genopets habitat")?;
 
         Ok(row.map(Into::into))
+    }
+
+    fn geno_habitats(
+        &self,
+        context: &AppContext,
+        owners: Option<Vec<PublicKey<Wallet>>>,
+        renters: Option<Vec<PublicKey<Wallet>>>,
+        owned_by_low_health: Option<bool>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<GenoHabitat>> {
+        let conn = context.shared.db.get()?;
+        let params = || graphql_value!(["owners", "renters", "ownedByLowHealth: true"]);
+        let (limit, offset) = (limit.into(), offset.into());
+
+        match (owners, renters, owned_by_low_health.unwrap_or(false)) {
+            (Some(owners), None, false) => {
+                geno_habitat_datas::table
+                    .inner_join(current_metadata_owners::table.on(
+                        current_metadata_owners::mint_address.eq(geno_habitat_datas::habitat_mint),
+                    ))
+                    .filter(current_metadata_owners::owner_address.eq(any(owners)))
+                    .select(geno_habitat_datas::all_columns)
+                    .limit(limit)
+                    .offset(offset)
+                    .load(&conn)
+            },
+            (None, Some(renters), false) => {
+                geno_habitat_datas::table
+                    .inner_join(geno_rental_agreements::table.on(
+                        geno_rental_agreements::habitat_address.eq(geno_habitat_datas::address),
+                    ))
+                    .filter(geno_rental_agreements::alchemist.eq(any(renters)))
+                    .select(geno_habitat_datas::all_columns)
+                    .load(&conn)
+            },
+            (None, None, true) => todo!(),
+            (None, None, false) => {
+                return Err(FieldError::new(
+                    "No filter provided! Please provide at one of the following arguments",
+                    params(),
+                ));
+            },
+            (..) => {
+                return Err(FieldError::new(
+                    "Multiple conflicting filters provided! Please provide one of \
+                the following arguments",
+                    params(),
+                ));
+            },
+        }
+        .context("Failed to load Genopets habitats by owner")
+        .map(|v: Vec<models::GenoHabitatData>| v.into_iter().map(Into::into).collect())
+        .map_err(Into::into)
     }
 
     fn denylist() -> Denylist {
