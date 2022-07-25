@@ -121,6 +121,14 @@ enum MetadataJsonResult {
     },
 }
 
+struct MetadataJsonParams<'a> {
+    client: &'a Client,
+    addr: String,
+    fetch_uri: String,
+    fingerprint: Vec<u8>,
+    slot_info: SlotInfo,
+}
+
 async fn fetch_json(
     client: &Client,
     meta_key: Pubkey,
@@ -252,13 +260,15 @@ async fn try_locate_json(
 }
 
 async fn process_full(
-    client: &Client,
-    addr: String,
-    first_verified_creator: Option<String>,
-    fetch_uri: String,
     json: MetadataJson,
-    fingerprint: Vec<u8>,
-    slot_info: SlotInfo,
+    first_verified_creator: Option<String>,
+    MetadataJsonParams {
+        client,
+        addr,
+        fetch_uri,
+        fingerprint,
+        slot_info,
+    }: MetadataJsonParams<'_>,
 ) -> Result<()> {
     let raw_content: Value =
         serde_json::value::to_value(&json).context("Failed to upcast metadata JSON")?;
@@ -329,13 +339,15 @@ async fn process_full(
 }
 
 async fn process_minimal(
-    client: &Client,
-    addr: String,
-    fetch_uri: String,
     json: MetadataJsonMinimal,
-    fingerprint: Vec<u8>,
     full_err: serde_json::Error,
-    (slot, write_version): SlotInfo,
+    MetadataJsonParams {
+        client,
+        addr,
+        fetch_uri,
+        fingerprint,
+        slot_info,
+    }: MetadataJsonParams<'_>,
 ) -> Result<()> {
     fn to_opt_string(v: &Value) -> Option<Cow<'static, str>> {
         v.as_str().map(|s| Owned(s.to_owned())).or_else(|| {
@@ -364,6 +376,7 @@ async fn process_minimal(
         extra: _,
     } = json;
 
+    let (slot, write_version) = slot_info;
     let row = DbMetadataJson {
         metadata_address: Owned(addr.clone()),
         fingerprint: Owned(fingerprint),
@@ -583,30 +596,20 @@ pub async fn process<'a>(
     trace!("{:?} -> {:?}", url.as_str(), id);
 
     if let Some((json, fingerprint, url)) = try_locate_json(client, &id, meta_key).await? {
+        let params = MetadataJsonParams {
+            client,
+            addr,
+            fetch_uri: url.to_string(),
+            fingerprint,
+            slot_info,
+        };
+
         match json {
             MetadataJsonResult::Full(value) => {
-                process_full(
-                    client,
-                    addr,
-                    first_verified_creator,
-                    url.to_string(),
-                    value,
-                    fingerprint,
-                    slot_info,
-                )
-                .await?;
+                process_full(value, first_verified_creator, params).await?;
             },
             MetadataJsonResult::Minimal { value, full_err } => {
-                process_minimal(
-                    client,
-                    addr,
-                    url.to_string(),
-                    value,
-                    fingerprint,
-                    full_err,
-                    slot_info,
-                )
-                .await?;
+                process_minimal(value, full_err, params).await?;
             },
         }
     }
