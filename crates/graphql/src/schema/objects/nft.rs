@@ -603,19 +603,13 @@ impl CollectionNft {
     fn floor_price(&self, context: &AppContext) -> FieldResult<Option<i32>> {
         let conn = context.shared.db.get()?;
 
-        let count = collection_stats::table
+        let price = collection_stats::table
             .filter(collection_stats::collection_address.eq(&self.0.mint_address))
             .select(collection_stats::floor_price)
             .get_result::<Option<i64>>(&conn)
             .context("failed to load floor price for this collection")?;
 
-        match count {
-            Some(price) => {
-                let downcast = price.try_into()?;
-                Ok(Some(downcast))
-            },
-            None => Ok(None),
-        }
+        price.map(TryInto::try_into).transpose().map_err(Into::into)
     }
 
     #[graphql(deprecated = "use `...on NftExt`")]
