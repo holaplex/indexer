@@ -12,6 +12,7 @@ use objects::{
     creator::Creator,
     denylist::Denylist,
     feed_event::FeedEvent,
+    genopets::GenoHabitat,
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
@@ -23,8 +24,9 @@ use objects::{
 use scalars::PublicKey;
 use serde_json::Value;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, bid_receipts, graph_connections,
-    metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
+    auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
+    current_metadata_owners, geno_habitat_datas, graph_connections, metadata_jsons, metadatas,
+    store_config_jsons, storefronts, wallet_totals,
 };
 
 use super::{enums::OrderDirection, prelude::*};
@@ -342,6 +344,7 @@ impl QueryRoot {
         >,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
         #[graphql(description = "Filter only listed NFTs")] listed: Option<bool>,
+        #[graphql(description = "Allow unverified NFTs")] allow_unverified: Option<bool>,
         #[graphql(
             description = "Filter only NFTs with active offers; rejected if flag is 'false'"
         )]
@@ -435,6 +438,7 @@ impl QueryRoot {
             offerers: offerers.map(|o| o.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed,
+            allow_unverified,
             with_offers,
             auction_houses: auction_houses.map(|h| h.into_iter().map(Into::into).collect()),
             collections: collections.map(|c| c.into_iter().map(Into::into).collect()),
@@ -574,6 +578,10 @@ impl QueryRoot {
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+            )
             .filter(metadatas::address.eq(address))
             .select(queries::metadatas::NFT_COLUMNS)
             .first::<models::Nft>(&conn)
@@ -595,6 +603,10 @@ impl QueryRoot {
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+            )
             .filter(metadatas::mint_address.eq(address))
             .select(queries::metadatas::NFT_COLUMNS)
             .first::<models::Nft>(&conn)
@@ -615,6 +627,10 @@ impl QueryRoot {
         let rows: Vec<models::Nft> = metadatas::table
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
             )
             .filter(metadatas::mint_address.eq(any(addresses)))
             .select(queries::metadatas::NFT_COLUMNS)
@@ -949,6 +965,38 @@ impl QueryRoot {
             .context("Failed to load store config JSON")?;
 
         Ok(rows.into_iter().map(Into::into).collect())
+    }
+
+    fn auction_house(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "AuctionHouse Address")] address: String,
+    ) -> FieldResult<Option<AuctionHouse>> {
+        let conn = context.shared.db.get()?;
+        auction_houses::table
+            .filter(auction_houses::address.eq(address))
+            .first::<models::AuctionHouse>(&conn)
+            .optional()
+            .context("Failed to load AuctionHouse by address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
+    }
+
+    fn geno_habitat(
+        &self,
+        context: &AppContext,
+        address: PublicKey<GenoHabitat>,
+    ) -> FieldResult<Option<GenoHabitat>> {
+        let conn = context.shared.db.get()?;
+
+        let row = geno_habitat_datas::table
+            .filter(geno_habitat_datas::address.eq(address))
+            .first::<models::GenoHabitatData>(&conn)
+            .optional()
+            .context("Failed to load Genopets habitat")?;
+
+        Ok(row.map(Into::into))
     }
 
     fn denylist() -> Denylist {

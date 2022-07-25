@@ -4,18 +4,13 @@ on:
   pull_request:
     branches: [master]
   push:
-    branches: [dev, master]
+    branches: [dev, master, mpw/ci-test]
 
 jobs:
   debug-build:
     name: cargo build/test (debug profile)
-    runs-on: ubuntu-20.04
+    runs-on: indexer-test-runner
     steps:
-      - name: install dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libudev-dev
-
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -40,13 +35,8 @@ jobs:
 
   release-build:
     name: cargo build/test (release profile)
-    runs-on: ubuntu-20.04
+    runs-on: indexer-test-runner
     steps:
-      - name: install dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libudev-dev
-
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:

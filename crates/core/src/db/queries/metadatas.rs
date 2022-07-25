@@ -12,7 +12,7 @@ use sea_query::{
 use crate::{
     db::{
         models::{Nft, NftActivity},
-        tables::{metadata_jsons, metadatas},
+        tables::{current_metadata_owners, metadata_jsons, metadatas},
         Connection,
     },
     error::prelude::*,
@@ -58,6 +58,7 @@ enum CurrentMetadataOwners {
     Table,
     OwnerAddress,
     MintAddress,
+    TokenAccountAddress,
 }
 
 #[derive(Iden)]
@@ -125,6 +126,8 @@ pub struct ListQueryOptions {
     pub attributes: Option<Vec<AttributeFilter>>,
     /// nfts listed for sale
     pub listed: Option<bool>,
+    /// return nfts from unverified creators
+    pub allow_unverified: Option<bool>,
     /// nfts with active offers
     pub with_offers: Option<bool>,
     /// nft in one or more specific collections
@@ -151,6 +154,7 @@ pub type NftColumns = (
     metadata_jsons::external_url,
     metadata_jsons::category,
     metadata_jsons::model,
+    current_metadata_owners::token_account_address,
 );
 
 /// The column set for an NFT
@@ -169,6 +173,7 @@ pub const NFT_COLUMNS: NftColumns = (
     metadata_jsons::external_url,
     metadata_jsons::category,
     metadata_jsons::model,
+    current_metadata_owners::token_account_address,
 );
 
 /// Handles queries for NFTs
@@ -187,6 +192,7 @@ pub fn list(
         offerers,
         attributes,
         listed,
+        allow_unverified,
         with_offers,
         collections,
         limit,
@@ -232,6 +238,10 @@ pub fn list(
             (MetadataJsons::Table, MetadataJsons::Category),
             (MetadataJsons::Table, MetadataJsons::Model),
         ])
+        .columns(vec![(
+            CurrentMetadataOwners::Table,
+            CurrentMetadataOwners::TokenAccountAddress,
+        )])
         .from(MetadataJsons::Table)
         .inner_join(
             Metadatas::Table,
@@ -284,8 +294,11 @@ pub fn list(
                 Expr::tbl(Metadatas::Table, Metadatas::Address)
                     .equals(MetadataCreators::Table, MetadataCreators::MetadataAddress),
             )
-            .and_where(Expr::col(MetadataCreators::CreatorAddress).is_in(creators))
-            .and_where(Expr::col(MetadataCreators::Verified).eq(true));
+            .and_where(Expr::col(MetadataCreators::CreatorAddress).is_in(creators));
+    }
+
+    if allow_unverified != Some(true) {
+        query.and_where(Expr::col(MetadataCreators::Verified).eq(true));
     }
 
     if let Some(listed) = listed {
@@ -408,6 +421,15 @@ const ACTIVITES_QUERY: &str = r"
         LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchases.seller)
         LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
         WHERE metadata = ANY($1)
+    UNION
+    SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at,
+    array[buyer] as wallets,
+    array[bth.twitter_handle] as wallet_twitter_handles,
+    'offer' as activity_type
+        FROM offers
+        LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = offers.buyer)
+        WHERE metadata = ANY($1)
+        AND offers.purchase_id IS NULL
     ORDER BY created_at DESC;
  -- $1: addresses::text[]";
 
