@@ -1,11 +1,15 @@
-use indexer_core::db::{models, queries};
+use indexer_core::{db::queries, uuid::Uuid};
 use objects::{
-    auction_house::AuctionHouse, listing::Bid, nft::NftCreator, profile::TwitterProfile,
+    auction_house::AuctionHouse,
+    listing::Bid,
+    nft::{Nft, NftCreator},
+    profile::TwitterProfile,
 };
 use scalars::PublicKey;
 use tables::{bids, graph_connections};
 
 use super::prelude::*;
+use crate::schema::scalars::U64;
 
 #[derive(Debug, Clone)]
 pub struct Wallet {
@@ -119,6 +123,90 @@ impl WalletNftCount {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct WalletActivity {
+    pub id: Uuid,
+    pub metadata: PublicKey<Nft>,
+    pub auction_house: PublicKey<AuctionHouse>,
+    pub price: U64,
+    pub created_at: DateTime<Utc>,
+    pub wallets: Vec<Wallet>,
+    pub activity_type: String,
+}
+
+impl TryFrom<models::WalletActivity> for WalletActivity {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::WalletActivity {
+            id,
+            metadata,
+            auction_house,
+            price,
+            created_at,
+            wallets,
+            wallet_twitter_handles,
+            activity_type,
+        }: models::WalletActivity,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id,
+            metadata: metadata.into(),
+            auction_house: auction_house.into(),
+            price: price.try_into()?,
+            created_at: DateTime::from_utc(created_at, Utc),
+            wallets: wallets
+                .into_iter()
+                .zip(wallet_twitter_handles.into_iter())
+                .map(|(address, twitter_handle)| Wallet::new(address.into(), twitter_handle))
+                .collect(),
+            activity_type,
+        })
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl WalletActivity {
+    fn id(&self) -> &Uuid {
+        &self.id
+    }
+
+    fn metadata(&self) -> &PublicKey<Nft> {
+        &self.metadata
+    }
+
+    fn price(&self) -> U64 {
+        self.price
+    }
+
+    fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    fn wallets(&self) -> &Vec<Wallet> {
+        &self.wallets
+    }
+
+    fn activity_type(&self) -> &str {
+        &self.activity_type
+    }
+
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
+        ctx.nft_loader
+            .load(self.metadata.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
+        context
+            .store_auction_houses_loader
+            .load(self.auction_house.clone())
+            .await
+            .map_err(Into::into)
+    }
+}
+
 #[graphql_object(Context = AppContext)]
 impl Wallet {
     pub fn address(&self) -> &PublicKey<Wallet> {
@@ -127,6 +215,18 @@ impl Wallet {
 
     pub fn twitter_handle(&self) -> Option<&str> {
         self.twitter_handle.as_deref()
+    }
+
+    pub fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<WalletActivity>> {
+        let conn = ctx.shared.db.get()?;
+
+        let activities = queries::wallet::activities(&conn, &self.address)?;
+
+        activities
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     pub fn bids(&self, ctx: &AppContext) -> FieldResult<Vec<Bid>> {
