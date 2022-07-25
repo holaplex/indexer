@@ -297,7 +297,7 @@ pub fn list(
             .and_where(Expr::col(MetadataCreators::CreatorAddress).is_in(creators));
     }
 
-    if !matches!(allow_unverified, Some(true)) {
+    if allow_unverified != Some(true) {
         query.and_where(Expr::col(MetadataCreators::Verified).eq(true));
     }
 
