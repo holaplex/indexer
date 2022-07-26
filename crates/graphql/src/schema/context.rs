@@ -20,7 +20,10 @@ use objects::{
 };
 use scalars::{markers::StoreConfig, PublicKey};
 
-use super::prelude::*;
+use super::{
+    dataloaders::collection::{CollectionFloorPrice, CollectionNftCount},
+    prelude::*,
+};
 
 #[derive(Clone)]
 pub struct AppContext {
@@ -34,7 +37,10 @@ pub struct AppContext {
     pub bid_receipt_loader: Loader<PublicKey<BidReceipt>, Option<BidReceipt>>,
     pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
     pub collection_count_loader: Loader<PublicKey<StoreCreator>, Option<i32>>,
+    pub collection_floor_price_loader:
+        Loader<PublicKey<CollectionNft>, Option<CollectionFloorPrice>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
+    pub collection_nft_count_loader: Loader<PublicKey<CollectionNft>, Option<CollectionNftCount>>,
     pub geno_rental_agreement_loader: Loader<PublicKey<GenoHabitat>, Option<GenoRentalAgreement>>,
     pub graph_connection_loader: Loader<PublicKey<GraphConnection>, Option<GraphConnection>>,
     pub listing_bids_loader: Loader<PublicKey<Listing>, Vec<Bid>>,
@@ -83,7 +89,9 @@ impl AppContext {
             bid_receipt_loader: Loader::new(batcher.clone()),
             bid_receipts_loader: Loader::new(batcher.clone()),
             collection_count_loader: Loader::new(batcher.clone()),
+            collection_floor_price_loader: Loader::new(batcher.clone()),
             collection_loader: Loader::new(batcher.clone()),
+            collection_nft_count_loader: Loader::new(batcher.clone()),
             geno_rental_agreement_loader: Loader::new(batcher.clone()),
             graph_connection_loader: Loader::new(batcher.clone()),
             listing_bids_loader: Loader::new(batcher.clone()),

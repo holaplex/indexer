@@ -3,7 +3,7 @@ use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     db::{
         queries,
-        tables::{bid_receipts, collection_stats, listing_receipts, metadata_jsons},
+        tables::{bid_receipts, listing_receipts, metadata_jsons},
     },
     util::unix_timestamp,
     uuid::Uuid,
@@ -18,6 +18,10 @@ use scalars::{PublicKey, U64};
 use serde_json::Value;
 
 use super::prelude::*;
+use crate::schema::{
+    dataloaders::collection::{CollectionFloorPrice, CollectionNftCount},
+    scalars::I64,
+};
 
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
@@ -588,28 +592,20 @@ pub struct CollectionNft(Nft);
 
 #[graphql_object(impl = NftExtValue, Context = AppContext)]
 impl CollectionNft {
-    fn nft_count(&self, context: &AppContext) -> FieldResult<i32> {
-        let conn = context.shared.db.get()?;
-
-        let count = collection_stats::table
-            .filter(collection_stats::collection_address.eq(&self.0.mint_address))
-            .select(collection_stats::nft_count)
-            .get_result::<i64>(&conn)
-            .context("failed to load NFT count for this collection")?;
-
-        Ok(count.try_into()?)
+    async fn nft_count(&self, context: &AppContext) -> FieldResult<Option<I64>> {
+        Ok(context
+            .collection_nft_count_loader
+            .load(self.0.address().to_owned().into())
+            .await?
+            .map(|CollectionNftCount(nft_count)| nft_count))
     }
 
-    fn floor_price(&self, context: &AppContext) -> FieldResult<Option<i32>> {
-        let conn = context.shared.db.get()?;
-
-        let price = collection_stats::table
-            .filter(collection_stats::collection_address.eq(&self.0.mint_address))
-            .select(collection_stats::floor_price)
-            .get_result::<Option<i64>>(&conn)
-            .context("failed to load floor price for this collection")?;
-
-        price.map(TryInto::try_into).transpose().map_err(Into::into)
+    async fn floor_price(&self, context: &AppContext) -> FieldResult<Option<I64>> {
+        Ok(context
+            .collection_floor_price_loader
+            .load(self.0.address().to_owned().into())
+            .await?
+            .map(|CollectionFloorPrice(floor_price)| floor_price))
     }
 
     #[graphql(deprecated = "use `...on NftExt`")]
