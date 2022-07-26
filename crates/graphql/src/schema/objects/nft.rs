@@ -580,7 +580,6 @@ impl Nft {
 
 #[graphql_object(impl = NftExtValue, Context = AppContext)]
 impl Nft {
-
     #[graphql(deprecated = "use `...on NftExt`")]
     fn uri(&self) -> &str {
         self._uri()
