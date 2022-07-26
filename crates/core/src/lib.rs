@@ -8,7 +8,7 @@
     missing_copy_implementations
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
-#![feature(iter_intersperse)]
+#![feature(bound_map, iter_intersperse)]
 
 // TODO: #[macro_use] is somewhat deprecated, but diesel still relies on it
 #[cfg(feature = "db")]

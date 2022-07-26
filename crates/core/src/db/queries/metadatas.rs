@@ -81,7 +81,6 @@ enum MetadataCreators {
 }
 
 #[derive(Iden)]
-
 enum Offers {
     Table,
     Buyer,
