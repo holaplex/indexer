@@ -298,7 +298,13 @@ pub fn list(
     }
 
     if allow_unverified != Some(true) {
-        query.and_where(Expr::col(MetadataCreators::Verified).eq(true));
+        query
+            .inner_join(
+                MetadataCreators::Table,
+                Expr::tbl(Metadatas::Table, Metadatas::Address)
+                    .equals(MetadataCreators::Table, MetadataCreators::MetadataAddress),
+            )
+            .and_where(Expr::col(MetadataCreators::Verified).eq(true));
     }
 
     if let Some(listed) = listed {
