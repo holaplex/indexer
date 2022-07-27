@@ -18,10 +18,6 @@ use scalars::{PublicKey, U64};
 use serde_json::Value;
 
 use super::prelude::*;
-use crate::schema::{
-    dataloaders::collection::{CollectionFloorPrice, CollectionNftCount},
-    scalars::I64,
-};
 
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
@@ -825,20 +821,20 @@ pub struct CollectionNft(Nft);
 
 #[graphql_object(impl = NftExtValue, Context = AppContext)]
 impl CollectionNft {
-    async fn nft_count(&self, context: &AppContext) -> FieldResult<Option<I64>> {
+    async fn nft_count(&self, context: &AppContext) -> FieldResult<Option<scalars::I64>> {
         Ok(context
             .collection_nft_count_loader
             .load(self.0._address().to_owned().into())
             .await?
-            .map(|CollectionNftCount(nft_count)| nft_count))
+            .map(|dataloaders::collection::CollectionNftCount(nft_count)| nft_count))
     }
 
-    async fn floor_price(&self, context: &AppContext) -> FieldResult<Option<I64>> {
+    async fn floor_price(&self, context: &AppContext) -> FieldResult<Option<scalars::I64>> {
         Ok(context
             .collection_floor_price_loader
             .load(self.0._address().to_owned().into())
             .await?
-            .map(|CollectionFloorPrice(floor_price)| floor_price))
+            .map(|dataloaders::collection::CollectionFloorPrice(floor_price)| floor_price))
     }
 
     #[graphql(deprecated = "use `...on NftExt`")]
