@@ -289,7 +289,6 @@ impl NftActivity {
             .load(self.metadata.clone())
             .await
             .map_err(Into::into)
-            .map(|o| o.map(Into::into))
     }
 
     pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
@@ -302,6 +301,7 @@ impl NftActivity {
 }
 
 #[derive(Debug, Clone)]
+/// An NFT
 pub struct Nft {
     pub address: String,
     pub name: String,
@@ -418,7 +418,9 @@ impl Nft {
 - 600 (Small)
 - 800 (Medium)
 - 1400 (Large)
+
 Any other value will return the original image size.
+
 If no value is provided, it will return XSmall")))]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
         let url = Url::parse(&self.image);
@@ -532,50 +534,20 @@ If no value is provided, it will return XSmall")))]
 #[derive(Debug, Clone)]
 pub struct Collection {
     pub nft: Nft,
-
-    // #[graphql(deprecated = "use `nft { address }`")]
     pub address: String,
-
-    // #[graphql(deprecated = "use `nft { name }`")]
     pub name: String,
-
-    // #[graphql(deprecated = "use `nft { seller_fee_basis_points }`")]
     pub seller_fee_basis_points: i32,
-
-    // #[graphql(deprecated = "use `nft { mint_address }`")]
     pub mint_address: String,
-
-    // #[graphql(deprecated = "use `nft { token_account_address }`")]
     pub token_account_address: String,
-
-    // #[graphql(deprecated = "use `nft { primary_sale_happened }`")]
     pub primary_sale_happened: bool,
-
-    // #[graphql(deprecated = "use `nft { update_authority_address }`")]
     pub update_authority_address: String,
-
-    // #[graphql(deprecated = "use `nft { uri }`")]
     pub uri: String,
-
-    // #[graphql(deprecated = "use `nft { description }`")]
     pub description: String,
-
-    // #[graphql(deprecated = "use `nft { image }`")]
     pub image: String,
-
-    // #[graphql(deprecated = "use `nft { animation_url }`")]
     pub animation_url: Option<String>,
-
-    // #[graphql(deprecated = "use `nft { external_url }`")]
     pub external_url: Option<String>,
-
-    // #[graphql(deprecated = "use `nft { category }`")]
     pub category: String,
-
-    // #[graphql(deprecated = "use `nft { model }`")]
     pub model: Option<String>,
-
-    // #[graphql(deprecated = "use `nft { slot }`")]
     pub slot: Option<i32>,
 }
 

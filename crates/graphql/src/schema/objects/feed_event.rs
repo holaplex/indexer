@@ -274,7 +274,7 @@ impl MintEvent {
             .load(self.metadata_address.clone())
             .await
             .map_err(Into::into)
-            .map(|o| o.map(Into::into))
+            
     }
 
     pub async fn wallet(&self, ctx: &AppContext) -> FieldResult<Wallet> {
