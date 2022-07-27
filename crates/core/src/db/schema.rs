@@ -875,6 +875,7 @@ table! {
         canceled_at -> Nullable<Timestamp>,
         slot -> Int8,
         write_version -> Nullable<Int8>,
+        marketplace_program -> Varchar,
     }
 }
 
@@ -1064,6 +1065,7 @@ table! {
         canceled_at -> Nullable<Timestamp>,
         slot -> Int8,
         write_version -> Nullable<Int8>,
+        marketplace_program -> Varchar,
     }
 }
 
@@ -1205,6 +1207,7 @@ table! {
         created_at -> Timestamp,
         slot -> Int8,
         write_version -> Nullable<Int8>,
+        marketplace_program -> Varchar,
     }
 }
 

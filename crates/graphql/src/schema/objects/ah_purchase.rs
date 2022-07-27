@@ -10,6 +10,7 @@ pub struct Purchase {
     pub buyer: PublicKey<Wallet>,
     pub seller: PublicKey<Wallet>,
     pub auction_house: PublicKey<AuctionHouse>,
+    pub marketplace_program_address: String,
     pub metadata: PublicKey<Nft>,
     pub token_size: i32,
     pub price: U64,
@@ -47,6 +48,10 @@ impl Purchase {
         self.token_size
     }
 
+    fn marketplace_program_address(&self) -> &str {
+        &self.marketplace_program_address
+    }
+
     pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_loader
             .load(self.metadata.clone())
@@ -71,6 +76,7 @@ impl<'a> TryFrom<models::Purchase<'a>> for Purchase {
             buyer,
             seller,
             auction_house,
+            marketplace_program,
             metadata,
             token_size,
             price,
@@ -85,6 +91,7 @@ impl<'a> TryFrom<models::Purchase<'a>> for Purchase {
             metadata: metadata.into_owned().into(),
             price: price.try_into()?,
             auction_house: auction_house.into_owned().into(),
+            marketplace_program_address: marketplace_program.into_owned(),
             created_at: DateTime::from_utc(created_at, Utc),
             token_size: token_size.try_into()?,
         })

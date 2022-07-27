@@ -408,7 +408,7 @@ pub fn list(
 }
 
 const ACTIVITES_QUERY: &str = r"
-    SELECT listings.id as id, metadata, auction_house, price, auction_house, created_at,
+SELECT listings.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[seller] as wallets,
     array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
     'listing' as activity_type
@@ -416,7 +416,7 @@ const ACTIVITES_QUERY: &str = r"
         LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
         WHERE metadata = ANY($1)
     UNION
-    SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at,
+    SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[seller, buyer] as wallets,
     array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
     'purchase' as activity_type
@@ -425,7 +425,7 @@ const ACTIVITES_QUERY: &str = r"
         LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
         WHERE metadata = ANY($1)
     UNION
-    SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at,
+    SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[buyer] as wallets,
     array[bth.twitter_handle] as wallet_twitter_handles,
     'offer' as activity_type

@@ -8,6 +8,7 @@ use indexer_core::{
         tables::{feed_event_wallets, feed_events, listing_events, listings, sell_instructions},
         Error as DbError,
     },
+    pubkeys,
     uuid::Uuid,
 };
 use mpl_auction_house::instruction::Sell;
@@ -56,6 +57,7 @@ pub(crate) async fn process(
         id: None,
         trade_state: row.seller_trade_state.clone(),
         auction_house: row.auction_house.clone(),
+        marketplace_program: Owned(pubkeys::AUCTION_HOUSE.to_string()),
         seller: row.wallet.clone(),
         metadata: row.metadata.clone(),
         purchase_id: None,

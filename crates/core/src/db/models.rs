@@ -299,6 +299,10 @@ pub struct NftActivity {
     #[sql_type = "VarChar"]
     pub auction_house: String,
 
+    /// The marketplace program pubkey
+    #[sql_type = "VarChar"]
+    pub marketplace_program: String,
+
     /// The price of listing or purchase
     #[sql_type = "Int8"]
     pub price: i64,
@@ -2361,6 +2365,8 @@ pub struct Offer<'a> {
     pub slot: i64,
     /// Solana write_version
     pub write_version: Option<i64>,
+    /// Marketplace program address
+    pub marketplace_program: Cow<'a, str>,
 }
 
 /// A row in the `purchases` table
@@ -2390,6 +2396,8 @@ pub struct Purchase<'a> {
     pub slot: i64,
     /// Solana write_version
     pub write_version: Option<i64>,
+    /// Marketplace program address
+    pub marketplace_program: Cow<'a, str>,
 }
 
 /// A row in the `listings` table
@@ -2426,6 +2434,8 @@ pub struct Listing<'a> {
     pub slot: i64,
     /// Solana write_version
     pub write_version: Option<i64>,
+    /// Marketplace program address
+    pub marketplace_program: Cow<'a, str>,
 }
 
 /// A row in the `cardinal_entries` table
