@@ -294,17 +294,14 @@ pub fn list(
                 Expr::tbl(Metadatas::Table, Metadatas::Address)
                     .equals(MetadataCreators::Table, MetadataCreators::MetadataAddress),
             )
-            .and_where(Expr::col(MetadataCreators::CreatorAddress).is_in(creators));
-    }
-
-    if allow_unverified != Some(true) {
-        query
-            .inner_join(
-                MetadataCreators::Table,
-                Expr::tbl(Metadatas::Table, Metadatas::Address)
-                    .equals(MetadataCreators::Table, MetadataCreators::MetadataAddress),
-            )
-            .and_where(Expr::col(MetadataCreators::Verified).eq(true));
+            .and_where(Expr::col(MetadataCreators::CreatorAddress).is_in(creators))
+            .conditions(
+                allow_unverified != Some(true),
+                |q| {
+                    q.and_where(Expr::col(MetadataCreators::Verified).eq(true));
+                },
+                |_| {},
+            );
     }
 
     if let Some(listed) = listed {
