@@ -1042,9 +1042,7 @@ impl QueryRoot {
         let opts = queries::genopets::ListHabitatOptions {
             owners,
             renters,
-            harvesters: harvesters
-                .as_ref()
-                .map(|v| v.iter().map(|s| Borrowed(s.as_bytes())).collect()),
+            harvesters,
             genesis,
             elements: elements
                 .map(|e| e.into_iter().map(TryInto::try_into).collect())

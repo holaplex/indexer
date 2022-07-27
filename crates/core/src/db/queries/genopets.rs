@@ -1,6 +1,6 @@
 //! Query utilities for Genopets
 
-use std::{borrow::Cow, ops::Bound};
+use std::ops::Bound;
 
 use chrono::prelude::*;
 use diesel::{
@@ -23,13 +23,13 @@ use crate::{
 
 /// Input parameters for the [`list_habitats`] query.
 #[derive(Debug)]
-pub struct ListHabitatOptions<'a, W> {
+pub struct ListHabitatOptions<W, H> {
     /// Select only habitats owned by any of the given public keys
     pub owners: Option<Vec<W>>,
     /// Select only habitats rented by any of the given public keys
     pub renters: Option<Vec<W>>,
     /// Select only habitats with harvesters matching any of the given strings
-    pub harvesters: Option<Vec<Cow<'a, [u8]>>>,
+    pub harvesters: Option<Vec<H>>,
     /// Select only habitats whose genesis flag matches the given value
     pub genesis: Option<bool>,
     /// Select only habitats whose element matches any of the given elements
@@ -54,9 +54,9 @@ pub struct ListHabitatOptions<'a, W> {
 ///
 /// # Errors
 /// This function fails if the underlying query returns an error.
-pub fn list_habitats<W: ToSql<Text, Pg> + ToSql<Nullable<Text>, Pg>>(
+pub fn list_habitats<W: ToSql<Text, Pg> + ToSql<Nullable<Text>, Pg>, H: ToSql<Text, Pg>>(
     conn: &Connection,
-    opts: ListHabitatOptions<W>,
+    opts: ListHabitatOptions<W, H>,
 ) -> Result<Vec<GenoHabitatData<'static>>> {
     let mut query = geno_habitat_datas::table
         .select(geno_habitat_datas::all_columns)
