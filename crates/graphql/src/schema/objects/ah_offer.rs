@@ -11,6 +11,7 @@ pub struct Offer {
     pub buyer: PublicKey<Wallet>,
     pub metadata: PublicKey<Nft>,
     pub auction_house: PublicKey<AuctionHouse>,
+    pub marketplace_program_address: String,
     pub price: U64,
     pub purchase_id: Option<Uuid>,
     pub trade_state_bump: i32,
@@ -67,6 +68,10 @@ impl Offer {
         self.token_size
     }
 
+    fn marketplace_program_address(&self) -> &str {
+        &self.marketplace_program_address
+    }
+
     pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_loader
             .load(self.metadata.clone())
@@ -90,6 +95,7 @@ impl<'a> TryFrom<models::Offer<'a>> for Offer {
             id,
             trade_state,
             auction_house,
+            marketplace_program,
             buyer,
             metadata,
             token_account,
@@ -111,6 +117,7 @@ impl<'a> TryFrom<models::Offer<'a>> for Offer {
             purchase_id,
             token_account: token_account.map(Cow::into_owned),
             auction_house: auction_house.into_owned().into(),
+            marketplace_program_address: marketplace_program.into_owned(),
             trade_state_bump: trade_state_bump.into(),
             created_at: DateTime::from_utc(created_at, Utc),
             canceled_at: canceled_at.map(|c| DateTime::from_utc(c, Utc)),

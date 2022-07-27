@@ -9,6 +9,7 @@ pub struct AhListing {
     pub id: Uuid,
     pub trade_state: String,
     pub auction_house: PublicKey<AuctionHouse>,
+    pub marketplace_program_address: String,
     pub seller: PublicKey<Wallet>,
     pub metadata: PublicKey<Nft>,
     pub purchase_id: Option<Uuid>,
@@ -62,6 +63,10 @@ impl AhListing {
         self.canceled_at
     }
 
+    fn marketplace_program_address(&self) -> &str {
+        &self.marketplace_program_address
+    }
+
     pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_loader
             .load(self.metadata.clone())
@@ -85,6 +90,7 @@ impl<'a> TryFrom<models::Listing<'a>> for AhListing {
             id,
             trade_state,
             auction_house,
+            marketplace_program,
             seller,
             metadata,
             purchase_id,
@@ -100,6 +106,7 @@ impl<'a> TryFrom<models::Listing<'a>> for AhListing {
             id: id.unwrap_or_default(),
             trade_state: trade_state.into_owned(),
             auction_house: auction_house.into_owned().into(),
+            marketplace_program_address: marketplace_program.into_owned(),
             seller: seller.into_owned().into(),
             metadata: metadata.into_owned().into(),
             purchase_id,

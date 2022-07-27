@@ -1,8 +1,11 @@
 use borsh::BorshDeserialize;
-use indexer_core::db::{
-    models::{Listing, Offer, Purchase},
-    tables::{listings, offers},
-    update,
+use indexer_core::{
+    db::{
+        models::{Listing, Offer, Purchase},
+        tables::{listings, offers},
+        update,
+    },
+    pubkeys,
 };
 
 use super::{
@@ -47,6 +50,7 @@ async fn process_execute_sale(
             buyer: Owned(accts[0].clone()),
             seller: Owned(accts[1].clone()),
             auction_house: Owned(accts[9].clone()),
+            marketplace_program: Owned(pubkeys::ME_HAUS.to_string()),
             metadata: Owned(accts[5].clone()),
             token_size: params.token_size.try_into()?,
             price: params.buyer_price.try_into()?,
@@ -78,6 +82,7 @@ async fn process_sale(
         id: None,
         trade_state: Owned(accts[8].clone()),
         auction_house: Owned(accts[7].clone()),
+        marketplace_program: Owned(pubkeys::ME_HAUS.to_string()),
         seller: Owned(accts[0].clone()),
         metadata: Owned(accts[5].clone()),
         purchase_id: None,
@@ -115,6 +120,7 @@ async fn process_buy(
         id: None,
         trade_state: Owned(accts[7].clone()),
         auction_house: Owned(accts[6].clone()),
+        marketplace_program: Owned(pubkeys::ME_HAUS.to_string()),
         buyer: Owned(accts[0].clone()),
         metadata: Owned(accts[3].clone()),
         token_account: None,

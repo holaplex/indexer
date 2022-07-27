@@ -14,7 +14,7 @@ use crate::{
 };
 
 const ACTIVITES_QUERY: &str = r"
-    SELECT listings.id as id, metadata, auction_house, price, created_at,
+SELECT listings.id as id, metadata, auction_house, price, created_at, marketplace_program
     array[seller] as wallets,
     array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
     'listing' as activity_type
@@ -26,7 +26,7 @@ const ACTIVITES_QUERY: &str = r"
         on md.address = mc.metadata_address
         WHERE auction_house = ANY($1) and ($2 is null OR mc.creator_address = ANY($2))
     UNION
-    SELECT purchases.id as id, metadata, auction_house, price, created_at,
+    SELECT purchases.id as id, metadata, auction_house, price, created_at, marketplace_program,
     array[seller, buyer] as wallets,
     array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
     'purchase' as activity_type
