@@ -2,13 +2,7 @@ use indexer_core::{
     db::{insert_into, models::AuctionHouse as DbAuctionHouse, tables::auction_houses},
     prelude::*,
 };
-use mpl_auction_house::{
-    pda::{
-        find_auction_house_address, find_auction_house_fee_account_address,
-        find_auction_house_treasury_address,
-    },
-    AuctionHouse,
-};
+use mpl_auction_house::AuctionHouse;
 
 use super::Client;
 use crate::prelude::*;
@@ -18,25 +12,6 @@ pub(crate) async fn process(
     key: Pubkey,
     account_data: AuctionHouse,
 ) -> Result<()> {
-    let (ah_address, _) =
-        find_auction_house_address(&account_data.authority, &account_data.treasury_mint);
-    let (ah_fee_acc_addr, _) = find_auction_house_fee_account_address(&key);
-    let (ah_treasury_addr, _) = find_auction_house_treasury_address(&key);
-
-    debug!(
-        "parsing auction house {:?}: {:?}",
-        ah_address, account_data.creator
-    );
-
-    if ah_address != key
-        || ah_fee_acc_addr != account_data.auction_house_fee_account
-        || ah_treasury_addr != account_data.auction_house_treasury
-    {
-        debug!("Auction house keys didn't match");
-
-        return Ok(());
-    }
-
     let row = DbAuctionHouse {
         address: Owned(bs58::encode(key).into_string()),
         treasury_mint: Owned(bs58::encode(account_data.treasury_mint).into_string()),
