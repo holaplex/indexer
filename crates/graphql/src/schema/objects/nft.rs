@@ -565,7 +565,7 @@ impl Collection {
             .await?
             .map(|dataloaders::collection::CollectionFloorPrice(floor_price)| floor_price))
     }
-    
+
     #[graphql(deprecated = "use `nft { address }`")]
     pub fn address(&self) -> &str {
         &self.address
