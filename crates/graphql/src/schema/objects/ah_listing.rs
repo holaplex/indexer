@@ -1,9 +1,5 @@
 use indexer_core::uuid::Uuid;
-use objects::{
-    auction_house::AuctionHouse,
-    nft::{Nft, NftExtValue},
-    wallet::Wallet,
-};
+use objects::{auction_house::AuctionHouse, nft::Nft, wallet::Wallet};
 use scalars::{PublicKey, U64};
 
 use super::prelude::*;
@@ -71,7 +67,7 @@ impl AhListing {
         &self.marketplace_program_address
     }
 
-    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<NftExtValue>> {
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_loader
             .load(self.metadata.clone())
             .await

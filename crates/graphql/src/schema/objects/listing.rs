@@ -1,4 +1,4 @@
-use objects::{nft::NftExtValue, storefront::Storefront};
+use objects::{nft::Nft, storefront::Storefront};
 use scalars::U64;
 use tables::{auction_caches, auction_datas, auction_datas_ext};
 
@@ -171,14 +171,14 @@ impl Listing {
             .map_err(Into::into)
     }
 
-    pub async fn nfts(&self, ctx: &AppContext) -> FieldResult<Vec<NftExtValue>> {
+    pub async fn nfts(&self, ctx: &AppContext) -> FieldResult<Vec<Nft>> {
         ctx.listing_nfts_loader
             .load(self.address.clone().into())
             .await
             .map_err(Into::into)
             .map(|mut v| {
                 v.sort_unstable_by_key(|(i, _)| *i);
-                v.into_iter().map(|(_, n)| n.into()).collect()
+                v.into_iter().map(|(_, n)| n).collect()
             })
     }
 

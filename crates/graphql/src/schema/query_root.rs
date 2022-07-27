@@ -15,9 +15,7 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::{
-        CollectionNft, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftExtValue, NftsStats,
-    },
+    nft::{Collection, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
     profile::{ProfilesStats, TwitterProfile},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
@@ -364,7 +362,7 @@ impl QueryRoot {
         term: Option<String>,
         #[graphql(description = "Limit for query")] limit: i32,
         #[graphql(description = "Offset for query")] offset: i32,
-    ) -> FieldResult<Vec<NftExtValue>> {
+    ) -> FieldResult<Vec<Nft>> {
         let collections = match (collections, collection) {
             (c, None) => c,
             (None, Some(c)) => Some(vec![c]),
@@ -450,7 +448,6 @@ impl QueryRoot {
 
         nfts.into_iter()
             .map(TryInto::try_into)
-            .map(|r| r.map(NftExtValue::Nft))
             .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
@@ -574,7 +571,7 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(description = "Metadata address of NFT")] address: String,
-    ) -> FieldResult<Option<NftExtValue>> {
+    ) -> FieldResult<Option<Nft>> {
         let conn = context.shared.db.get()?;
         metadatas::table
             .inner_join(
@@ -590,7 +587,6 @@ impl QueryRoot {
             .optional()
             .context("Failed to load NFT by metadata address.")?
             .map(TryInto::try_into)
-            .map(|r| r.map(NftExtValue::Nft))
             .transpose()
             .map_err(Into::into)
     }
@@ -600,7 +596,7 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(description = "Mint address of NFT")] address: String,
-    ) -> FieldResult<Option<NftExtValue>> {
+    ) -> FieldResult<Option<Nft>> {
         let conn = context.shared.db.get()?;
         metadatas::table
             .inner_join(
@@ -616,7 +612,6 @@ impl QueryRoot {
             .optional()
             .context("Failed to load NFT by mint address.")?
             .map(TryInto::try_into)
-            .map(|r| r.map(NftExtValue::Nft))
             .transpose()
             .map_err(Into::into)
     }
@@ -626,7 +621,7 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(description = "Mint addresses of NFTs")] addresses: Vec<PublicKey<Nft>>,
-    ) -> FieldResult<Vec<NftExtValue>> {
+    ) -> FieldResult<Vec<Nft>> {
         let conn = context.shared.db.get()?;
         let rows: Vec<models::Nft> = metadatas::table
             .inner_join(
@@ -643,7 +638,6 @@ impl QueryRoot {
 
         rows.into_iter()
             .map(Nft::try_from)
-            .map(|r| r.map(NftExtValue::Nft))
             .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
@@ -754,7 +748,7 @@ impl QueryRoot {
         end_date: DateTime<Utc>,
         limit: i32,
         offset: i32,
-    ) -> FieldResult<Vec<CollectionNft>> {
+    ) -> FieldResult<Vec<Collection>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let addresses: Option<Vec<String>> = match term {
@@ -823,7 +817,7 @@ impl QueryRoot {
         end_date: DateTime<Utc>,
         limit: i32,
         offset: i32,
-    ) -> FieldResult<Vec<CollectionNft>> {
+    ) -> FieldResult<Vec<Collection>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let addresses: Option<Vec<String>> = match term {

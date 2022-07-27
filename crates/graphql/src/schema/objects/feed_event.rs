@@ -2,10 +2,10 @@ use indexer_core::{db::models, uuid::Uuid};
 use juniper::GraphQLUnion;
 use objects::{
     ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase,
-    graph_connection::GraphConnection, nft::NftExtValue, profile::TwitterProfile, wallet::Wallet,
+    graph_connection::GraphConnection, nft::Nft, profile::TwitterProfile, wallet::Wallet,
 };
 
-use super::{nft::Nft, prelude::*};
+use super::prelude::*;
 use crate::schema::scalars::PublicKey;
 
 #[derive(Debug, Clone)]
@@ -269,7 +269,7 @@ impl MintEvent {
         &self.metadata_address
     }
 
-    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<NftExtValue>> {
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_loader
             .load(self.metadata_address.clone())
             .await

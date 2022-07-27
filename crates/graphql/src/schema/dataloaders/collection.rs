@@ -4,7 +4,7 @@ use indexer_core::db::{
     tables::collection_stats,
 };
 use objects::{
-    nft::{CollectionNft, Nft},
+    nft::{Collection, Nft},
     store_creator::StoreCreator,
 };
 use scalars::{PublicKey, I64};
@@ -132,11 +132,11 @@ impl From<i64> for CollectionFloorPrice {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<CollectionNft>, Option<CollectionNftCount>> for Batcher {
+impl TryBatchFn<PublicKey<Collection>, Option<CollectionNftCount>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<CollectionNft>],
-    ) -> TryBatchMap<PublicKey<CollectionNft>, Option<CollectionNftCount>> {
+        addresses: &[PublicKey<Collection>],
+    ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionNftCount>> {
         let conn = self.db()?;
 
         let rows: Vec<(String, i64)> = collection_stats::table
@@ -158,11 +158,11 @@ impl TryBatchFn<PublicKey<CollectionNft>, Option<CollectionNftCount>> for Batche
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<CollectionNft>, Option<CollectionFloorPrice>> for Batcher {
+impl TryBatchFn<PublicKey<Collection>, Option<CollectionFloorPrice>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<CollectionNft>],
-    ) -> TryBatchMap<PublicKey<CollectionNft>, Option<CollectionFloorPrice>> {
+        addresses: &[PublicKey<Collection>],
+    ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionFloorPrice>> {
         let conn = self.db()?;
 
         let rows: Vec<(String, Option<i64>)> = collection_stats::table

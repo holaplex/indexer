@@ -1,8 +1,5 @@
 use objects::{
-    auction_house::AuctionHouse,
-    nft::{Nft, NftExtValue},
-    purchase_receipt::PurchaseReceipt,
-    wallet::Wallet,
+    auction_house::AuctionHouse, nft::Nft, purchase_receipt::PurchaseReceipt, wallet::Wallet,
 };
 use scalars::{PublicKey, U64};
 
@@ -81,7 +78,7 @@ impl BidReceipt {
         self.bump
     }
 
-    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<NftExtValue>> {
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_loader
             .load(self.metadata.clone())
             .await
