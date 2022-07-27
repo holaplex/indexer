@@ -72,7 +72,6 @@ impl AhListing {
             .load(self.metadata.clone())
             .await
             .map_err(Into::into)
-            
     }
 
     pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {

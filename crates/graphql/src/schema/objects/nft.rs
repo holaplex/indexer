@@ -2,10 +2,7 @@ use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     db::{
         queries,
-        tables::{
-            bid_receipts::{self, created_at},
-            listing_receipts, metadata_jsons,
-        },
+        tables::{bid_receipts, listing_receipts, metadata_jsons},
     },
     util::unix_timestamp,
     uuid::Uuid,

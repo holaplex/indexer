@@ -29,7 +29,6 @@ impl StoreCreator {
             .load(self.creator_address.clone().into())
             .await
             .map_err(Into::into)
-            .map(|o| o.into_iter().map(Into::into).collect())
     }
 
     pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
