@@ -550,6 +550,10 @@ pub struct Collection {
 
 #[graphql_object(Context = AppContext)]
 impl Collection {
+    fn nft(&self) -> &Nft {
+        &self.nft
+    }
+
     async fn nft_count(&self, context: &AppContext) -> FieldResult<Option<scalars::I64>> {
         Ok(context
             .collection_nft_count_loader
