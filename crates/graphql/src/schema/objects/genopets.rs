@@ -1,4 +1,4 @@
-use indexer_core::{base64, db::models};
+use indexer_core::db::models;
 use objects::wallet::Wallet;
 use scalars::{markers::TokenMint, PublicKey, I64};
 
@@ -169,7 +169,7 @@ impl<'a> From<models::GenoHabitatData<'a>> for GenoHabitat {
             expiry_timestamp,
             next_day_timestamp,
             crystals_refined,
-            harvester,
+            harvester_bytes: _,
             ki_harvested,
             seeds_spawned,
             is_sub_habitat,
@@ -190,6 +190,7 @@ impl<'a> From<models::GenoHabitatData<'a>> for GenoHabitat {
             harvester_settings_cooldown_timestamp,
             slot: _,
             write_version: _,
+            harvester,
         }: models::GenoHabitatData,
     ) -> Self {
         Self {
@@ -202,7 +203,7 @@ impl<'a> From<models::GenoHabitatData<'a>> for GenoHabitat {
             expiry_timestamp: DateTime::from_utc(expiry_timestamp, Utc),
             next_day_timestamp: DateTime::from_utc(next_day_timestamp, Utc),
             crystals_refined: crystals_refined.into(),
-            harvester: base64::encode_config(harvester, base64::STANDARD_NO_PAD),
+            harvester: harvester.into_owned(),
             ki_harvested: ki_harvested.into(),
             seeds_spawned,
             is_sub_habitat,

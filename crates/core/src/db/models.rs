@@ -2510,7 +2510,7 @@ pub struct GenoHabitatData<'a> {
     pub expiry_timestamp: NaiveDateTime,
     pub next_day_timestamp: NaiveDateTime,
     pub crystals_refined: i16,
-    pub harvester: Cow<'a, [u8]>,
+    pub harvester_bytes: Cow<'a, [u8]>,
     pub ki_harvested: i64,
     pub seeds_spawned: bool,
     pub is_sub_habitat: bool,
@@ -2533,6 +2533,7 @@ pub struct GenoHabitatData<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub harvester: Cow<'a, str>,
 }
 
 /// A row in the `geno_rental_agreements` table

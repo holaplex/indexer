@@ -1,7 +1,6 @@
 use indexer_core::db::{
     expression::dsl::all,
     queries::{self, feed_event::EventType},
-    tables::twitter_handle_name_services,
 };
 use objects::{
     ah_listing::AhListing,
@@ -26,7 +25,7 @@ use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
     current_metadata_owners, geno_habitat_datas, graph_connections, metadata_jsons, metadatas,
-    store_config_jsons, storefronts, wallet_totals,
+    store_config_jsons, storefronts, twitter_handle_name_services, wallet_totals,
 };
 
 use super::{enums::OrderDirection, prelude::*};
@@ -997,6 +996,81 @@ impl QueryRoot {
             .context("Failed to load Genopets habitat")?;
 
         Ok(row.map(Into::into))
+    }
+
+    fn geno_habitats(
+        &self,
+        ctx: &AppContext,
+        #[graphql(description = "Filter on habitat owners")] owners: Option<Vec<PublicKey<Wallet>>>,
+        #[graphql(description = "Filter on habitat renters")] renters: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
+        #[graphql(description = "Filter on harvester strings")] harvesters: Option<Vec<String>>,
+        #[graphql(description = "Filter on whether the habitat has the genesis flag")]
+        genesis: Option<bool>,
+        #[graphql(description = "Filter on habitat elements")] elements: Option<Vec<i32>>,
+        #[graphql(description = "Filter on minimum habitat level")] min_level: Option<i32>,
+        #[graphql(description = "Filter on maximum habitat level")] max_level: Option<i32>,
+        #[graphql(description = "Filter on minimum habitat sequence")] min_sequence: Option<i32>,
+        #[graphql(description = "Filter on maximum habitat sequence")] max_sequence: Option<i32>,
+        #[graphql(description = "Filter on habitat guilds")] guilds: Option<Vec<i32>>,
+        #[graphql(description = "Filter on minimum habitat durability")] min_durability: Option<
+            i32,
+        >,
+        #[graphql(description = "Filter on maximum habitat durability")] max_durability: Option<
+            i32,
+        >,
+        #[graphql(description = "Filter on minimum habitat expiry timestamp")] min_expiry: Option<
+            DateTime<Utc>,
+        >,
+        #[graphql(description = "Filter on maximum habitat expiry timestamp")] max_expiry: Option<
+            DateTime<Utc>,
+        >,
+        #[graphql(description = "Number of values to return")] limit: i32,
+        #[graphql(description = "Number of values to skip for pagination")] offset: i32,
+    ) -> FieldResult<Vec<GenoHabitat>> {
+        use std::ops::Bound;
+
+        fn make_range<T>(min: Option<T>, max: Option<T>) -> (Bound<T>, Bound<T>) {
+            (
+                min.map_or(Bound::Unbounded, Bound::Included),
+                max.map_or(Bound::Unbounded, Bound::Included),
+            )
+        }
+
+        let limit = 250.min(limit);
+        let opts = queries::genopets::ListHabitatOptions {
+            owners,
+            renters,
+            harvesters,
+            genesis,
+            elements: elements
+                .map(|e| e.into_iter().map(TryInto::try_into).collect())
+                .transpose()
+                .context("Failed to convert elements parameter")?,
+            levels: make_range(
+                min_level
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .context("Failed to convert min level")?,
+                max_level
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .context("Failed to convert max level")?,
+            ),
+            sequences: make_range(min_sequence.map(Into::into), max_sequence.map(Into::into)),
+            guilds,
+            durabilities: make_range(min_durability, max_durability),
+            expiries: make_range(min_expiry, max_expiry),
+            limit: limit.into(),
+            offset: offset.into(),
+        };
+
+        let conn = ctx.shared.db.get().context("Failed to connect to the DB")?;
+
+        queries::genopets::list_habitats(&conn, opts)
+            .map(|v| v.into_iter().map(Into::into).collect())
+            .map_err(Into::into)
     }
 
     fn denylist() -> Denylist {
