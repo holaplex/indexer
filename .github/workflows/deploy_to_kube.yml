@@ -110,7 +110,7 @@ jobs:
           echo "::set-output name=image::$image_tag"
 
       - name: Build, tag, and push DB Migrator image
-        id: build-http-image
+        id: build-migrator-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ github.event.repository.name }}
