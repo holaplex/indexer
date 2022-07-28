@@ -1,19 +1,16 @@
-CREATE OR REPLACE FUNCTION nft_count_on_nft_added()
-  RETURNS TRIGGER
-  AS
-$$
-BEGIN
-  INSERT INTO collection_stats (collection_address, nft_count)
-    VALUES (NEW.collection_address, 1)
-    ON CONFLICT (collection_address) DO UPDATE
-      SET nft_count = collection_stats.nft_count + 1;
+create or replace function nft_count_on_nft_added() returns trigger
+  language plpgsql
+  as $$
+begin
+  insert into collection_stats (collection_address, nft_count)
+    values (new.collection_address, 1)
+    on conflict (collection_address) do update
+      set nft_count = collection_stats.nft_count + 1;
 
-  RETURN NULL;
-END;
-$$ LANGUAGE PLPGSQL;
+  return null;
+end
+$$;
 
-CREATE TRIGGER nft_collection_key_added
-  AFTER INSERT
-  ON metadata_collection_keys
-  FOR EACH ROW
-  EXECUTE PROCEDURE nft_count_on_nft_added();
+create trigger nft_collection_key_added
+after insert on metadata_collection_keys for each row
+execute procedure nft_count_on_nft_added();

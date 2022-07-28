@@ -1,4 +1,7 @@
-use dataloaders::{Batcher, Loader, TwitterBatcher};
+use dataloaders::{
+    collection::{CollectionFloorPrice, CollectionNftCount},
+    Batcher, Loader, TwitterBatcher,
+};
 use indexer_core::uuid::Uuid;
 use objects::{
     ah_listing::AhListing,
@@ -20,10 +23,7 @@ use objects::{
 };
 use scalars::{markers::StoreConfig, PublicKey};
 
-use super::{
-    dataloaders::collection::{CollectionFloorPrice, CollectionNftCount},
-    prelude::*,
-};
+use super::prelude::*;
 
 #[derive(Clone)]
 pub struct AppContext {

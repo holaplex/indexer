@@ -529,35 +529,18 @@ If no value is provided, it will return XSmall")))]
 }
 
 #[derive(Debug, Clone)]
-pub struct Collection {
-    pub nft: Nft,
-    pub address: String,
-    pub name: String,
-    pub seller_fee_basis_points: i32,
-    pub mint_address: String,
-    pub token_account_address: String,
-    pub primary_sale_happened: bool,
-    pub update_authority_address: String,
-    pub uri: String,
-    pub description: String,
-    pub image: String,
-    pub animation_url: Option<String>,
-    pub external_url: Option<String>,
-    pub category: String,
-    pub model: Option<String>,
-    pub slot: Option<i32>,
-}
+pub struct Collection(pub Nft);
 
 #[graphql_object(Context = AppContext)]
 impl Collection {
     fn nft(&self) -> &Nft {
-        &self.nft
+        &self.0
     }
 
     async fn nft_count(&self, context: &AppContext) -> FieldResult<Option<scalars::I64>> {
         Ok(context
             .collection_nft_count_loader
-            .load(self.nft.address.clone().into())
+            .load(self.0.address.clone().into())
             .await?
             .map(|dataloaders::collection::CollectionNftCount(nft_count)| nft_count))
     }
@@ -565,68 +548,68 @@ impl Collection {
     async fn floor_price(&self, context: &AppContext) -> FieldResult<Option<scalars::I64>> {
         Ok(context
             .collection_floor_price_loader
-            .load(self.nft.address.clone().into())
+            .load(self.0.address.clone().into())
             .await?
             .map(|dataloaders::collection::CollectionFloorPrice(floor_price)| floor_price))
     }
 
     #[graphql(deprecated = "use `nft { address }`")]
     pub fn address(&self) -> &str {
-        &self.address
+        &self.0.address
     }
 
     #[graphql(deprecated = "use `nft { name }`")]
     pub fn name(&self) -> &str {
-        &self.name
+        &self.0.name
     }
 
     #[graphql(deprecated = "use `nft { seller_fee_basis_points }`")]
     pub fn seller_fee_basis_points(&self) -> i32 {
-        self.seller_fee_basis_points
+        self.0.seller_fee_basis_points
     }
 
     #[graphql(deprecated = "use `nft { mint_address }`")]
     pub fn mint_address(&self) -> &str {
-        &self.mint_address
+        &self.0.mint_address
     }
 
     #[graphql(deprecated = "use `nft { token_account_address }`")]
     pub fn token_account_address(&self) -> &str {
-        &self.token_account_address
+        &self.0.token_account_address
     }
 
     #[graphql(deprecated = "use `nft { primary_sale_happened }`")]
     pub fn primary_sale_happened(&self) -> bool {
-        self.primary_sale_happened
+        self.0.primary_sale_happened
     }
 
     #[graphql(deprecated = "use `nft { update_authority_address }`")]
     pub fn update_authority_address(&self) -> &str {
-        &self.update_authority_address
+        &self.0.update_authority_address
     }
 
     #[graphql(deprecated = "use `nft { description }`")]
     pub fn description(&self) -> &str {
-        &self.description
+        &self.0.description
     }
 
     #[graphql(deprecated = "use `nft { category }`")]
     pub fn category(&self) -> &str {
-        &self.category
+        &self.0.category
     }
 
     #[graphql(deprecated = "use `nft { parser }`")]
     pub fn parser(&self) -> Option<&str> {
-        self.model.as_deref()
+        self.0.model.as_deref()
     }
 
     #[graphql(deprecated = "use `nft { image }`")]
     pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
-        let url = Url::parse(&self.image);
+        let url = Url::parse(&self.0.image);
         let id = if let Ok(ref url) = url {
             AssetIdentifier::new(url)
         } else {
-            return Ok(self.image.clone());
+            return Ok(self.0.image.clone());
         };
 
         let width = ImageSize::from(width.unwrap_or(ImageSize::XSmall as i32));
@@ -634,24 +617,24 @@ impl Collection {
 
         Ok(
             proxy_url(&ctx.shared.asset_proxy, &id, Some(("width", &*width_str)))?
-                .map_or_else(|| self.image.clone(), |u| u.to_string()),
+                .map_or_else(|| self.0.image.clone(), |u| u.to_string()),
         )
     }
 
     #[graphql(deprecated = "use `nft { animation_url }`")]
     pub fn animation_url(&self) -> Option<&str> {
-        self.animation_url.as_deref()
+        self.0.animation_url.as_deref()
     }
 
     #[graphql(deprecated = "use `nft { external_url }`")]
     pub fn external_url(&self) -> Option<&str> {
-        self.external_url.as_deref()
+        self.0.external_url.as_deref()
     }
 
     #[graphql(deprecated = "use `nft { creators }`")]
     pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<NftCreator>> {
         ctx.nft_creators_loader
-            .load(self.address.clone().into())
+            .load(self.0.address.clone().into())
             .await
             .map_err(Into::into)
     }
@@ -659,7 +642,7 @@ impl Collection {
     #[graphql(deprecated = "use `nft { attributes }`")]
     pub async fn attributes(&self, ctx: &AppContext) -> FieldResult<Vec<NftAttribute>> {
         ctx.nft_attributes_loader
-            .load(self.address.clone().into())
+            .load(self.0.address.clone().into())
             .await
             .map_err(Into::into)
     }
@@ -667,7 +650,7 @@ impl Collection {
     #[graphql(deprecated = "use `nft { owner }`")]
     pub async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>> {
         ctx.nft_owner_loader
-            .load(self.mint_address.clone().into())
+            .load(self.0.mint_address.clone().into())
             .await
             .map_err(Into::into)
     }
@@ -675,7 +658,7 @@ impl Collection {
     #[graphql(deprecated = "use `nft { activities }`")]
     pub async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
         ctx.nft_activities_loader
-            .load(self.address.clone().into())
+            .load(self.0.address.clone().into())
             .await
             .map_err(Into::into)
     }
@@ -683,7 +666,7 @@ impl Collection {
     #[graphql(deprecated = "use `nft { ah_listings_loader }`")]
     pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>> {
         ctx.ah_listings_loader
-            .load(self.address.clone().into())
+            .load(self.0.address.clone().into())
             .await
             .map_err(Into::into)
     }
@@ -691,7 +674,7 @@ impl Collection {
     #[graphql(deprecated = "use `nft { purchases }`")]
     pub async fn purchases(&self, ctx: &AppContext) -> FieldResult<Vec<Purchase>> {
         ctx.purchases_loader
-            .load(self.address.clone().into())
+            .load(self.0.address.clone().into())
             .await
             .map_err(Into::into)
     }
@@ -699,7 +682,7 @@ impl Collection {
     #[graphql(deprecated = "use `nft { offers }`")]
     pub async fn offers(&self, ctx: &AppContext) -> FieldResult<Vec<Offer>> {
         ctx.offers_loader
-            .load(self.address.clone().into())
+            .load(self.0.address.clone().into())
             .await
             .map_err(Into::into)
     }
@@ -707,7 +690,7 @@ impl Collection {
     #[graphql(deprecated = "use `nft { files }`")]
     pub async fn files(&self, ctx: &AppContext) -> FieldResult<Vec<NftFile>> {
         ctx.nft_files_loader
-            .load(self.address.clone().into())
+            .load(self.0.address.clone().into())
             .await
             .map_err(Into::into)
     }
@@ -715,14 +698,14 @@ impl Collection {
     #[graphql(deprecated = "use `nft { collection }`")]
     pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
         ctx.nft_collection_loader
-            .load(self.address.clone().into())
+            .load(self.0.address.clone().into())
             .await
             .map_err(Into::into)
     }
 
     #[graphql(deprecated = "use `nft { created_at }`")]
     pub async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
-        if let Some(slot) = self.slot {
+        if let Some(slot) = self.0.slot {
             let shared = ctx.shared.clone();
 
             tokio::task::spawn_blocking(move || {
@@ -746,25 +729,7 @@ impl TryFrom<models::Nft> for Collection {
     type Error = <Nft as TryFrom<models::Nft>>::Error;
 
     fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
-        let nft = Nft::try_from(value)?;
-        Ok(Self {
-            nft: nft.clone(),
-            address: nft.address,
-            name: nft.name,
-            seller_fee_basis_points: nft.seller_fee_basis_points,
-            mint_address: nft.mint_address,
-            token_account_address: nft.token_account_address,
-            primary_sale_happened: nft.primary_sale_happened,
-            update_authority_address: nft.update_authority_address,
-            uri: nft.uri,
-            description: nft.description,
-            image: nft.image,
-            animation_url: nft.animation_url,
-            external_url: nft.external_url,
-            category: nft.category,
-            model: nft.model,
-            slot: nft.slot,
-        })
+        value.try_into().map(Self)
     }
 }
 

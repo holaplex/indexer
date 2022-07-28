@@ -1,26 +1,35 @@
-INSERT INTO collection_stats (collection_address, nft_count, floor_price)
-WITH nft_count_table as (
-    SELECT metadata_collection_keys.collection_address AS collection_address, COUNT (metadata_collection_keys.metadata_address) AS nft_count
-    FROM metadata_collection_keys
-    WHERE metadata_collection_keys.verified = true
-    GROUP BY metadata_collection_keys.collection_address
-),
+insert into collection_stats (collection_address, nft_count, floor_price)
+with
+    nft_count_table as (
+        select
+            metadata_collection_keys.collection_address as collection_address,
+            count(metadata_collection_keys.metadata_address) as nft_count
+        from metadata_collection_keys
+        where metadata_collection_keys.verified = true
+        group by metadata_collection_keys.collection_address
+    ),
 
-floor_price_table as (
-    SELECT metadata_collection_keys.collection_address AS collection_address, MIN(listings.price) AS floor_price
-    FROM listings
-    INNER JOIN metadatas ON(listings.metadata = metadatas.address)
-    INNER JOIN metadata_collection_keys ON(metadatas.address = metadata_collection_keys.metadata_address)
-    INNER JOIN auction_houses ON(listings.auction_house = auction_houses.address)
-    WHERE
-        auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
-        AND listings.purchase_id IS NULL
-        AND listings.canceled_at IS NULL
-        AND metadata_collection_keys.verified = true
-    GROUP BY metadata_collection_keys.collection_address
+    floor_price_table as (
+        select
+            metadata_collection_keys.collection_address as collection_address,
+            min(listings.price) as floor_price
+        from listings
+        inner join metadatas on (listings.metadata = metadatas.address)
+        inner join metadata_collection_keys
+            on (metadatas.address = metadata_collection_keys.metadata_address)
+        inner join auction_houses
+            on (listings.auction_house = auction_houses.address)
+        where
+            auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
+            and listings.purchase_id is null
+            and listings.canceled_at is null
+            and metadata_collection_keys.verified = true
+        group by metadata_collection_keys.collection_address
+    )
 
-)
-
-SELECT nft_count_table.collection_address, nft_count_table.nft_count, floor_price_table.floor_price
-FROM nft_count_table, floor_price_table
-WHERE nft_count_table.collection_address = floor_price_table.collection_address
+select
+    nft_count_table.collection_address,
+    nft_count_table.nft_count,
+    floor_price_table.floor_price
+from nft_count_table, floor_price_table
+where nft_count_table.collection_address = floor_price_table.collection_address

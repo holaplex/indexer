@@ -1,13 +1,13 @@
 use indexer_core::db::{
     sql_query,
     sql_types::{Array, Text},
-    tables::collection_stats,
 };
 use objects::{
     nft::{Collection, Nft},
     store_creator::StoreCreator,
 };
 use scalars::{PublicKey, I64};
+use tables::collection_stats;
 
 use super::prelude::*;
 
@@ -114,6 +114,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
 }
 
 #[derive(Debug, Clone)]
+#[repr(transparent)]
 pub struct CollectionNftCount(pub I64);
 
 impl From<i64> for CollectionNftCount {
@@ -123,11 +124,12 @@ impl From<i64> for CollectionNftCount {
 }
 
 #[derive(Debug, Clone)]
+#[repr(transparent)]
 pub struct CollectionFloorPrice(pub I64);
 
 impl From<i64> for CollectionFloorPrice {
     fn from(value: i64) -> Self {
-        value.into()
+        Self(value.into())
     }
 }
 
@@ -146,13 +148,11 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionNftCount>> for Batcher {
                 collection_stats::nft_count,
             ))
             .load(&conn)
-            .context("failed to load NFT count for collection")?;
+            .context("Failed to load NFT count for collection")?;
 
         Ok(rows
             .into_iter()
-            .map(|(collection_address, nft_count)| {
-                (collection_address, CollectionNftCount::from(nft_count))
-            })
+            .map(|(addr, count)| (addr, CollectionNftCount::from(count)))
             .batch(addresses))
     }
 }
@@ -172,16 +172,12 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionFloorPrice>> for Batcher
                 collection_stats::floor_price,
             ))
             .load(&conn)
-            .context("failed to load floor price for collection")?;
+            .context("Failed to load floor price for collection")?;
 
         Ok(rows
             .into_iter()
-            .filter_map(|(collection_address, floor_price)| {
-                floor_price.map(|f| (collection_address, f))
-            })
-            .map(|(collection_address, floor_price)| {
-                (collection_address, CollectionFloorPrice::from(floor_price))
-            })
+            .filter_map(|(addr, floor)| floor.map(|f| (addr, f)))
+            .map(|(addr, floor)| (addr, CollectionFloorPrice::from(floor)))
             .batch(addresses))
     }
 }

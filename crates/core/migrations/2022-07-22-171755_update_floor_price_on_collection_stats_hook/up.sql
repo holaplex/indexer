@@ -1,37 +1,41 @@
-CREATE OR REPLACE FUNCTION floor_price_on_listing_update()
-  RETURNS TRIGGER
-  AS
-$$
-BEGIN
-  INSERT INTO collection_stats (collection_address, nft_count, floor_price)
-  SELECT metadata_collection_keys.collection_address as collection_address, COALESCE(MAX(collection_stats.nft_count), 0) as nft_count, MIN(listings.price) AS floor_price
-  FROM listings
-  INNER JOIN metadatas ON(listings.metadata = metadatas.address)
-  INNER JOIN metadata_collection_keys ON(metadatas.address = metadata_collection_keys.metadata_address)
-  INNER JOIN auction_houses ON(listings.auction_house = auction_houses.address)
-  LEFT JOIN collection_stats ON(collection_stats.collection_address = metadata_collection_keys.collection_address)
-  WHERE metadatas.address = NEW.metadata
-      AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
-      AND listings.purchase_id IS NULL
-      AND listings.canceled_at IS NULL
-      AND metadata_collection_keys.verified = true
-  GROUP BY metadata_collection_keys.collection_address
+create or replace function floor_price_on_listing_update() returns trigger
+  language plpgsql
+  as $$
+begin
+  insert into collection_stats (collection_address, nft_count, floor_price)
+  select
+      metadata_collection_keys.collection_address as collection_address,
+      coalesce(max(collection_stats.nft_count), 0) as nft_count,
+      min(listings.price) as floor_price
+  from listings
+  inner join metadatas on (listings.metadata = metadatas.address)
+  inner join metadata_collection_keys
+      on (metadatas.address = metadata_collection_keys.metadata_address)
+  inner join auction_houses
+      on (listings.auction_house = auction_houses.address)
+  left join collection_stats on (
+    collection_stats.collection_address =
+        metadata_collection_keys.collection_address
+  )
+  where metadatas.address = new.metadata
+      and auction_houses.treasury_mint =
+          'So11111111111111111111111111111111111111112'
+      and listings.purchase_id is null
+      and listings.canceled_at is null
+      and metadata_collection_keys.verified = true
+  group by metadata_collection_keys.collection_address
 
-  ON CONFLICT (collection_address)
-  DO UPDATE SET floor_price = excluded.floor_price;
+  on conflict (collection_address)
+  do update set floor_price = excluded.floor_price;
 
-  RETURN NULL;
-END;
-$$ LANGUAGE PLPGSQL;
+  return null;
+end
+$$;
 
-CREATE TRIGGER listing_added
-  AFTER INSERT
-  ON listings
-  FOR EACH ROW
-  EXECUTE PROCEDURE floor_price_on_listing_update();
+create trigger listing_added
+after insert on listings for each row
+execute procedure floor_price_on_listing_update();
 
-CREATE TRIGGER listing_updated
-  AFTER UPDATE
-  ON listings
-  FOR EACH ROW
-  EXECUTE PROCEDURE floor_price_on_listing_update();
+create trigger listing_updated
+after update on listings for each row
+execute procedure floor_price_on_listing_update();
