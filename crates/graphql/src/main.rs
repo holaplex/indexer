@@ -182,9 +182,12 @@ fn main() {
         let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
 
         // TODO: db_ty indicates if any actions that mutate the database can be run
-        let (db, _db_ty) =
-            db::connect(db, db::ConnectMode::Read).context("Failed to connect to Postgres")?;
-        let db = Arc::new(db);
+        let db::ConnectResult {
+            pool,
+            ty: _,
+            migrated: _,
+        } = db::connect(db, db::ConnectMode::Read).context("Failed to connect to Postgres")?;
+        let db = Arc::new(pool);
         let search = search.into_client();
         let rpc = RpcClient::new(solana_endpoint);
 
