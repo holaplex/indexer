@@ -16,6 +16,7 @@ use crate::{
         Connection,
     },
     error::prelude::*,
+    prelude::Utc,
 };
 
 /// Format for incoming filters on attributes
@@ -70,6 +71,7 @@ enum Listings {
     Seller,
     PurchaseId,
     CanceledAt,
+    Expiry,
 }
 
 #[derive(Iden)]
@@ -89,6 +91,7 @@ enum Offers {
     CanceledAt,
     PurchaseId,
     AuctionHouse,
+    Expiry,
 }
 
 #[derive(Iden)]
@@ -198,6 +201,8 @@ pub fn list(
         offset,
     }: ListQueryOptions,
 ) -> Result<Vec<Nft>> {
+    let current_time = Utc::now().naive_utc();
+
     let mut listings_query = Query::select()
         .columns(vec![
             (Listings::Table, Listings::Metadata),
@@ -209,7 +214,12 @@ pub fn list(
         .cond_where(
             Condition::all()
                 .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
-                .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null()),
+                .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
+                .add(
+                    Expr::tbl(Listings::Table, Listings::Expiry)
+                        .is_null()
+                        .or(Expr::tbl(Listings::Table, Listings::Expiry).gt(current_time)),
+                ),
         )
         .take();
 
@@ -326,13 +336,23 @@ pub fn list(
             offers_conditions = offers_conditions
                 .add(Expr::col((Offers::Table, Offers::Buyer)).is_in(offerers))
                 .add(Expr::tbl(Offers::Table, Offers::PurchaseId).is_null())
-                .add(Expr::tbl(Offers::Table, Offers::CanceledAt).is_null());
+                .add(Expr::tbl(Offers::Table, Offers::CanceledAt).is_null())
+                .add(
+                    Expr::tbl(Offers::Table, Offers::Expiry)
+                        .is_null()
+                        .or(Expr::tbl(Offers::Table, Offers::Expiry).gt(current_time)),
+                );
         }
 
         if with_offers {
             offers_conditions = offers_conditions
                 .add(Expr::tbl(Offers::Table, Offers::PurchaseId).is_null())
-                .add(Expr::tbl(Offers::Table, Offers::CanceledAt).is_null());
+                .add(Expr::tbl(Offers::Table, Offers::CanceledAt).is_null())
+                .add(
+                    Expr::tbl(Offers::Table, Offers::Expiry)
+                        .is_null()
+                        .or(Expr::tbl(Offers::Table, Offers::Expiry).gt(current_time)),
+                );
         }
 
         let mut offers_query = Query::select()

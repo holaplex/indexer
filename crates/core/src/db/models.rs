@@ -2367,6 +2367,8 @@ pub struct Offer<'a> {
     pub write_version: Option<i64>,
     /// Marketplace program address
     pub marketplace_program: Cow<'a, str>,
+    /// Timestamp when the offer expires
+    pub expiry: Option<NaiveDateTime>,
 }
 
 /// A row in the `purchases` table
@@ -2436,6 +2438,8 @@ pub struct Listing<'a> {
     pub write_version: Option<i64>,
     /// Marketplace program address
     pub marketplace_program: Cow<'a, str>,
+    /// Timestamp when the listing expires
+    pub expiry: Option<NaiveDateTime>,
 }
 
 /// A row in the `cardinal_entries` table

@@ -83,6 +83,7 @@ pub(crate) async fn process_listing_receipt(
                 canceled_at: row.canceled_at,
                 slot: row.slot,
                 write_version: Some(row.write_version),
+                expiry: None,
             };
 
             let listing_id = insert_into(listings::table)
@@ -375,6 +376,7 @@ async fn upsert_into_offers_table<'a>(client: &Client, row: DbBidReceipt<'static
         canceled_at: row.canceled_at,
         slot: row.slot,
         write_version: Some(row.write_version),
+        expiry: None,
     };
 
     let offer_id = client

@@ -877,6 +877,7 @@ table! {
         slot -> Int8,
         write_version -> Nullable<Int8>,
         marketplace_program -> Varchar,
+        expiry -> Nullable<Timestamp>,
     }
 }
 
@@ -1067,6 +1068,7 @@ table! {
         slot -> Int8,
         write_version -> Nullable<Int8>,
         marketplace_program -> Varchar,
+        expiry -> Nullable<Timestamp>,
     }
 }
 
