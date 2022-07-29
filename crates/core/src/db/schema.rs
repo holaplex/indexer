@@ -496,6 +496,18 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    collection_stats (collection_address) {
+        collection_address -> Varchar,
+        nft_count -> Int8,
+        floor_price -> Nullable<Int8>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     current_metadata_owners (mint_address) {
         mint_address -> Varchar,
         owner_address -> Varchar,
@@ -1566,6 +1578,7 @@ allow_tables_to_appear_in_same_query!(
     cardinal_token_manager_invalidators,
     cardinal_token_managers,
     cardinal_use_invalidators,
+    collection_stats,
     current_metadata_owners,
     deposit_instructions,
     editions,

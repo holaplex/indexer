@@ -1,4 +1,7 @@
-use dataloaders::{Batcher, Loader, TwitterBatcher};
+use dataloaders::{
+    collection::{CollectionFloorPrice, CollectionNftCount},
+    Batcher, Loader, TwitterBatcher,
+};
 use indexer_core::uuid::Uuid;
 use objects::{
     ah_listing::AhListing,
@@ -10,7 +13,7 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Bid, Listing},
     listing_receipt::ListingReceipt,
-    nft::{CollectionNft, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
+    nft::{Collection, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
     profile::TwitterProfile,
     purchase_receipt::PurchaseReceipt,
     stats::{MarketStats, MintStats},
@@ -34,7 +37,9 @@ pub struct AppContext {
     pub bid_receipt_loader: Loader<PublicKey<BidReceipt>, Option<BidReceipt>>,
     pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
     pub collection_count_loader: Loader<PublicKey<StoreCreator>, Option<i32>>,
+    pub collection_floor_price_loader: Loader<PublicKey<Collection>, Option<CollectionFloorPrice>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
+    pub collection_nft_count_loader: Loader<PublicKey<Collection>, Option<CollectionNftCount>>,
     pub geno_rental_agreement_loader: Loader<PublicKey<GenoHabitat>, Option<GenoRentalAgreement>>,
     pub graph_connection_loader: Loader<PublicKey<GraphConnection>, Option<GraphConnection>>,
     pub listing_bids_loader: Loader<PublicKey<Listing>, Vec<Bid>>,
@@ -46,7 +51,7 @@ pub struct AppContext {
     pub mint_stats_loader: Loader<PublicKey<AuctionHouse>, Option<MintStats>>,
     pub nft_activities_loader: Loader<PublicKey<Nft>, Vec<NftActivity>>,
     pub nft_attributes_loader: Loader<PublicKey<Nft>, Vec<NftAttribute>>,
-    pub nft_collection_loader: Loader<PublicKey<Nft>, Option<CollectionNft>>,
+    pub nft_collection_loader: Loader<PublicKey<Nft>, Option<Collection>>,
     pub nft_creators_loader: Loader<PublicKey<Nft>, Vec<NftCreator>>,
     pub nft_files_loader: Loader<PublicKey<Nft>, Vec<NftFile>>,
     pub nft_loader: Loader<PublicKey<Nft>, Option<Nft>>,
@@ -83,7 +88,9 @@ impl AppContext {
             bid_receipt_loader: Loader::new(batcher.clone()),
             bid_receipts_loader: Loader::new(batcher.clone()),
             collection_count_loader: Loader::new(batcher.clone()),
+            collection_floor_price_loader: Loader::new(batcher.clone()),
             collection_loader: Loader::new(batcher.clone()),
+            collection_nft_count_loader: Loader::new(batcher.clone()),
             geno_rental_agreement_loader: Loader::new(batcher.clone()),
             graph_connection_loader: Loader::new(batcher.clone()),
             listing_bids_loader: Loader::new(batcher.clone()),
