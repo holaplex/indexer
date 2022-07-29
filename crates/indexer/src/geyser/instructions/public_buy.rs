@@ -10,6 +10,7 @@ use indexer_core::{
             offers, public_buy_instructions,
         },
     },
+    pubkeys,
     uuid::Uuid,
 };
 use mpl_auction_house::instruction::PublicBuy;
@@ -76,6 +77,7 @@ async fn upsert_into_offers_table<'a>(
         id: None,
         trade_state: data.buyer_trade_state,
         auction_house: data.auction_house,
+        marketplace_program: Owned(pubkeys::AUCTION_HOUSE.to_string()),
         buyer: data.wallet,
         metadata: data.metadata,
         token_account: Some(data.token_account),

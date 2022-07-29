@@ -299,6 +299,46 @@ pub struct NftActivity {
     #[sql_type = "VarChar"]
     pub auction_house: String,
 
+    /// The marketplace program pubkey
+    #[sql_type = "VarChar"]
+    pub marketplace_program: String,
+
+    /// The price of listing or purchase
+    #[sql_type = "Int8"]
+    pub price: i64,
+
+    /// Listing/Purchase created time
+    #[sql_type = "Timestamp"]
+    pub created_at: NaiveDateTime,
+
+    /// The wallet address asociated to the activity [seller, buyer]
+    #[sql_type = "Array<VarChar>"]
+    pub wallets: Vec<String>,
+
+    /// The twitter handles asociated to each wallet [seller, buyer]
+    #[sql_type = "Array<Nullable<Text>>"]
+    pub wallet_twitter_handles: Vec<Option<String>>,
+
+    /// Listing/Purchase created time
+    #[sql_type = "Text"]
+    pub activity_type: String,
+}
+
+/// Union of `listings` and `purchases` for a `WalletActivity`
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct WalletActivity {
+    /// The id of the activity
+    #[sql_type = "diesel::sql_types::Uuid"]
+    pub id: Uuid,
+
+    /// The metadata associated of the activity
+    #[sql_type = "VarChar"]
+    pub metadata: String,
+
+    /// The auction house activity generated from
+    #[sql_type = "VarChar"]
+    pub auction_house: String,
+
     /// The price of listing or purchase
     #[sql_type = "Int8"]
     pub price: i64,
@@ -2325,6 +2365,8 @@ pub struct Offer<'a> {
     pub slot: i64,
     /// Solana write_version
     pub write_version: Option<i64>,
+    /// Marketplace program address
+    pub marketplace_program: Cow<'a, str>,
 }
 
 /// A row in the `purchases` table
@@ -2354,6 +2396,8 @@ pub struct Purchase<'a> {
     pub slot: i64,
     /// Solana write_version
     pub write_version: Option<i64>,
+    /// Marketplace program address
+    pub marketplace_program: Cow<'a, str>,
 }
 
 /// A row in the `listings` table
@@ -2390,6 +2434,8 @@ pub struct Listing<'a> {
     pub slot: i64,
     /// Solana write_version
     pub write_version: Option<i64>,
+    /// Marketplace program address
+    pub marketplace_program: Cow<'a, str>,
 }
 
 /// A row in the `cardinal_entries` table
@@ -2464,7 +2510,7 @@ pub struct GenoHabitatData<'a> {
     pub expiry_timestamp: NaiveDateTime,
     pub next_day_timestamp: NaiveDateTime,
     pub crystals_refined: i16,
-    pub harvester: Cow<'a, [u8]>,
+    pub harvester_bytes: Cow<'a, [u8]>,
     pub ki_harvested: i64,
     pub seeds_spawned: bool,
     pub is_sub_habitat: bool,
@@ -2487,6 +2533,7 @@ pub struct GenoHabitatData<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub harvester: Cow<'a, str>,
 }
 
 /// A row in the `geno_rental_agreements` table

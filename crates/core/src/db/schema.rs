@@ -655,7 +655,7 @@ table! {
         expiry_timestamp -> Timestamp,
         next_day_timestamp -> Timestamp,
         crystals_refined -> Int2,
-        harvester -> Bytea,
+        harvester_bytes -> Bytea,
         ki_harvested -> Int8,
         seeds_spawned -> Bool,
         is_sub_habitat -> Bool,
@@ -676,6 +676,7 @@ table! {
         harvester_settings_cooldown_timestamp -> Timestamp,
         slot -> Int8,
         write_version -> Int8,
+        harvester -> Varchar,
     }
 }
 
@@ -875,6 +876,7 @@ table! {
         canceled_at -> Nullable<Timestamp>,
         slot -> Int8,
         write_version -> Nullable<Int8>,
+        marketplace_program -> Varchar,
     }
 }
 
@@ -1064,6 +1066,7 @@ table! {
         canceled_at -> Nullable<Timestamp>,
         slot -> Int8,
         write_version -> Nullable<Int8>,
+        marketplace_program -> Varchar,
     }
 }
 
@@ -1205,6 +1208,7 @@ table! {
         created_at -> Timestamp,
         slot -> Int8,
         write_version -> Nullable<Int8>,
+        marketplace_program -> Varchar,
     }
 }
 

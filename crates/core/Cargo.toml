@@ -31,6 +31,10 @@ default = ["assets", "asset-cdn", "db", "solana"]
 meilisearch = ["meilisearch-sdk"]
 solana = ["solana-program"]
 
+[[bin]]
+name = "holaplex-indexer-migrator"
+required-features = ["db"]
+
 [dependencies]
 # Basic utilities
 anyhow = "1.0.45"

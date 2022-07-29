@@ -58,6 +58,11 @@ mod runtime {
         #[clap(short = 'j', env)]
         thread_count: Option<usize>,
 
+        /// Pass this flag to enable automatically migrating the database upon
+        /// connecting.
+        #[clap(long, short, env)]
+        migrate_db: bool,
+
         #[clap(flatten)]
         db: db::ConnectArgs,
 
@@ -84,11 +89,13 @@ mod runtime {
             let Opts {
                 thread_count,
                 db,
+                migrate_db: migrate,
                 extra,
             } = opts;
 
             let db = Pool::new(
-                db::connect(db, db::ConnectMode::Write).context("Failed to connect to Postgres")?,
+                db::connect(db, db::ConnectMode::Write { migrate })
+                    .context("Failed to connect to Postgres")?,
             );
 
             let rt = {

@@ -86,7 +86,7 @@ pub(crate) async fn process(
         next_day_timestamp: util::unix_timestamp_unsigned(habitat.next_day_timestamp)
             .context("Failed to convert habitat next-day timestamp")?,
         crystals_refined: habitat.crystals_refined.into(),
-        harvester: Owned(habitat.harvester.to_vec()),
+        harvester_bytes: Owned(habitat.harvester.to_vec()),
         ki_harvested: habitat
             .ki_harvested
             .try_into()
@@ -128,6 +128,12 @@ pub(crate) async fn process(
         .context("Failed to convert harvester settings cooldown timestamp")?,
         slot,
         write_version,
+        harvester: Owned(
+            std::str::from_utf8(&habitat.harvester)
+                .context("Failed to convert harvester to UTF-8")?
+                .trim_end_matches('\0')
+                .to_owned(),
+        ),
     };
 
     client

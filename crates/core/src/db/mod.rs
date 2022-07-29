@@ -12,6 +12,8 @@ pub mod tables {
     pub use super::schema::*;
 }
 
+use std::fmt;
+
 pub use diesel::{
     backend::Backend,
     debug_query, delete, expression, insert_into,
@@ -51,7 +53,10 @@ pub enum ConnectMode {
     /// Open the database for writing
     ///
     /// This will check for a `DATABASE_WRITE_URL` for a primary replica.
-    Write,
+    Write {
+        /// Set to true to run migrations upon connecting
+        migrate: bool,
+    },
 }
 
 /// Hint indicating how a returned database connection should be interpreted
@@ -63,6 +68,25 @@ pub enum ConnectionType {
     Read,
     /// The `DATABASE_WRITE_URL` var was used and should be writable
     Write,
+}
+
+/// Resturn type of [`connect`]
+pub struct ConnectResult {
+    /// The database connection pool
+    pub pool: Pool,
+    /// Type hint indicating if the connected database should be writable
+    pub ty: ConnectionType,
+    /// True if migrations were run upon connecting
+    pub migrated: bool,
+}
+
+impl fmt::Debug for ConnectResult {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("ConnectResult")
+            .field("ty", &self.ty)
+            .field("migrated", &self.migrated)
+            .finish_non_exhaustive()
+    }
 }
 
 /// Arguments for establishing a database connection
@@ -89,7 +113,7 @@ impl From<ConnectMode> for ConnectionType {
     fn from(mode: ConnectMode) -> Self {
         match mode {
             ConnectMode::Read => Self::Read,
-            ConnectMode::Write => Self::Write,
+            ConnectMode::Write { .. } => Self::Write,
         }
     }
 }
@@ -100,7 +124,7 @@ impl From<ConnectMode> for ConnectionType {
 /// # Errors
 /// This function fails if Diesel fails to construct a connection pool or if any
 /// pending database migrations fail to run.
-pub fn connect(args: ConnectArgs, mode: ConnectMode) -> Result<(Pool, ConnectionType)> {
+pub fn connect(args: ConnectArgs, mode: ConnectMode) -> Result<ConnectResult> {
     let ConnectArgs {
         database_read_url,
         database_write_url,
@@ -109,7 +133,7 @@ pub fn connect(args: ConnectArgs, mode: ConnectMode) -> Result<(Pool, Connection
 
     let mode_url = match mode {
         ConnectMode::Read => database_read_url,
-        ConnectMode::Write => database_write_url,
+        ConnectMode::Write { .. } => database_write_url,
     };
 
     let (ty, url) = mode_url
@@ -120,7 +144,7 @@ pub fn connect(args: ConnectArgs, mode: ConnectMode) -> Result<(Pool, Connection
                 "Invalid database URL, expected a {} connection string",
                 match mode {
                     ConnectMode::Read => "read-only",
-                    ConnectMode::Write => "writable",
+                    ConnectMode::Write { .. } => "writable",
                 }
             )
         })?;
@@ -141,10 +165,30 @@ pub fn connect(args: ConnectArgs, mode: ConnectMode) -> Result<(Pool, Connection
         warn!("Cannot determine if database is writable; assuming yes");
     }
 
-    if matches!(ty, ConnectionType::Read) {
-        info!("Not running migrations over a read-only connection");
-    } else {
+    let migrated = match (mode, ty) {
+        (ConnectMode::Write { migrate: true }, ConnectionType::Write | ConnectionType::Default) => {
+            true
+        },
+        (ConnectMode::Read, ConnectionType::Read | ConnectionType::Default) => {
+            info!("Not running migrations over a read-only connection");
+            false
+        },
+        (
+            ConnectMode::Write { migrate: false },
+            ConnectionType::Write | ConnectionType::Default,
+        ) => {
+            info!("Migrations not requested, skipping");
+            false
+        },
+        (ConnectMode::Read, ConnectionType::Write)
+        | (ConnectMode::Write { .. }, ConnectionType::Read) => {
+            unreachable!("Logic error in database connection writable checks");
+        },
+    };
+
+    if migrated {
         info!("Running database migrations...");
+
         embedded_migrations::run_with_output(
             &pool.get().context("Failed to connect to the database")?,
             &mut out,
@@ -163,5 +207,5 @@ pub fn connect(args: ConnectArgs, mode: ConnectMode) -> Result<(Pool, Connection
         Err(e) => warn!("Failed to read migration output: {}", e),
     }
 
-    Ok((pool, ty))
+    Ok(ConnectResult { pool, ty, migrated })
 }
