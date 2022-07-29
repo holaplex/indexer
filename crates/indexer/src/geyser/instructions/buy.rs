@@ -71,6 +71,7 @@ pub(crate) async fn process(
         canceled_at: None,
         slot: row.slot,
         write_version: None,
+        expiry: None,
     })
     .await
     .context("failed to insert offer")?;
