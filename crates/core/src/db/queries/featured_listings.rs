@@ -18,7 +18,7 @@ SELECT
     a.id,
     a.trade_state,
     a.auction_house,
-    a.marketplace_program
+    a.marketplace_program,
     a.seller,
     a.metadata,
     a.purchase_id,
