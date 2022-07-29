@@ -28,7 +28,8 @@ SELECT
     a.created_at,
     a.canceled_at,
     a.slot,
-    a.write_version
+    a.write_version,
+    a.expiry
 
 FROM (
 
