@@ -11,6 +11,8 @@ begin
 end
 $$;
 
+drop trigger if exists nft_collection_key_added on metadata_collection_keys;
+
 create trigger nft_collection_key_added
 after insert on metadata_collection_keys for each row
 execute procedure nft_count_on_nft_added();

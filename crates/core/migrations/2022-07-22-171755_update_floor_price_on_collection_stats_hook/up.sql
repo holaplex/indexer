@@ -32,6 +32,9 @@ begin
 end
 $$;
 
+drop trigger if exists listing_added on listings;
+drop trigger if exists listing_updated on listings;
+
 create trigger listing_added
 after insert on listings for each row
 execute procedure floor_price_on_listing_update();
