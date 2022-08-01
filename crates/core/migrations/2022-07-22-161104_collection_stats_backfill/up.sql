@@ -12,8 +12,7 @@ with
             metadata_collection_keys.collection_address as collection_address,
             count(metadata_collection_keys.metadata_address) as nft_count
         from metadata_collection_keys
-        where 
-            metadata_collection_keys.verified = true
+        where metadata_collection_keys.verified = true
         group by metadata_collection_keys.collection_address
     ),
 
