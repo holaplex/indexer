@@ -73,6 +73,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                      creator_address,
                      address,
                      name,
+                     symbol,
                      seller_fee_basis_points,
                      mint_address,
                      token_account_address,
@@ -91,6 +92,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                         models::Nft {
                             address,
                             name,
+                            symbol,
                             seller_fee_basis_points,
                             mint_address,
                             token_account_address,

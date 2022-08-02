@@ -302,6 +302,7 @@ impl NftActivity {
 pub struct Nft {
     pub address: String,
     pub name: String,
+    pub symbol: String,
     pub seller_fee_basis_points: i32,
     pub mint_address: String,
     pub token_account_address: String,
@@ -324,6 +325,7 @@ impl TryFrom<models::Nft> for Nft {
         models::Nft {
             address,
             name,
+            symbol,
             seller_fee_basis_points,
             mint_address,
             token_account_address,
@@ -342,6 +344,7 @@ impl TryFrom<models::Nft> for Nft {
         Ok(Self {
             address,
             name,
+            symbol,
             seller_fee_basis_points,
             mint_address,
             token_account_address,
@@ -367,6 +370,10 @@ impl Nft {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn symbol(&self) -> &str {
+        &self.symbol
     }
 
     pub fn seller_fee_basis_points(&self) -> i32 {

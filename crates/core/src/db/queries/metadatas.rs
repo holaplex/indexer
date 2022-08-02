@@ -144,6 +144,7 @@ pub struct ListQueryOptions {
 pub type NftColumns = (
     metadatas::address,
     metadatas::name,
+    metadatas::symbol,
     metadatas::seller_fee_basis_points,
     metadatas::mint_address,
     metadatas::primary_sale_happened,
@@ -163,6 +164,7 @@ pub type NftColumns = (
 pub const NFT_COLUMNS: NftColumns = (
     metadatas::address,
     metadatas::name,
+    metadatas::symbol,
     metadatas::seller_fee_basis_points,
     metadatas::mint_address,
     metadatas::primary_sale_happened,

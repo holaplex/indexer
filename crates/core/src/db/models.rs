@@ -228,6 +228,10 @@ pub struct Nft {
     #[sql_type = "Text"]
     pub name: String,
 
+    /// The symbol of this nft
+    #[sql_type = "Text"]
+    pub symbol: String,
+
     /// The royalty percentage of the creator, in basis points (0.01%, values
     /// range from 0-10,000)
     #[sql_type = "Int4"]
@@ -376,6 +380,10 @@ pub struct SampleNft {
     /// The name of this item
     #[sql_type = "Text"]
     pub name: String,
+
+    /// The symbol of this nft
+    #[sql_type = "Text"]
+    pub symbol: String,
 
     /// The royalty percentage of the creator, in basis points (0.01%, values
     /// range from 0-10,000)
