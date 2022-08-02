@@ -1,4 +1,11 @@
-insert into collection_stats (collection_address, nft_count, floor_price)
+create or replace function collection_stats_backfill() returns void
+  language plpgsql
+  as $$
+
+BEGIN
+
+IF NOT EXISTS (SELECT * FROM collection_stats) THEN
+  insert into collection_stats (collection_address, nft_count, floor_price)
 with
     nft_count_table as (
         select
@@ -32,4 +39,10 @@ select
     nft_count_table.nft_count,
     floor_price_table.floor_price
 from nft_count_table, floor_price_table
-where nft_count_table.collection_address = floor_price_table.collection_address
+where nft_count_table.collection_address = floor_price_table.collection_address;
+END IF;
+
+END $$;
+
+
+SELECT collection_stats_backfill();
