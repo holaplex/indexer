@@ -186,6 +186,170 @@ impl FromSql<ListingEventLifecycle, Pg> for ListingEventLifecycleEnum {
     }
 }
 
+/// SPL Governance account type
+#[derive(SqlType, Debug, Clone, Copy)]
+#[postgres(type_name = "governanceaccounttype")]
+/// Represents database `governanceaccounttype` enum
+pub struct GovernanceAccountType;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[allow(missing_docs)]
+#[sql_type = "GovernanceAccountType"]
+pub enum GovernanceAccountTypeEnum {
+    Uninitialized,
+    RealmV1,
+    TokenOwnerRecordV1,
+    GovernanceV1,
+    ProgramGovernanceV1,
+    ProposalV1,
+    SignatoryRecordV1,
+    VoteRecordV1,
+    ProposalInstructionV1,
+    MintGovernanceV1,
+    TokenGovernanceV1,
+    RealmConfig,
+    VoteRecordV2,
+    ProposalTransactionV2,
+    ProposalV2,
+    ProgramMetadata,
+    RealmV2,
+    TokenOwnerRecordV2,
+    GovernanceV2,
+    ProgramGovernanceV2,
+    MintGovernanceV2,
+    TokenGovernanceV2,
+    SignatoryRecordV2,
+}
+
+impl ToSql<GovernanceAccountType, Pg> for GovernanceAccountTypeEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<GovernanceAccountType, Pg> for GovernanceAccountTypeEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}
+
+/// `VoteThreshold` type
+#[derive(SqlType, Debug, Clone, Copy)]
+#[postgres(type_name = "votethresholdtype")]
+/// Represents database `votethresholdtype` enum
+pub struct VoteThresholdType;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[allow(missing_docs)]
+#[sql_type = "VoteThresholdType"]
+pub enum VoteThresholdEnum {
+    YesVote,
+    Quorum,
+}
+
+impl ToSql<VoteThresholdType, Pg> for VoteThresholdEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<VoteThresholdType, Pg> for VoteThresholdEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}
+
+/// `VoteWeightSource` type
+#[derive(SqlType, Debug, Clone, Copy)]
+/// Represents database `voteweightsourcce` enum
+#[postgres(type_name = "votetipping")]
+pub struct VoteTipping;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "VoteTipping"]
+#[allow(missing_docs)]
+pub enum VoteTippingEnum {
+    Strict,
+    Early,
+    Disabled,
+}
+
+impl ToSql<VoteTipping, Pg> for VoteTippingEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<VoteTipping, Pg> for VoteTippingEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}
+
+/// `MintMaxVote` type
+#[derive(SqlType, Debug, Clone, Copy)]
+/// Represents database `mintmaxvotetype` enum
+#[postgres(type_name = "mintmaxvotetype")]
+pub struct MintMaxVoteType;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "MintMaxVoteType"]
+#[allow(missing_docs)]
+pub enum MintMaxVoteEnum {
+    SupplyFraction,
+    Absolute,
+}
+
+impl ToSql<MintMaxVoteType, Pg> for MintMaxVoteEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<MintMaxVoteType, Pg> for MintMaxVoteEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}
+
+/// `VoteRecordV2 Vote` type
+#[derive(SqlType, Debug, Clone, Copy)]
+/// Represents database `vote_record_v2_vote` enum
+#[postgres(type_name = "vote_record_v2_vote")]
+pub struct VoteRecordV2Vote;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "VoteRecordV2Vote"]
+#[allow(missing_docs)]
+pub enum VoteRecordV2VoteEnum {
+    Approve,
+    Deny,
+    Abstain,
+    Veto,
+}
+
+impl ToSql<VoteRecordV2Vote, Pg> for VoteRecordV2VoteEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<VoteRecordV2Vote, Pg> for VoteRecordV2VoteEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}
+
 /// Direction for ordering SQL query results by the "ORDER BY" variable(s)
 #[derive(Debug, Clone, Copy, strum::EnumString, strum::Display)]
 pub enum OrderDirection {
@@ -196,4 +360,125 @@ pub enum OrderDirection {
     /// order results ascending
     #[strum(serialize = "ASC")]
     Asc,
+}
+
+/// `ProposalV2State`
+#[derive(SqlType, Debug, Clone, Copy)]
+/// Represents database `proposalstate` enum
+#[postgres(type_name = "proposalstate")]
+pub struct ProposalState;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "ProposalState"]
+#[allow(missing_docs)]
+pub enum ProposalStateEnum {
+    Draft,
+    SigningOff,
+    Voting,
+    Succeeded,
+    Executing,
+    Completed,
+    Cancelled,
+    Defeated,
+    ExecutingWithErrors,
+}
+
+impl ToSql<ProposalState, Pg> for ProposalStateEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<ProposalState, Pg> for ProposalStateEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}
+
+/// `InstructionExecutionFlags`
+#[derive(SqlType, Debug, Clone, Copy)]
+/// Represents database `instructionexecutionflags` enum
+#[postgres(type_name = "instructionexecutionflags")]
+pub struct InstructionExecutionFlags;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "InstructionExecutionFlags"]
+#[allow(missing_docs)]
+pub enum InstructionExecutionFlagsEnum {
+    None,
+    Ordered,
+    UseTransaction,
+}
+
+impl ToSql<InstructionExecutionFlags, Pg> for InstructionExecutionFlagsEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<InstructionExecutionFlags, Pg> for InstructionExecutionFlagsEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}
+
+/// `ProposalV2VoteType`
+#[derive(SqlType, Debug, Clone, Copy)]
+/// Represents database `votetype` enum
+#[postgres(type_name = "proposalvotetype")]
+pub struct ProposalVoteType;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "ProposalVoteType"]
+#[allow(missing_docs)]
+pub enum ProposalVoteTypeEnum {
+    SingleChoice,
+    MultiChoice,
+}
+
+impl ToSql<ProposalVoteType, Pg> for ProposalVoteTypeEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<ProposalVoteType, Pg> for ProposalVoteTypeEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}
+
+/// `ProposalV2 OptionVoteResult`
+#[derive(SqlType, Debug, Clone, Copy)]
+/// Represents database `optionvoteresult` enum
+#[postgres(type_name = "optionvoteresult")]
+pub struct OptionVoteResult;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "OptionVoteResult"]
+#[allow(missing_docs)]
+pub enum OptionVoteResultEnum {
+    None,
+    Succeeded,
+    Defeated,
+}
+
+impl ToSql<OptionVoteResult, Pg> for OptionVoteResultEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<OptionVoteResult, Pg> for OptionVoteResultEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
 }
