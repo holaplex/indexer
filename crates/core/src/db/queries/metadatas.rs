@@ -496,7 +496,7 @@ SELECT listings.id as id, metadata, auction_house, price, auction_house, created
         WHERE metadata = $1
         AND offers.purchase_id IS NULL
     ORDER BY created_at DESC
-    LIMIT $2 
+    LIMIT $2
     OFFSET $3;
 
  -- $1: address::text
