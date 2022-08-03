@@ -537,6 +537,22 @@ impl Collection {
         &self.0
     }
 
+    pub async fn activities(
+        &self,
+        ctx: &AppContext,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<NftActivity>> {
+        let conn = ctx.shared.db.get()?;
+        let rows =
+            queries::metadatas::collection_activities(&conn, &self.0.address, limit, offset)?;
+
+        rows.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
     async fn nft_count(&self, context: &AppContext) -> FieldResult<Option<scalars::I64>> {
         Ok(context
             .collection_nft_count_loader
@@ -655,13 +671,13 @@ impl Collection {
             .map_err(Into::into)
     }
 
-    #[graphql(deprecated = "use `nft { activities }`")]
-    pub async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
-        ctx.nft_activities_loader
-            .load(self.0.address.clone().into())
-            .await
-            .map_err(Into::into)
-    }
+    // #[graphql(deprecated = "use `nft { activities }`")]
+    // pub async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
+    //     ctx.nft_activities_loader
+    //         .load(self.0.address.clone().into())
+    //         .await
+    //         .map_err(Into::into)
+    // }
 
     #[graphql(deprecated = "use `nft { ah_listings_loader }`")]
     pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>> {

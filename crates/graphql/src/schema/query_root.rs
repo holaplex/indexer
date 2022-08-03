@@ -721,6 +721,34 @@ impl QueryRoot {
     }
 
     #[graphql(
+        description = "Returns collection data along with collection activities",
+        arguments(address(description = "Collection address"),)
+    )]
+    async fn collection(
+        &self,
+        context: &AppContext,
+        address: String,
+    ) -> FieldResult<Option<Collection>> {
+        let conn = context.shared.db.get()?;
+        metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+            )
+            .filter(metadatas::address.eq(address))
+            .select(queries::metadatas::NFT_COLUMNS)
+            .first::<models::Nft>(&conn)
+            .optional()
+            .context("Failed to load NFT by metadata address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
+    }
+
+    #[graphql(
         description = "Returns featured collection NFTs ordered by market cap (floor price * number of NFTs in collection)",
         arguments(
             term(
