@@ -8,15 +8,16 @@ use indexer_core::{
         },
         insert_into,
         models::{
-            Governance, GovernanceConfig as DbGovernanceConfig, ProposalOption as DbProposalOption,
-            ProposalV2 as DbProposalV2, Realm, RealmConfig as DbRealmConfig,
-            SignatoryRecordV2 as DbSignatoryRecordV2, TokenOwnerRecordV2 as DbTokenOwnerRecordV2,
-            VoteChoice as DbVoteChoice, VoteRecordV2 as DbVoteRecordV2,
+            Governance, GovernanceConfig as DbGovernanceConfig, MultiChoice,
+            ProposalOption as DbProposalOption, ProposalV2 as DbProposalV2, Realm,
+            RealmConfig as DbRealmConfig, SignatoryRecordV2 as DbSignatoryRecordV2,
+            TokenOwnerRecordV2 as DbTokenOwnerRecordV2, VoteChoice as DbVoteChoice,
+            VoteRecordV2 as DbVoteRecordV2,
         },
         tables::{
-            governance_configs, governances, proposal_options, proposals_v2, realm_configs, realms,
-            signatory_records_v2, token_owner_records_v2, vote_record_v2_vote_approve_vote_choices,
-            vote_records_v2,
+            governance_configs, governances, proposal_options, proposal_vote_type_multi_choices,
+            proposals_v2, realm_configs, realms, signatory_records_v2, token_owner_records_v2,
+            vote_record_v2_vote_approve_vote_choices, vote_records_v2,
         },
     },
     prelude::*,
@@ -85,17 +86,6 @@ pub struct GovernanceV2 {
     pub reserved_v2: [u8; 128],
 }
 
-// #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
-// pub struct GovernanceV1 {
-//     pub account_type: GovernanceAccountType,
-//     pub realm: Pubkey,
-//     pub governed: Pubkey,
-//     pub proposals_count: u32,
-//     pub config: GovernanceConfig,
-//     pub reserved: [u8; 6],
-//     pub voting_proposal_count: u16,
-// }
-
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub struct GovernanceConfig {
     pub vote_threshold_percentage: VoteThresholdPercentage,
@@ -106,17 +96,6 @@ pub struct GovernanceConfig {
     pub proposal_cool_off_time: u32,
     pub min_council_weight_to_create_proposal: u64,
 }
-
-// #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
-// pub struct RealmV1 {
-//     pub account_type: GovernanceAccountType,
-//     pub community_mint: Pubkey,
-//     pub config: RealmConfig,
-//     pub reserved: [u8; 6],
-//     pub voting_proposal_count: u16,
-//     pub authority: Option<Pubkey>,
-//     pub name: String,
-// }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub struct RealmV2 {
@@ -701,6 +680,33 @@ pub(crate) async fn process_proposal_v2(
             })
             .await
             .context("Failed to insert proposal option")?;
+    }
+
+    if let VoteType::MultiChoice {
+        max_voter_options,
+        max_winning_options,
+    } = data.vote_type
+    {
+        let row = MultiChoice {
+            address: Owned(key.to_string()),
+            max_voter_options: max_voter_options.try_into()?,
+            max_winning_options: max_winning_options.try_into()?,
+            slot: slot.try_into()?,
+            write_version: write_version.try_into()?,
+        };
+
+        client
+            .db()
+            .run(move |db| {
+                insert_into(proposal_vote_type_multi_choices::table)
+                    .values(&row)
+                    .on_conflict(proposal_vote_type_multi_choices::address)
+                    .do_update()
+                    .set(&row)
+                    .execute(db)
+            })
+            .await
+            .context("Failed to insert multichoice vote type")?;
     }
 
     Ok(())
