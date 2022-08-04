@@ -21,7 +21,10 @@ use objects::{
     storefront::Storefront,
     wallet::Wallet,
 };
-use scalars::{markers::StoreConfig, PublicKey};
+use scalars::{
+    markers::{StoreConfig, TokenMint},
+    PublicKey,
+};
 
 use super::prelude::*;
 
@@ -51,6 +54,7 @@ pub struct AppContext {
     pub mint_stats_loader: Loader<PublicKey<AuctionHouse>, Option<MintStats>>,
     pub nft_activities_loader: Loader<PublicKey<Nft>, Vec<NftActivity>>,
     pub nft_attributes_loader: Loader<PublicKey<Nft>, Vec<NftAttribute>>,
+    pub nft_by_mint_loader: Loader<PublicKey<TokenMint>, Option<Nft>>,
     pub nft_collection_loader: Loader<PublicKey<Nft>, Option<Collection>>,
     pub nft_creators_loader: Loader<PublicKey<Nft>, Vec<NftCreator>>,
     pub nft_files_loader: Loader<PublicKey<Nft>, Vec<NftFile>>,
@@ -102,6 +106,7 @@ impl AppContext {
             mint_stats_loader: Loader::new(batcher.clone()),
             nft_activities_loader: Loader::new(batcher.clone()),
             nft_attributes_loader: Loader::new(batcher.clone()),
+            nft_by_mint_loader: Loader::new(batcher.clone()),
             nft_collection_loader: Loader::new(batcher.clone()),
             nft_creators_loader: Loader::new(batcher.clone()),
             nft_files_loader: Loader::new(batcher.clone()),
