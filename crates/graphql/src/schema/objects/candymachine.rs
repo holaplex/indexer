@@ -39,7 +39,7 @@ pub const CANDY_MACHINE_COLUMNS: CandyMachineColumns = (
     candy_machine_datas::items_available,
 );
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, GraphQLObject)]
 pub struct CandyMachine {
     pub address: String,
     pub authority: String,
@@ -50,31 +50,12 @@ pub struct CandyMachine {
     pub uuid: String,
     pub price: U64,
     pub symbol: String,
-    pub seller_fee_basis_points: u16,
+    pub seller_fee_basis_points: i32,
     pub max_supply: U64,
     pub is_mutable: bool,
     pub retain_authority: bool,
     pub go_live_date: Option<U64>,
-    pub items_available: i64,
-}
-
-#[graphql_object(Context = AppContext)]
-impl CandyMachine {
-    pub fn address(&self) -> &str {
-        &self.address
-    }
-
-    pub fn symbol(&self) -> &str {
-        &self.symbol
-    }
-
-    pub fn price(&self) -> U64 {
-        self.price
-    }
-
-    pub fn token_mint(&self) -> Option<&str> {
-        self.token_mint.as_deref()
-    }
+    pub items_available: U64,
 }
 
 impl TryFrom<models::CandyMachineJoined> for CandyMachine {
@@ -99,14 +80,6 @@ impl TryFrom<models::CandyMachineJoined> for CandyMachine {
             ..
         }: models::CandyMachineJoined,
     ) -> Result<Self, Self::Error> {
-        // TODO(will): Is there a one liner for this?
-        let go_live_converted: Option<U64>;
-        if let Some(value) = go_live_date {
-            go_live_converted = Some(value.try_into()?);
-        } else {
-            go_live_converted = None;
-        }
-
         Ok(Self {
             address,
             authority,
@@ -120,7 +93,7 @@ impl TryFrom<models::CandyMachineJoined> for CandyMachine {
             max_supply: max_supply.try_into()?,
             is_mutable,
             retain_authority,
-            go_live_date: go_live_converted,
+            go_live_date: go_live_date.map(U64::try_from).transpose()?,
             items_available: items_available.try_into()?,
         })
     }

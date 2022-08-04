@@ -832,9 +832,8 @@ pub struct GraphConnection<'a> {
 
 /// A join of tables `candy_machines` and `candy_machine_datas`
 #[derive(Debug, Clone, Queryable)]
-#[diesel(treat_none_as_null = true)]
 pub struct CandyMachineJoined {
-    // Table 'candy_machines'
+    // Table `candy_machines`
     /// CandyMachine account address
     pub address: String,
     /// CandyMachine 'Authority' address
@@ -846,7 +845,7 @@ pub struct CandyMachineJoined {
     /// Items redeemed
     pub items_redeemed: i64,
 
-    // Table 'candy_machine_data'
+    // Table `candy_machine_datas`
     /// CandyMachine account address
     pub candy_machine_address: String,
     /// Uuid
