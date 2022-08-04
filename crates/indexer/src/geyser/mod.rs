@@ -98,6 +98,9 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         Message::AccountUpdate(update) if update.owner == pubkeys::TOKEN_BONDING => {
             programs::token_bonding::process(client, update).await
         },
+        Message::AccountUpdate(update) if update.owner == pubkeys::SPL_GOVERNANCE => {
+            programs::spl_governance::process(client, update).await
+        },
         Message::AccountUpdate(update) if update.owner == genostub::ID => {
             programs::genopets::process(client, update).await
         },

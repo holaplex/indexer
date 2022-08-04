@@ -52,6 +52,8 @@ pub static TOKEN_BONDING: Pubkey = pubkey!("TBondmkCYxaPCKG4CHYfVTcwQ8on31xnJrPz
 /// Cardinal .twitter namespace pubkey
 pub static CARDINAL_TWITTER_NAMESPACE: Pubkey =
     pubkey!("2zwXjjGEUrFMyE2CF2Ju4CJwMzwdbBMYnF2boEzgPhGu");
+/// Spl Governance program pubkey
+pub static SPL_GOVERNANCE: Pubkey = pubkey!("GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw");
 
 /// Find the address of a store given its owner's address
 pub fn find_store_address(owner: impl Borrow<Pubkey>) -> (Pubkey, u8) {
