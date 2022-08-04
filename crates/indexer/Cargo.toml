@@ -70,6 +70,7 @@ futures-util = "0.3.21"
 hostname = "0.3.1"
 serde = { version = "1.0.133", features = ["derive"] }
 strum = { version = "0.24.0", features = ["derive"] }
+thiserror = "1.0.30"
 tokio = { version = "1.13.0", features = ["macros", "rt", "rt-multi-thread", "signal", "sync"] }
 tokio-executor-trait = "2.1.0"
 tokio-reactor-trait = "1.1.0"
