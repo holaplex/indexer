@@ -830,6 +830,47 @@ pub struct GraphConnection<'a> {
     pub write_version: i64,
 }
 
+/// A join of tables `candy_machines` and `candy_machine_datas`
+#[derive(Debug, Clone, Queryable)]
+#[diesel(treat_none_as_null = true)]
+pub struct CandyMachineJoined {
+    // Table 'candy_machines'
+    /// CandyMachine account address
+    pub address: String,
+    /// CandyMachine 'Authority' address
+    pub authority: String,
+    /// CandyMachine 'Wallet' address
+    pub wallet: String,
+    /// Token mint address
+    pub token_mint: Option<String>,
+    /// Items redeemed
+    pub items_redeemed: i64,
+
+    // Table 'candy_machine_data'
+    /// CandyMachine account address
+    pub candy_machine_address: String,
+    /// Uuid
+    pub uuid: String,
+    /// The amount in SOL or SPL token for a mint
+    pub price: i64,
+    /// Symbol
+    pub symbol: String,
+    /// Royalty basis points that goes to creators in secondary sales (0-10000)
+    pub seller_fee_basis_points: i16,
+    /// Max supply
+    pub max_supply: i64,
+    /// Whether or not the data struct is mutable, default is not
+    pub is_mutable: bool,
+    /// Indicates whether the candy machine authority has the update authority for each mint
+    /// or if it is transferred to the minter
+    pub retain_authority: bool,
+    /// Timestamp when minting is allowed
+    /// the Candy Machine authority and whitelists can bypass this constraint
+    pub go_live_date: Option<i64>,
+    /// Number of items available
+    pub items_available: i64,
+}
+
 /// A row in the `candy_machines` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
