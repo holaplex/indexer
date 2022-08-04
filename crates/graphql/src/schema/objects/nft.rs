@@ -540,12 +540,18 @@ impl Collection {
     pub async fn activities(
         &self,
         ctx: &AppContext,
+        event_types: Option<Vec<String>>,
         limit: i32,
         offset: i32,
     ) -> FieldResult<Vec<NftActivity>> {
         let conn = ctx.shared.db.get()?;
-        let rows =
-            queries::metadatas::collection_activities(&conn, &self.0.address, limit, offset)?;
+        let rows = queries::collections::collection_activities(
+            &conn,
+            &self.0.address,
+            event_types,
+            limit,
+            offset,
+        )?;
 
         rows.into_iter()
             .map(TryInto::try_into)
@@ -670,14 +676,6 @@ impl Collection {
             .await
             .map_err(Into::into)
     }
-
-    // #[graphql(deprecated = "use `nft { activities }`")]
-    // pub async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
-    //     ctx.nft_activities_loader
-    //         .load(self.0.address.clone().into())
-    //         .await
-    //         .map_err(Into::into)
-    // }
 
     #[graphql(deprecated = "use `nft { ah_listings_loader }`")]
     pub async fn listings(&self, ctx: &AppContext) -> FieldResult<Vec<AhListing>> {
