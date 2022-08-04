@@ -183,7 +183,7 @@ SELECT listings.id as id, metadata, auction_house, price, auction_house, created
         FROM listings
         LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
         WHERE metadata = $1
-        AND 'LISTINGS' = ANY($2)
+        AND ('LISTINGS' = ANY($2) OR $2 IS NULL)
     UNION
     SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[seller, buyer] as wallets,
@@ -193,7 +193,7 @@ SELECT listings.id as id, metadata, auction_house, price, auction_house, created
         LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchases.seller)
         LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
         WHERE metadata = $1
-        AND 'PURCHASES' = ANY($2)
+        AND ('PURCHASES' = ANY($2) OR $2 IS NULL)
     UNION
     SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[buyer] as wallets,
@@ -203,7 +203,7 @@ SELECT listings.id as id, metadata, auction_house, price, auction_house, created
         LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = offers.buyer)
         WHERE metadata = $1
         AND offers.purchase_id IS NULL
-        AND 'OFFERS' = ANY($2)
+        AND ('OFFERS' = ANY($2) OR $2 IS NULL)
     ORDER BY created_at DESC
     LIMIT $3
     OFFSET $4;
