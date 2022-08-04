@@ -306,16 +306,12 @@ pub fn store_creators(
 
 #[cfg(test)]
 mod tests {
-    use crate::db::test::DATABASE;
+    use crate::db::test::prelude::*;
 
     #[test]
     fn test_store_creators_minimal_passes() {
-        let pool = &DATABASE;
+        let conn = connect();
 
-        let _ = super::store_creators(
-            &pool.get().expect("failed to aquire database connection"),
-            Vec::<String>::new(),
-        )
-        .expect("failed query");
+        std::mem::drop(super::store_creators(&conn, Vec::<String>::new()).unwrap());
     }
 }

@@ -238,44 +238,42 @@ pub fn collection_activities(
 
 #[cfg(test)]
 mod tests {
-    use chrono::{TimeZone, Utc};
-
-    use crate::db::test::DATABASE;
+    use crate::db::test::prelude::*;
 
     #[test]
     fn test_collections_featured_by_marketcap_returns_non_empty() {
-        let pool = &DATABASE;
+        let conn = connect();
 
         let result = super::by_market_cap(
-            &pool.get().expect("failed to aquire database connection"),
+            &conn,
             None::<Vec<String>>,
-            crate::db::custom_types::OrderDirection::Desc,
+            OrderDirection::Desc,
             Utc.ymd(1901, 1, 1).and_hms(0, 0, 0),
             Utc.ymd(3000, 1, 1).and_hms(0, 0, 0),
             50,
             0,
         )
-        .expect("failed query");
+        .unwrap();
 
-        assert!(!result.is_empty(), "expected at least one row");
+        assert!(!result.is_empty(), "Expected at least one row");
     }
 
     #[test]
     fn test_collections_featured_by_volume_returns_non_empty() {
-        let pool = &DATABASE;
+        let conn = connect();
 
         let result = super::by_volume(
-            &pool.get().expect("failed to aquire database connection"),
+            &conn,
             None::<Vec<String>>,
-            crate::db::custom_types::OrderDirection::Desc,
+            OrderDirection::Desc,
             Utc.ymd(1901, 1, 1).and_hms(0, 0, 0),
             Utc.ymd(3000, 1, 1).and_hms(0, 0, 0),
             50,
             0,
         )
-        .expect("failed query");
+        .unwrap();
 
-        assert!(!result.is_empty(), "expected at least one row");
+        assert!(!result.is_empty(), "Expected at least one row");
     }
 
     #[test]
