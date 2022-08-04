@@ -1,6 +1,7 @@
 use indexer_core::db::{
     expression::dsl::all,
     queries::{self, feed_event::EventType},
+    tables::metadata_collection_keys,
 };
 use objects::{
     ah_listing::AhListing,
@@ -730,15 +731,21 @@ impl QueryRoot {
         address: String,
     ) -> FieldResult<Option<Collection>> {
         let conn = context.shared.db.get()?;
+
         metadatas::table
             .inner_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .inner_join(
+                metadata_collection_keys::table
+                    .on(metadata_collection_keys::collection_address.eq(metadatas::mint_address)),
+            )
+            .inner_join(
                 current_metadata_owners::table
                     .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
             )
-            .filter(metadatas::address.eq(address))
+            .filter(metadata_collection_keys::collection_address.eq(address))
+            .filter(metadata_collection_keys::verified.eq(true))
             .select(queries::metadatas::NFT_COLUMNS)
             .first::<models::Nft>(&conn)
             .optional()
