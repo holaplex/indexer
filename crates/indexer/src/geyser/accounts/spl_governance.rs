@@ -28,7 +28,7 @@ use solana_program::{clock::UnixTimestamp, slot_history::Slot};
 use super::Client;
 use crate::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+#[derive(Clone, Copy, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub enum GovernanceAccountType {
     Uninitialized,
     RealmV1,
@@ -55,11 +55,11 @@ pub enum GovernanceAccountType {
     SignatoryRecordV2,
 }
 
-impl TryInto<GovernanceAccountTypeEnum> for GovernanceAccountType {
+impl TryFrom<GovernanceAccountType> for GovernanceAccountTypeEnum {
     type Error = std::num::TryFromIntError;
 
-    fn try_into(self) -> Result<GovernanceAccountTypeEnum, Self::Error> {
-        match self {
+    fn try_from(v: GovernanceAccountType) -> Result<Self, Self::Error> {
+        match v {
             GovernanceAccountType::Uninitialized => Ok(GovernanceAccountTypeEnum::Uninitialized),
             GovernanceAccountType::RealmV1 => Ok(GovernanceAccountTypeEnum::RealmV1),
             GovernanceAccountType::TokenOwnerRecordV1 => {
@@ -125,18 +125,18 @@ pub enum VoteThresholdPercentage {
     Quorum(u8),
 }
 
-#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+#[derive(Clone, Copy, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub enum VoteTipping {
     Strict,
     Early,
     Disabled,
 }
 
-impl TryInto<VoteTippingEnum> for VoteTipping {
+impl TryFrom<VoteTipping> for VoteTippingEnum {
     type Error = std::num::TryFromIntError;
 
-    fn try_into(self) -> Result<VoteTippingEnum, Self::Error> {
-        match self {
+    fn try_from(v: VoteTipping) -> Result<Self, Self::Error> {
+        match v {
             VoteTipping::Strict => Ok(VoteTippingEnum::Strict),
             VoteTipping::Early => Ok(VoteTippingEnum::Early),
             VoteTipping::Disabled => Ok(VoteTippingEnum::Disabled),
@@ -208,11 +208,11 @@ pub enum Vote {
     Veto,
 }
 
-impl TryInto<VoteRecordV2VoteEnum> for Vote {
+impl TryFrom<Vote> for VoteRecordV2VoteEnum {
     type Error = std::num::TryFromIntError;
 
-    fn try_into(self) -> Result<VoteRecordV2VoteEnum, Self::Error> {
-        match self {
+    fn try_from(v: Vote) -> Result<Self, Self::Error> {
+        match v {
             Vote::Approve(_) => Ok(VoteRecordV2VoteEnum::Approve),
             Vote::Deny => Ok(VoteRecordV2VoteEnum::Deny),
             Vote::Abstain => Ok(VoteRecordV2VoteEnum::Abstain),
@@ -221,7 +221,7 @@ impl TryInto<VoteRecordV2VoteEnum> for Vote {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+#[derive(Clone, Copy, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub struct VoteChoice {
     pub rank: u8,
     pub weight_percentage: u8,
@@ -292,18 +292,18 @@ pub struct ProposalV2 {
     pub description_link: String,
 }
 
-#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+#[derive(Clone, Copy, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub enum OptionVoteResult {
     None,
     Succeeded,
     Defeated,
 }
 
-impl TryInto<OptionVoteResultEnum> for OptionVoteResult {
+impl TryFrom<OptionVoteResult> for OptionVoteResultEnum {
     type Error = std::num::TryFromIntError;
 
-    fn try_into(self) -> Result<OptionVoteResultEnum, Self::Error> {
-        match self {
+    fn try_from(v: OptionVoteResult) -> Result<Self, Self::Error> {
+        match v {
             OptionVoteResult::None => Ok(OptionVoteResultEnum::None),
             OptionVoteResult::Succeeded => Ok(OptionVoteResultEnum::Succeeded),
             OptionVoteResult::Defeated => Ok(OptionVoteResultEnum::Defeated),
@@ -320,7 +320,7 @@ pub enum VoteType {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+#[derive(Clone, Copy, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub enum ProposalState {
     Draft,
     SigningOff,
@@ -333,11 +333,11 @@ pub enum ProposalState {
     ExecutingWithErrors,
 }
 
-impl TryInto<ProposalStateEnum> for ProposalState {
+impl TryFrom<ProposalState> for ProposalStateEnum {
     type Error = std::num::TryFromIntError;
 
-    fn try_into(self) -> Result<ProposalStateEnum, Self::Error> {
-        match self {
+    fn try_from(v: ProposalState) -> Result<Self, Self::Error> {
+        match v {
             ProposalState::Draft => Ok(ProposalStateEnum::Draft),
             ProposalState::SigningOff => Ok(ProposalStateEnum::SigningOff),
             ProposalState::Voting => Ok(ProposalStateEnum::Voting),
@@ -351,18 +351,18 @@ impl TryInto<ProposalStateEnum> for ProposalState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+#[derive(Clone, Copy, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub enum InstructionExecutionFlags {
     None,
     Ordered,
     UseTransaction,
 }
 
-impl TryInto<InstructionExecutionFlagsEnum> for InstructionExecutionFlags {
+impl TryFrom<InstructionExecutionFlags> for InstructionExecutionFlagsEnum {
     type Error = std::num::TryFromIntError;
 
-    fn try_into(self) -> Result<InstructionExecutionFlagsEnum, Self::Error> {
-        match self {
+    fn try_from(v: InstructionExecutionFlags) -> Result<Self, Self::Error> {
+        match v {
             InstructionExecutionFlags::None => Ok(InstructionExecutionFlagsEnum::None),
             InstructionExecutionFlags::Ordered => Ok(InstructionExecutionFlagsEnum::Ordered),
             InstructionExecutionFlags::UseTransaction => {
