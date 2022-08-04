@@ -55,59 +55,51 @@ pub enum GovernanceAccountType {
     SignatoryRecordV2,
 }
 
-impl TryFrom<GovernanceAccountType> for GovernanceAccountTypeEnum {
-    type Error = std::num::TryFromIntError;
-
-    fn try_from(v: GovernanceAccountType) -> Result<Self, Self::Error> {
+impl From<GovernanceAccountType> for GovernanceAccountTypeEnum {
+    fn from(v: GovernanceAccountType) -> Self {
         match v {
-            GovernanceAccountType::Uninitialized => Ok(GovernanceAccountTypeEnum::Uninitialized),
-            GovernanceAccountType::RealmV1 => Ok(GovernanceAccountTypeEnum::RealmV1),
+            GovernanceAccountType::Uninitialized => GovernanceAccountTypeEnum::Uninitialized,
+            GovernanceAccountType::RealmV1 => GovernanceAccountTypeEnum::RealmV1,
             GovernanceAccountType::TokenOwnerRecordV1 => {
-                Ok(GovernanceAccountTypeEnum::TokenOwnerRecordV1)
+                GovernanceAccountTypeEnum::TokenOwnerRecordV1
             },
-            GovernanceAccountType::GovernanceV1 => Ok(GovernanceAccountTypeEnum::GovernanceV1),
+            GovernanceAccountType::GovernanceV1 => GovernanceAccountTypeEnum::GovernanceV1,
             GovernanceAccountType::ProgramGovernanceV1 => {
-                Ok(GovernanceAccountTypeEnum::ProgramGovernanceV1)
+                GovernanceAccountTypeEnum::ProgramGovernanceV1
             },
-            GovernanceAccountType::ProposalV1 => Ok(GovernanceAccountTypeEnum::ProposalV1),
+            GovernanceAccountType::ProposalV1 => GovernanceAccountTypeEnum::ProposalV1,
             GovernanceAccountType::SignatoryRecordV1 => {
-                Ok(GovernanceAccountTypeEnum::SignatoryRecordV1)
+                GovernanceAccountTypeEnum::SignatoryRecordV1
             },
-            GovernanceAccountType::VoteRecordV1 => Ok(GovernanceAccountTypeEnum::VoteRecordV1),
+            GovernanceAccountType::VoteRecordV1 => GovernanceAccountTypeEnum::VoteRecordV1,
             GovernanceAccountType::ProposalInstructionV1 => {
-                Ok(GovernanceAccountTypeEnum::ProposalInstructionV1)
+                GovernanceAccountTypeEnum::ProposalInstructionV1
             },
-            GovernanceAccountType::MintGovernanceV1 => {
-                Ok(GovernanceAccountTypeEnum::MintGovernanceV1)
-            },
+            GovernanceAccountType::MintGovernanceV1 => GovernanceAccountTypeEnum::MintGovernanceV1,
             GovernanceAccountType::TokenGovernanceV1 => {
-                Ok(GovernanceAccountTypeEnum::TokenGovernanceV1)
+                GovernanceAccountTypeEnum::TokenGovernanceV1
             },
-            GovernanceAccountType::RealmConfig => Ok(GovernanceAccountTypeEnum::RealmConfig),
-            GovernanceAccountType::VoteRecordV2 => Ok(GovernanceAccountTypeEnum::VoteRecordV2),
+            GovernanceAccountType::RealmConfig => GovernanceAccountTypeEnum::RealmConfig,
+            GovernanceAccountType::VoteRecordV2 => GovernanceAccountTypeEnum::VoteRecordV2,
             GovernanceAccountType::ProposalTransactionV2 => {
-                Ok(GovernanceAccountTypeEnum::ProposalTransactionV2)
+                GovernanceAccountTypeEnum::ProposalTransactionV2
             },
-            GovernanceAccountType::ProposalV2 => Ok(GovernanceAccountTypeEnum::ProposalV2),
-            GovernanceAccountType::ProgramMetadata => {
-                Ok(GovernanceAccountTypeEnum::ProgramMetadata)
-            },
-            GovernanceAccountType::RealmV2 => Ok(GovernanceAccountTypeEnum::RealmV2),
+            GovernanceAccountType::ProposalV2 => GovernanceAccountTypeEnum::ProposalV2,
+            GovernanceAccountType::ProgramMetadata => GovernanceAccountTypeEnum::ProgramMetadata,
+            GovernanceAccountType::RealmV2 => GovernanceAccountTypeEnum::RealmV2,
             GovernanceAccountType::TokenOwnerRecordV2 => {
-                Ok(GovernanceAccountTypeEnum::TokenOwnerRecordV2)
+                GovernanceAccountTypeEnum::TokenOwnerRecordV2
             },
-            GovernanceAccountType::GovernanceV2 => Ok(GovernanceAccountTypeEnum::GovernanceV2),
+            GovernanceAccountType::GovernanceV2 => GovernanceAccountTypeEnum::GovernanceV2,
             GovernanceAccountType::ProgramGovernanceV2 => {
-                Ok(GovernanceAccountTypeEnum::ProgramGovernanceV2)
+                GovernanceAccountTypeEnum::ProgramGovernanceV2
             },
-            GovernanceAccountType::MintGovernanceV2 => {
-                Ok(GovernanceAccountTypeEnum::MintGovernanceV2)
-            },
+            GovernanceAccountType::MintGovernanceV2 => GovernanceAccountTypeEnum::MintGovernanceV2,
             GovernanceAccountType::TokenGovernanceV2 => {
-                Ok(GovernanceAccountTypeEnum::TokenGovernanceV2)
+                GovernanceAccountTypeEnum::TokenGovernanceV2
             },
             GovernanceAccountType::SignatoryRecordV2 => {
-                Ok(GovernanceAccountTypeEnum::SignatoryRecordV2)
+                GovernanceAccountTypeEnum::SignatoryRecordV2
             },
         }
     }
@@ -132,14 +124,12 @@ pub enum VoteTipping {
     Disabled,
 }
 
-impl TryFrom<VoteTipping> for VoteTippingEnum {
-    type Error = std::num::TryFromIntError;
-
-    fn try_from(v: VoteTipping) -> Result<Self, Self::Error> {
+impl From<VoteTipping> for VoteTippingEnum {
+    fn from(v: VoteTipping) -> Self {
         match v {
-            VoteTipping::Strict => Ok(VoteTippingEnum::Strict),
-            VoteTipping::Early => Ok(VoteTippingEnum::Early),
-            VoteTipping::Disabled => Ok(VoteTippingEnum::Disabled),
+            VoteTipping::Strict => VoteTippingEnum::Strict,
+            VoteTipping::Early => VoteTippingEnum::Early,
+            VoteTipping::Disabled => VoteTippingEnum::Disabled,
         }
     }
 }
@@ -208,15 +198,13 @@ pub enum Vote {
     Veto,
 }
 
-impl TryFrom<Vote> for VoteRecordV2VoteEnum {
-    type Error = std::num::TryFromIntError;
-
-    fn try_from(v: Vote) -> Result<Self, Self::Error> {
+impl From<Vote> for VoteRecordV2VoteEnum {
+    fn from(v: Vote) -> Self {
         match v {
-            Vote::Approve(_) => Ok(VoteRecordV2VoteEnum::Approve),
-            Vote::Deny => Ok(VoteRecordV2VoteEnum::Deny),
-            Vote::Abstain => Ok(VoteRecordV2VoteEnum::Abstain),
-            Vote::Veto => Ok(VoteRecordV2VoteEnum::Veto),
+            Vote::Approve(_) => VoteRecordV2VoteEnum::Approve,
+            Vote::Deny => VoteRecordV2VoteEnum::Deny,
+            Vote::Abstain => VoteRecordV2VoteEnum::Abstain,
+            Vote::Veto => VoteRecordV2VoteEnum::Veto,
         }
     }
 }
@@ -299,14 +287,12 @@ pub enum OptionVoteResult {
     Defeated,
 }
 
-impl TryFrom<OptionVoteResult> for OptionVoteResultEnum {
-    type Error = std::num::TryFromIntError;
-
-    fn try_from(v: OptionVoteResult) -> Result<Self, Self::Error> {
+impl From<OptionVoteResult> for OptionVoteResultEnum {
+    fn from(v: OptionVoteResult) -> Self {
         match v {
-            OptionVoteResult::None => Ok(OptionVoteResultEnum::None),
-            OptionVoteResult::Succeeded => Ok(OptionVoteResultEnum::Succeeded),
-            OptionVoteResult::Defeated => Ok(OptionVoteResultEnum::Defeated),
+            OptionVoteResult::None => OptionVoteResultEnum::None,
+            OptionVoteResult::Succeeded => OptionVoteResultEnum::Succeeded,
+            OptionVoteResult::Defeated => OptionVoteResultEnum::Defeated,
         }
     }
 }
@@ -333,20 +319,18 @@ pub enum ProposalState {
     ExecutingWithErrors,
 }
 
-impl TryFrom<ProposalState> for ProposalStateEnum {
-    type Error = std::num::TryFromIntError;
-
-    fn try_from(v: ProposalState) -> Result<Self, Self::Error> {
+impl From<ProposalState> for ProposalStateEnum {
+    fn from(v: ProposalState) -> Self {
         match v {
-            ProposalState::Draft => Ok(ProposalStateEnum::Draft),
-            ProposalState::SigningOff => Ok(ProposalStateEnum::SigningOff),
-            ProposalState::Voting => Ok(ProposalStateEnum::Voting),
-            ProposalState::Succeeded => Ok(ProposalStateEnum::Succeeded),
-            ProposalState::Executing => Ok(ProposalStateEnum::Executing),
-            ProposalState::Completed => Ok(ProposalStateEnum::Completed),
-            ProposalState::Cancelled => Ok(ProposalStateEnum::Cancelled),
-            ProposalState::Defeated => Ok(ProposalStateEnum::Defeated),
-            ProposalState::ExecutingWithErrors => Ok(ProposalStateEnum::ExecutingWithErrors),
+            ProposalState::Draft => ProposalStateEnum::Draft,
+            ProposalState::SigningOff => ProposalStateEnum::SigningOff,
+            ProposalState::Voting => ProposalStateEnum::Voting,
+            ProposalState::Succeeded => ProposalStateEnum::Succeeded,
+            ProposalState::Executing => ProposalStateEnum::Executing,
+            ProposalState::Completed => ProposalStateEnum::Completed,
+            ProposalState::Cancelled => ProposalStateEnum::Cancelled,
+            ProposalState::Defeated => ProposalStateEnum::Defeated,
+            ProposalState::ExecutingWithErrors => ProposalStateEnum::ExecutingWithErrors,
         }
     }
 }
@@ -358,15 +342,13 @@ pub enum InstructionExecutionFlags {
     UseTransaction,
 }
 
-impl TryFrom<InstructionExecutionFlags> for InstructionExecutionFlagsEnum {
-    type Error = std::num::TryFromIntError;
-
-    fn try_from(v: InstructionExecutionFlags) -> Result<Self, Self::Error> {
+impl From<InstructionExecutionFlags> for InstructionExecutionFlagsEnum {
+    fn from(v: InstructionExecutionFlags) -> Self {
         match v {
-            InstructionExecutionFlags::None => Ok(InstructionExecutionFlagsEnum::None),
-            InstructionExecutionFlags::Ordered => Ok(InstructionExecutionFlagsEnum::Ordered),
+            InstructionExecutionFlags::None => InstructionExecutionFlagsEnum::None,
+            InstructionExecutionFlags::Ordered => InstructionExecutionFlagsEnum::Ordered,
             InstructionExecutionFlags::UseTransaction => {
-                Ok(InstructionExecutionFlagsEnum::UseTransaction)
+                InstructionExecutionFlagsEnum::UseTransaction
             },
         }
     }
@@ -381,7 +363,7 @@ pub(crate) async fn process_governance(
 ) -> Result<()> {
     let row = Governance {
         address: Owned(key.to_string()),
-        account_type: data.account_type.try_into()?,
+        account_type: data.account_type.into(),
         realm: Owned(data.realm.to_string()),
         governed_account: Owned(data.governed_account.to_string()),
         proposals_count: data.proposals_count.try_into()?,
@@ -419,7 +401,7 @@ pub(crate) async fn process_governance(
             .try_into()?,
         min_instruction_hold_up_time: c.min_transaction_hold_up_time.try_into()?,
         max_voting_time: c.max_voting_time.try_into()?,
-        vote_tipping: c.vote_tipping.try_into()?,
+        vote_tipping: c.vote_tipping.into(),
         proposal_cool_off_time: c.proposal_cool_off_time.try_into()?,
         min_council_weight_to_create_proposal: c
             .min_council_weight_to_create_proposal
@@ -453,7 +435,7 @@ pub(crate) async fn process_realmv2(
 ) -> Result<()> {
     let row = Realm {
         address: Owned(key.to_string()),
-        account_type: data.account_type.try_into()?,
+        account_type: data.account_type.into(),
         community_mint: Owned(data.community_mint.to_string()),
         reserved: Owned(data.reserved.to_vec()),
         voting_proposal_count: data.voting_proposal_count.try_into()?,
@@ -523,12 +505,12 @@ pub(crate) async fn process_vote_record_v2(
 ) -> Result<()> {
     let row = DbVoteRecordV2 {
         address: Owned(key.to_string()),
-        account_type: data.account_type.try_into()?,
+        account_type: data.account_type.into(),
         proposal: Owned(data.proposal.to_string()),
         governing_token_owner: Owned(data.governing_token_owner.to_string()),
         is_relinquished: data.is_relinquished,
         voter_weight: data.voter_weight.try_into()?,
-        vote: data.vote.clone().try_into()?,
+        vote: data.vote.clone().into(),
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
     };
@@ -587,7 +569,7 @@ pub(crate) async fn process_token_owner_record_v2(
 ) -> Result<()> {
     let row = DbTokenOwnerRecordV2 {
         address: Owned(key.to_string()),
-        account_type: data.account_type.try_into()?,
+        account_type: data.account_type.into(),
         realm: Owned(data.realm.to_string()),
         governing_token_mint: Owned(data.governing_token_mint.to_string()),
         governing_token_owner: Owned(data.governing_token_owner.to_string()),
@@ -626,7 +608,7 @@ pub(crate) async fn process_signatory_record_v2(
 ) -> Result<()> {
     let row = DbSignatoryRecordV2 {
         address: Owned(key.to_string()),
-        account_type: data.account_type.try_into()?,
+        account_type: data.account_type.into(),
         proposal: Owned(data.proposal.to_string()),
         signatory: Owned(data.signatory.to_string()),
         signed_off: data.signed_off,
@@ -670,10 +652,10 @@ pub(crate) async fn process_proposal_v2(
 
     let row = DbProposalV2 {
         address: Owned(key.to_string()),
-        account_type: data.account_type.try_into()?,
+        account_type: data.account_type.into(),
         governance: Owned(data.governance.to_string()),
         governing_token_mint: Owned(data.governing_token_mint.to_string()),
-        state: data.state.try_into()?,
+        state: data.state.into(),
         token_owner_record: Owned(data.token_owner_record.to_string()),
         signatories_count: data.signatories_count.try_into()?,
         signatories_signed_off_count: data.signatories_signed_off_count.try_into()?,
@@ -696,7 +678,7 @@ pub(crate) async fn process_proposal_v2(
         voting_completed_at: data.voting_completed_at.map(unix_timestamp).transpose()?,
         executing_at: data.executing_at.map(unix_timestamp).transpose()?,
         closed_at: data.closed_at.map(unix_timestamp).transpose()?,
-        execution_flags: data.execution_flags.try_into()?,
+        execution_flags: data.execution_flags.into(),
         max_vote_weight: data.max_vote_weight.map(TryInto::try_into).transpose()?,
         max_voting_time: data.max_voting_time.map(TryInto::try_into).transpose()?,
         vote_threshold_type,
@@ -725,7 +707,7 @@ pub(crate) async fn process_proposal_v2(
             proposal_address: Owned(key.to_string()),
             label: Owned(o.label.to_string()),
             vote_weight: o.vote_weight.try_into()?,
-            vote_result: o.vote_result.try_into()?,
+            vote_result: o.vote_result.into(),
             transactions_executed_count: o.transactions_next_index.try_into()?,
             transactions_count: o.transactions_count.try_into()?,
             transactions_next_index: o.transactions_next_index.try_into()?,
