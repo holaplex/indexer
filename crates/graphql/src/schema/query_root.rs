@@ -1026,6 +1026,10 @@ impl QueryRoot {
         #[graphql(description = "Filter on maximum habitat expiry timestamp")] max_expiry: Option<
             DateTime<Utc>,
         >,
+        #[graphql(description = "Filter on harvester open-market flag")]
+        harvester_open_market: Option<bool>,
+        #[graphql(description = "Filter on rental agreement open-market flag")]
+        rental_open_market: Option<bool>,
         #[graphql(description = "Number of values to return")] limit: i32,
         #[graphql(description = "Number of values to skip for pagination")] offset: i32,
     ) -> FieldResult<Vec<GenoHabitat>> {
@@ -1062,6 +1066,8 @@ impl QueryRoot {
             guilds,
             durabilities: make_range(min_durability, max_durability),
             expiries: make_range(min_expiry, max_expiry),
+            harvester_open_market,
+            rental_open_market,
             limit: limit.into(),
             offset: offset.into(),
         };
