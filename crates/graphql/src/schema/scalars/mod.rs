@@ -10,6 +10,9 @@ pub(self) mod prelude {
 pub mod markers {
     pub struct StoreConfig;
     pub struct TokenMint;
+    /// Used to denote a public key field to graphql while not
+    /// indicating a relationship to any other specific object
+    pub struct Unspecified;
 }
 
 pub use bigint::{I64, U64};

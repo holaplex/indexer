@@ -2,6 +2,7 @@ use scalars::{PublicKey, U64};
 use tables::{candy_machine_datas, candy_machines};
 
 use super::prelude::*;
+use crate::schema::scalars::markers::{TokenMint, Unspecified};
 
 pub type CandyMachineColumns = (
     candy_machines::address,
@@ -9,24 +10,9 @@ pub type CandyMachineColumns = (
     candy_machines::wallet,
     candy_machines::token_mint,
     candy_machines::items_redeemed,
-    candy_machine_datas::candy_machine_address,
-    candy_machine_datas::uuid,
-    candy_machine_datas::price,
-    candy_machine_datas::symbol,
-    candy_machine_datas::seller_fee_basis_points,
-    candy_machine_datas::max_supply,
-    candy_machine_datas::is_mutable,
-    candy_machine_datas::retain_authority,
-    candy_machine_datas::go_live_date,
-    candy_machine_datas::items_available,
 );
 
-pub const CANDY_MACHINE_COLUMNS: CandyMachineColumns = (
-    candy_machines::address,
-    candy_machines::authority,
-    candy_machines::wallet,
-    candy_machines::token_mint,
-    candy_machines::items_redeemed,
+pub type CandyMachineDataColumns = (
     candy_machine_datas::candy_machine_address,
     candy_machine_datas::uuid,
     candy_machine_datas::price,
@@ -41,10 +27,10 @@ pub const CANDY_MACHINE_COLUMNS: CandyMachineColumns = (
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct CandyMachine {
-    pub address: String,
-    pub authority: String,
-    pub wallet: String,
-    pub token_mint: Option<String>,
+    pub address: PublicKey<CandyMachine>,
+    pub authority: PublicKey<Unspecified>,
+    pub wallet: PublicKey<Unspecified>,
+    pub token_mint: Option<PublicKey<TokenMint>>,
     pub items_redeemed: U64,
 
     pub uuid: String,
@@ -58,37 +44,41 @@ pub struct CandyMachine {
     pub items_available: U64,
 }
 
-impl TryFrom<models::CandyMachineJoined> for CandyMachine {
+impl<'a, 'b> TryFrom<(models::CandyMachine<'a>, models::CandyMachineData<'b>)> for CandyMachine {
     type Error = std::num::TryFromIntError;
 
     fn try_from(
-        models::CandyMachineJoined {
-            address,
-            authority,
-            wallet,
-            token_mint,
-            items_redeemed,
-            uuid,
-            price,
-            symbol,
-            seller_fee_basis_points,
-            max_supply,
-            is_mutable,
-            retain_authority,
-            go_live_date,
-            items_available,
-            ..
-        }: models::CandyMachineJoined,
+        (
+            models::CandyMachine {
+                address,
+                authority,
+                wallet,
+                token_mint,
+                items_redeemed,
+            },
+            models::CandyMachineData {
+                uuid,
+                price,
+                symbol,
+                seller_fee_basis_points,
+                max_supply,
+                is_mutable,
+                retain_authority,
+                go_live_date,
+                items_available,
+                ..
+            },
+        ): (models::CandyMachine, models::CandyMachineData),
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            address,
-            authority,
-            wallet,
-            token_mint,
+            address: address.into(),
+            authority: authority.into(),
+            wallet: wallet.into(),
+            token_mint: token_mint.map(|v| v.into()),
             items_redeemed: items_redeemed.try_into()?,
-            uuid,
+            uuid: uuid.into_owned(),
             price: price.try_into()?,
-            symbol,
+            symbol: symbol.into_owned(),
             seller_fee_basis_points: seller_fee_basis_points.try_into()?,
             max_supply: max_supply.try_into()?,
             is_mutable,

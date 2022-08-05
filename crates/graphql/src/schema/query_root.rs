@@ -7,7 +7,7 @@ use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
     bonding_change::EnrichedBondingChange,
-    candymachine::{CandyMachine, CANDY_MACHINE_COLUMNS},
+    candymachine::{CandyMachine, CandyMachineColumns, CandyMachineDataColumns},
     chart::PriceChart,
     creator::Creator,
     denylist::Denylist,
@@ -658,8 +658,11 @@ impl QueryRoot {
                     .on(candy_machines::address.eq(candy_machine_datas::candy_machine_address)),
             )
             .filter(candy_machines::address.eq(address))
-            .select(CANDY_MACHINE_COLUMNS)
-            .first::<models::CandyMachineJoined>(&conn)
+            .select((
+                CandyMachineColumns::default(),
+                CandyMachineDataColumns::default(),
+            ))
+            .first::<(models::CandyMachine, models::CandyMachineData)>(&conn)
             .optional()
             .context("Failed to load candy machine by address.")?
             .map(TryInto::try_into)
