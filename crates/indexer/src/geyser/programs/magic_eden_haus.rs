@@ -29,7 +29,7 @@ struct MEInstructionData {
     _escrow_payment_bump: u8,
     buyer_price: u64,
     token_size: u64,
-    expiry: u64,
+    expiry: i64,
 }
 
 async fn process_execute_sale(
@@ -94,8 +94,8 @@ async fn process_sale(
         slot: slot.try_into()?,
         write_version: None,
         expiry: match params.expiry {
-            0 => None,
-            _ => Some(util::unix_timestamp(params.expiry.try_into()?)?),
+            e if e <= 0 => None,
+            _ => Some(util::unix_timestamp(params.expiry)?),
         },
     })
     .await
@@ -137,8 +137,8 @@ async fn process_buy(
         slot: slot.try_into()?,
         write_version: None,
         expiry: match params.expiry {
-            0 => None,
-            _ => Some(util::unix_timestamp(params.expiry.try_into()?)?),
+            e if e <= 0 => None,
+            _ => Some(util::unix_timestamp(params.expiry)?),
         },
     })
     .await
