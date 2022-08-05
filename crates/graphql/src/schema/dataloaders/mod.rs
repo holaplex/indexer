@@ -10,6 +10,7 @@ pub mod listing;
 pub mod listing_receipt;
 pub mod nft;
 pub mod purchase_receipt;
+pub mod spl_governance;
 pub mod stats;
 pub mod store_creator;
 pub mod storefront;

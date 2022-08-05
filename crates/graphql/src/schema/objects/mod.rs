@@ -16,6 +16,7 @@ pub mod marketplace;
 pub mod nft;
 pub mod profile;
 pub mod purchase_receipt;
+pub mod spl_governance;
 pub mod stats;
 pub mod store_creator;
 pub mod storefront;

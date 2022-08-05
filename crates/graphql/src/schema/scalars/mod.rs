@@ -10,6 +10,11 @@ pub(self) mod prelude {
 pub mod markers {
     pub struct StoreConfig;
     pub struct TokenMint;
+    pub struct GovernedAccount;
+    pub struct CommunityMint;
+    pub struct GoverningTokenOwner;
+    pub struct CouncilMint;
+    pub struct GovernanceDelegate;
 }
 
 pub use bigint::{I64, U64};

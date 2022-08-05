@@ -16,6 +16,7 @@ use objects::{
     nft::{Collection, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
     profile::TwitterProfile,
     purchase_receipt::PurchaseReceipt,
+    spl_governance::{Governance, GovernanceConfig, Realm, RealmConfig, VoteChoice, VoteRecord},
     stats::{MarketStats, MintStats},
     store_creator::StoreCreator,
     storefront::Storefront,
@@ -70,7 +71,9 @@ pub struct AppContext {
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
     pub storefront_loader: Loader<PublicKey<Storefront>, Option<Storefront>>,
     pub twitter_handle_loader: Loader<PublicKey<Wallet>, Option<String>>,
-
+    pub governance_config_loader: Loader<PublicKey<Governance>, Option<GovernanceConfig>>,
+    pub realm_config_loader: Loader<PublicKey<Realm>, Option<RealmConfig>>,
+    pub approve_vote_choices_loader: Loader<PublicKey<VoteRecord>, Vec<VoteChoice>>,
     // Twitter dataloaders
     pub twitter_profile_loader: Loader<String, Option<TwitterProfile>, TwitterBatcher>,
 }
@@ -121,6 +124,9 @@ impl AppContext {
             store_auction_houses_loader: Loader::new(batcher.clone()),
             store_creator_loader: Loader::new(batcher.clone()),
             storefront_loader: Loader::new(batcher.clone()),
+            governance_config_loader: Loader::new(batcher.clone()),
+            realm_config_loader: Loader::new(batcher.clone()),
+            approve_vote_choices_loader: Loader::new(batcher.clone()),
             twitter_handle_loader: Loader::new(batcher),
 
             twitter_profile_loader: Loader::new(twitter_batcher),
