@@ -21,7 +21,7 @@ use objects::{
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
-use scalars::PublicKey;
+use scalars::{markers::TokenMint, PublicKey};
 use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
@@ -1036,6 +1036,9 @@ impl QueryRoot {
     fn geno_habitats(
         &self,
         ctx: &AppContext,
+        #[graphql(description = "Filter on habitat mint addresses")] mints: Option<
+            Vec<PublicKey<TokenMint>>,
+        >,
         #[graphql(description = "Filter on habitat owners")] owners: Option<Vec<PublicKey<Wallet>>>,
         #[graphql(description = "Filter on habitat renters")] renters: Option<
             Vec<PublicKey<Wallet>>,
@@ -1079,6 +1082,7 @@ impl QueryRoot {
 
         let limit = 250.min(limit);
         let opts = queries::genopets::ListHabitatOptions {
+            mints,
             owners,
             renters,
             harvesters,
