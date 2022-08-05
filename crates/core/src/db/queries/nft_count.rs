@@ -313,5 +313,6 @@ mod tests {
         let conn = connect();
 
         std::mem::drop(super::store_creators(&conn, Vec::<String>::new()).unwrap());
+        todo!("Check that the result is non-empty");
     }
 }

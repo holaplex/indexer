@@ -69,3 +69,16 @@ pub fn list(
         .load(conn)
         .context("failed to load twitter enriched graph connections by addresses")
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_connections() {
+        todo!("Test connections()");
+    }
+
+    #[test]
+    fn test_list() {
+        todo!("Test list()");
+    }
+}

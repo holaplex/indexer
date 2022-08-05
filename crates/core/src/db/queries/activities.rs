@@ -57,3 +57,11 @@ pub fn list(
         .load(conn)
         .context("Failed to load activities")
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_list() {
+        todo!("Test list()");
+    }
+}
