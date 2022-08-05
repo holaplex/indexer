@@ -2908,6 +2908,7 @@ dependencies = [
  "spl-token",
  "spl-token-bonding",
  "strum 0.24.0",
+ "thiserror",
  "tokio",
  "tokio-executor-trait",
  "tokio-reactor-trait",
