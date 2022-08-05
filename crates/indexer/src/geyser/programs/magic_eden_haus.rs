@@ -95,7 +95,7 @@ async fn process_sale(
         write_version: None,
         expiry: match params.expiry {
             0 => None,
-            _ => Some(util::unix_timestamp(params.expiry.try_into()?)?),
+            _ => Some(util::unix_timestamp_unsigned(params.expiry)?),
         },
     })
     .await
@@ -138,7 +138,7 @@ async fn process_buy(
         write_version: None,
         expiry: match params.expiry {
             0 => None,
-            _ => Some(util::unix_timestamp(params.expiry.try_into()?)?),
+            _ => Some(util::unix_timestamp_unsigned(params.expiry)?),
         },
     })
     .await
