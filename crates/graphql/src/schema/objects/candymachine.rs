@@ -74,7 +74,7 @@ impl<'a, 'b> TryFrom<(models::CandyMachine<'a>, models::CandyMachineData<'b>)> f
             address: address.into(),
             authority: authority.into(),
             wallet: wallet.into(),
-            token_mint: token_mint.map(|v| v.into()),
+            token_mint: token_mint.map(Into::into),
             items_redeemed: items_redeemed.try_into()?,
             uuid: uuid.into_owned(),
             price: price.try_into()?,
