@@ -17,7 +17,8 @@ jobs:
           components: cargo, rustc, rustfmt
           profile: minimal
 
-      - uses: actions-rs/cargo@v1
+      - name: cargo fmt
+        uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all --check
@@ -43,19 +44,27 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
 
-      - uses: actions-rs/cargo@v1
+      - name: cargo clippy --lib
+        uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all --lib --bins --all-features --no-deps --profile=debug-lite
+          args: --workspace --lib --all-features --no-deps --profile=debug-lite
+
+      - name: cargo clippy --bins
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --workspace --bins --all-features --no-deps --profile=debug-lite
 
       - name: check lockfile
         run: |
           diff Cargo.lock <(git show HEAD:Cargo.lock)
 
-      - uses: actions-rs/cargo@v1
+      - name: cargo doc --lib
+        uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --lib --all-features --no-deps --profile=debug-lite
+          args: --workspace --lib --all-features --no-deps --profile=debug-lite
 
   release-check:
     name: cargo check/doc/clippy (release profile)
@@ -78,12 +87,20 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
 
-      - uses: actions-rs/cargo@v1
+      - name: cargo clippy --lib --release
+        uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all --lib --bins --all-features --profile=release-lite
+          args: --workspace --lib --all-features --profile=release-lite
 
-      - uses: actions-rs/cargo@v1
+      - name: cargo clippy --bins --release
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --workspace --bins --all-features --profile=release-lite
+
+      - name: cargo doc --lib --release
+        uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --all --lib --all-features --no-deps --profile=release-lite
+          args: --workspace --lib --all-features --no-deps --profile=release-lite
