@@ -3,10 +3,7 @@ use indexer_core::db::custom_types::{
     ProposalVoteTypeEnum, VoteRecordV2VoteEnum, VoteThresholdEnum, VoteTippingEnum,
 };
 use scalars::{
-    markers::{
-        CommunityMint, CouncilMint, GovernanceDelegate, GovernedAccount, GoverningTokenOwner,
-        TokenMint,
-    },
+    markers::{GovernanceDelegate, GovernedAccount, TokenMint},
     PublicKey, I64,
 };
 
@@ -29,10 +26,6 @@ impl Governance {
         &self.address
     }
 
-    fn realm(&self) -> &PublicKey<Realm> {
-        &self.realm
-    }
-
     fn governed_account(&self) -> &PublicKey<GovernedAccount> {
         &self.governed_account
     }
@@ -51,6 +44,13 @@ impl Governance {
     ) -> FieldResult<Option<GovernanceConfig>> {
         ctx.governance_config_loader
             .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn realm(&self, ctx: &AppContext) -> FieldResult<Option<Realm>> {
+        ctx.realm_loader
+            .load(self.realm.clone())
             .await
             .map_err(Into::into)
     }
@@ -196,7 +196,7 @@ impl From<VoteTippingEnum> for VoteTipping {
 #[derive(Debug, Clone)]
 pub struct Realm {
     pub address: PublicKey<Realm>,
-    pub community_mint: PublicKey<CommunityMint>,
+    pub community_mint: PublicKey<TokenMint>,
     pub voting_proposal_count: i32,
     pub authority: Option<PublicKey<Wallet>>,
     pub name: String,
@@ -209,7 +209,7 @@ impl Realm {
         &self.address
     }
 
-    fn community_mint(&self) -> &PublicKey<CommunityMint> {
+    fn community_mint(&self) -> &PublicKey<TokenMint> {
         &self.community_mint
     }
 
@@ -263,7 +263,7 @@ pub struct RealmConfig {
     pub min_community_weight_to_create_governance: I64,
     pub community_mint_max_vote_weight_source: MintMaxVoteWeightSource,
     pub community_mint_max_vote_weight: I64,
-    pub council_mint: Option<PublicKey<CouncilMint>>,
+    pub council_mint: Option<PublicKey<TokenMint>>,
 }
 
 #[graphql_object(Context = AppContext)]
@@ -293,7 +293,7 @@ impl RealmConfig {
         &self.community_mint_max_vote_weight
     }
 
-    pub fn council_mint(&self) -> &Option<PublicKey<CouncilMint>> {
+    pub fn council_mint(&self) -> &Option<PublicKey<TokenMint>> {
         &self.council_mint
     }
 }
@@ -344,7 +344,7 @@ impl From<MintMaxVoteEnum> for MintMaxVoteWeightSource {
 pub struct VoteRecord {
     pub address: PublicKey<VoteRecord>,
     pub proposal: PublicKey<Proposal>,
-    pub governing_token_owner: PublicKey<GoverningTokenOwner>,
+    pub governing_token_owner: PublicKey<Wallet>,
     pub is_relinquished: bool,
     pub voter_weight: I64,
     pub vote: Vote,
@@ -365,11 +365,7 @@ impl VoteRecord {
         &self.address
     }
 
-    fn proposal(&self) -> &PublicKey<Proposal> {
-        &self.proposal
-    }
-
-    fn governing_token_owner(&self) -> &PublicKey<GoverningTokenOwner> {
+    fn governing_token_owner(&self) -> &PublicKey<Wallet> {
         &self.governing_token_owner
     }
 
@@ -388,6 +384,20 @@ impl VoteRecord {
     pub async fn approve_vote_choices(&self, ctx: &AppContext) -> FieldResult<Vec<VoteChoice>> {
         ctx.approve_vote_choices_loader
             .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn proposal(&self, ctx: &AppContext) -> FieldResult<Option<Proposal>> {
+        ctx.proposal_loader
+            .load(self.proposal.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn token_owner_record(&self, ctx: &AppContext) -> FieldResult<Vec<TokenOwnerRecord>> {
+        ctx.vote_record_token_owner_loader
+            .load(self.governing_token_owner.clone())
             .await
             .map_err(Into::into)
     }
@@ -474,7 +484,7 @@ pub struct TokenOwnerRecord {
     pub address: PublicKey<TokenOwnerRecord>,
     pub realm: PublicKey<Realm>,
     pub governing_token_mint: PublicKey<TokenMint>,
-    pub governing_token_owner: PublicKey<GoverningTokenOwner>,
+    pub governing_token_owner: PublicKey<Wallet>,
     pub governing_token_deposit_amount: I64,
     pub unrelinquished_votes_count: I64,
     pub total_votes_count: I64,
@@ -489,15 +499,11 @@ impl TokenOwnerRecord {
         &self.address
     }
 
-    fn realm(&self) -> &PublicKey<Realm> {
-        &self.realm
-    }
-
     fn governing_token_mint(&self) -> &PublicKey<TokenMint> {
         &self.governing_token_mint
     }
 
-    fn governing_token_owner(&self) -> &PublicKey<GoverningTokenOwner> {
+    fn governing_token_owner(&self) -> &PublicKey<Wallet> {
         &self.governing_token_owner
     }
 
@@ -519,6 +525,13 @@ impl TokenOwnerRecord {
 
     fn governance_delegate(&self) -> &Option<PublicKey<GovernanceDelegate>> {
         &self.governance_delegate
+    }
+
+    pub async fn realm(&self, ctx: &AppContext) -> FieldResult<Option<Realm>> {
+        ctx.realm_loader
+            .load(self.realm.clone())
+            .await
+            .map_err(Into::into)
     }
 }
 
@@ -567,16 +580,19 @@ impl SignatoryRecord {
         &self.address
     }
 
-    fn proposal(&self) -> &PublicKey<Proposal> {
-        &self.proposal
-    }
-
     fn signatory(&self) -> &PublicKey<Wallet> {
         &self.signatory
     }
 
     fn signed_off(&self) -> bool {
         self.signed_off
+    }
+
+    pub async fn proposal(&self, ctx: &AppContext) -> FieldResult<Option<Proposal>> {
+        ctx.proposal_loader
+            .load(self.proposal.clone())
+            .await
+            .map_err(Into::into)
     }
 }
 
@@ -637,20 +653,12 @@ impl Proposal {
         &self.address
     }
 
-    fn governance(&self) -> &PublicKey<Governance> {
-        &self.governance
-    }
-
     fn governing_token_mint(&self) -> &PublicKey<TokenMint> {
         &self.governing_token_mint
     }
 
     fn state(&self) -> &ProposalState {
         &self.state
-    }
-
-    fn token_owner_record(&self) -> &PublicKey<TokenOwnerRecord> {
-        &self.token_owner_record
     }
 
     fn signatories_count(&self) -> i32 {
@@ -738,8 +746,31 @@ impl Proposal {
     }
 
     // dataloaders
-    // vec<proposalOption>
     // voteType multichoice
+
+    pub async fn governance(&self, ctx: &AppContext) -> FieldResult<Option<Governance>> {
+        ctx.governance_loader
+            .load(self.governance.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn token_owner_record(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<TokenOwnerRecord>> {
+        ctx.token_owner_record_loader
+            .load(self.token_owner_record.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn proposal_options(&self, ctx: &AppContext) -> FieldResult<Vec<ProposalOption>> {
+        ctx.proposal_options_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 impl<'a> TryFrom<models::ProposalV2<'a>> for Proposal {
