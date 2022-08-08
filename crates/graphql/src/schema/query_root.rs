@@ -18,15 +18,17 @@ use objects::{
     marketplace::Marketplace,
     nft::{Collection, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
     profile::{ProfilesStats, TwitterProfile},
+    spl_governance::{Governance, Proposal, Realm, SignatoryRecord, TokenOwnerRecord, VoteRecord},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
-use scalars::PublicKey;
+use scalars::{markers::TokenMint, PublicKey};
 use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
-    current_metadata_owners, geno_habitat_datas, graph_connections, metadata_jsons, metadatas,
-    store_config_jsons, storefronts, twitter_handle_name_services, wallet_totals,
+    current_metadata_owners, geno_habitat_datas, governances, graph_connections, metadata_jsons,
+    metadatas, proposals_v2, realms, signatory_records_v2, store_config_jsons, storefronts,
+    token_owner_records_v2, twitter_handle_name_services, vote_records_v2, wallet_totals,
 };
 
 use super::{enums::OrderDirection, prelude::*};
@@ -1111,6 +1113,209 @@ impl QueryRoot {
 
         queries::genopets::list_habitats(&conn, opts)
             .map(|v| v.into_iter().map(Into::into).collect())
+            .map_err(Into::into)
+    }
+
+    fn token_owner_records(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Filter on Realms TokenOwnerRecords")] addresses: Option<
+            Vec<PublicKey<TokenOwnerRecord>>,
+        >,
+        #[graphql(description = "Filter on Realms")] realms: Option<Vec<PublicKey<Realm>>>,
+        #[graphql(description = "Filter on Governing Token mints")] governing_token_mints: Option<
+            Vec<PublicKey<TokenMint>>,
+        >,
+    ) -> FieldResult<Vec<TokenOwnerRecord>> {
+        let conn = context.shared.db.get()?;
+        let mut query = token_owner_records_v2::table
+            .select(token_owner_records_v2::all_columns)
+            .into_boxed();
+
+        if let Some(addresses) = addresses {
+            query = query.filter(token_owner_records_v2::address.eq(any(addresses)));
+        }
+
+        if let Some(realms) = realms {
+            query = query.filter(token_owner_records_v2::realm.eq(any(realms)));
+        }
+
+        if let Some(mints) = governing_token_mints {
+            query = query.filter(token_owner_records_v2::governing_token_mint.eq(any(mints)));
+        }
+
+        query
+            .load::<models::TokenOwnerRecordV2>(&conn)
+            .context("Failed to load spl token owner records.")?
+            .into_iter()
+            .map(TokenOwnerRecord::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    fn governances(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Filter on SPL Governances")] addresses: Option<
+            Vec<PublicKey<Governance>>,
+        >,
+        #[graphql(description = "Filter on Realms")] realm_addresses: Option<Vec<PublicKey<Realm>>>,
+    ) -> FieldResult<Vec<Governance>> {
+        let conn = context.shared.db.get()?;
+        let mut query = governances::table
+            .select(governances::all_columns)
+            .into_boxed();
+
+        if let Some(addresses) = addresses {
+            query = query.filter(governances::address.eq(any(addresses)));
+        }
+        if let Some(realms) = realm_addresses {
+            query = query.filter(governances::realm.eq(any(realms)));
+        }
+
+        query
+            .load::<models::Governance>(&conn)
+            .context("Failed to load spl governances.")?
+            .into_iter()
+            .map(Governance::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    fn proposals(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Filter on SPL Governance proposals")] addresses: Option<
+            Vec<PublicKey<Proposal>>,
+        >,
+        #[graphql(description = "Filter on spl governance")] governances: Option<
+            Vec<PublicKey<Proposal>>,
+        >,
+    ) -> FieldResult<Vec<Proposal>> {
+        let conn = context.shared.db.get()?;
+        let mut query = proposals_v2::table
+            .select(proposals_v2::all_columns)
+            .into_boxed();
+
+        if let Some(addresses) = addresses {
+            query = query.filter(proposals_v2::address.eq(any(addresses)));
+        }
+        if let Some(governances) = governances {
+            query = query.filter(proposals_v2::governance.eq(any(governances)));
+        }
+
+        query
+            .load::<models::ProposalV2>(&conn)
+            .context("Failed to load spl governance proposals.")?
+            .into_iter()
+            .map(Proposal::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    fn vote_records(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Filter on SPL VoteRecord pubkeys")] addresses: Option<
+            Vec<PublicKey<VoteRecord>>,
+        >,
+        #[graphql(description = "Filter on Proposals")] proposals: Option<Vec<PublicKey<Proposal>>>,
+        #[graphql(description = "Filter on GoverningTokenOwners")] governing_token_owners: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
+        #[graphql(description = "Filter on is_relinquished")] is_relinquished: Option<bool>,
+    ) -> FieldResult<Vec<VoteRecord>> {
+        let conn = context.shared.db.get()?;
+
+        let mut query = vote_records_v2::table
+            .select(vote_records_v2::all_columns)
+            .into_boxed();
+
+        if let Some(addresses) = addresses {
+            query = query.filter(vote_records_v2::address.eq(any(addresses)));
+        }
+
+        if let Some(proposals) = proposals {
+            query = query.filter(vote_records_v2::proposal.eq(any(proposals)));
+        }
+
+        if let Some(governing_token_owners) = governing_token_owners {
+            query = query
+                .filter(vote_records_v2::governing_token_owner.eq(any(governing_token_owners)));
+        }
+
+        if let Some(is_relinquished) = is_relinquished {
+            query = query.filter(vote_records_v2::is_relinquished.eq(is_relinquished));
+        }
+
+        query
+            .load::<models::VoteRecordV2>(&conn)
+            .context("Failed to load spl governance vote records.")?
+            .into_iter()
+            .map(VoteRecord::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    fn signatory_records(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Filter on SPL SignatoryRecord pubkeys")] addresses: Option<
+            Vec<PublicKey<SignatoryRecord>>,
+        >,
+        #[graphql(description = "Filter on Proposals")] proposals: Option<Vec<PublicKey<Proposal>>>,
+    ) -> FieldResult<Vec<SignatoryRecord>> {
+        let conn = context.shared.db.get()?;
+
+        let mut query = signatory_records_v2::table
+            .select(signatory_records_v2::all_columns)
+            .into_boxed();
+
+        if let Some(addresses) = addresses {
+            query = query.filter(signatory_records_v2::address.eq(any(addresses)));
+        }
+
+        if let Some(proposals) = proposals {
+            query = query.filter(signatory_records_v2::proposal.eq(any(proposals)));
+        }
+
+        query
+            .load::<models::SignatoryRecordV2>(&conn)
+            .context("Failed to load spl governance signatory records.")?
+            .into_iter()
+            .map(SignatoryRecord::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    fn realms(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Filter on SPL Realm pubkeys")] addresses: Option<
+            Vec<PublicKey<Realm>>,
+        >,
+        #[graphql(description = "Filter on Community mints")] community_mints: Option<
+            Vec<PublicKey<TokenMint>>,
+        >,
+    ) -> FieldResult<Vec<Realm>> {
+        let conn = context.shared.db.get()?;
+
+        let mut query = realms::table.select(realms::all_columns).into_boxed();
+
+        if let Some(addresses) = addresses {
+            query = query.filter(realms::address.eq(any(addresses)));
+        }
+
+        if let Some(community_mints) = community_mints {
+            query = query.filter(realms::community_mint.eq(any(community_mints)));
+        }
+
+        query
+            .load::<models::Realm>(&conn)
+            .context("Failed to load spl governance realms.")?
+            .into_iter()
+            .map(Realm::try_from)
+            .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
 

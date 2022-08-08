@@ -395,7 +395,10 @@ impl VoteRecord {
             .map_err(Into::into)
     }
 
-    pub async fn token_owner_record(&self, ctx: &AppContext) -> FieldResult<Vec<TokenOwnerRecord>> {
+    pub async fn token_owner_records(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Vec<TokenOwnerRecord>> {
         ctx.vote_record_token_owner_loader
             .load(self.governing_token_owner.clone())
             .await
