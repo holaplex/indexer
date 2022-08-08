@@ -537,6 +537,28 @@ impl Collection {
         &self.0
     }
 
+    pub async fn activities(
+        &self,
+        ctx: &AppContext,
+        event_types: Option<Vec<String>>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<NftActivity>> {
+        let conn = ctx.shared.db.get()?;
+        let rows = queries::collections::collection_activities(
+            &conn,
+            &self.0.address,
+            event_types,
+            limit,
+            offset,
+        )?;
+
+        rows.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
     async fn nft_count(&self, context: &AppContext) -> FieldResult<Option<scalars::I64>> {
         Ok(context
             .collection_nft_count_loader
@@ -651,14 +673,6 @@ impl Collection {
     pub async fn owner(&self, ctx: &AppContext) -> FieldResult<Option<NftOwner>> {
         ctx.nft_owner_loader
             .load(self.0.mint_address.clone().into())
-            .await
-            .map_err(Into::into)
-    }
-
-    #[graphql(deprecated = "use `nft { activities }`")]
-    pub async fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<NftActivity>> {
-        ctx.nft_activities_loader
-            .load(self.0.address.clone().into())
             .await
             .map_err(Into::into)
     }
