@@ -4,27 +4,6 @@ use tables::{candy_machine_datas, candy_machines};
 use super::prelude::*;
 use crate::schema::scalars::markers::{TokenMint, Unspecified};
 
-pub type CandyMachineColumns = (
-    candy_machines::address,
-    candy_machines::authority,
-    candy_machines::wallet,
-    candy_machines::token_mint,
-    candy_machines::items_redeemed,
-);
-
-pub type CandyMachineDataColumns = (
-    candy_machine_datas::candy_machine_address,
-    candy_machine_datas::uuid,
-    candy_machine_datas::price,
-    candy_machine_datas::symbol,
-    candy_machine_datas::seller_fee_basis_points,
-    candy_machine_datas::max_supply,
-    candy_machine_datas::is_mutable,
-    candy_machine_datas::retain_authority,
-    candy_machine_datas::go_live_date,
-    candy_machine_datas::items_available,
-);
-
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct CandyMachine {
     pub address: PublicKey<CandyMachine>,
