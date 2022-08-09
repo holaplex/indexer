@@ -3,20 +3,24 @@ use indexer_core::{
     db::{
         custom_types::{
             GovernanceAccountTypeEnum, InstructionExecutionFlagsEnum, MintMaxVoteEnum,
-            OptionVoteResultEnum, ProposalStateEnum, ProposalVoteTypeEnum, VoteRecordV2VoteEnum,
-            VoteThresholdEnum, VoteTippingEnum,
+            OptionVoteResultEnum, ProposalStateEnum, ProposalVoteTypeEnum,
+            TransactionExecutionStatusEnum, VoteRecordV2VoteEnum, VoteThresholdEnum,
+            VoteTippingEnum,
         },
         insert_into,
         models::{
             Governance, GovernanceConfig as DbGovernanceConfig, MultiChoice,
-            ProposalOption as DbProposalOption, ProposalV2 as DbProposalV2, Realm,
-            RealmConfig as DbRealmConfig, SignatoryRecordV2 as DbSignatoryRecordV2,
-            TokenOwnerRecordV2 as DbTokenOwnerRecordV2, VoteChoice as DbVoteChoice,
-            VoteRecordV2 as DbVoteRecordV2,
+            ProposalOption as DbProposalOption, ProposalTransaction,
+            ProposalTransactionInstruction, ProposalTransactionInstructionAccount,
+            ProposalV2 as DbProposalV2, Realm, RealmConfig as DbRealmConfig,
+            SignatoryRecordV2 as DbSignatoryRecordV2, TokenOwnerRecordV2 as DbTokenOwnerRecordV2,
+            VoteChoice as DbVoteChoice, VoteRecordV2 as DbVoteRecordV2,
         },
         tables::{
-            governance_configs, governances, proposal_options, proposal_vote_type_multi_choices,
-            proposals_v2, realm_configs, realms, signatory_records_v2, token_owner_records_v2,
+            governance_configs, governances, proposal_options,
+            proposal_transaction_instruction_accounts, proposal_transaction_instructions,
+            proposal_transactions, proposal_vote_type_multi_choices, proposals_v2, realm_configs,
+            realms, signatory_records_v2, token_owner_records_v2,
             vote_record_v2_vote_approve_vote_choices, vote_records_v2,
         },
     },
@@ -352,6 +356,50 @@ impl From<InstructionExecutionFlags> for InstructionExecutionFlagsEnum {
             },
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct ProposalTransactionV2 {
+    pub account_type: GovernanceAccountType,
+    pub proposal: Pubkey,
+    pub option_index: u8,
+    pub transaction_index: u16,
+    pub hold_up_time: u32,
+    pub instructions: Vec<InstructionData>,
+    pub executed_at: Option<UnixTimestamp>,
+    pub execution_status: TransactionExecutionStatus,
+    pub reserved_v2: [u8; 8],
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub enum TransactionExecutionStatus {
+    None,
+    Success,
+    Error,
+}
+
+impl From<TransactionExecutionStatus> for TransactionExecutionStatusEnum {
+    fn from(v: TransactionExecutionStatus) -> Self {
+        match v {
+            TransactionExecutionStatus::None => TransactionExecutionStatusEnum::None,
+            TransactionExecutionStatus::Success => TransactionExecutionStatusEnum::Success,
+            TransactionExecutionStatus::Error => TransactionExecutionStatusEnum::Error,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct AccountMetaData {
+    pub pubkey: Pubkey,
+    pub is_signer: bool,
+    pub is_writable: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct InstructionData {
+    pub program_id: Pubkey,
+    pub accounts: Vec<AccountMetaData>,
+    pub data: Vec<u8>,
 }
 
 pub(crate) async fn process_governance(
@@ -754,6 +802,110 @@ pub(crate) async fn process_proposal_v2(
             })
             .await
             .context("Failed to insert multichoice vote type")?;
+    }
+
+    Ok(())
+}
+
+pub(crate) async fn process_proposal_transaction(
+    client: &Client,
+    key: Pubkey,
+    data: ProposalTransactionV2,
+    slot: u64,
+    write_version: u64,
+) -> Result<()> {
+    let row = ProposalTransaction {
+        address: Owned(key.to_string()),
+        account_type: data.account_type.into(),
+        proposal: Owned(data.proposal.to_string()),
+        option_index: data.option_index.try_into()?,
+        transaction_index: data.transaction_index.try_into()?,
+        hold_up_time: data.hold_up_time.try_into()?,
+        executed_at: data.executed_at.map(unix_timestamp).transpose()?,
+        execution_status: data.execution_status.into(),
+        slot: slot.try_into()?,
+        write_version: write_version.try_into()?,
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(proposal_transactions::table)
+                .values(&row)
+                .on_conflict(proposal_transactions::address)
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
+        .context("Failed to insert proposal transaction")?;
+
+    for ins in data.instructions {
+        let row = ProposalTransactionInstruction {
+            proposal_transaction: Owned(key.to_string()),
+            program_id: Owned(ins.program_id.to_string()),
+            data: Owned(ins.data),
+            slot: slot.try_into()?,
+            write_version: write_version.try_into()?,
+        };
+
+        process_instruction_accounts(client, key, ins.accounts, slot, write_version)
+            .await
+            .context("failed to insert instruction accounts")?;
+
+        client
+            .db()
+            .run(move |db| {
+                insert_into(proposal_transaction_instructions::table)
+                    .values(&row)
+                    .on_conflict((
+                        proposal_transaction_instructions::proposal_transaction,
+                        proposal_transaction_instructions::program_id,
+                        proposal_transaction_instructions::data,
+                    ))
+                    .do_update()
+                    .set(&row)
+                    .execute(db)
+            })
+            .await
+            .context("Failed to insert proposal transaction instruction data")?;
+    }
+
+    Ok(())
+}
+
+async fn process_instruction_accounts(
+    client: &Client,
+    key: Pubkey,
+    data: Vec<AccountMetaData>,
+    slot: u64,
+    write_version: u64,
+) -> Result<()> {
+    for account in data {
+        let row = ProposalTransactionInstructionAccount {
+            proposal_transaction: Owned(key.to_string()),
+            account_pubkey: Owned(account.pubkey.to_string()),
+            is_signer: account.is_signer,
+            is_writable: account.is_writable,
+            slot: slot.try_into()?,
+            write_version: write_version.try_into()?,
+        };
+
+        client
+            .db()
+            .run(move |db| {
+                insert_into(proposal_transaction_instruction_accounts::table)
+                    .values(&row)
+                    .on_conflict((
+                        proposal_transaction_instruction_accounts::proposal_transaction,
+                        proposal_transaction_instruction_accounts::account_pubkey,
+                    ))
+                    .do_update()
+                    .set(&row)
+                    .execute(db)
+            })
+            .await
+            .context("Failed to insert proposal transaction instruction account ")?;
     }
 
     Ok(())

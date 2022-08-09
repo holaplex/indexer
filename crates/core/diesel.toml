@@ -18,6 +18,7 @@ import_types = [
     VoteRecordV2Vote as Vote_record_v2_vote, \
     VoteThresholdType as Votethresholdtype, \
     GovernanceAccountType as Governanceaccounttype, \
+    TransactionExecutionStatus as Transactionexecutionstatus, \
     OfferEventLifecycle as Offereventlifecycle, \
     SettingType as Settingtype, \
     TokenStandard as Token_standard, \
