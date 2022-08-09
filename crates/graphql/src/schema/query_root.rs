@@ -1127,6 +1127,13 @@ impl QueryRoot {
             Vec<PublicKey<TokenMint>>,
         >,
     ) -> FieldResult<Vec<TokenOwnerRecord>> {
+        if addresses.is_none() && realms.is_none() && governing_token_mints.is_none() {
+            return Err(FieldError::new(
+                "You must supply atleast one filter",
+                graphql_value!({ "Filters": "addresses: Vec<PublicKey<TokenOwnerRecord>>, realms: Vec<PublicKey<Realm>>, governing_token_mints: Vec<PublicKey<TokenMint>>" }),
+            ));
+        }
+
         let conn = context.shared.db.get()?;
         let mut query = token_owner_records_v2::table
             .select(token_owner_records_v2::all_columns)
@@ -1159,8 +1166,15 @@ impl QueryRoot {
         #[graphql(description = "Filter on SPL Governances")] addresses: Option<
             Vec<PublicKey<Governance>>,
         >,
-        #[graphql(description = "Filter on Realms")] realm_addresses: Option<Vec<PublicKey<Realm>>>,
+        #[graphql(description = "Filter on Realms")] realms: Option<Vec<PublicKey<Realm>>>,
     ) -> FieldResult<Vec<Governance>> {
+        if addresses.is_none() && realms.is_none() {
+            return Err(FieldError::new(
+                "You must supply atleast one filter",
+                graphql_value!({ "Filters": "addresses: Vec<PublicKey<Governance>>, realms: Vec<PublicKey<Realm>>" }),
+            ));
+        }
+
         let conn = context.shared.db.get()?;
         let mut query = governances::table
             .select(governances::all_columns)
@@ -1169,7 +1183,7 @@ impl QueryRoot {
         if let Some(addresses) = addresses {
             query = query.filter(governances::address.eq(any(addresses)));
         }
-        if let Some(realms) = realm_addresses {
+        if let Some(realms) = realms {
             query = query.filter(governances::realm.eq(any(realms)));
         }
 
@@ -1189,9 +1203,16 @@ impl QueryRoot {
             Vec<PublicKey<Proposal>>,
         >,
         #[graphql(description = "Filter on spl governance")] governances: Option<
-            Vec<PublicKey<Proposal>>,
+            Vec<PublicKey<Governance>>,
         >,
     ) -> FieldResult<Vec<Proposal>> {
+        if addresses.is_none() && governances.is_none() {
+            return Err(FieldError::new(
+                "You must supply atleast one filter",
+                graphql_value!({ "Filters": "addresses: Vec<PublicKey<Proposal>>, governances: Vec<PublicKey<Governance>>" }),
+            ));
+        }
+
         let conn = context.shared.db.get()?;
         let mut query = proposals_v2::table
             .select(proposals_v2::all_columns)
@@ -1225,6 +1246,17 @@ impl QueryRoot {
         >,
         #[graphql(description = "Filter on is_relinquished")] is_relinquished: Option<bool>,
     ) -> FieldResult<Vec<VoteRecord>> {
+        if addresses.is_none()
+            && proposals.is_none()
+            && governing_token_owners.is_none()
+            && is_relinquished.is_none()
+        {
+            return Err(FieldError::new(
+                "You must supply atleast one filter",
+                graphql_value!({ "Filters": "addresses: Vec<PublicKey<VoteRecord>>, proposals: Vec<PublicKey<Proposal>>, governing_token_owners: Vec<PublicKey<Wallet>>, is_relinquished: bool" }),
+            ));
+        }
+
         let conn = context.shared.db.get()?;
 
         let mut query = vote_records_v2::table
@@ -1265,6 +1297,13 @@ impl QueryRoot {
         >,
         #[graphql(description = "Filter on Proposals")] proposals: Option<Vec<PublicKey<Proposal>>>,
     ) -> FieldResult<Vec<SignatoryRecord>> {
+        if addresses.is_none() && proposals.is_none() {
+            return Err(FieldError::new(
+                "You must supply atleast one filter",
+                graphql_value!({ "Filters": "addresses: Vec<PublicKey<SignatoryRecord>>, proposals: Vec<PublicKey<Proposal>>" }),
+            ));
+        }
+
         let conn = context.shared.db.get()?;
 
         let mut query = signatory_records_v2::table
@@ -1298,6 +1337,13 @@ impl QueryRoot {
             Vec<PublicKey<TokenMint>>,
         >,
     ) -> FieldResult<Vec<Realm>> {
+        if addresses.is_none() && community_mints.is_none() {
+            return Err(FieldError::new(
+                "You must supply atleast one filter",
+                graphql_value!({ "Filters": "addresses: Vec<PublicKey<Realm>>, communityMints: Vec<PublicKey<TokenMint>>" }),
+            ));
+        }
+
         let conn = context.shared.db.get()?;
 
         let mut query = realms::table.select(realms::all_columns).into_boxed();

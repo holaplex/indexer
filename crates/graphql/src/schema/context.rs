@@ -17,7 +17,7 @@ use objects::{
     profile::TwitterProfile,
     purchase_receipt::PurchaseReceipt,
     spl_governance::{
-        Governance, GovernanceConfig, Proposal, ProposalOption, Realm, RealmConfig,
+        Governance, GovernanceConfig, MultiChoice, Proposal, ProposalOption, Realm, RealmConfig,
         TokenOwnerRecord, VoteChoice, VoteRecord,
     },
     stats::{MarketStats, MintStats},
@@ -80,8 +80,9 @@ pub struct AppContext {
     pub realm_config_loader: Loader<PublicKey<Realm>, Option<RealmConfig>>,
     pub token_owner_record_loader: Loader<PublicKey<TokenOwnerRecord>, Option<TokenOwnerRecord>>,
     pub proposal_loader: Loader<PublicKey<Proposal>, Option<Proposal>>,
-    pub approve_vote_choices_loader: Loader<PublicKey<VoteRecord>, Vec<VoteChoice>>,
     pub proposal_options_loader: Loader<PublicKey<Proposal>, Vec<ProposalOption>>,
+    pub proposal_multi_choice_loader: Loader<PublicKey<Proposal>, Option<MultiChoice>>,
+    pub approve_vote_choices_loader: Loader<PublicKey<VoteRecord>, Vec<VoteChoice>>,
     pub vote_record_token_owner_loader: Loader<PublicKey<Wallet>, Vec<TokenOwnerRecord>>,
 
     // Twitter dataloaders
@@ -142,6 +143,7 @@ impl AppContext {
             approve_vote_choices_loader: Loader::new(batcher.clone()),
             proposal_loader: Loader::new(batcher.clone()),
             proposal_options_loader: Loader::new(batcher.clone()),
+            proposal_multi_choice_loader: Loader::new(batcher.clone()),
             vote_record_token_owner_loader: Loader::new(batcher.clone()),
             twitter_handle_loader: Loader::new(batcher),
 

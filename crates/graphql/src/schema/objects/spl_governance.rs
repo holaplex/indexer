@@ -748,8 +748,12 @@ impl Proposal {
         &self.description_link
     }
 
-    // dataloaders
-    // voteType multichoice
+    pub async fn multi_choice(&self, ctx: &AppContext) -> FieldResult<Option<MultiChoice>> {
+        ctx.proposal_multi_choice_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
 
     pub async fn governance(&self, ctx: &AppContext) -> FieldResult<Option<Governance>> {
         ctx.governance_loader
@@ -881,6 +885,28 @@ impl From<ProposalVoteTypeEnum> for VoteType {
             ProposalVoteTypeEnum::SingleChoice => VoteType::SingleChoice,
             ProposalVoteTypeEnum::MultiChoice => VoteType::MultiChoice,
         }
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct MultiChoice {
+    max_voter_options: i32,
+    max_winning_options: i32,
+}
+
+impl<'a> TryFrom<models::MultiChoice<'a>> for MultiChoice {
+    type Error = std::num::TryFromIntError;
+    fn try_from(
+        models::MultiChoice {
+            max_voter_options,
+            max_winning_options,
+            ..
+        }: models::MultiChoice,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            max_voter_options: max_voter_options.into(),
+            max_winning_options: max_winning_options.into(),
+        })
     }
 }
 

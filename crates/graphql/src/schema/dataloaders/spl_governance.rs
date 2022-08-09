@@ -1,11 +1,12 @@
 use objects::spl_governance::{
-    Governance, GovernanceConfig, Proposal, ProposalOption, Realm, RealmConfig, TokenOwnerRecord,
-    VoteChoice, VoteRecord,
+    Governance, GovernanceConfig, MultiChoice, Proposal, ProposalOption, Realm, RealmConfig,
+    TokenOwnerRecord, VoteChoice, VoteRecord,
 };
 use scalars::PublicKey;
 use tables::{
-    governance_configs, governances, proposal_options, proposals_v2, realm_configs, realms,
-    token_owner_records_v2, vote_record_v2_vote_approve_vote_choices,
+    governance_configs, governances, proposal_options, proposal_vote_type_multi_choices,
+    proposals_v2, realm_configs, realms, token_owner_records_v2,
+    vote_record_v2_vote_approve_vote_choices,
 };
 
 use super::prelude::*;
@@ -131,6 +132,27 @@ impl TryBatchFn<PublicKey<Proposal>, Option<Proposal>> for Batcher {
             .select(proposals_v2::all_columns)
             .load(&conn)
             .context("Failed to load proposal")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|p| (p.address.clone(), p.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<Proposal>, Option<MultiChoice>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Proposal>],
+    ) -> TryBatchMap<PublicKey<Proposal>, Option<MultiChoice>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::MultiChoice> = proposal_vote_type_multi_choices::table
+            .filter(proposal_vote_type_multi_choices::address.eq(any(addresses)))
+            .select(proposal_vote_type_multi_choices::all_columns)
+            .load(&conn)
+            .context("Failed to load proposal multi choice vote type fields")?;
 
         Ok(rows
             .into_iter()
