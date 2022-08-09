@@ -10,7 +10,7 @@ pub struct TwitterHandleDocument {
     pub handle: String,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct MetadataDocument {
     pub name: String,
     pub mint_address: String,
@@ -20,7 +20,7 @@ pub struct MetadataDocument {
     pub collection_address: Option<String>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CollectionDocument {
     pub name: String,
     pub image: Option<String>,
@@ -64,7 +64,7 @@ impl Client {
         })
     }
 
-    // Gets a document using the id
+    /// Gets a document using the id
     ///
     /// # Errors
     /// This function fails if the index or document from the meilisearch client can not be fetched
@@ -102,6 +102,26 @@ impl Client {
             .context("Failed to send upsert message")
     }
 
+    #[inline]
+    async fn dispatch_indirect_meta(
+        &self,
+        is_for_backfill: bool,
+        index: &'static str,
+        mint: Pubkey,
+    ) -> Result<()> {
+        if is_for_backfill && !self.backfill {
+            return Ok(());
+        }
+
+        self.producer
+            .write(Message::IndirectMetadata {
+                index: index.to_owned(),
+                mint,
+            })
+            .await
+            .context("Failed to send indirect metadata message")
+    }
+
     pub async fn upsert_metadata(
         &self,
         is_for_backfill: bool,
@@ -111,6 +131,11 @@ impl Client {
         debug_assert!(key.parse::<Pubkey>().is_ok());
 
         self.dispatch_upsert(is_for_backfill, "metadatas", key, body)
+            .await
+    }
+
+    pub async fn upsert_geno_habitat(&self, is_for_backfill: bool, key: Pubkey) -> Result<()> {
+        self.dispatch_indirect_meta(is_for_backfill, "geno_habitats", key)
             .await
     }
 

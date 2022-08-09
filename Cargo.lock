@@ -2948,6 +2948,7 @@ dependencies = [
  "sea-query-attr",
  "sea-query-derive",
  "sea-query-driver",
+ "serde",
  "serde_json",
  "solana-program",
  "strum 0.24.0",
@@ -2981,7 +2982,7 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-rabbitmq"
 version = "0.1.0"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.4.0#33be3446ea1be28b72c7fe1d6251d1f8eb4cea6b"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?rev=7d2dc09#7d2dc0970a274878197662c6c04a3a3b37699fcd"
 dependencies = [
  "clap 3.1.12",
  "futures-util",
