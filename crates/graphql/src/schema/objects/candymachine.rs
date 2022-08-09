@@ -1,6 +1,5 @@
 use objects::wallet::Wallet;
 use scalars::{PublicKey, U64};
-use tables::{candy_machine_datas, candy_machines};
 
 use super::prelude::*;
 use crate::schema::scalars::markers::TokenMint;
