@@ -71,10 +71,6 @@ impl Client {
 
         let meili = meili.into_client();
 
-        create_index(meili.clone(), "metadatas", "id")
-            .await
-            .context("Failed to create metadatas index")?;
-
         create_index(meili.clone(), "geno_habitats", "id")
             .await
             .context("Failed to create Genopets habitat index")?;

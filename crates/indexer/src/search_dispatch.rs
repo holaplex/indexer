@@ -11,16 +11,6 @@ pub struct TwitterHandleDocument {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct MetadataDocument {
-    pub name: String,
-    pub mint_address: String,
-    pub image: Option<String>,
-    pub creator_address: String,
-    pub creator_twitter_handle: Option<String>,
-    pub collection_address: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
 pub struct CollectionDocument {
     pub name: String,
     pub image: Option<String>,
@@ -120,18 +110,6 @@ impl Client {
             })
             .await
             .context("Failed to send indirect metadata message")
-    }
-
-    pub async fn upsert_metadata(
-        &self,
-        is_for_backfill: bool,
-        key: String,
-        body: MetadataDocument,
-    ) -> Result<()> {
-        debug_assert!(key.parse::<Pubkey>().is_ok());
-
-        self.dispatch_upsert(is_for_backfill, "metadatas", key, body)
-            .await
     }
 
     pub async fn upsert_geno_habitat(&self, is_for_backfill: bool, key: Pubkey) -> Result<()> {
