@@ -482,3 +482,32 @@ impl FromSql<OptionVoteResult, Pg> for OptionVoteResultEnum {
         from_bytes(bytes)
     }
 }
+
+/// `SPL Governance ProposalTransactionV2` execution status
+#[derive(SqlType, Debug, Clone, Copy)]
+/// Represents database `transactionexecutionstatus` enum
+#[postgres(type_name = "transactionexecutionstatus")]
+pub struct TransactionExecutionStatus;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "TransactionExecutionStatus"]
+#[allow(missing_docs)]
+pub enum TransactionExecutionStatusEnum {
+    None,
+    Success,
+    Error,
+}
+
+impl ToSql<TransactionExecutionStatus, Pg> for TransactionExecutionStatusEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<TransactionExecutionStatus, Pg> for TransactionExecutionStatusEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}

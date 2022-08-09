@@ -14,7 +14,8 @@ use crate::db::custom_types::{
     EndSettingType, GovernanceAccountTypeEnum, InstructionExecutionFlagsEnum,
     ListingEventLifecycle, ListingEventLifecycleEnum, MintMaxVoteEnum, OfferEventLifecycle,
     OfferEventLifecycleEnum, OptionVoteResultEnum, ProposalStateEnum, ProposalVoteTypeEnum,
-    TokenStandardEnum, VoteRecordV2VoteEnum, VoteThresholdEnum, VoteTippingEnum, WhitelistMintMode,
+    TokenStandardEnum, TransactionExecutionStatusEnum, VoteRecordV2VoteEnum, VoteThresholdEnum,
+    VoteTippingEnum, WhitelistMintMode,
 };
 
 /// A row in the `bids` table
@@ -2770,6 +2771,51 @@ pub struct ProposalOption<'a> {
     pub transactions_executed_count: i16,
     pub transactions_count: i16,
     pub transactions_next_index: i16,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct ProposalTransaction<'a> {
+    pub address: Cow<'a, str>,
+    pub account_type: GovernanceAccountTypeEnum,
+    pub proposal: Cow<'a, str>,
+    pub option_index: i16,
+    pub transaction_index: i16,
+    pub hold_up_time: i64,
+    pub executed_at: Option<NaiveDateTime>,
+    pub execution_status: TransactionExecutionStatusEnum,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct ProposalTransactionInstruction<'a> {
+    pub proposal_transaction: Cow<'a, str>,
+    pub program_id: Cow<'a, str>,
+    pub data: Cow<'a, [u8]>,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct ProposalTransactionInstructionAccount<'a> {
+    pub proposal_transaction: Cow<'a, str>,
+    pub account_pubkey: Cow<'a, str>,
+    pub is_signer: bool,
+    pub is_writable: bool,
     /// The slot number of this account's last known update
     pub slot: i64,
     /// The write version of this account's last known update
