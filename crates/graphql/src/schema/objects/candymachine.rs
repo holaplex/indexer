@@ -1,14 +1,15 @@
+use objects::wallet::Wallet;
 use scalars::{PublicKey, U64};
 use tables::{candy_machine_datas, candy_machines};
 
 use super::prelude::*;
-use crate::schema::scalars::markers::{TokenMint, Unspecified};
+use crate::schema::scalars::markers::TokenMint;
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct CandyMachine {
     pub address: PublicKey<CandyMachine>,
-    pub authority: PublicKey<Unspecified>,
-    pub wallet: PublicKey<Unspecified>,
+    pub authority: PublicKey<Wallet>,
+    pub wallet: PublicKey<Wallet>,
     pub token_mint: Option<PublicKey<TokenMint>>,
     pub items_redeemed: U64,
 
