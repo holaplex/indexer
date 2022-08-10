@@ -11,18 +11,21 @@ pub(crate) async fn process_burn_instruction(
     accounts: &[Pubkey],
     slot: u64,
 ) -> Result<()> {
-    if accounts.len() != 3 {
+    if accounts.len() != 4 {
         return Ok(());
     }
 
-    let mint = accounts[2].to_string();
+    let mint = accounts[1].to_string();
     let slot = i64::try_from(slot)?;
 
     client
         .db()
         .run(move |db| {
             update(metadatas::table.filter(metadatas::mint_address.eq(mint)))
-                .set((metadatas::burned.eq(true), metadatas::slot.eq(slot)))
+                .set((
+                    metadatas::burned_at.eq(Some(Local::now().naive_utc())),
+                    metadatas::slot.eq(slot),
+                ))
                 .execute(db)
         })
         .await
