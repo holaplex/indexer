@@ -285,6 +285,7 @@ async fn process_full(
         .context("Failed to dispatch upsert metadata document job")?;
 
     let MetadataJson {
+        name,
         description,
         image,
         animation_url,
@@ -316,6 +317,7 @@ async fn process_full(
         fetch_uri: Owned(url.to_string()),
         slot,
         write_version,
+        name: Some(Owned(name)),
     };
 
     client
@@ -371,7 +373,7 @@ async fn process_minimal(
         .context("Failed to dispatch upsert metadata document job")?;
 
     let MetadataJsonMinimal {
-        name: _,
+        name,
         description,
         image,
         animation_url,
@@ -395,6 +397,7 @@ async fn process_minimal(
         fetch_uri: Owned(url.to_string()),
         slot,
         write_version,
+        name: to_opt_string(&name),
     };
 
     client

@@ -506,6 +506,8 @@ pub struct MetadataJson<'a> {
     pub slot: i64,
     /// The write version of the most recent update for this account
     pub write_version: i64,
+    /// Metadata name
+    pub name: Option<Cow<'a, str>>,
 }
 
 /// A row in the `files` table
