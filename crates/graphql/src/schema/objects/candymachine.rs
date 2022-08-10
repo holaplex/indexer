@@ -97,6 +97,13 @@ impl CandyMachine {
             .await
             .map_err(Into::into)
     }
+
+    pub async fn config_lines(&self, ctx: &AppContext) -> FieldResult<Vec<CandyMachineConfigLine>> {
+        ctx.candymachine_config_line_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 impl<'a, 'b> TryFrom<(models::CandyMachine<'a>, models::CandyMachineData<'b>)> for CandyMachine {
@@ -194,5 +201,22 @@ impl<'a> TryFrom<models::CMCollectionPDA<'a>> for CandyMachineCollectionPda {
             collection_pda: address.into(),
             mint: mint.into(),
         })
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct CandyMachineConfigLine {
+    pub candy_machine_address: PublicKey<CandyMachine>,
+    pub name: String,
+    pub uri: String,
+}
+
+impl<'a> From<models::CMConfigLine<'a>> for CandyMachineConfigLine {
+    fn from(models::CMConfigLine { address, name, uri }: models::CMConfigLine) -> Self {
+        Self {
+            candy_machine_address: address.into(),
+            name: name.into_owned(),
+            uri: uri.into_owned(),
+        }
     }
 }

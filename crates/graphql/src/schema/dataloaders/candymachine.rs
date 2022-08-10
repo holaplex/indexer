@@ -1,6 +1,8 @@
-use objects::candymachine::{CandyMachine, CandyMachineCollectionPda, CandyMachineCreator};
+use objects::candymachine::{
+    CandyMachine, CandyMachineCollectionPda, CandyMachineConfigLine, CandyMachineCreator,
+};
 use scalars::PublicKey;
-use tables::{candy_machine_collection_pdas, candy_machine_creators};
+use tables::{candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators};
 
 use super::prelude::*;
 
@@ -40,6 +42,26 @@ impl TryBatchFn<PublicKey<CandyMachine>, Option<CandyMachineCollectionPda>> for 
         Ok(rows
             .into_iter()
             .map(|r| (r.candy_machine.clone(), r.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<CandyMachine>, Vec<CandyMachineConfigLine>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<CandyMachine>],
+    ) -> TryBatchMap<PublicKey<CandyMachine>, Vec<CandyMachineConfigLine>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::CMConfigLine> = candy_machine_config_lines::table
+            .filter(candy_machine_config_lines::address.eq(any(addresses)))
+            .load(&conn)
+            .context("Failed to candy machine config lines")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|r| (r.address.clone(), r.try_into()))
             .batch(addresses))
     }
 }
