@@ -1,7 +1,10 @@
-use indexer_core::db::{
-    expression::dsl::all,
-    queries::{self, feed_event::EventType},
-    tables::metadata_collection_keys,
+use indexer_core::{
+    db::{
+        expression::dsl::all,
+        queries::{self, feed_event::EventType},
+        tables::metadata_collection_keys,
+    },
+    meilisearch::IndirectMetadataDocument,
 };
 use objects::{
     ah_listing::AhListing,
@@ -22,7 +25,7 @@ use objects::{
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
-use scalars::PublicKey;
+use scalars::{markers::TokenMint, PublicKey};
 use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
@@ -1061,9 +1064,12 @@ impl QueryRoot {
         Ok(row.map(Into::into))
     }
 
-    fn geno_habitats(
+    async fn geno_habitats(
         &self,
         ctx: &AppContext,
+        #[graphql(description = "Filter on habitat mint addresses")] mints: Option<
+            Vec<PublicKey<TokenMint>>,
+        >,
         #[graphql(description = "Filter on habitat owners")] owners: Option<Vec<PublicKey<Wallet>>>,
         #[graphql(description = "Filter on habitat renters")] renters: Option<
             Vec<PublicKey<Wallet>>,
@@ -1093,6 +1099,9 @@ impl QueryRoot {
         harvester_open_market: Option<bool>,
         #[graphql(description = "Filter on rental agreement open-market flag")]
         rental_open_market: Option<bool>,
+        #[graphql(description = "Search term to select habitat NFT addresses with")] term: Option<
+            String,
+        >,
         #[graphql(description = "Number of values to return")] limit: i32,
         #[graphql(description = "Number of values to skip for pagination")] offset: i32,
     ) -> FieldResult<Vec<GenoHabitat>> {
@@ -1105,8 +1114,34 @@ impl QueryRoot {
             )
         }
 
+        let mints = match (mints, term) {
+            (m, None) => m,
+            (None, Some(ref t)) => Some({
+                ctx.shared
+                    .search
+                    .index("geno_habitats")
+                    .search()
+                    .with_query(t)
+                    .with_limit(ctx.shared.pre_query_search_limit)
+                    .execute::<IndirectMetadataDocument>()
+                    .await
+                    .context("Failed to load search results for Genopets habitats")?
+                    .hits
+                    .into_iter()
+                    .map(|r| r.result.mint_address.into())
+                    .collect()
+            }),
+            (Some(_), Some(_)) => {
+                return Err(FieldError::new(
+                    "The mints and term parameters cannot be combined",
+                    graphql_value!(["mints", "term"]),
+                ));
+            },
+        };
+
         let limit = 250.min(limit);
         let opts = queries::genopets::ListHabitatOptions {
+            mints,
             owners,
             renters,
             harvesters,
