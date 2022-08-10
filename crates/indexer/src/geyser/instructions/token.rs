@@ -11,10 +11,6 @@ pub(crate) async fn process_burn_instruction(
     accounts: &[Pubkey],
     slot: u64,
 ) -> Result<()> {
-    if accounts.len() != 4 {
-        return Ok(());
-    }
-
     let mint = accounts[1].to_string();
     let slot = i64::try_from(slot)?;
 
