@@ -39,7 +39,7 @@ enum Metadatas {
     UpdateAuthorityAddress,
     Uri,
     Slot,
-    Burned,
+    BurnedAt,
 }
 
 #[derive(Iden)]
@@ -278,7 +278,7 @@ pub fn list(
                     CurrentMetadataOwners::OwnerAddress,
                 )),
         )
-        .and_where(Expr::col(Metadatas::Burned).eq(false))
+        .and_where(Expr::col(Metadatas::BurnedAt).is_null())
         .limit(limit)
         .offset(offset)
         .order_by((Listings::Table, Listings::Price), Order::Asc)
