@@ -67,3 +67,31 @@ impl<'a, 'b> TryFrom<(models::CandyMachine<'a>, models::CandyMachineData<'b>)> f
         })
     }
 }
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct CandyMachineCreator {
+    pub candy_machine_address: PublicKey<CandyMachine>,
+    pub creator_address: PublicKey<Wallet>,
+    pub verified: bool,
+    pub share: i32,
+}
+
+impl<'a> TryFrom<models::CMCreator<'a>> for CandyMachineCreator {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::CMCreator {
+            candy_machine_address,
+            creator_address,
+            verified,
+            share,
+        }: models::CMCreator,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            candy_machine_address: candy_machine_address.into(),
+            creator_address: creator_address.into(),
+            verified,
+            share: share.try_into()?,
+        })
+    }
+}

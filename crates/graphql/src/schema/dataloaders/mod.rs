@@ -14,6 +14,7 @@ pub mod stats;
 pub mod store_creator;
 pub mod storefront;
 pub mod wallet;
+pub mod candymachine;
 
 pub(self) mod batcher;
 
