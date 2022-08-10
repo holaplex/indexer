@@ -27,7 +27,7 @@ use scalars::{
     PublicKey,
 };
 
-use super::prelude::*;
+use super::{objects::candymachine::CandyMachineCollectionPda, prelude::*};
 
 #[derive(Clone)]
 pub struct AppContext {
@@ -71,6 +71,8 @@ pub struct AppContext {
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
     pub storefront_loader: Loader<PublicKey<Storefront>, Option<Storefront>>,
     pub candymachine_creator_loader: Loader<PublicKey<CandyMachine>, Vec<CandyMachineCreator>>,
+    pub candymachine_collection_pda_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineCollectionPda>>,
 
     // Twitter dataloaders
     pub twitter_handle_loader: Loader<PublicKey<Wallet>, Option<String>>,
@@ -124,8 +126,8 @@ impl AppContext {
             store_creator_loader: Loader::new(batcher.clone()),
             storefront_loader: Loader::new(batcher.clone()),
             candymachine_creator_loader: Loader::new(batcher.clone()),
+            candymachine_collection_pda_loader: Loader::new(batcher.clone()),
             twitter_handle_loader: Loader::new(batcher),
-
             twitter_profile_loader: Loader::new(twitter_batcher),
         }
     }

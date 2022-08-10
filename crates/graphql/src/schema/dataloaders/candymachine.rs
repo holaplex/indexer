@@ -1,6 +1,6 @@
-use objects::candymachine::{CandyMachine, CandyMachineCreator};
+use objects::candymachine::{CandyMachine, CandyMachineCollectionPda, CandyMachineCreator};
 use scalars::PublicKey;
-use tables::candy_machine_creators;
+use tables::{candy_machine_collection_pdas, candy_machine_creators};
 
 use super::prelude::*;
 
@@ -20,6 +20,26 @@ impl TryBatchFn<PublicKey<CandyMachine>, Vec<CandyMachineCreator>> for Batcher {
         Ok(rows
             .into_iter()
             .map(|r| (r.candy_machine_address.clone(), r.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<CandyMachine>, Option<CandyMachineCollectionPda>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<CandyMachine>],
+    ) -> TryBatchMap<PublicKey<CandyMachine>, Option<CandyMachineCollectionPda>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::CMCollectionPDA> = candy_machine_collection_pdas::table
+            .filter(candy_machine_collection_pdas::candy_machine.eq(any(addresses)))
+            .load(&conn)
+            .context("Failed to load candy machine collection pdas")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|r| (r.candy_machine.clone(), r.try_into()))
             .batch(addresses))
     }
 }

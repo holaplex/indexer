@@ -87,6 +87,16 @@ impl CandyMachine {
             .await
             .map_err(Into::into)
     }
+
+    pub async fn collection_pda(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<CandyMachineCollectionPda>> {
+        ctx.candymachine_collection_pda_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 impl<'a, 'b> TryFrom<(models::CandyMachine<'a>, models::CandyMachineData<'b>)> for CandyMachine {
@@ -158,6 +168,31 @@ impl<'a> TryFrom<models::CMCreator<'a>> for CandyMachineCreator {
             creator_address: creator_address.into(),
             verified,
             share: share.try_into()?,
+        })
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct CandyMachineCollectionPda {
+    pub candy_machine_address: PublicKey<CandyMachine>,
+    pub collection_pda: PublicKey<CandyMachine>,
+    pub mint: PublicKey<TokenMint>,
+}
+
+impl<'a> TryFrom<models::CMCollectionPDA<'a>> for CandyMachineCollectionPda {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::CMCollectionPDA {
+            address,
+            mint,
+            candy_machine,
+        }: models::CMCollectionPDA,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            candy_machine_address: candy_machine.into(),
+            collection_pda: address.into(),
+            mint: mint.into(),
         })
     }
 }
