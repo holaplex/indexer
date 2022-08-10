@@ -9,6 +9,7 @@ use objects::{
     ah_purchase::Purchase as AhPurchase,
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
+    candymachine::{CandyMachine, CandyMachineCreator},
     genopets::{GenoHabitat, GenoRentalAgreement},
     graph_connection::GraphConnection,
     listing::{Bid, Listing},
@@ -69,9 +70,10 @@ pub struct AppContext {
     pub store_auction_houses_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
     pub storefront_loader: Loader<PublicKey<Storefront>, Option<Storefront>>,
-    pub twitter_handle_loader: Loader<PublicKey<Wallet>, Option<String>>,
+    pub candymachine_creator_loader: Loader<PublicKey<CandyMachine>, Vec<CandyMachineCreator>>,
 
     // Twitter dataloaders
+    pub twitter_handle_loader: Loader<PublicKey<Wallet>, Option<String>>,
     pub twitter_profile_loader: Loader<String, Option<TwitterProfile>, TwitterBatcher>,
 }
 
@@ -121,6 +123,7 @@ impl AppContext {
             store_auction_houses_loader: Loader::new(batcher.clone()),
             store_creator_loader: Loader::new(batcher.clone()),
             storefront_loader: Loader::new(batcher.clone()),
+            candymachine_creator_loader: Loader::new(batcher.clone()),
             twitter_handle_loader: Loader::new(batcher),
 
             twitter_profile_loader: Loader::new(twitter_batcher),

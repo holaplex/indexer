@@ -4,7 +4,7 @@ use scalars::{PublicKey, U64};
 use super::prelude::*;
 use crate::schema::scalars::markers::TokenMint;
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 pub struct CandyMachine {
     pub address: PublicKey<CandyMachine>,
     pub authority: PublicKey<Wallet>,
@@ -21,6 +21,72 @@ pub struct CandyMachine {
     pub retain_authority: bool,
     pub go_live_date: Option<U64>,
     pub items_available: U64,
+}
+
+#[graphql_object(Context = AppContext)]
+impl CandyMachine {
+    pub fn address(&self) -> &PublicKey<CandyMachine> {
+        &self.address
+    }
+
+    pub fn authority(&self) -> &PublicKey<Wallet> {
+        &self.authority
+    }
+
+    pub fn wallet(&self) -> &PublicKey<Wallet> {
+        &self.wallet
+    }
+
+    pub fn token_mint(&self) -> &Option<PublicKey<TokenMint>> {
+        &self.token_mint
+    }
+
+    pub fn items_redeemed(&self) -> &U64 {
+        &self.items_redeemed
+    }
+
+    pub fn uuid(&self) -> &String {
+        &self.uuid
+    }
+
+    pub fn price(&self) -> &U64 {
+        &self.price
+    }
+
+    pub fn symbol(&self) -> &String {
+        &self.symbol
+    }
+
+    pub fn seller_fee_basis_points(&self) -> &i32 {
+        &self.seller_fee_basis_points
+    }
+
+    pub fn max_supply(&self) -> &U64 {
+        &self.max_supply
+    }
+
+    pub fn is_mutable(&self) -> &bool {
+        &self.is_mutable
+    }
+
+    pub fn retain_authority(&self) -> &bool {
+        &self.retain_authority
+    }
+
+    pub fn go_live_date(&self) -> &Option<U64> {
+        &self.go_live_date
+    }
+
+    pub fn items_available(&self) -> &U64 {
+        &self.items_available
+    }
+
+    pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<CandyMachineCreator>> {
+        ctx.candymachine_creator_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 impl<'a, 'b> TryFrom<(models::CandyMachine<'a>, models::CandyMachineData<'b>)> for CandyMachine {
