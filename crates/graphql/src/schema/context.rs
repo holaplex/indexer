@@ -30,7 +30,7 @@ use scalars::{
     PublicKey,
 };
 
-use super::prelude::*;
+use super::{objects::candymachine::CandyMachineHiddenSetting, prelude::*};
 
 #[derive(Clone)]
 pub struct AppContext {
@@ -82,6 +82,8 @@ pub struct AppContext {
         Loader<PublicKey<CandyMachine>, Option<CandyMachineEndSetting>>,
     pub candymachine_whitelist_mint_settings_loader:
         Loader<PublicKey<CandyMachine>, Option<CandyMachineWhitelistMintSetting>>,
+    pub candymachine_hidden_settings_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineHiddenSetting>>,
 
     // Twitter dataloaders
     pub twitter_handle_loader: Loader<PublicKey<Wallet>, Option<String>>,
@@ -139,6 +141,7 @@ impl AppContext {
             candymachine_config_line_loader: Loader::new(batcher.clone()),
             candymachine_end_settings_loader: Loader::new(batcher.clone()),
             candymachine_whitelist_mint_settings_loader: Loader::new(batcher.clone()),
+            candymachine_hidden_settings_loader: Loader::new(batcher.clone()),
             twitter_handle_loader: Loader::new(batcher),
             twitter_profile_loader: Loader::new(twitter_batcher),
         }

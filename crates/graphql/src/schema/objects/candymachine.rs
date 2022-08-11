@@ -127,6 +127,16 @@ impl CandyMachine {
             .await
             .map_err(Into::into)
     }
+
+    pub async fn hidden_setting(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<CandyMachineWhitelistMintSetting>> {
+        ctx.candymachine_hidden_settings_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 impl<'a, 'b> TryFrom<(models::CandyMachine<'a>, models::CandyMachineData<'b>)> for CandyMachine {
@@ -326,6 +336,41 @@ impl<'a> TryFrom<models::CMWhitelistMintSetting<'a>> for CandyMachineWhitelistMi
             mint: mint.into(),
             presale,
             discount_price: discount_price.map(U64::try_from).transpose()?,
+        })
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct CandyMachineHiddenSetting {
+    pub candy_machine_address: PublicKey<CandyMachine>,
+    pub name: String,
+    pub uri: String,
+    pub hash: String,
+}
+
+impl<'a> TryFrom<models::CMHiddenSetting<'a>> for CandyMachineHiddenSetting {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::CMHiddenSetting {
+            candy_machine_address,
+            name,
+            uri,
+            hash,
+        }: models::CMHiddenSetting,
+    ) -> Result<Self, Self::Error> {
+
+        let mut default = String::from("");
+        let converted = std::str::from_utf8(hash.as_slice())
+        if let Ok(converted_str) = converted {
+            default = String::from(converted_str)
+        }
+
+        Ok(Self {
+            candy_machine_address: candy_machine_address.into(),
+            name: name.into_owned(),
+            uri: uri.into_owned(),
+            hash: default,
         })
     }
 }
