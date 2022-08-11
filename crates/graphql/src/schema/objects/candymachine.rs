@@ -131,7 +131,7 @@ impl CandyMachine {
     pub async fn hidden_setting(
         &self,
         ctx: &AppContext,
-    ) -> FieldResult<Option<CandyMachineWhitelistMintSetting>> {
+    ) -> FieldResult<Option<CandyMachineHiddenSetting>> {
         ctx.candymachine_hidden_settings_loader
             .load(self.address.clone())
             .await
@@ -359,18 +359,11 @@ impl<'a> TryFrom<models::CMHiddenSetting<'a>> for CandyMachineHiddenSetting {
             hash,
         }: models::CMHiddenSetting,
     ) -> Result<Self, Self::Error> {
-
-        let mut default = String::from("");
-        let converted = std::str::from_utf8(hash.as_slice())
-        if let Ok(converted_str) = converted {
-            default = String::from(converted_str)
-        }
-
         Ok(Self {
             candy_machine_address: candy_machine_address.into(),
             name: name.into_owned(),
             uri: uri.into_owned(),
-            hash: default,
+            hash: String::from(std::str::from_utf8(hash.as_slice()).unwrap_or("")),
         })
     }
 }
