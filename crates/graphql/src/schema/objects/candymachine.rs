@@ -82,6 +82,7 @@ impl CandyMachine {
         &self.items_available
     }
 
+    #[graphql(description = "NOTE - this is currently bugged and will only return one creator")]
     pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<CandyMachineCreator>> {
         ctx.candymachine_creator_loader
             .load(self.address.clone())
@@ -99,6 +100,7 @@ impl CandyMachine {
             .map_err(Into::into)
     }
 
+    #[graphql(description = "NOTE - this is currently bugged and will always be empty")]
     pub async fn config_lines(&self, ctx: &AppContext) -> FieldResult<Vec<CandyMachineConfigLine>> {
         ctx.candymachine_config_line_loader
             .load(self.address.clone())
