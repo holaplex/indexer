@@ -1,16 +1,16 @@
 use indexer_core::db::tables::{
-    candy_machine_end_settings, candy_machine_hidden_settings,
+    candy_machine_end_settings, candy_machine_gate_keeper_configs, candy_machine_hidden_settings,
     candy_machine_whitelist_mint_settings,
-};
-use objects::candymachine::{
-    CandyMachine, CandyMachineCollectionPda, CandyMachineConfigLine, CandyMachineCreator,
-    CandyMachineEndSetting, CandyMachineWhitelistMintSetting,
 };
 use scalars::PublicKey;
 use tables::{candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators};
 
 use super::prelude::*;
-use crate::schema::objects::candymachine::CandyMachineHiddenSetting;
+use crate::schema::objects::candymachine::{
+    CandyMachine, CandyMachineCollectionPda, CandyMachineConfigLine, CandyMachineCreator,
+    CandyMachineEndSetting, CandyMachineGateKeeperConfig, CandyMachineHiddenSetting,
+    CandyMachineWhitelistMintSetting,
+};
 
 #[async_trait]
 impl TryBatchFn<PublicKey<CandyMachine>, Vec<CandyMachineCreator>> for Batcher {
@@ -122,6 +122,25 @@ impl TryBatchFn<PublicKey<CandyMachine>, Option<CandyMachineHiddenSetting>> for 
         let conn = self.db()?;
         let rows: Vec<models::CMHiddenSetting> = candy_machine_hidden_settings::table
             .filter(candy_machine_hidden_settings::candy_machine_address.eq(any(addresses)))
+            .load(&conn)
+            .context("Failed to load candy machine end settings")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|r| (r.candy_machine_address.clone(), r.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<CandyMachine>, Option<CandyMachineGateKeeperConfig>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<CandyMachine>],
+    ) -> TryBatchMap<PublicKey<CandyMachine>, Option<CandyMachineGateKeeperConfig>> {
+        let conn = self.db()?;
+        let rows: Vec<models::CMGateKeeperConfig> = candy_machine_gate_keeper_configs::table
+            .filter(candy_machine_gate_keeper_configs::candy_machine_address.eq(any(addresses)))
             .load(&conn)
             .context("Failed to load candy machine end settings")?;
 

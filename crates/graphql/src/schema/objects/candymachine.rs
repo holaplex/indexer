@@ -137,6 +137,16 @@ impl CandyMachine {
             .await
             .map_err(Into::into)
     }
+
+    pub async fn gate_keeper_config(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<CandyMachineGateKeeperConfig>> {
+        ctx.candymachine_gatekeeper_configs_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 impl<'a, 'b> TryFrom<(models::CandyMachine<'a>, models::CandyMachineData<'b>)> for CandyMachine {
@@ -372,5 +382,28 @@ impl<'a> TryFrom<models::CMHiddenSetting<'a>> for CandyMachineHiddenSetting {
             uri: uri.into_owned(),
             hash: to_hex_string(hash),
         })
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct CandyMachineGateKeeperConfig {
+    pub candy_machine_address: PublicKey<CandyMachine>,
+    pub gatekeeper_network: String,
+    pub expire_on_use: bool,
+}
+
+impl<'a> From<models::CMGateKeeperConfig<'a>> for CandyMachineGateKeeperConfig {
+    fn from(
+        models::CMGateKeeperConfig {
+            candy_machine_address,
+            gatekeeper_network,
+            expire_on_use,
+        }: models::CMGateKeeperConfig,
+    ) -> Self {
+        Self {
+            candy_machine_address: candy_machine_address.into(),
+            gatekeeper_network: gatekeeper_network.into_owned(),
+            expire_on_use,
+        }
     }
 }
