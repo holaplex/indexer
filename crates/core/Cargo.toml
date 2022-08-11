@@ -28,7 +28,7 @@ db = [
   "diesel_full_text_search",
 ]
 default = ["assets", "asset-cdn", "db", "solana"]
-meilisearch = ["meilisearch-sdk"]
+meilisearch = ["meilisearch-sdk", "serde"]
 solana = ["solana-program"]
 
 [[bin]]
@@ -46,8 +46,9 @@ log = "0.4.14"
 meilisearch-sdk = { version = "0.17.0", optional = true }
 num_cpus = "1.13.1"
 rand = "0.8.4"
+serde = { version = "1.0.136", features = ["derive"], optional = true }
 serde_json = "1.0.70"
-sea-query = "0.24.6"
+sea-query = { version = "0.24.6", features = ["with-chrono"] }
 sea-query-derive = "0.2.0"
 sea-query-attr = "0.1.1"
 sea-query-driver = "0.1.1"

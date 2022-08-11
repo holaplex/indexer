@@ -1,5 +1,5 @@
 use indexer_core::db::models;
-use objects::wallet::Wallet;
+use objects::{nft::Nft, wallet::Wallet};
 use scalars::{markers::TokenMint, PublicKey, I64};
 
 use super::prelude::*;
@@ -152,6 +152,13 @@ impl GenoHabitat {
     ) -> FieldResult<Option<GenoRentalAgreement>> {
         ctx.geno_rental_agreement_loader
             .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
+        ctx.nft_by_mint_loader
+            .load(self.habitat_mint.clone())
             .await
             .map_err(Into::into)
     }

@@ -28,7 +28,8 @@ SELECT
     a.created_at,
     a.canceled_at,
     a.slot,
-    a.write_version
+    a.write_version,
+    a.expiry
 
 FROM (
 
@@ -48,6 +49,7 @@ FROM (
         AND listings.purchase_id IS NULL
         AND listings.canceled_at IS NULL
         AND listings.auction_house = ANY($1)
+        AND listings.created_at > current_date - interval '3 day'
         AND (($2 IS NULL) OR NOT(listings.seller = ANY($2)))
 
     GROUP BY listings.metadata, listings.id

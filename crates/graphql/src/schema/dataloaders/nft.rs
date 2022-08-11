@@ -1,10 +1,10 @@
 use indexer_core::db::{queries, tables::metadata_collection_keys};
 use objects::{
     listing_receipt::ListingReceipt,
-    nft::{CollectionNft, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
+    nft::{Collection, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
     purchase_receipt::PurchaseReceipt,
 };
-use scalars::PublicKey;
+use scalars::{markers::TokenMint, PublicKey};
 use tables::{
     attributes, current_metadata_owners, files, listing_receipts, metadata_creators,
     metadata_jsons, metadatas, purchase_receipts, twitter_handle_name_services,
@@ -33,11 +33,11 @@ impl TryBatchFn<PublicKey<Nft>, Vec<NftAttribute>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Nft>, Option<CollectionNft>> for Batcher {
+impl TryBatchFn<PublicKey<Nft>, Option<Collection>> for Batcher {
     async fn load(
         &mut self,
         addresses: &[PublicKey<Nft>],
-    ) -> TryBatchMap<PublicKey<Nft>, Option<CollectionNft>> {
+    ) -> TryBatchMap<PublicKey<Nft>, Option<Collection>> {
         let conn = self.db()?;
 
         let rows: Vec<(String, models::Nft)> = metadatas::table
@@ -248,6 +248,34 @@ impl TryBatchFn<PublicKey<Nft>, Option<Nft>> for Batcher {
         Ok(rows
             .into_iter()
             .map(|nft| (nft.address.clone(), nft.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<TokenMint>, Option<Nft>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<TokenMint>],
+    ) -> TryBatchMap<PublicKey<TokenMint>, Option<Nft>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::Nft> = metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
+            )
+            .filter(metadatas::mint_address.eq(any(addresses)))
+            .select(queries::metadatas::NFT_COLUMNS)
+            .load(&conn)
+            .context("Failed to load NFTs")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|nft| (nft.mint_address.clone(), nft.try_into()))
             .batch(addresses))
     }
 }

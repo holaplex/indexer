@@ -1,12 +1,17 @@
-use indexer_core::db::{
-    expression::dsl::all,
-    queries::{self, feed_event::EventType},
+use indexer_core::{
+    db::{
+        expression::dsl::all,
+        queries::{self, feed_event::EventType},
+        tables::metadata_collection_keys,
+    },
+    meilisearch::IndirectMetadataDocument,
 };
 use objects::{
     ah_listing::AhListing,
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
     bonding_change::EnrichedBondingChange,
+    candymachine::CandyMachine,
     chart::PriceChart,
     creator::Creator,
     denylist::Denylist,
@@ -15,17 +20,18 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
+    nft::{Collection, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
     profile::{ProfilesStats, TwitterProfile},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
-use scalars::PublicKey;
+use scalars::{markers::TokenMint, PublicKey};
 use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
-    current_metadata_owners, geno_habitat_datas, graph_connections, metadata_jsons, metadatas,
-    store_config_jsons, storefronts, twitter_handle_name_services, wallet_totals,
+    candy_machine_datas, candy_machines, current_metadata_owners, geno_habitat_datas,
+    graph_connections, metadata_jsons, metadatas, store_config_jsons, storefronts,
+    twitter_handle_name_services, wallet_totals,
 };
 
 use super::{enums::OrderDirection, prelude::*};
@@ -642,6 +648,32 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
+    #[graphql(description = "Get a candymachine by the candymachine config address")]
+    fn candymachine(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "address of the candymachine config")] address: String,
+    ) -> FieldResult<Option<CandyMachine>> {
+        let conn = context.shared.db.get()?;
+
+        candy_machines::table
+            .inner_join(
+                candy_machine_datas::table
+                    .on(candy_machines::address.eq(candy_machine_datas::candy_machine_address)),
+            )
+            .filter(candy_machines::address.eq(address))
+            .select((
+                candy_machines::all_columns,
+                candy_machine_datas::all_columns,
+            ))
+            .first::<(models::CandyMachine, models::CandyMachineData)>(&conn)
+            .optional()
+            .context("Failed to load candy machine by address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
+    }
+
     fn storefronts(&self, context: &AppContext) -> FieldResult<Vec<Storefront>> {
         let conn = context.shared.db.get()?;
         let rows: Vec<models::Storefront> = storefronts::table
@@ -721,6 +753,40 @@ impl QueryRoot {
     }
 
     #[graphql(
+        description = "Returns collection data along with collection activities",
+        arguments(address(description = "Collection address"),)
+    )]
+    async fn collection(
+        &self,
+        context: &AppContext,
+        address: String,
+    ) -> FieldResult<Option<Collection>> {
+        let conn = context.shared.db.get()?;
+
+        metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .inner_join(
+                metadata_collection_keys::table
+                    .on(metadata_collection_keys::collection_address.eq(metadatas::mint_address)),
+            )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+            )
+            .filter(metadata_collection_keys::collection_address.eq(address))
+            .filter(metadata_collection_keys::verified.eq(true))
+            .select(queries::metadatas::NFT_COLUMNS)
+            .first::<models::Nft>(&conn)
+            .optional()
+            .context("Failed to load NFT by metadata address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
+    }
+
+    #[graphql(
         description = "Returns featured collection NFTs ordered by market cap (floor price * number of NFTs in collection)",
         arguments(
             term(
@@ -748,7 +814,7 @@ impl QueryRoot {
         end_date: DateTime<Utc>,
         limit: i32,
         offset: i32,
-    ) -> FieldResult<Vec<Nft>> {
+    ) -> FieldResult<Vec<Collection>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let addresses: Option<Vec<String>> = match term {
@@ -817,7 +883,7 @@ impl QueryRoot {
         end_date: DateTime<Utc>,
         limit: i32,
         offset: i32,
-    ) -> FieldResult<Vec<Nft>> {
+    ) -> FieldResult<Vec<Collection>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let addresses: Option<Vec<String>> = match term {
@@ -998,9 +1064,12 @@ impl QueryRoot {
         Ok(row.map(Into::into))
     }
 
-    fn geno_habitats(
+    async fn geno_habitats(
         &self,
         ctx: &AppContext,
+        #[graphql(description = "Filter on habitat mint addresses")] mints: Option<
+            Vec<PublicKey<TokenMint>>,
+        >,
         #[graphql(description = "Filter on habitat owners")] owners: Option<Vec<PublicKey<Wallet>>>,
         #[graphql(description = "Filter on habitat renters")] renters: Option<
             Vec<PublicKey<Wallet>>,
@@ -1026,6 +1095,13 @@ impl QueryRoot {
         #[graphql(description = "Filter on maximum habitat expiry timestamp")] max_expiry: Option<
             DateTime<Utc>,
         >,
+        #[graphql(description = "Filter on harvester open-market flag")]
+        harvester_open_market: Option<bool>,
+        #[graphql(description = "Filter on rental agreement open-market flag")]
+        rental_open_market: Option<bool>,
+        #[graphql(description = "Search term to select habitat NFT addresses with")] term: Option<
+            String,
+        >,
         #[graphql(description = "Number of values to return")] limit: i32,
         #[graphql(description = "Number of values to skip for pagination")] offset: i32,
     ) -> FieldResult<Vec<GenoHabitat>> {
@@ -1038,8 +1114,34 @@ impl QueryRoot {
             )
         }
 
+        let mints = match (mints, term) {
+            (m, None) => m,
+            (None, Some(ref t)) => Some({
+                ctx.shared
+                    .search
+                    .index("geno_habitats")
+                    .search()
+                    .with_query(t)
+                    .with_limit(ctx.shared.pre_query_search_limit)
+                    .execute::<IndirectMetadataDocument>()
+                    .await
+                    .context("Failed to load search results for Genopets habitats")?
+                    .hits
+                    .into_iter()
+                    .map(|r| r.result.mint_address.into())
+                    .collect()
+            }),
+            (Some(_), Some(_)) => {
+                return Err(FieldError::new(
+                    "The mints and term parameters cannot be combined",
+                    graphql_value!(["mints", "term"]),
+                ));
+            },
+        };
+
         let limit = 250.min(limit);
         let opts = queries::genopets::ListHabitatOptions {
+            mints,
             owners,
             renters,
             harvesters,
@@ -1062,6 +1164,8 @@ impl QueryRoot {
             guilds,
             durabilities: make_range(min_durability, max_durability),
             expiries: make_range(min_expiry, max_expiry),
+            harvester_open_market,
+            rental_open_market,
             limit: limit.into(),
             offset: offset.into(),
         };

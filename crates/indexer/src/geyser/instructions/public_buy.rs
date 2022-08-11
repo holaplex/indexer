@@ -89,6 +89,7 @@ async fn upsert_into_offers_table<'a>(
         canceled_at: None,
         slot: data.slot,
         write_version: None,
+        expiry: None,
     };
 
     client

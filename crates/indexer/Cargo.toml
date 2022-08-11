@@ -70,6 +70,7 @@ futures-util = "0.3.21"
 hostname = "0.3.1"
 serde = { version = "1.0.133", features = ["derive"] }
 strum = { version = "0.24.0", features = ["derive"] }
+thiserror = "1.0.30"
 tokio = { version = "1.13.0", features = ["macros", "rt", "rt-multi-thread", "signal", "sync"] }
 tokio-executor-trait = "2.1.0"
 tokio-reactor-trait = "1.1.0"
@@ -121,7 +122,7 @@ rev = "fed1261e68c524a0389b7b41e00c89623e7c3abc"
 [dependencies.indexer-rabbitmq]
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
-tag = "v0.4.0"
+tag = "v0.5.0"
 
 # Workspace dependencies
 [dependencies.genostub]

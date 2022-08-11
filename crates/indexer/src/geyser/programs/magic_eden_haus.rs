@@ -5,7 +5,7 @@ use indexer_core::{
         tables::{listings, offers},
         update,
     },
-    pubkeys,
+    pubkeys, util,
 };
 
 use super::{
@@ -29,7 +29,7 @@ struct MEInstructionData {
     _escrow_payment_bump: u8,
     buyer_price: u64,
     token_size: u64,
-    _expiry: u64,
+    expiry: i64,
 }
 
 async fn process_execute_sale(
@@ -93,6 +93,10 @@ async fn process_sale(
         canceled_at: None,
         slot: slot.try_into()?,
         write_version: None,
+        expiry: match params.expiry {
+            e if e <= 0 => None,
+            _ => Some(util::unix_timestamp(params.expiry)?),
+        },
     })
     .await
     .context("failed to insert listing!")?;
@@ -132,6 +136,10 @@ async fn process_buy(
         canceled_at: None,
         slot: slot.try_into()?,
         write_version: None,
+        expiry: match params.expiry {
+            e if e <= 0 => None,
+            _ => Some(util::unix_timestamp(params.expiry)?),
+        },
     })
     .await
     .context("failed to insert offer")?;

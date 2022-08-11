@@ -2,6 +2,7 @@ use std::{collections::BinaryHeap, sync::Arc, time::Duration};
 
 use crossbeam::queue::SegQueue;
 use indexer_core::{
+    assets::AssetProxyArgs,
     clap,
     hash::HashMap,
     meilisearch::{
@@ -36,6 +37,9 @@ pub struct Args {
 
     #[clap(flatten)]
     meili: meilisearch::Args,
+
+    #[clap(flatten)]
+    asset_proxy: AssetProxyArgs,
 }
 
 /// Wrapper for handling network logic
@@ -43,6 +47,7 @@ pub struct Args {
 pub struct Client {
     db: Pool,
     upsert_batch: usize,
+    asset_proxy: AssetProxyArgs,
     upsert_queue: RwLock<SegQueue<(String, super::Document)>>,
     trigger_upsert: mpsc::Sender<()>,
 }
@@ -61,21 +66,22 @@ impl Client {
             upsert_interval_sample_size,
             dry_run,
             meili,
+            asset_proxy,
         } = args;
 
         let meili = meili.into_client();
 
-        create_index(meili.clone(), "metadatas", "id")
+        create_index(meili.clone(), "geno_habitats", "id")
             .await
-            .context("failed to create metadatas index")?;
+            .context("Failed to create Genopets habitat index")?;
 
         create_index(meili.clone(), "name_service", "id")
             .await
-            .context("failed to create name service index")?;
+            .context("Failed to create name service index")?;
 
         create_index(meili.clone(), "collections", "id")
             .await
-            .context("failed to create collections index")?;
+            .context("Failed to create collections index")?;
 
         let (trigger_upsert, upsert_rx) = mpsc::channel(1);
         let (stop_tx, stop_rx) = oneshot::channel();
@@ -83,6 +89,7 @@ impl Client {
         let arc_self = Arc::new(Self {
             db,
             upsert_batch,
+            asset_proxy,
             upsert_queue: RwLock::new(SegQueue::new()),
             trigger_upsert,
         });
@@ -328,6 +335,13 @@ impl Client {
     #[must_use]
     pub fn db(&self) -> &Pool {
         &self.db
+    }
+
+    /// Get a reference to the asset proxy arguments, used by
+    /// [`proxy_url`](indexer_core::assets::proxy_url)
+    #[inline]
+    pub fn proxy_args(&self) -> &AssetProxyArgs {
+        &self.asset_proxy
     }
 
     /// Upsert a document to the `foo` index

@@ -13,6 +13,7 @@ pub mod metadata;
 pub mod metaplex;
 pub mod name_service;
 pub mod namespaces;
+pub mod spl_governance;
 pub mod token;
 pub mod token_bonding;
 pub mod tribeca_govern;

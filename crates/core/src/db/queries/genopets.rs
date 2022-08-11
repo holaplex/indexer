@@ -23,7 +23,9 @@ use crate::{
 
 /// Input parameters for the [`list_habitats`] query.
 #[derive(Debug)]
-pub struct ListHabitatOptions<W, H> {
+pub struct ListHabitatOptions<M, W, H> {
+    /// Select habitats by their NFT mint addresses
+    pub mints: Option<Vec<M>>,
     /// Select only habitats owned by any of the given public keys
     pub owners: Option<Vec<W>>,
     /// Select only habitats rented by any of the given public keys
@@ -44,6 +46,12 @@ pub struct ListHabitatOptions<W, H> {
     pub durabilities: (Bound<i32>, Bound<i32>),
     /// Select only habitats whose expiry timestamps fall within the given range
     pub expiries: (Bound<DateTime<Utc>>, Bound<DateTime<Utc>>),
+    /// Select only habitats whose harvester open-market flag matches the given
+    /// value
+    pub harvester_open_market: Option<bool>,
+    /// Select only habitats whose rental agreement's open-market flag matches
+    /// the given value
+    pub rental_open_market: Option<bool>,
     /// Limit the number of returned rows
     pub limit: i64,
     /// Skip the first `n` resulting rows
@@ -54,15 +62,20 @@ pub struct ListHabitatOptions<W, H> {
 ///
 /// # Errors
 /// This function fails if the underlying query returns an error.
-pub fn list_habitats<W: ToSql<Text, Pg> + ToSql<Nullable<Text>, Pg>, H: ToSql<Text, Pg>>(
+pub fn list_habitats<
+    M: ToSql<Text, Pg>,
+    W: ToSql<Text, Pg> + ToSql<Nullable<Text>, Pg>,
+    H: ToSql<Text, Pg>,
+>(
     conn: &Connection,
-    opts: ListHabitatOptions<W, H>,
+    opts: ListHabitatOptions<M, W, H>,
 ) -> Result<Vec<GenoHabitatData<'static>>> {
     let mut query = geno_habitat_datas::table
         .select(geno_habitat_datas::all_columns)
         .into_boxed();
 
     let ListHabitatOptions {
+        mints,
         owners,
         renters,
         harvesters,
@@ -73,9 +86,15 @@ pub fn list_habitats<W: ToSql<Text, Pg> + ToSql<Nullable<Text>, Pg>, H: ToSql<Te
         guilds,
         durabilities,
         expiries,
+        harvester_open_market,
+        rental_open_market,
         limit,
         offset,
     } = opts;
+
+    if let Some(mints) = mints {
+        query = query.filter(geno_habitat_datas::habitat_mint.eq(any(mints)));
+    }
 
     if let Some(owners) = owners {
         query = query.filter(
@@ -120,6 +139,18 @@ pub fn list_habitats<W: ToSql<Text, Pg> + ToSql<Nullable<Text>, Pg>, H: ToSql<Te
         let max = max.map(|m| m.naive_utc());
 
         query = handle_range(query, geno_habitat_datas::expiry_timestamp, (min, max));
+    }
+
+    if let Some(harvester_open_market) = harvester_open_market {
+        query = query.filter(geno_habitat_datas::harvester_open_market.eq(harvester_open_market));
+    }
+
+    if let Some(rental_open_market) = rental_open_market {
+        query = query.filter(
+            geno_habitat_datas::address.eq(any(geno_rental_agreements::table
+                .filter(geno_rental_agreements::open_market.eq(rental_open_market))
+                .select(geno_rental_agreements::habitat_address))),
+        );
     }
 
     query

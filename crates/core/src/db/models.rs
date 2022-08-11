@@ -11,8 +11,11 @@ use uuid::Uuid;
 #[allow(clippy::wildcard_imports)]
 use super::schema::*;
 use crate::db::custom_types::{
-    EndSettingType, ListingEventLifecycle, ListingEventLifecycleEnum, OfferEventLifecycle,
-    OfferEventLifecycleEnum, TokenStandardEnum, WhitelistMintMode,
+    EndSettingType, GovernanceAccountTypeEnum, InstructionExecutionFlagsEnum,
+    ListingEventLifecycle, ListingEventLifecycleEnum, MintMaxVoteEnum, OfferEventLifecycle,
+    OfferEventLifecycleEnum, OptionVoteResultEnum, ProposalStateEnum, ProposalVoteTypeEnum,
+    TokenStandardEnum, TransactionExecutionStatusEnum, VoteRecordV2VoteEnum, VoteThresholdEnum,
+    VoteTippingEnum, WhitelistMintMode,
 };
 
 /// A row in the `bids` table
@@ -186,8 +189,8 @@ pub struct Metadata<'a> {
     pub token_standard: Option<TokenStandardEnum>,
     /// Solana slot number
     pub slot: Option<i64>,
-    /// Indicates whether the NFT was burned
-    pub burned: bool,
+    /// Timestamp when the NFT was burned
+    pub burned_at: Option<NaiveDateTime>,
 }
 
 /// A row in the `storefronts` table
@@ -503,6 +506,8 @@ pub struct MetadataJson<'a> {
     pub slot: i64,
     /// The write version of the most recent update for this account
     pub write_version: i64,
+    /// Metadata name
+    pub name: Option<Cow<'a, str>>,
 }
 
 /// A row in the `files` table
@@ -2367,6 +2372,8 @@ pub struct Offer<'a> {
     pub write_version: Option<i64>,
     /// Marketplace program address
     pub marketplace_program: Cow<'a, str>,
+    /// Timestamp when the offer expires
+    pub expiry: Option<NaiveDateTime>,
 }
 
 /// A row in the `purchases` table
@@ -2436,6 +2443,8 @@ pub struct Listing<'a> {
     pub write_version: Option<i64>,
     /// Marketplace program address
     pub marketplace_program: Cow<'a, str>,
+    /// Timestamp when the listing expires
+    pub expiry: Option<NaiveDateTime>,
 }
 
 /// A row in the `cardinal_entries` table
@@ -2552,6 +2561,263 @@ pub struct GenoRentalAgreement<'a> {
     pub next_payment_due: NaiveDateTime,
     pub grace_period: i64,
     pub open_market: bool,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct Governance<'a> {
+    pub address: Cow<'a, str>,
+    pub account_type: GovernanceAccountTypeEnum,
+    pub realm: Cow<'a, str>,
+    pub governed_account: Cow<'a, str>,
+    pub proposals_count: i64,
+    pub reserved: Cow<'a, [u8]>,
+    pub voting_proposal_count: i16,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct GovernanceConfig<'a> {
+    pub governance_address: Cow<'a, str>,
+    pub vote_threshold_type: VoteThresholdEnum,
+    pub vote_threshold_percentage: i16,
+    pub min_community_weight_to_create_proposal: i64,
+    pub min_instruction_hold_up_time: i64,
+    pub max_voting_time: i64,
+    pub vote_tipping: VoteTippingEnum,
+    pub proposal_cool_off_time: i64,
+    pub min_council_weight_to_create_proposal: i64,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct Realm<'a> {
+    pub address: Cow<'a, str>,
+    pub account_type: GovernanceAccountTypeEnum,
+    pub community_mint: Cow<'a, str>,
+    pub reserved: Cow<'a, [u8]>,
+    pub voting_proposal_count: i16,
+    pub authority: Option<Cow<'a, str>>,
+    pub name: Cow<'a, str>,
+    pub reserved_v2: Cow<'a, [u8]>,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct RealmConfig<'a> {
+    pub realm_address: Cow<'a, str>,
+    pub use_community_voter_weight_addin: bool,
+    pub use_max_community_voter_weight_addin: bool,
+    pub reserved: Cow<'a, [u8]>,
+    pub min_community_weight_to_create_governance: i64,
+    pub community_mint_max_vote_weight_source: MintMaxVoteEnum,
+    pub community_mint_max_vote_weight: i64,
+    pub council_mint: Option<Cow<'a, str>>,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "vote_records_v2"]
+#[allow(missing_docs)]
+pub struct VoteRecordV2<'a> {
+    pub address: Cow<'a, str>,
+    pub account_type: GovernanceAccountTypeEnum,
+    pub proposal: Cow<'a, str>,
+    pub governing_token_owner: Cow<'a, str>,
+    pub is_relinquished: bool,
+    pub voter_weight: i64,
+    pub vote: VoteRecordV2VoteEnum,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "vote_record_v2_vote_approve_vote_choices"]
+#[allow(missing_docs)]
+pub struct VoteChoice<'a> {
+    pub vote_record_v2_address: Cow<'a, str>,
+    pub rank: i16,
+    pub weight_percentage: i16,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "token_owner_records_v2"]
+#[allow(missing_docs)]
+pub struct TokenOwnerRecordV2<'a> {
+    pub address: Cow<'a, str>,
+    pub account_type: GovernanceAccountTypeEnum,
+    pub realm: Cow<'a, str>,
+    pub governing_token_mint: Cow<'a, str>,
+    pub governing_token_owner: Cow<'a, str>,
+    pub governing_token_deposit_amount: i64,
+    pub unrelinquished_votes_count: i64,
+    pub total_votes_count: i64,
+    pub outstanding_proposal_count: i16,
+    pub reserved: Cow<'a, [u8]>,
+    pub governance_delegate: Option<Cow<'a, str>>,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "signatory_records_v2"]
+#[allow(missing_docs)]
+pub struct SignatoryRecordV2<'a> {
+    pub address: Cow<'a, str>,
+    pub account_type: GovernanceAccountTypeEnum,
+    pub proposal: Cow<'a, str>,
+    pub signatory: Cow<'a, str>,
+    pub signed_off: bool,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "proposals_v2"]
+#[allow(missing_docs)]
+pub struct ProposalV2<'a> {
+    pub address: Cow<'a, str>,
+    pub account_type: GovernanceAccountTypeEnum,
+    pub governance: Cow<'a, str>,
+    pub governing_token_mint: Cow<'a, str>,
+    pub state: ProposalStateEnum,
+    pub token_owner_record: Cow<'a, str>,
+    pub signatories_count: i16,
+    pub signatories_signed_off_count: i16,
+    pub vote_type: ProposalVoteTypeEnum,
+    pub deny_vote_weight: Option<i64>,
+    pub veto_vote_weight: Option<i64>,
+    pub abstain_vote_weight: Option<i64>,
+    pub start_voting_at: Option<NaiveDateTime>,
+    pub draft_at: NaiveDateTime,
+    pub signing_off_at: Option<NaiveDateTime>,
+    pub voting_at: Option<NaiveDateTime>,
+    pub voting_at_slot: Option<i64>,
+    pub voting_completed_at: Option<NaiveDateTime>,
+    pub executing_at: Option<NaiveDateTime>,
+    pub closed_at: Option<NaiveDateTime>,
+    pub execution_flags: InstructionExecutionFlagsEnum,
+    pub max_vote_weight: Option<i64>,
+    pub max_voting_time: Option<i64>,
+    pub vote_threshold_type: Option<VoteThresholdEnum>,
+    pub vote_threshold_percentage: Option<i16>,
+    pub name: Cow<'a, str>,
+    pub description_link: Cow<'a, str>,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "proposal_vote_type_multi_choices"]
+#[allow(missing_docs)]
+pub struct MultiChoice<'a> {
+    pub address: Cow<'a, str>,
+    pub max_voter_options: i16,
+    pub max_winning_options: i16,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "proposal_options"]
+#[allow(missing_docs)]
+pub struct ProposalOption<'a> {
+    pub proposal_address: Cow<'a, str>,
+    pub label: Cow<'a, str>,
+    pub vote_weight: i64,
+    pub vote_result: OptionVoteResultEnum,
+    pub transactions_executed_count: i16,
+    pub transactions_count: i16,
+    pub transactions_next_index: i16,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct ProposalTransaction<'a> {
+    pub address: Cow<'a, str>,
+    pub account_type: GovernanceAccountTypeEnum,
+    pub proposal: Cow<'a, str>,
+    pub option_index: i16,
+    pub transaction_index: i16,
+    pub hold_up_time: i64,
+    pub executed_at: Option<NaiveDateTime>,
+    pub execution_status: TransactionExecutionStatusEnum,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct ProposalTransactionInstruction<'a> {
+    pub proposal_transaction: Cow<'a, str>,
+    pub program_id: Cow<'a, str>,
+    pub data: Cow<'a, [u8]>,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct ProposalTransactionInstructionAccount<'a> {
+    pub proposal_transaction: Cow<'a, str>,
+    pub account_pubkey: Cow<'a, str>,
+    pub is_signer: bool,
+    pub is_writable: bool,
     /// The slot number of this account's last known update
     pub slot: i64,
     /// The write version of this account's last known update
