@@ -345,7 +345,14 @@ pub struct CandyMachineHiddenSetting {
     pub candy_machine_address: PublicKey<CandyMachine>,
     pub name: String,
     pub uri: String,
+    #[graphql(description = "lowercase hex string of the hash bytes")]
     pub hash: String,
+}
+
+// TODO(will): is there a builtin for this?
+pub fn to_hex_string(bytes: Vec<u8>) -> String {
+    let strs: Vec<String> = bytes.iter().map(|b| format!("{:02x}", b)).collect();
+    strs.join("")
 }
 
 impl<'a> TryFrom<models::CMHiddenSetting<'a>> for CandyMachineHiddenSetting {
@@ -363,7 +370,7 @@ impl<'a> TryFrom<models::CMHiddenSetting<'a>> for CandyMachineHiddenSetting {
             candy_machine_address: candy_machine_address.into(),
             name: name.into_owned(),
             uri: uri.into_owned(),
-            hash: String::from(std::str::from_utf8(hash.as_slice()).unwrap_or("")),
+            hash: to_hex_string(hash),
         })
     }
 }
