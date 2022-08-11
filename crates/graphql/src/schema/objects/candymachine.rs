@@ -1,3 +1,4 @@
+use indexer_core::db::custom_types::EndSettingType;
 use objects::wallet::Wallet;
 use scalars::{PublicKey, U64};
 
@@ -100,6 +101,16 @@ impl CandyMachine {
 
     pub async fn config_lines(&self, ctx: &AppContext) -> FieldResult<Vec<CandyMachineConfigLine>> {
         ctx.candymachine_config_line_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn end_setting(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<CandyMachineEndSetting>> {
+        ctx.candymachine_end_settings_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
@@ -218,5 +229,45 @@ impl<'a> From<models::CMConfigLine<'a>> for CandyMachineConfigLine {
             name: name.into_owned(),
             uri: uri.into_owned(),
         }
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct CandyMachineEndSetting {
+    pub candy_machine_address: PublicKey<CandyMachine>,
+    pub end_setting_type: CandyMachineEndSettingType,
+    pub number: U64,
+}
+
+#[derive(Debug, Clone, juniper::GraphQLEnum)]
+pub enum CandyMachineEndSettingType {
+    Date,
+    Amount,
+}
+
+impl From<EndSettingType> for CandyMachineEndSettingType {
+    fn from(v: EndSettingType) -> Self {
+        match v {
+            EndSettingType::Date => CandyMachineEndSettingType::Date,
+            EndSettingType::Amount => CandyMachineEndSettingType::Date,
+        }
+    }
+}
+
+impl<'a> TryFrom<models::CMEndSetting<'a>> for CandyMachineEndSetting {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::CMEndSetting {
+            candy_machine_address,
+            end_setting_type,
+            number,
+        }: models::CMEndSetting,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            candy_machine_address: candy_machine_address.into(),
+            end_setting_type: end_setting_type.into(),
+            number: number.try_into()?,
+        })
     }
 }
