@@ -46,6 +46,7 @@ search = [
 search-dispatch = [
   "serde_json",
 ]
+test-internal = []
 
 [[bin]]
 name = "holaplex-indexer-geyser"
@@ -75,6 +76,7 @@ tokio = { version = "1.13.0", features = ["macros", "rt", "rt-multi-thread", "si
 tokio-executor-trait = "2.1.0"
 tokio-reactor-trait = "1.1.0"
 borsh = "0.9.3"
+arrayref = "~0.3.6"
 
 # Solana
 anchor-lang-v0-20 = { package = "anchor-lang", version = "0.20.1" }

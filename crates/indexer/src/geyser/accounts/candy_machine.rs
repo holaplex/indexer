@@ -52,7 +52,7 @@ pub(crate) async fn process(
                 .execute(db)
         })
         .await
-        .context("failed to insert candy machine")?;
+        .context("failed to i`nsert candy machine")?;
 
     let mut futures: Vec<std::pin::Pin<Box<dyn Future<Output = Result<()>> + Send>>> = vec![
         Box::pin(process_data(client, key, candy_machine.data.clone())),
