@@ -11,7 +11,7 @@ use objects::{
     bid_receipt::BidReceipt,
     candymachine::{
         CandyMachine, CandyMachineCollectionPda, CandyMachineConfigLine, CandyMachineCreator,
-        CandyMachineEndSetting, CandyMachineWhitelistMintSettings,
+        CandyMachineEndSetting, CandyMachineWhitelistMintSetting,
     },
     genopets::{GenoHabitat, GenoRentalAgreement},
     graph_connection::GraphConnection,
@@ -81,7 +81,7 @@ pub struct AppContext {
     pub candymachine_end_settings_loader:
         Loader<PublicKey<CandyMachine>, Option<CandyMachineEndSetting>>,
     pub candymachine_whitelist_mint_settings_loader:
-        Loader<PublicKey<CandyMachine>, Option<CandyMachineWhitelistMintSettings>>,
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineWhitelistMintSetting>>,
 
     // Twitter dataloaders
     pub twitter_handle_loader: Loader<PublicKey<Wallet>, Option<String>>,

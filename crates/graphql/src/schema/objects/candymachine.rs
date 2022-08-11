@@ -121,7 +121,7 @@ impl CandyMachine {
     pub async fn whitelist_mint_setting(
         &self,
         ctx: &AppContext,
-    ) -> FieldResult<Option<CandyMachineWhitelistMintSettings>> {
+    ) -> FieldResult<Option<CandyMachineWhitelistMintSetting>> {
         ctx.candymachine_whitelist_mint_settings_loader
             .load(self.address.clone())
             .await
@@ -285,7 +285,7 @@ impl<'a> TryFrom<models::CMEndSetting<'a>> for CandyMachineEndSetting {
 }
 
 #[derive(Debug, Clone, GraphQLObject)]
-pub struct CandyMachineWhitelistMintSettings {
+pub struct CandyMachineWhitelistMintSetting {
     pub candy_machine_address: PublicKey<CandyMachine>,
     pub mode: CandyMachineWhitelistMintMode,
     pub mint: PublicKey<TokenMint>,
@@ -308,7 +308,7 @@ impl From<WhitelistMintMode> for CandyMachineWhitelistMintMode {
     }
 }
 
-impl<'a> TryFrom<models::CMWhitelistMintSetting<'a>> for CandyMachineWhitelistMintSettings {
+impl<'a> TryFrom<models::CMWhitelistMintSetting<'a>> for CandyMachineWhitelistMintSetting {
     type Error = std::num::TryFromIntError;
 
     fn try_from(
