@@ -1,4 +1,4 @@
-use indexer_core::db::custom_types::EndSettingType;
+use indexer_core::db::custom_types::{EndSettingType, WhitelistMintMode};
 use objects::wallet::Wallet;
 use scalars::{PublicKey, U64};
 
@@ -111,6 +111,16 @@ impl CandyMachine {
         ctx: &AppContext,
     ) -> FieldResult<Option<CandyMachineEndSetting>> {
         ctx.candymachine_end_settings_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn whitelist_mint_setting(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<CandyMachineWhitelistMintSettings>> {
+        ctx.candymachine_whitelist_mint_settings_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
@@ -249,7 +259,7 @@ impl From<EndSettingType> for CandyMachineEndSettingType {
     fn from(v: EndSettingType) -> Self {
         match v {
             EndSettingType::Date => CandyMachineEndSettingType::Date,
-            EndSettingType::Amount => CandyMachineEndSettingType::Date,
+            EndSettingType::Amount => CandyMachineEndSettingType::Amount,
         }
     }
 }
@@ -268,6 +278,52 @@ impl<'a> TryFrom<models::CMEndSetting<'a>> for CandyMachineEndSetting {
             candy_machine_address: candy_machine_address.into(),
             end_setting_type: end_setting_type.into(),
             number: number.try_into()?,
+        })
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct CandyMachineWhitelistMintSettings {
+    pub candy_machine_address: PublicKey<CandyMachine>,
+    pub mode: CandyMachineWhitelistMintMode,
+    pub mint: PublicKey<TokenMint>,
+    pub presale: bool,
+    pub discount_price: Option<U64>,
+}
+
+#[derive(Debug, Clone, juniper::GraphQLEnum)]
+pub enum CandyMachineWhitelistMintMode {
+    BurnEveryTime,
+    NeverBurn,
+}
+
+impl From<WhitelistMintMode> for CandyMachineWhitelistMintMode {
+    fn from(v: WhitelistMintMode) -> Self {
+        match v {
+            WhitelistMintMode::BurnEveryTime => CandyMachineWhitelistMintMode::BurnEveryTime,
+            WhitelistMintMode::NeverBurn => CandyMachineWhitelistMintMode::NeverBurn,
+        }
+    }
+}
+
+impl<'a> TryFrom<models::CMWhitelistMintSetting<'a>> for CandyMachineWhitelistMintSettings {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::CMWhitelistMintSetting {
+            candy_machine_address,
+            mode,
+            mint,
+            presale,
+            discount_price,
+        }: models::CMWhitelistMintSetting,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            candy_machine_address: candy_machine_address.into(),
+            mode: mode.into(),
+            mint: mint.into(),
+            presale,
+            discount_price: discount_price.map(U64::try_from).transpose()?,
         })
     }
 }

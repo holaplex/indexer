@@ -1,4 +1,4 @@
-use indexer_core::db::tables::candy_machine_end_settings;
+use indexer_core::db::tables::{candy_machine_end_settings, candy_machine_whitelist_mint_settings};
 use objects::candymachine::{
     CandyMachine, CandyMachineCollectionPda, CandyMachineConfigLine, CandyMachineCreator,
     CandyMachineEndSetting,
@@ -7,6 +7,7 @@ use scalars::PublicKey;
 use tables::{candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators};
 
 use super::prelude::*;
+use crate::schema::objects::candymachine::CandyMachineWhitelistMintSettings;
 
 #[async_trait]
 impl TryBatchFn<PublicKey<CandyMachine>, Vec<CandyMachineCreator>> for Batcher {
@@ -79,6 +80,28 @@ impl TryBatchFn<PublicKey<CandyMachine>, Option<CandyMachineEndSetting>> for Bat
             .filter(candy_machine_end_settings::candy_machine_address.eq(any(addresses)))
             .load(&conn)
             .context("Failed to load candy machine end settings")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|r| (r.candy_machine_address.clone(), r.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<CandyMachine>, Option<CandyMachineWhitelistMintSettings>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<CandyMachine>],
+    ) -> TryBatchMap<PublicKey<CandyMachine>, Option<CandyMachineWhitelistMintSettings>> {
+        let conn = self.db()?;
+        let rows: Vec<models::CMWhitelistMintSetting> =
+            candy_machine_whitelist_mint_settings::table
+                .filter(
+                    candy_machine_whitelist_mint_settings::candy_machine_address.eq(any(addresses)),
+                )
+                .load(&conn)
+                .context("Failed to load candy machine end settings")?;
 
         Ok(rows
             .into_iter()
