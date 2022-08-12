@@ -222,6 +222,12 @@ async fn store_claim_event(
         .run(move |db| {
             insert_into(cardinal_claim_events::table)
                 .values(&claim_event)
+                .on_conflict((
+                    cardinal_claim_events::token_manager_address,
+                    cardinal_claim_events::state_changed_at,
+                ))
+                .do_update()
+                .set(&claim_event)
                 .execute(db)
         })
         .await

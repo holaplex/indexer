@@ -16,7 +16,7 @@ use indexer_core::{
         update, Error as DbError,
     },
     prelude::*,
-    util,
+    pubkeys, util,
     uuid::Uuid,
 };
 use mpl_auction_house::receipt::{BidReceipt, ListingReceipt, PurchaseReceipt};
@@ -72,6 +72,7 @@ pub(crate) async fn process_listing_receipt(
                 id: None,
                 trade_state: row.trade_state.clone(),
                 auction_house: row.auction_house.clone(),
+                marketplace_program: Owned(pubkeys::AUCTION_HOUSE.to_string()),
                 seller: row.seller.clone(),
                 metadata: row.metadata.clone(),
                 purchase_id: None,
@@ -82,6 +83,7 @@ pub(crate) async fn process_listing_receipt(
                 canceled_at: row.canceled_at,
                 slot: row.slot,
                 write_version: Some(row.write_version),
+                expiry: None,
             };
 
             let listing_id = insert_into(listings::table)
@@ -234,6 +236,7 @@ pub(crate) async fn process_purchase_receipt(
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 pub(crate) async fn process_bid_receipt(
     client: &Client,
     key: Pubkey,
@@ -361,6 +364,7 @@ async fn upsert_into_offers_table<'a>(client: &Client, row: DbBidReceipt<'static
         id: None,
         trade_state: row.trade_state,
         auction_house: row.auction_house,
+        marketplace_program: Owned(pubkeys::AUCTION_HOUSE.to_string()),
         buyer: row.buyer,
         metadata: row.metadata,
         token_account: row.token_account,
@@ -372,6 +376,7 @@ async fn upsert_into_offers_table<'a>(client: &Client, row: DbBidReceipt<'static
         canceled_at: row.canceled_at,
         slot: row.slot,
         write_version: Some(row.write_version),
+        expiry: None,
     };
 
     let offer_id = client
@@ -404,6 +409,7 @@ async fn upsert_into_purchases_table<'a>(
         buyer: row.buyer.clone(),
         seller: row.seller.clone(),
         auction_house: row.auction_house.clone(),
+        marketplace_program: Owned(pubkeys::AUCTION_HOUSE.to_string()),
         metadata: row.metadata.clone(),
         token_size: row.token_size,
         price: row.price,

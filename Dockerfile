@@ -21,13 +21,14 @@ COPY Cargo.toml Cargo.lock ./
 RUN cargo build --profile docker \
   --features " \
     holaplex-indexer/geyser, \
-    holaplex-indexer/http \
-    holaplex-indexer/search \
+    holaplex-indexer/http, \
+    holaplex-indexer/search, \
   " \
   --bin holaplex-indexer-geyser \
   --bin holaplex-indexer-http \
   --bin holaplex-indexer-legacy-storefronts \
   --bin holaplex-indexer-search \
+  --bin holaplex-indexer-migrator \
   --bin holaplex-indexer-graphql
 
 COPY scripts scripts
@@ -70,6 +71,11 @@ FROM base AS search-consumer
 
 COPY --from=build build/bin/holaplex-indexer-search bin/
 COPY --from=build build/scripts/docker/search-consumer.sh startup.sh
+
+FROM base AS migrator
+
+COPY --from=build build/bin/holaplex-indexer-migrator bin/
+COPY --from=build build/scripts/docker/migrator.sh startup.sh
 
 FROM base AS graphql
 

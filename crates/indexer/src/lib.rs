@@ -31,10 +31,15 @@ pub mod prelude {
     pub use bs58;
     pub use indexer_core::prelude::*;
     pub use solana_program::pubkey::Pubkey;
+
+    pub use crate::{MessageError, MessageResult};
 }
 
 mod runtime {
-    use std::{fmt::Debug, future::Future};
+    use std::{
+        fmt::{Debug, Display},
+        future::Future,
+    };
 
     use futures_util::{stream::FuturesUnordered, FutureExt, StreamExt};
     use indexer_core::{
@@ -57,6 +62,11 @@ mod runtime {
         /// The number of threads to use.  Defaults to available core count.
         #[clap(short = 'j', env)]
         thread_count: Option<usize>,
+
+        /// Pass this flag to enable automatically migrating the database upon
+        /// connecting.
+        #[clap(long, short, env)]
+        migrate_db: bool,
 
         #[clap(flatten)]
         db: db::ConnectArgs,
@@ -84,11 +94,13 @@ mod runtime {
             let Opts {
                 thread_count,
                 db,
+                migrate_db: migrate,
                 extra,
             } = opts;
 
             let db = Pool::new(
-                db::connect(db, db::ConnectMode::Write).context("Failed to connect to Postgres")?,
+                db::connect(db, db::ConnectMode::Write { migrate })
+                    .context("Failed to connect to Postgres")?,
             );
 
             let rt = {
@@ -143,7 +155,24 @@ mod runtime {
         Stopped,
     }
 
-    async fn consume_one<Q: QueueType, F: Future<Output = Result<()>>>(
+    /// An error from a message processor, including a message identifier
+    #[derive(Debug, thiserror::Error)]
+    #[error("Failed to process {1}: {0:?}")]
+    pub struct MessageError<D: Display>(#[source] Error, D);
+
+    impl<D: Display> MessageError<D> {
+        /// Construct a new message error
+        #[inline]
+        #[must_use]
+        pub fn new(err: Error, id: D) -> Self {
+            Self(err, id)
+        }
+    }
+
+    /// Convenience alias for the result of a message processor function
+    pub type MessageResult<D> = Result<(), MessageError<D>>;
+
+    async fn consume_one<Q: QueueType, F: Future<Output = MessageResult<D>>, D: Display>(
         worker_id: usize,
         mut consumer: Consumer<Q>,
         process: impl Fn(Q::Message) -> F,
@@ -187,7 +216,7 @@ mod runtime {
                     .await
                     .context("Failed to send ACK for delivery")?,
                 Err(e) => {
-                    warn!("Failed to process message: {:?}", e);
+                    warn!("Failed to process {}: {:?}", e.1, e.0);
 
                     acker
                         .reject(BasicRejectOptions { requeue: false })
@@ -209,7 +238,8 @@ mod runtime {
     /// state.
     pub async fn amqp_consume<
         Q: QueueType + Send + Sync + 'static,
-        F: Send + Future<Output = Result<()>> + 'static,
+        F: Send + Future<Output = MessageResult<D>> + 'static,
+        D: Display + Send + 'static,
     >(
         params: &Params,
         conn: indexer_rabbitmq::lapin::Connection,

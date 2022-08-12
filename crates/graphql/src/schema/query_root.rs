@@ -1,30 +1,37 @@
-use indexer_core::db::{
-    expression::dsl::all,
-    queries::{self, feed_event::EventType},
-    tables::twitter_handle_name_services,
+use indexer_core::{
+    db::{
+        expression::dsl::all,
+        queries::{self, feed_event::EventType},
+        tables::metadata_collection_keys,
+    },
+    meilisearch::IndirectMetadataDocument,
 };
 use objects::{
     ah_listing::AhListing,
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
     bonding_change::EnrichedBondingChange,
+    candymachine::CandyMachine,
     chart::PriceChart,
     creator::Creator,
     denylist::Denylist,
     feed_event::FeedEvent,
+    genopets::GenoHabitat,
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::{MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
+    nft::{Collection, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
     profile::{ProfilesStats, TwitterProfile},
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
-use scalars::PublicKey;
+use scalars::{markers::TokenMint, PublicKey};
 use serde_json::Value;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, bid_receipts, current_metadata_owners,
-    graph_connections, metadata_jsons, metadatas, store_config_jsons, storefronts, wallet_totals,
+    auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
+    candy_machine_datas, candy_machines, current_metadata_owners, geno_habitat_datas,
+    graph_connections, metadata_jsons, metadatas, store_config_jsons, storefronts,
+    twitter_handle_name_services, wallet_totals,
 };
 
 use super::{enums::OrderDirection, prelude::*};
@@ -342,6 +349,7 @@ impl QueryRoot {
         >,
         #[graphql(description = "Filter on attributes")] attributes: Option<Vec<AttributeFilter>>,
         #[graphql(description = "Filter only listed NFTs")] listed: Option<bool>,
+        #[graphql(description = "Allow unverified NFTs")] allow_unverified: Option<bool>,
         #[graphql(
             description = "Filter only NFTs with active offers; rejected if flag is 'false'"
         )]
@@ -435,6 +443,7 @@ impl QueryRoot {
             offerers: offerers.map(|o| o.into_iter().map(Into::into).collect()),
             attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             listed,
+            allow_unverified,
             with_offers,
             auction_houses: auction_houses.map(|h| h.into_iter().map(Into::into).collect()),
             collections: collections.map(|c| c.into_iter().map(Into::into).collect()),
@@ -639,6 +648,32 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
+    #[graphql(description = "Get a candymachine by the candymachine config address")]
+    fn candymachine(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "address of the candymachine config")] address: String,
+    ) -> FieldResult<Option<CandyMachine>> {
+        let conn = context.shared.db.get()?;
+
+        candy_machines::table
+            .inner_join(
+                candy_machine_datas::table
+                    .on(candy_machines::address.eq(candy_machine_datas::candy_machine_address)),
+            )
+            .filter(candy_machines::address.eq(address))
+            .select((
+                candy_machines::all_columns,
+                candy_machine_datas::all_columns,
+            ))
+            .first::<(models::CandyMachine, models::CandyMachineData)>(&conn)
+            .optional()
+            .context("Failed to load candy machine by address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
+    }
+
     fn storefronts(&self, context: &AppContext) -> FieldResult<Vec<Storefront>> {
         let conn = context.shared.db.get()?;
         let rows: Vec<models::Storefront> = storefronts::table
@@ -718,6 +753,40 @@ impl QueryRoot {
     }
 
     #[graphql(
+        description = "Returns collection data along with collection activities",
+        arguments(address(description = "Collection address"),)
+    )]
+    async fn collection(
+        &self,
+        context: &AppContext,
+        address: String,
+    ) -> FieldResult<Option<Collection>> {
+        let conn = context.shared.db.get()?;
+
+        metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .inner_join(
+                metadata_collection_keys::table
+                    .on(metadata_collection_keys::collection_address.eq(metadatas::mint_address)),
+            )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+            )
+            .filter(metadata_collection_keys::collection_address.eq(address))
+            .filter(metadata_collection_keys::verified.eq(true))
+            .select(queries::metadatas::NFT_COLUMNS)
+            .first::<models::Nft>(&conn)
+            .optional()
+            .context("Failed to load NFT by metadata address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
+    }
+
+    #[graphql(
         description = "Returns featured collection NFTs ordered by market cap (floor price * number of NFTs in collection)",
         arguments(
             term(
@@ -745,7 +814,7 @@ impl QueryRoot {
         end_date: DateTime<Utc>,
         limit: i32,
         offset: i32,
-    ) -> FieldResult<Vec<Nft>> {
+    ) -> FieldResult<Vec<Collection>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let addresses: Option<Vec<String>> = match term {
@@ -814,7 +883,7 @@ impl QueryRoot {
         end_date: DateTime<Utc>,
         limit: i32,
         offset: i32,
-    ) -> FieldResult<Vec<Nft>> {
+    ) -> FieldResult<Vec<Collection>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let addresses: Option<Vec<String>> = match term {
@@ -961,6 +1030,151 @@ impl QueryRoot {
             .context("Failed to load store config JSON")?;
 
         Ok(rows.into_iter().map(Into::into).collect())
+    }
+
+    fn auction_house(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "AuctionHouse Address")] address: String,
+    ) -> FieldResult<Option<AuctionHouse>> {
+        let conn = context.shared.db.get()?;
+        auction_houses::table
+            .filter(auction_houses::address.eq(address))
+            .first::<models::AuctionHouse>(&conn)
+            .optional()
+            .context("Failed to load AuctionHouse by address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
+    }
+
+    fn geno_habitat(
+        &self,
+        context: &AppContext,
+        address: PublicKey<GenoHabitat>,
+    ) -> FieldResult<Option<GenoHabitat>> {
+        let conn = context.shared.db.get()?;
+
+        let row = geno_habitat_datas::table
+            .filter(geno_habitat_datas::address.eq(address))
+            .first::<models::GenoHabitatData>(&conn)
+            .optional()
+            .context("Failed to load Genopets habitat")?;
+
+        Ok(row.map(Into::into))
+    }
+
+    async fn geno_habitats(
+        &self,
+        ctx: &AppContext,
+        #[graphql(description = "Filter on habitat mint addresses")] mints: Option<
+            Vec<PublicKey<TokenMint>>,
+        >,
+        #[graphql(description = "Filter on habitat owners")] owners: Option<Vec<PublicKey<Wallet>>>,
+        #[graphql(description = "Filter on habitat renters")] renters: Option<
+            Vec<PublicKey<Wallet>>,
+        >,
+        #[graphql(description = "Filter on harvester strings")] harvesters: Option<Vec<String>>,
+        #[graphql(description = "Filter on whether the habitat has the genesis flag")]
+        genesis: Option<bool>,
+        #[graphql(description = "Filter on habitat elements")] elements: Option<Vec<i32>>,
+        #[graphql(description = "Filter on minimum habitat level")] min_level: Option<i32>,
+        #[graphql(description = "Filter on maximum habitat level")] max_level: Option<i32>,
+        #[graphql(description = "Filter on minimum habitat sequence")] min_sequence: Option<i32>,
+        #[graphql(description = "Filter on maximum habitat sequence")] max_sequence: Option<i32>,
+        #[graphql(description = "Filter on habitat guilds")] guilds: Option<Vec<i32>>,
+        #[graphql(description = "Filter on minimum habitat durability")] min_durability: Option<
+            i32,
+        >,
+        #[graphql(description = "Filter on maximum habitat durability")] max_durability: Option<
+            i32,
+        >,
+        #[graphql(description = "Filter on minimum habitat expiry timestamp")] min_expiry: Option<
+            DateTime<Utc>,
+        >,
+        #[graphql(description = "Filter on maximum habitat expiry timestamp")] max_expiry: Option<
+            DateTime<Utc>,
+        >,
+        #[graphql(description = "Filter on harvester open-market flag")]
+        harvester_open_market: Option<bool>,
+        #[graphql(description = "Filter on rental agreement open-market flag")]
+        rental_open_market: Option<bool>,
+        #[graphql(description = "Search term to select habitat NFT addresses with")] term: Option<
+            String,
+        >,
+        #[graphql(description = "Number of values to return")] limit: i32,
+        #[graphql(description = "Number of values to skip for pagination")] offset: i32,
+    ) -> FieldResult<Vec<GenoHabitat>> {
+        use std::ops::Bound;
+
+        fn make_range<T>(min: Option<T>, max: Option<T>) -> (Bound<T>, Bound<T>) {
+            (
+                min.map_or(Bound::Unbounded, Bound::Included),
+                max.map_or(Bound::Unbounded, Bound::Included),
+            )
+        }
+
+        let mints = match (mints, term) {
+            (m, None) => m,
+            (None, Some(ref t)) => Some({
+                ctx.shared
+                    .search
+                    .index("geno_habitats")
+                    .search()
+                    .with_query(t)
+                    .with_limit(ctx.shared.pre_query_search_limit)
+                    .execute::<IndirectMetadataDocument>()
+                    .await
+                    .context("Failed to load search results for Genopets habitats")?
+                    .hits
+                    .into_iter()
+                    .map(|r| r.result.mint_address.into())
+                    .collect()
+            }),
+            (Some(_), Some(_)) => {
+                return Err(FieldError::new(
+                    "The mints and term parameters cannot be combined",
+                    graphql_value!(["mints", "term"]),
+                ));
+            },
+        };
+
+        let limit = 250.min(limit);
+        let opts = queries::genopets::ListHabitatOptions {
+            mints,
+            owners,
+            renters,
+            harvesters,
+            genesis,
+            elements: elements
+                .map(|e| e.into_iter().map(TryInto::try_into).collect())
+                .transpose()
+                .context("Failed to convert elements parameter")?,
+            levels: make_range(
+                min_level
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .context("Failed to convert min level")?,
+                max_level
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .context("Failed to convert max level")?,
+            ),
+            sequences: make_range(min_sequence.map(Into::into), max_sequence.map(Into::into)),
+            guilds,
+            durabilities: make_range(min_durability, max_durability),
+            expiries: make_range(min_expiry, max_expiry),
+            harvester_open_market,
+            rental_open_market,
+            limit: limit.into(),
+            offset: offset.into(),
+        };
+
+        let conn = ctx.shared.db.get().context("Failed to connect to the DB")?;
+
+        queries::genopets::list_habitats(&conn, opts)
+            .map(|v| v.into_iter().map(Into::into).collect())
+            .map_err(Into::into)
     }
 
     fn denylist() -> Denylist {

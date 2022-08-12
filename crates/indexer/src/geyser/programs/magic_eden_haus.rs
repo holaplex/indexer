@@ -1,8 +1,11 @@
 use borsh::BorshDeserialize;
-use indexer_core::db::{
-    models::{Listing, Offer, Purchase},
-    tables::{listings, offers},
-    update,
+use indexer_core::{
+    db::{
+        models::{Listing, Offer, Purchase},
+        tables::{listings, offers},
+        update,
+    },
+    pubkeys, util,
 };
 
 use super::{
@@ -26,7 +29,7 @@ struct MEInstructionData {
     _escrow_payment_bump: u8,
     buyer_price: u64,
     token_size: u64,
-    _expiry: u64,
+    expiry: i64,
 }
 
 async fn process_execute_sale(
@@ -47,6 +50,7 @@ async fn process_execute_sale(
             buyer: Owned(accts[0].clone()),
             seller: Owned(accts[1].clone()),
             auction_house: Owned(accts[9].clone()),
+            marketplace_program: Owned(pubkeys::ME_HAUS.to_string()),
             metadata: Owned(accts[5].clone()),
             token_size: params.token_size.try_into()?,
             price: params.buyer_price.try_into()?,
@@ -78,6 +82,7 @@ async fn process_sale(
         id: None,
         trade_state: Owned(accts[8].clone()),
         auction_house: Owned(accts[7].clone()),
+        marketplace_program: Owned(pubkeys::ME_HAUS.to_string()),
         seller: Owned(accts[0].clone()),
         metadata: Owned(accts[5].clone()),
         purchase_id: None,
@@ -88,6 +93,10 @@ async fn process_sale(
         canceled_at: None,
         slot: slot.try_into()?,
         write_version: None,
+        expiry: match params.expiry {
+            e if e <= 0 => None,
+            _ => Some(util::unix_timestamp(params.expiry)?),
+        },
     })
     .await
     .context("failed to insert listing!")?;
@@ -115,6 +124,7 @@ async fn process_buy(
         id: None,
         trade_state: Owned(accts[7].clone()),
         auction_house: Owned(accts[6].clone()),
+        marketplace_program: Owned(pubkeys::ME_HAUS.to_string()),
         buyer: Owned(accts[0].clone()),
         metadata: Owned(accts[3].clone()),
         token_account: None,
@@ -126,6 +136,10 @@ async fn process_buy(
         canceled_at: None,
         slot: slot.try_into()?,
         write_version: None,
+        expiry: match params.expiry {
+            e if e <= 0 => None,
+            _ => Some(util::unix_timestamp(params.expiry)?),
+        },
     })
     .await
     .context("failed to insert offer")?;

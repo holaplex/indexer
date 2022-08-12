@@ -2,8 +2,12 @@ use indexer_core::db::{
     sql_query,
     sql_types::{Array, Text},
 };
-use objects::{nft::Nft, store_creator::StoreCreator};
-use scalars::PublicKey;
+use objects::{
+    nft::{Collection, Nft},
+    store_creator::StoreCreator,
+};
+use scalars::{PublicKey, I64};
+use tables::collection_stats;
 
 use super::prelude::*;
 
@@ -16,7 +20,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
         let conn = self.db()?;
 
         let rows: Vec<models::SampleNft> = sql_query(
-            "SELECT DISTINCT ON (sample_metadatas.address)
+            "SELECT sample_metadatas.address,
                     sample_metadatas.creator_address,
                     sample_metadatas.address,
                     sample_metadatas.name,
@@ -30,7 +34,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                     sample_metadatas.animation_url,
                     sample_metadatas.external_url,
                     sample_metadatas.category,
-                    sample_metadatas.model
+                    sample_metadatas.model,
                     sample_metadatas.token_account_address
                 FROM store_creators
                 JOIN LATERAL (
@@ -41,6 +45,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                         metadatas.mint_address AS mint_address,
                         metadatas.primary_sale_happened AS primary_sale_happened,
                         metadatas.update_authority_address AS update_authority_address,
+                        current_metadata_owners.token_account_address AS token_account_address,
                         metadatas.uri AS uri,
                         metadata_jsons.description AS description,
                         metadata_jsons.image AS image,
@@ -52,7 +57,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                     FROM metadatas
                     INNER JOIN metadata_jsons ON (metadatas.address = metadata_jsons.metadata_address)
                     INNER JOIN metadata_creators ON (metadatas.address = metadata_creators.metadata_address)
-                    INNER JOIN current_metadata_owners on (metadatas.address = current_metadata_owners.mint_address)
+                    INNER JOIN current_metadata_owners on (metadatas.mint_address = current_metadata_owners.mint_address)
                     WHERE metadata_creators.creator_address = store_creators.creator_address
                     LIMIT 3
                 ) AS sample_metadatas ON true
@@ -104,6 +109,75 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                     )
                 },
             )
+            .batch(addresses))
+    }
+}
+
+#[derive(Debug, Clone)]
+#[repr(transparent)]
+pub struct CollectionNftCount(pub I64);
+
+impl From<i64> for CollectionNftCount {
+    fn from(value: i64) -> Self {
+        Self(value.into())
+    }
+}
+
+#[derive(Debug, Clone)]
+#[repr(transparent)]
+pub struct CollectionFloorPrice(pub I64);
+
+impl From<i64> for CollectionFloorPrice {
+    fn from(value: i64) -> Self {
+        Self(value.into())
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<Collection>, Option<CollectionNftCount>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Collection>],
+    ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionNftCount>> {
+        let conn = self.db()?;
+
+        let rows: Vec<(String, i64)> = collection_stats::table
+            .filter(collection_stats::collection_address.eq(any(addresses)))
+            .select((
+                collection_stats::collection_address,
+                collection_stats::nft_count,
+            ))
+            .load(&conn)
+            .context("Failed to load NFT count for collection")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|(addr, count)| (addr, CollectionNftCount::from(count)))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<Collection>, Option<CollectionFloorPrice>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Collection>],
+    ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionFloorPrice>> {
+        let conn = self.db()?;
+
+        let rows: Vec<(String, Option<i64>)> = collection_stats::table
+            .filter(collection_stats::collection_address.eq(any(addresses)))
+            .select((
+                collection_stats::collection_address,
+                collection_stats::floor_price,
+            ))
+            .load(&conn)
+            .context("Failed to load floor price for collection")?;
+
+        Ok(rows
+            .into_iter()
+            .filter_map(|(addr, floor)| floor.map(|f| (addr, f)))
+            .map(|(addr, floor)| (addr, CollectionFloorPrice::from(floor)))
             .batch(addresses))
     }
 }

@@ -9,8 +9,8 @@ use indexer_core::{
             MetadataJson as DbMetadataJson,
         },
         tables::{
-            attributes, files, metadata_collection_keys, metadata_collections, metadata_creators,
-            metadata_jsons, metadatas, twitter_handle_name_services,
+            attributes, files, metadata_collection_keys, metadata_collections, metadata_jsons,
+            metadatas,
         },
         update, Connection,
     },
@@ -24,10 +24,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::Client;
-use crate::{
-    prelude::*,
-    search_dispatch::{CollectionDocument, MetadataDocument},
-};
+use crate::{prelude::*, search_dispatch::CollectionDocument};
 
 type SlotInfo = (i64, i64);
 
@@ -113,6 +110,11 @@ struct MetadataJsonMinimal {
     extra: HashMap<String, Value>,
 }
 
+struct FetchJsonExtra {
+    url: Url,
+    raw: Value,
+}
+
 enum MetadataJsonResult {
     Full(MetadataJson),
     Minimal {
@@ -121,11 +123,19 @@ enum MetadataJsonResult {
     },
 }
 
+struct MetadataJsonParams<'a> {
+    client: &'a Client,
+    addr: String,
+    extra: FetchJsonExtra,
+    fingerprint: Vec<u8>,
+    slot_info: SlotInfo,
+}
+
 async fn fetch_json(
     client: &Client,
     meta_key: Pubkey,
     url: Result<Url>,
-) -> Result<(Url, MetadataJsonResult)> {
+) -> Result<(MetadataJsonResult, FetchJsonExtra)> {
     let start_time = Local::now();
     let url = url.context("Failed to create asset URL")?;
 
@@ -147,9 +157,12 @@ async fn fetch_json(
         indexer_core::util::duration_hhmmssfff(end_time - start_time)
     );
 
+    let raw =
+        serde_json::from_slice(&bytes).context("Metadata JSON response was not valid JSON")?;
+
     let full_err;
     match serde_json::from_slice(&bytes) {
-        Ok(f) => return Ok((url, MetadataJsonResult::Full(f))),
+        Ok(f) => return Ok((MetadataJsonResult::Full(f), FetchJsonExtra { url, raw })),
         Err(e) => {
             trace!(
                 "Failed to parse full metadata JSON for {:?}: {:?}",
@@ -161,7 +174,12 @@ async fn fetch_json(
     };
 
     match serde_json::from_slice(&bytes) {
-        Ok(value) => return Ok((url, MetadataJsonResult::Minimal { value, full_err })),
+        Ok(value) => {
+            return Ok((
+                MetadataJsonResult::Minimal { value, full_err },
+                FetchJsonExtra { url, raw },
+            ));
+        },
         Err(e) => {
             trace!(
                 "Failed to parse minimal metadata JSON for {:?}: {:?}",
@@ -181,7 +199,7 @@ async fn try_locate_json(
     client: &Client,
     id: &AssetIdentifier<'_>,
     meta_key: Pubkey,
-) -> Result<Option<(MetadataJsonResult, Vec<u8>, Url)>> {
+) -> Result<Option<(MetadataJsonResult, Vec<u8>, FetchJsonExtra)>> {
     // Set to true for fallback
     const TRY_LAST_RESORT: bool = false;
     // Set to true to fetch links with no fingerprint
@@ -201,9 +219,9 @@ async fn try_locate_json(
         let url_str = url.as_ref().map_or("???", Url::as_str).to_owned();
 
         match fetch_json(client, meta_key, url).await {
-            Ok((url, json)) => {
+            Ok((json, extra)) => {
                 trace!("Using fetch from {:?} for metadata {}", url_str, meta_key);
-                resp = Ok(Some((json, fingerprint, url)));
+                resp = Ok(Some((json, fingerprint, extra)));
                 break;
             },
             Err(e) => {
@@ -218,7 +236,7 @@ async fn try_locate_json(
     }
 
     Ok(match resp {
-        Ok(Some((res, fingerprint, url))) => Some((res, fingerprint.into_owned(), url)),
+        Ok(Some((res, fingerprint, extra))) => Some((res, fingerprint.into_owned(), extra)),
         Ok(None) => {
             trace!(
                 "Not fetching unparseable url {:?} for {}",
@@ -229,7 +247,7 @@ async fn try_locate_json(
             None
         },
         Err(()) if TRY_LAST_RESORT => {
-            let (url, json) = fetch_json(client, meta_key, Ok(id.url.clone()))
+            let (json, extra) = fetch_json(client, meta_key, Ok(id.url.clone()))
                 .await
                 .with_context(|| {
                     format!(
@@ -239,7 +257,7 @@ async fn try_locate_json(
                     )
                 })?;
 
-            Some((json, vec![], url))
+            Some((json, vec![], extra))
         },
         Err(()) => {
             bail!(
@@ -252,22 +270,22 @@ async fn try_locate_json(
 }
 
 async fn process_full(
-    client: &Client,
-    addr: String,
-    first_verified_creator: Option<String>,
-    fetch_uri: String,
     json: MetadataJson,
-    fingerprint: Vec<u8>,
-    slot_info: SlotInfo,
+    first_verified_creator: Option<String>,
+    MetadataJsonParams {
+        client,
+        addr,
+        extra: FetchJsonExtra { url, raw },
+        fingerprint,
+        slot_info,
+    }: MetadataJsonParams<'_>,
 ) -> Result<()> {
-    let raw_content: Value =
-        serde_json::value::to_value(&json).context("Failed to upcast metadata JSON")?;
-
-    dispatch_metadata_document(client, false, addr.clone(), raw_content.clone())
+    dispatch_metadata_document(client, false, addr.clone())
         .await
         .context("Failed to dispatch upsert metadata document job")?;
 
     let MetadataJson {
+        name,
         description,
         image,
         animation_url,
@@ -294,11 +312,12 @@ async fn process_full(
         animation_url: animation_url.map(Owned),
         external_url: external_url.map(Owned),
         category: category.map(Owned),
-        raw_content: Owned(raw_content),
+        raw_content: Owned(raw),
         model: Some(Borrowed("full")),
-        fetch_uri: Owned(fetch_uri),
+        fetch_uri: Owned(url.to_string()),
         slot,
         write_version,
+        name: Some(Owned(name)),
     };
 
     client
@@ -329,13 +348,15 @@ async fn process_full(
 }
 
 async fn process_minimal(
-    client: &Client,
-    addr: String,
-    fetch_uri: String,
     json: MetadataJsonMinimal,
-    fingerprint: Vec<u8>,
     full_err: serde_json::Error,
-    (slot, write_version): SlotInfo,
+    MetadataJsonParams {
+        client,
+        addr,
+        extra: FetchJsonExtra { url, raw },
+        fingerprint,
+        slot_info,
+    }: MetadataJsonParams<'_>,
 ) -> Result<()> {
     fn to_opt_string(v: &Value) -> Option<Cow<'static, str>> {
         v.as_str().map(|s| Owned(s.to_owned())).or_else(|| {
@@ -347,15 +368,12 @@ async fn process_minimal(
         })
     }
 
-    let raw_content: Value =
-        serde_json::value::to_value(&json).context("Failed to upcast minimal metadata JSON")?;
-
-    dispatch_metadata_document(client, false, addr.clone(), raw_content.clone())
+    dispatch_metadata_document(client, false, addr.clone())
         .await
         .context("Failed to dispatch upsert metadata document job")?;
 
     let MetadataJsonMinimal {
-        name: _,
+        name,
         description,
         image,
         animation_url,
@@ -364,6 +382,7 @@ async fn process_minimal(
         extra: _,
     } = json;
 
+    let (slot, write_version) = slot_info;
     let row = DbMetadataJson {
         metadata_address: Owned(addr.clone()),
         fingerprint: Owned(fingerprint),
@@ -373,11 +392,12 @@ async fn process_minimal(
         animation_url: to_opt_string(&animation_url),
         external_url: to_opt_string(&external_url),
         category: to_opt_string(&category),
-        raw_content: Owned(raw_content),
+        raw_content: Owned(raw),
         model: Some(Owned(format!("minimal ({})", full_err))),
-        fetch_uri: Owned(fetch_uri),
+        fetch_uri: Owned(url.to_string()),
         slot,
         write_version,
+        name: to_opt_string(&name),
     };
 
     client
@@ -550,10 +570,9 @@ pub async fn process<'a>(
                     .filter(metadata_jsons::metadata_address.eq(addr))
                     .select((
                         metadata_jsons::fingerprint,
-                        metadata_jsons::raw_content,
                         (metadata_jsons::slot, metadata_jsons::write_version),
                     ))
-                    .first::<(Cow<[u8]>, Value, SlotInfo)>(db)
+                    .first::<(Cow<[u8]>, SlotInfo)>(db)
                     .optional()
             }
         })
@@ -563,7 +582,7 @@ pub async fn process<'a>(
     let first_verified_creator =
         first_verified_creator.map(|address| bs58::encode(address).into_string());
 
-    if let Some((fingerprint, json, existing_slot_info)) = existing_row {
+    if let Some((fingerprint, existing_slot_info)) = existing_row {
         if existing_slot_info > slot_info || id.fingerprints_hinted().any(|(f, _)| fingerprint == f)
         {
             trace!(
@@ -574,7 +593,7 @@ pub async fn process<'a>(
 
             reprocess_attributes(client, addr.clone(), first_verified_creator, slot_info).await?;
 
-            dispatch_metadata_document(client, true, addr, json).await?;
+            dispatch_metadata_document(client, true, addr).await?;
 
             return Ok(());
         }
@@ -582,31 +601,21 @@ pub async fn process<'a>(
 
     trace!("{:?} -> {:?}", url.as_str(), id);
 
-    if let Some((json, fingerprint, url)) = try_locate_json(client, &id, meta_key).await? {
+    if let Some((json, fingerprint, extra)) = try_locate_json(client, &id, meta_key).await? {
+        let params = MetadataJsonParams {
+            client,
+            addr,
+            extra,
+            fingerprint,
+            slot_info,
+        };
+
         match json {
             MetadataJsonResult::Full(value) => {
-                process_full(
-                    client,
-                    addr,
-                    first_verified_creator,
-                    url.to_string(),
-                    value,
-                    fingerprint,
-                    slot_info,
-                )
-                .await?;
+                process_full(value, first_verified_creator, params).await?;
             },
             MetadataJsonResult::Minimal { value, full_err } => {
-                process_minimal(
-                    client,
-                    addr,
-                    url.to_string(),
-                    value,
-                    fingerprint,
-                    full_err,
-                    slot_info,
-                )
-                .await?;
+                process_minimal(value, full_err, params).await?;
             },
         }
     }
@@ -618,96 +627,29 @@ async fn dispatch_metadata_document(
     client: &Client,
     is_for_backfill: bool,
     addr: String,
-    raw: Value,
 ) -> Result<()> {
-    let raw = if let Value::Object(m) = raw {
-        m
-    } else {
-        bail!("Metadata JSON content was not an object");
-    };
-
-    let image = raw.get("image").and_then(Value::as_str);
-
-    let image = image
-        .and_then(|i| Url::parse(i).ok())
-        .and_then(|u| {
-            let id = AssetIdentifier::new(&u);
-
-            proxy_url(client.proxy_args(), &id, Some(("width", "200")))
-                .map(|o| o.map(|u| u.to_string()))
-                .transpose()
+    if let Ok(Some(collection_address)) = client
+        .db()
+        .run({
+            let addr = addr.clone();
+            move |db| {
+                metadatas::table
+                    .left_join(
+                        metadata_collection_keys::table
+                            .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
+                    )
+                    .filter(metadatas::address.eq(&addr))
+                    .select(metadata_collection_keys::collection_address.nullable())
+                    .first::<Option<String>>(db)
+                    .context("failed to load mint and name for search doc")
+            }
         })
-        .or_else(|| image.map(|s| Ok(s.into())))
-        .transpose()?;
-
-    if let Ok((name, mint_address, collection_address, creator_address, creator_twitter_handle)) =
-        client
-            .db()
-            .run({
-                let addr = addr.clone();
-                move |db| {
-                    let (name, mint_address, collection_address): (String, String, Option<String>) =
-                        metadatas::table
-                            .left_join(metadata_collection_keys::table.on(
-                                metadatas::address.eq(metadata_collection_keys::metadata_address),
-                            ))
-                            .filter(metadatas::address.eq(&addr))
-                            .select((
-                                metadatas::name,
-                                metadatas::mint_address,
-                                metadata_collection_keys::collection_address.nullable(),
-                            ))
-                            .first(db)
-                            .context("failed to load mint and name for search doc")?;
-
-                    let (creator_address, creator_twitter_handle) = metadata_creators::table
-                        .left_join(
-                            twitter_handle_name_services::table
-                                .on(metadata_creators::creator_address
-                                    .eq(twitter_handle_name_services::wallet_address)),
-                        )
-                        .filter(metadata_creators::metadata_address.eq(&addr))
-                        .filter(metadata_creators::verified.eq(true))
-                        .filter(metadata_creators::position.eq(0))
-                        .select((
-                            metadata_creators::creator_address,
-                            twitter_handle_name_services::twitter_handle.nullable(),
-                        ))
-                        .first(db)
-                        .context("failed to load creators for search document")?;
-
-                    Result::<_>::Ok((
-                        name,
-                        mint_address,
-                        collection_address,
-                        creator_address,
-                        creator_twitter_handle,
-                    ))
-                }
-            })
-            .await
-            .map_err(|e| warn!("Failed to get search document data for metadata: {:?}", e))
+        .await
+        .map_err(|e| warn!("Failed to get search document data for metadata: {:?}", e))
     {
-        let document = MetadataDocument {
-            name,
-            mint_address,
-            image,
-            creator_address,
-            creator_twitter_handle,
-            collection_address: collection_address.clone(),
-        };
-
-        client
-            .search()
-            .upsert_metadata(is_for_backfill, addr, document)
+        upsert_collection_metadata(client, collection_address, is_for_backfill)
             .await
-            .context("Failed to dispatch metadata JSON document job")?;
-
-        if let Some(addr) = collection_address {
-            upsert_collection_metadata(client, addr, is_for_backfill)
-                .await
-                .context("failed to index collection metadata")?;
-        }
+            .context("failed to index collection metadata")?;
     }
 
     Ok(())

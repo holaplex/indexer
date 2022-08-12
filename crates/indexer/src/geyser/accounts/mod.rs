@@ -9,6 +9,7 @@ pub mod cardinal_time_invalidator;
 pub mod cardinal_token_manager;
 pub mod cardinal_use_invalidator;
 pub mod edition;
+pub mod geno_habitat_data;
 pub mod govern;
 pub mod graph;
 pub mod locked_voter;
@@ -18,6 +19,7 @@ pub mod name_service;
 pub mod namespace;
 pub mod receipt;
 pub mod smart_wallet;
+pub mod spl_governance;
 pub mod token;
 
 pub(self) use super::Client;

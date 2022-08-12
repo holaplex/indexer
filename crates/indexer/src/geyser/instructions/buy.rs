@@ -10,6 +10,7 @@ use indexer_core::{
             offer_events, offers,
         },
     },
+    pubkeys,
     uuid::Uuid,
 };
 use mpl_auction_house::instruction::Buy;
@@ -58,6 +59,7 @@ pub(crate) async fn process(
         id: None,
         trade_state: row.buyer_trade_state,
         auction_house: row.auction_house,
+        marketplace_program: Owned(pubkeys::AUCTION_HOUSE.to_string()),
         buyer: row.wallet,
         metadata: row.metadata,
         token_account: Some(row.token_account),
@@ -69,6 +71,7 @@ pub(crate) async fn process(
         canceled_at: None,
         slot: row.slot,
         write_version: None,
+        expiry: None,
     })
     .await
     .context("failed to insert offer")?;

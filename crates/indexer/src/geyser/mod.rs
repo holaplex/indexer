@@ -5,7 +5,7 @@ mod client;
 mod instructions;
 mod programs;
 
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashSet, fmt, sync::Arc};
 
 pub use client::{Args as ClientArgs, Client};
 use indexer_core::pubkeys;
@@ -26,6 +26,24 @@ pub enum IgnoreType {
     Tokens,
 }
 
+/// Message identifier
+#[derive(Debug, Clone, Copy)]
+pub enum MessageId {
+    /// An update of an account with the given key
+    AccountUpdate(Pubkey),
+    /// An instruction from the program with the given key
+    Instruction(Pubkey),
+}
+
+impl fmt::Display for MessageId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::AccountUpdate(k) => write!(f, "account update for {}", k),
+            Self::Instruction(p) => write!(f, "instruction from program {}", p),
+        }
+    }
+}
+
 /// Process a message from a Geyser RabbitMQ queue
 ///
 /// # Errors
@@ -34,11 +52,17 @@ pub async fn process_message<H: std::hash::BuildHasher>(
     msg: Message,
     client: &Client,
     ignore_on_startup: Arc<HashSet<IgnoreType, H>>,
-) -> Result<()> {
+) -> MessageResult<MessageId> {
     let check_ignore =
         |ty, update: &AccountUpdate| !(update.is_startup && ignore_on_startup.contains(&ty));
 
+    let id = match msg {
+        Message::AccountUpdate(ref u) => MessageId::AccountUpdate(u.key),
+        Message::InstructionNotify(ref i) => MessageId::Instruction(i.program),
+    };
+
     match msg {
+        // Accounts
         Message::AccountUpdate(update)
             if update.owner == pubkeys::METADATA && check_ignore(IgnoreType::Metadata, &update) =>
         {
@@ -97,13 +121,14 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         Message::AccountUpdate(update) if update.owner == pubkeys::TOKEN_BONDING => {
             programs::token_bonding::process(client, update).await
         },
-        Message::AccountUpdate(update) => {
-            debug!(
-                "Unhandled account update for program {}",
-                bs58::encode(update.owner).into_string()
-            );
-            Ok(())
+        Message::AccountUpdate(update) if update.owner == pubkeys::SPL_GOVERNANCE => {
+            programs::spl_governance::process(client, update).await
         },
+        Message::AccountUpdate(update) if update.owner == genostub::ID => {
+            programs::genopets::process(client, update).await
+        },
+
+        // Instructions
         Message::InstructionNotify(ins) if ins.program == pubkeys::AUCTION_HOUSE => {
             programs::auction_house::process_instruction(client, &ins.data, &ins.accounts, ins.slot)
                 .await
@@ -120,6 +145,16 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         Message::InstructionNotify(ins) if ins.program == pubkeys::TOKEN => {
             programs::token::process_instruction(client, &ins.data, &ins.accounts, ins.slot).await
         },
+
+        // Fallbacks
+        Message::AccountUpdate(update) => {
+            debug!(
+                "Unhandled account update for program {}",
+                bs58::encode(update.owner).into_string()
+            );
+            Ok(())
+        },
         Message::InstructionNotify { .. } => Ok(()),
     }
+    .map_err(|e| MessageError::new(e, id))
 }

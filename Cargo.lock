@@ -2658,6 +2658,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "genostub"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang 0.24.2",
+]
+
+[[package]]
 name = "gethostname"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2877,6 +2884,7 @@ dependencies = [
  "cid",
  "crossbeam",
  "futures-util",
+ "genostub",
  "govern",
  "graph_program",
  "holaplex-indexer-core",
@@ -2900,6 +2908,7 @@ dependencies = [
  "spl-token",
  "spl-token-bonding",
  "strum 0.24.0",
+ "thiserror",
  "tokio",
  "tokio-executor-trait",
  "tokio-reactor-trait",
@@ -2939,6 +2948,7 @@ dependencies = [
  "sea-query-attr",
  "sea-query-derive",
  "sea-query-driver",
+ "serde",
  "serde_json",
  "solana-program",
  "strum 0.24.0",
@@ -2971,8 +2981,8 @@ dependencies = [
 
 [[package]]
 name = "holaplex-indexer-rabbitmq"
-version = "0.1.0"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.4.0#33be3446ea1be28b72c7fe1d6251d1f8eb4cea6b"
+version = "0.2.0"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.5.0#c33467ee79a68fc2140247248b3652b50c36247a"
 dependencies = [
  "clap 3.1.12",
  "futures-util",
@@ -4749,7 +4759,9 @@ version = "0.24.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6b0fa62db5ae33dfc61e805b0b0c9d579c3733f1ed90326b3779f5b38f30fa2a"
 dependencies = [
+ "chrono",
  "sea-query-derive",
+ "sea-query-driver",
 ]
 
 [[package]]

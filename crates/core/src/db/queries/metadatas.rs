@@ -16,6 +16,7 @@ use crate::{
         Connection,
     },
     error::prelude::*,
+    prelude::Utc,
 };
 
 /// Format for incoming filters on attributes
@@ -38,7 +39,7 @@ enum Metadatas {
     UpdateAuthorityAddress,
     Uri,
     Slot,
-    Burned,
+    BurnedAt,
 }
 
 #[derive(Iden)]
@@ -70,6 +71,7 @@ enum Listings {
     Seller,
     PurchaseId,
     CanceledAt,
+    Expiry,
 }
 
 #[derive(Iden)]
@@ -81,7 +83,6 @@ enum MetadataCreators {
 }
 
 #[derive(Iden)]
-
 enum Offers {
     Table,
     Buyer,
@@ -90,6 +91,7 @@ enum Offers {
     CanceledAt,
     PurchaseId,
     AuctionHouse,
+    Expiry,
 }
 
 #[derive(Iden)]
@@ -126,6 +128,8 @@ pub struct ListQueryOptions {
     pub attributes: Option<Vec<AttributeFilter>>,
     /// nfts listed for sale
     pub listed: Option<bool>,
+    /// return nfts from unverified creators
+    pub allow_unverified: Option<bool>,
     /// nfts with active offers
     pub with_offers: Option<bool>,
     /// nft in one or more specific collections
@@ -190,12 +194,15 @@ pub fn list(
         offerers,
         attributes,
         listed,
+        allow_unverified,
         with_offers,
         collections,
         limit,
         offset,
     }: ListQueryOptions,
 ) -> Result<Vec<Nft>> {
+    let current_time = Utc::now().naive_utc();
+
     let mut listings_query = Query::select()
         .columns(vec![
             (Listings::Table, Listings::Metadata),
@@ -207,7 +214,12 @@ pub fn list(
         .cond_where(
             Condition::all()
                 .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
-                .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null()),
+                .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
+                .add(
+                    Expr::tbl(Listings::Table, Listings::Expiry)
+                        .is_null()
+                        .or(Expr::tbl(Listings::Table, Listings::Expiry).gt(current_time)),
+                ),
         )
         .take();
 
@@ -266,7 +278,7 @@ pub fn list(
                     CurrentMetadataOwners::OwnerAddress,
                 )),
         )
-        .and_where(Expr::col(Metadatas::Burned).eq(false))
+        .and_where(Expr::col(Metadatas::BurnedAt).is_null())
         .limit(limit)
         .offset(offset)
         .order_by((Listings::Table, Listings::Price), Order::Asc)
@@ -292,7 +304,13 @@ pub fn list(
                     .equals(MetadataCreators::Table, MetadataCreators::MetadataAddress),
             )
             .and_where(Expr::col(MetadataCreators::CreatorAddress).is_in(creators))
-            .and_where(Expr::col(MetadataCreators::Verified).eq(true));
+            .conditions(
+                allow_unverified != Some(true),
+                |q| {
+                    q.and_where(Expr::col(MetadataCreators::Verified).eq(true));
+                },
+                |_| {},
+            );
     }
 
     if let Some(listed) = listed {
@@ -318,13 +336,23 @@ pub fn list(
             offers_conditions = offers_conditions
                 .add(Expr::col((Offers::Table, Offers::Buyer)).is_in(offerers))
                 .add(Expr::tbl(Offers::Table, Offers::PurchaseId).is_null())
-                .add(Expr::tbl(Offers::Table, Offers::CanceledAt).is_null());
+                .add(Expr::tbl(Offers::Table, Offers::CanceledAt).is_null())
+                .add(
+                    Expr::tbl(Offers::Table, Offers::Expiry)
+                        .is_null()
+                        .or(Expr::tbl(Offers::Table, Offers::Expiry).gt(current_time)),
+                );
         }
 
         if with_offers {
             offers_conditions = offers_conditions
                 .add(Expr::tbl(Offers::Table, Offers::PurchaseId).is_null())
-                .add(Expr::tbl(Offers::Table, Offers::CanceledAt).is_null());
+                .add(Expr::tbl(Offers::Table, Offers::CanceledAt).is_null())
+                .add(
+                    Expr::tbl(Offers::Table, Offers::Expiry)
+                        .is_null()
+                        .or(Expr::tbl(Offers::Table, Offers::Expiry).gt(current_time)),
+                );
         }
 
         let mut offers_query = Query::select()
@@ -399,7 +427,7 @@ pub fn list(
 }
 
 const ACTIVITES_QUERY: &str = r"
-    SELECT listings.id as id, metadata, auction_house, price, auction_house, created_at,
+SELECT listings.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[seller] as wallets,
     array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
     'listing' as activity_type
@@ -407,7 +435,7 @@ const ACTIVITES_QUERY: &str = r"
         LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
         WHERE metadata = ANY($1)
     UNION
-    SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at,
+    SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[seller, buyer] as wallets,
     array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
     'purchase' as activity_type
@@ -416,7 +444,7 @@ const ACTIVITES_QUERY: &str = r"
         LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
         WHERE metadata = ANY($1)
     UNION
-    SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at,
+    SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[buyer] as wallets,
     array[bth.twitter_handle] as wallet_twitter_handles,
     'offer' as activity_type
