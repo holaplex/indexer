@@ -1,4 +1,7 @@
-use indexer_core::db::custom_types::{EndSettingType, WhitelistMintMode};
+use indexer_core::{
+    base64,
+    db::custom_types::{EndSettingType, WhitelistMintMode},
+};
 use objects::wallet::Wallet;
 use scalars::{PublicKey, U64};
 
@@ -229,21 +232,19 @@ pub struct CandyMachineCollectionPda {
     pub mint: PublicKey<TokenMint>,
 }
 
-impl<'a> TryFrom<models::CMCollectionPDA<'a>> for CandyMachineCollectionPda {
-    type Error = std::num::TryFromIntError;
-
-    fn try_from(
+impl<'a> From<models::CMCollectionPDA<'a>> for CandyMachineCollectionPda {
+    fn from(
         models::CMCollectionPDA {
             address,
             mint,
             candy_machine,
         }: models::CMCollectionPDA,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             candy_machine_address: candy_machine.into(),
             collection_pda: address.into(),
             mint: mint.into(),
-        })
+        }
     }
 }
 
@@ -355,14 +356,8 @@ pub struct CandyMachineHiddenSetting {
     pub candy_machine_address: PublicKey<CandyMachine>,
     pub name: String,
     pub uri: String,
-    #[graphql(description = "lowercase hex string of the hash bytes")]
+    #[graphql(description = "lowercase base64 encoded string of the hash bytes")]
     pub hash: String,
-}
-
-// TODO(will): is there a builtin for this?
-pub fn to_hex_string(bytes: Vec<u8>) -> String {
-    let strs: Vec<String> = bytes.iter().map(|b| format!("{:02x}", b)).collect();
-    strs.join("")
 }
 
 impl<'a> TryFrom<models::CMHiddenSetting<'a>> for CandyMachineHiddenSetting {
@@ -380,7 +375,7 @@ impl<'a> TryFrom<models::CMHiddenSetting<'a>> for CandyMachineHiddenSetting {
             candy_machine_address: candy_machine_address.into(),
             name: name.into_owned(),
             uri: uri.into_owned(),
-            hash: to_hex_string(hash),
+            hash: base64::encode_config(hash, base64::STANDARD_NO_PAD),
         })
     }
 }
