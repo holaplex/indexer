@@ -38,44 +38,36 @@ fn load_account_dump<P: AsRef<Path>>(filename: P) -> Vec<u8> {
 #[cfg_attr(not(feature = "test-internal"), ignore)]
 #[cfg_attr(not(feature = "geyser"), ignore)]
 async fn test_can_deser_candy_machine() {
-    let data_dir = get_data_dir();
-    let filename = "AoHidoffmkL4xURViNgbA4YyeDw82FAYUZfomL3X5BoU.dmp";
-    // let filename = "FhrVJL4xKNmAY53Bm5XJNqJwvBomDuDH7HGDdicgbkZY.dmp";
-    let data = load_account_dump(filename);
-    let cm: CandyMachine = CandyMachine::try_deserialize(&mut data.as_slice()).unwrap();
-    println!("Candy Machine: {}", filename);
-    println!("Items Available: {:?}", cm.data.items_available);
-    println!("Items Redeemed: {:?}", cm.items_redeemed);
-    // println!("Symbol: {:?}", cm.data.symbol);
-    let config_lines = holaplex_indexer::geyser::programs::candy_machine::parse_cm_config_lines(
-        &data,
-        cm.data.items_available as usize,
-    )
-    .unwrap();
+    let filenames = [
+        "FhrVJL4xKNmAY53Bm5XJNqJwvBomDuDH7HGDdicgbkZY.dmp",
+        "AoHidoffmkL4xURViNgbA4YyeDw82FAYUZfomL3X5BoU.dmp",
+        "piA76RvvmCt7UWEmJSBVA6xMoXqwvEAELwJoqeHK6i3.dmp",
+        "FsqgJVhKydM73N6TRubx1JUMhbccmwnQhZHzZQKiuJ1.dmp",
+        "CMyRRHXkL4uJ78pzXq8wFDD3wv8jQBxuW27p2xzG3UBV.dmp",
+        "2drzAbbL7AZPASmXQp7Qk5jdr4GXXbbLPgMhUhn5j5xd.dmp",
+        "CiBuYi3W3aVQbMWcjvfKBpwjHS6fViuuxQdSUUqkjkn4.dmp",
+    ];
 
-    for (idx, line) in config_lines.iter().enumerate() {
-        match line {
-            Some(config_line) => {
-                println!(
-                    "{:?} : {:?},{:?}",
-                    idx,
-                    config_line.name.trim_matches(char::from(0)),
-                    config_line.uri.trim_matches(char::from(0))
-                )
-            },
-            None => println!("{:?} : ", idx),
-        }
+    for filename in filenames {
+        println!("\n---------------------------------------------");
+        println!("Reading Candy Machine {:?}", filename);
+        let data = load_account_dump(filename);
+        let cm: CandyMachine = CandyMachine::try_deserialize(&mut data.as_slice()).unwrap();
+        println!("Candy Machine: {}", filename);
+        println!("Items Available: {:?}", cm.data.items_available);
+        println!("Items Redeemed: {:?}", cm.items_redeemed);
+
+        holaplex_indexer::geyser::programs::candy_machine::dump_cm_config_lines(
+            &data,
+            cm.data.items_available as usize,
+        );
+
+        holaplex_indexer::geyser::programs::candy_machine::check_for_bitmask_containing_n_ones(
+            &data,
+            cm.data.items_available as usize,
+            cm.items_redeemed,
+        );
     }
-    // assert_matches!(Ok(_), config_lines);
 
-    // assert_eq(cm.data.items_available, 75);
-    // assert_eq(cm.data.symbol, "CLHP\u{0}\u{0}\u{0}\u{0}\u{0}\u{0}");
-    // assert_eq(cm.data.)
-
-    // holaplex_indexer::geyser::programs::candy_machine::parse_cm_config_lines(&data);
-    // let (cm, config_lines) = deser_cm;
-    // let candy_machine = CandyMachine::try_deserialize(&mut data.as_slice())?;
-    println!("{:?}", data_dir);
-    println!("{:?}", data.len());
     assert_eq!(1, 2);
 }
