@@ -89,7 +89,6 @@ pub struct AppContext {
     pub store_auction_houses_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
     pub storefront_loader: Loader<PublicKey<Storefront>, Option<Storefront>>,
-
     pub twitter_handle_loader: Loader<PublicKey<Wallet>, Option<String>>,
 
     // Twitter dataloaders
