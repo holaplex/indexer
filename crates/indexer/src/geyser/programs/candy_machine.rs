@@ -3,7 +3,6 @@ use arrayref::array_ref;
 use mpl_candy_machine::{
     CandyMachine, CollectionPDA, ConfigLine, CONFIG_ARRAY_START, CONFIG_LINE_SIZE,
 };
-use mpl_token_metadata::state::{MAX_NAME_LENGTH, MAX_URI_LENGTH};
 
 use super::{accounts::candy_machine, AccountUpdate, Client};
 use crate::prelude::*;
@@ -13,7 +12,7 @@ const COLLECTION_PDA_SIZE: usize = 8 + 64;
 /// parse config lines out of raw candy machine accounts data
 /// lines that are not "available" are ignored (this would occur if the config lines are in the process
 /// of being added, or failed to be added for whatever reason)
-/// returns a vector containing tuples: (config_line, index, taken)
+/// returns a vector containing tuples: (`config_line`, index, taken)
 ///
 /// it is important that this not be called if the candy machine has hidden settings
 pub fn parse_cm_config_lines(

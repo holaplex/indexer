@@ -22,7 +22,6 @@ use mpl_candy_machine::{
     CandyMachine, CandyMachineData, CollectionPDA, ConfigLine, Creator, EndSettingType,
     EndSettings, GatekeeperConfig, HiddenSettings, WhitelistMintMode, WhitelistMintSettings,
 };
-use solana_program::config;
 
 use super::Client;
 use crate::prelude::*;
@@ -62,7 +61,7 @@ pub(crate) async fn process(
     ];
 
     if let Some(config_lines) = config_lines {
-        futures.push(Box::pin(process_config_lines(client, key, config_lines)))
+        futures.push(Box::pin(process_config_lines(client, key, config_lines)));
     }
 
     if let Some(es) = candy_machine.data.end_settings {
@@ -93,12 +92,12 @@ async fn process_config_lines(
 ) -> Result<()> {
     let mut db_config_lines: Vec<CMConfigLine> = Vec::new();
 
-    for config_line in config_lines.iter() {
+    for config_line in &config_lines {
         let db_config_line = CMConfigLine {
             candy_machine_address: Owned(bs58::encode(key).into_string()),
             name: Owned(config_line.0.name.trim_matches(char::from(0)).to_owned()),
             uri: Owned(config_line.0.uri.trim_matches(char::from(0)).to_owned()),
-            idx: config_line.1 as i32,
+            idx: i32::try_from(config_line.1).unwrap_or(-1i32),
             taken: config_line.2,
         };
         db_config_lines.push(db_config_line);
@@ -108,7 +107,7 @@ async fn process_config_lines(
         .db()
         .run(move |db| {
             db.build_transaction().read_write().run(|| {
-                for cl in db_config_lines.iter() {
+                for cl in &db_config_lines {
                     insert_into(candy_machine_config_lines::table)
                         .values(cl)
                         .on_conflict((

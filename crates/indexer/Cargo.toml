@@ -14,7 +14,7 @@ keywords = ["solana", "metaplex", "holaplex", "web3"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [features]
-default = []
+default = ["geyser", "http", "reqwest-client", "search", "search-dispatch"]
 geyser = [
   "genostub",
   "reqwest-client",
