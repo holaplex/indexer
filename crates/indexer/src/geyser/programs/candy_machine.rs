@@ -17,7 +17,7 @@ const COLLECTION_PDA_SIZE: usize = 8 + 64;
 ///
 /// it is important that this not be called if the candy machine has hidden settings
 pub fn parse_cm_config_lines(
-    data: &Vec<u8>,
+    data: &[u8],
     items_available: usize,
 ) -> Vec<(ConfigLine, usize, bool)> {
     let config_line_start = CONFIG_ARRAY_START + 4;
@@ -68,7 +68,7 @@ pub fn parse_cm_config_lines(
         }
     }
 
-    return config_lines;
+    config_lines
 }
 
 pub async fn process_collection_pda(client: &Client, update: AccountUpdate) -> Result<()> {
@@ -84,12 +84,13 @@ pub async fn process_cm(client: &Client, update: AccountUpdate) -> Result<()> {
 
     let items_available = usize::try_from(candy_machine.data.items_available);
     // TODO(will): log warning if conversion fails
-    if candy_machine.data.hidden_settings.is_none() && items_available.is_ok() {
-        // config lines are only used when hidden settings are not used
-        let config_lines = parse_cm_config_lines(&update.data, items_available.unwrap());
-        candy_machine::process(client, update.key, candy_machine, Some(config_lines)).await
-    } else {
-        candy_machine::process(client, update.key, candy_machine, None).await
+
+    match (items_available, candy_machine.data.hidden_settings) {
+        (Ok(items_available), None) => {
+            let config_lines = parse_cm_config_lines(&update.data, items_available);
+            candy_machine::process(client, update.key, candy_machine, Some(config_lines)).await
+        },
+        _ => candy_machine::process(client, update.key, candy_machine, None).await,
     }
 }
 
