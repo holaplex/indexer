@@ -2,13 +2,13 @@ use indexer_core::db::custom_types::{
     InstructionExecutionFlagsEnum, MintMaxVoteEnum, OptionVoteResultEnum, ProposalStateEnum,
     ProposalVoteTypeEnum, VoteRecordV2VoteEnum, VoteThresholdEnum, VoteTippingEnum,
 };
+use objects::wallet::Wallet;
 use scalars::{
     markers::{GovernanceDelegate, GovernedAccount, TokenMint},
     PublicKey, I64,
 };
 
 use super::prelude::*;
-use crate::schema::objects::wallet::Wallet;
 
 #[derive(Debug, Clone)]
 pub struct Governance {
@@ -42,14 +42,14 @@ impl Governance {
         &self,
         ctx: &AppContext,
     ) -> FieldResult<Option<GovernanceConfig>> {
-        ctx.governance_config_loader
+        ctx.spl_governance_config_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
     }
 
     pub async fn realm(&self, ctx: &AppContext) -> FieldResult<Option<Realm>> {
-        ctx.realm_loader
+        ctx.spl_realm_loader
             .load(self.realm.clone())
             .await
             .map_err(Into::into)
@@ -78,7 +78,7 @@ impl<'a> TryFrom<models::Governance<'a>> for Governance {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, GraphQLObject)]
 pub struct GovernanceConfig {
     pub governance_address: PublicKey<Governance>,
     pub vote_threshold_type: VoteThreshold,
@@ -91,49 +91,8 @@ pub struct GovernanceConfig {
     pub min_council_weight_to_create_proposal: I64,
 }
 
-#[graphql_object(Context = AppContext)]
-#[graphql(description = "SPL Governance Config")]
-impl GovernanceConfig {
-    fn governance_address(&self) -> &PublicKey<Governance> {
-        &self.governance_address
-    }
-
-    fn vote_threshold_type(&self) -> &VoteThreshold {
-        &self.vote_threshold_type
-    }
-
-    fn vote_threshold_percentage(&self) -> i32 {
-        self.vote_threshold_percentage
-    }
-
-    pub fn min_community_weight_to_create_proposal(&self) -> &I64 {
-        &self.min_community_weight_to_create_proposal
-    }
-
-    pub fn min_instruction_hold_up_time(&self) -> &I64 {
-        &self.min_instruction_hold_up_time
-    }
-
-    pub fn max_voting_time(&self) -> &I64 {
-        &self.max_voting_time
-    }
-
-    pub fn vote_tipping(&self) -> &VoteTipping {
-        &self.vote_tipping
-    }
-
-    pub fn proposal_cool_off_time(&self) -> &I64 {
-        &self.proposal_cool_off_time
-    }
-
-    pub fn min_council_weight_to_create_proposal(&self) -> &I64 {
-        &self.min_council_weight_to_create_proposal
-    }
-}
-
-impl<'a> TryFrom<models::GovernanceConfig<'a>> for GovernanceConfig {
-    type Error = std::num::TryFromIntError;
-    fn try_from(
+impl<'a> From<models::GovernanceConfig<'a>> for GovernanceConfig {
+    fn from(
         models::GovernanceConfig {
             governance_address,
             vote_threshold_type,
@@ -146,8 +105,8 @@ impl<'a> TryFrom<models::GovernanceConfig<'a>> for GovernanceConfig {
             min_council_weight_to_create_proposal,
             ..
         }: models::GovernanceConfig,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             governance_address: governance_address.into_owned().into(),
             vote_threshold_type: vote_threshold_type.into(),
             vote_threshold_percentage: vote_threshold_percentage.into(),
@@ -157,7 +116,7 @@ impl<'a> TryFrom<models::GovernanceConfig<'a>> for GovernanceConfig {
             vote_tipping: vote_tipping.into(),
             proposal_cool_off_time: proposal_cool_off_time.into(),
             min_council_weight_to_create_proposal: min_council_weight_to_create_proposal.into(),
-        })
+        }
     }
 }
 
@@ -226,7 +185,7 @@ impl Realm {
     }
 
     pub async fn realm_config(&self, ctx: &AppContext) -> FieldResult<Option<RealmConfig>> {
-        ctx.realm_config_loader
+        ctx.spl_realm_config_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
@@ -255,7 +214,7 @@ impl<'a> TryFrom<models::Realm<'a>> for Realm {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, GraphQLObject)]
 pub struct RealmConfig {
     pub realm_address: PublicKey<Realm>,
     pub use_community_voter_weight_addin: bool,
@@ -266,41 +225,8 @@ pub struct RealmConfig {
     pub council_mint: Option<PublicKey<TokenMint>>,
 }
 
-#[graphql_object(Context = AppContext)]
-#[graphql(description = "SPLGovernance Realm Config")]
-impl RealmConfig {
-    fn realm_address(&self) -> &PublicKey<Realm> {
-        &self.realm_address
-    }
-
-    fn use_community_voter_weight_addin(&self) -> bool {
-        self.use_community_voter_weight_addin
-    }
-
-    fn use_max_community_voter_weight_addin(&self) -> bool {
-        self.use_max_community_voter_weight_addin
-    }
-
-    pub fn min_community_weight_to_create_governance(&self) -> &I64 {
-        &self.min_community_weight_to_create_governance
-    }
-
-    pub fn community_mint_max_vote_weight_source(&self) -> &MintMaxVoteWeightSource {
-        &self.community_mint_max_vote_weight_source
-    }
-
-    pub fn community_mint_max_vote_weight(&self) -> &I64 {
-        &self.community_mint_max_vote_weight
-    }
-
-    pub fn council_mint(&self) -> &Option<PublicKey<TokenMint>> {
-        &self.council_mint
-    }
-}
-
-impl<'a> TryFrom<models::RealmConfig<'a>> for RealmConfig {
-    type Error = std::num::TryFromIntError;
-    fn try_from(
+impl<'a> From<models::RealmConfig<'a>> for RealmConfig {
+    fn from(
         models::RealmConfig {
             realm_address,
             use_community_voter_weight_addin,
@@ -311,8 +237,8 @@ impl<'a> TryFrom<models::RealmConfig<'a>> for RealmConfig {
             council_mint,
             ..
         }: models::RealmConfig,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             realm_address: realm_address.into_owned().into(),
             use_community_voter_weight_addin,
             use_max_community_voter_weight_addin,
@@ -321,7 +247,7 @@ impl<'a> TryFrom<models::RealmConfig<'a>> for RealmConfig {
             community_mint_max_vote_weight_source: community_mint_max_vote_weight_source.into(),
             community_mint_max_vote_weight: community_mint_max_vote_weight.into(),
             council_mint: council_mint.map(Into::into),
-        })
+        }
     }
 }
 
@@ -382,14 +308,14 @@ impl VoteRecord {
     }
 
     pub async fn approve_vote_choices(&self, ctx: &AppContext) -> FieldResult<Vec<VoteChoice>> {
-        ctx.approve_vote_choices_loader
+        ctx.spl_approve_vote_choices_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
     }
 
     pub async fn proposal(&self, ctx: &AppContext) -> FieldResult<Option<Proposal>> {
-        ctx.proposal_loader
+        ctx.spl_proposal_loader
             .load(self.proposal.clone())
             .await
             .map_err(Into::into)
@@ -399,16 +325,15 @@ impl VoteRecord {
         &self,
         ctx: &AppContext,
     ) -> FieldResult<Vec<TokenOwnerRecord>> {
-        ctx.vote_record_token_owner_loader
+        ctx.spl_vote_record_token_owner_loader
             .load(self.governing_token_owner.clone())
             .await
             .map_err(Into::into)
     }
 }
 
-impl<'a> TryFrom<models::VoteRecordV2<'a>> for VoteRecord {
-    type Error = std::num::TryFromIntError;
-    fn try_from(
+impl<'a> From<models::VoteRecordV2<'a>> for VoteRecord {
+    fn from(
         models::VoteRecordV2 {
             address,
             proposal,
@@ -418,15 +343,15 @@ impl<'a> TryFrom<models::VoteRecordV2<'a>> for VoteRecord {
             vote,
             ..
         }: models::VoteRecordV2,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             address: address.into_owned().into(),
             proposal: proposal.into_owned().into(),
             governing_token_owner: governing_token_owner.into_owned().into(),
             is_relinquished,
             voter_weight: voter_weight.into(),
             vote: vote.into(),
-        })
+        }
     }
 }
 
@@ -441,44 +366,27 @@ impl From<VoteRecordV2VoteEnum> for Vote {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, GraphQLObject)]
 pub struct VoteChoice {
     pub address: PublicKey<VoteRecord>,
     pub rank: i32,
     pub weight_percentage: i32,
 }
 
-#[graphql_object(Context = AppContext)]
-#[graphql(description = "Approve Vote VoteChoice")]
-impl VoteChoice {
-    fn address(&self) -> &PublicKey<VoteRecord> {
-        &self.address
-    }
-
-    fn rank(&self) -> i32 {
-        self.rank
-    }
-
-    fn weight_percentage(&self) -> i32 {
-        self.weight_percentage
-    }
-}
-
-impl<'a> TryFrom<models::VoteChoice<'a>> for VoteChoice {
-    type Error = std::num::TryFromIntError;
-    fn try_from(
+impl<'a> From<models::VoteChoice<'a>> for VoteChoice {
+    fn from(
         models::VoteChoice {
             vote_record_v2_address,
             rank,
             weight_percentage,
             ..
         }: models::VoteChoice,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             address: vote_record_v2_address.into_owned().into(),
             rank: rank.into(),
             weight_percentage: weight_percentage.into(),
-        })
+        }
     }
 }
 
@@ -531,16 +439,15 @@ impl TokenOwnerRecord {
     }
 
     pub async fn realm(&self, ctx: &AppContext) -> FieldResult<Option<Realm>> {
-        ctx.realm_loader
+        ctx.spl_realm_loader
             .load(self.realm.clone())
             .await
             .map_err(Into::into)
     }
 }
 
-impl<'a> TryFrom<models::TokenOwnerRecordV2<'a>> for TokenOwnerRecord {
-    type Error = std::num::TryFromIntError;
-    fn try_from(
+impl<'a> From<models::TokenOwnerRecordV2<'a>> for TokenOwnerRecord {
+    fn from(
         models::TokenOwnerRecordV2 {
             address,
             realm,
@@ -553,8 +460,8 @@ impl<'a> TryFrom<models::TokenOwnerRecordV2<'a>> for TokenOwnerRecord {
             governance_delegate,
             ..
         }: models::TokenOwnerRecordV2,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             address: address.into_owned().into(),
             realm: realm.into_owned().into(),
             governing_token_mint: governing_token_mint.into_owned().into(),
@@ -564,7 +471,7 @@ impl<'a> TryFrom<models::TokenOwnerRecordV2<'a>> for TokenOwnerRecord {
             total_votes_count: total_votes_count.into(),
             outstanding_proposal_count: outstanding_proposal_count.into(),
             governance_delegate: governance_delegate.map(Into::into),
-        })
+        }
     }
 }
 
@@ -592,16 +499,15 @@ impl SignatoryRecord {
     }
 
     pub async fn proposal(&self, ctx: &AppContext) -> FieldResult<Option<Proposal>> {
-        ctx.proposal_loader
+        ctx.spl_proposal_loader
             .load(self.proposal.clone())
             .await
             .map_err(Into::into)
     }
 }
 
-impl<'a> TryFrom<models::SignatoryRecordV2<'a>> for SignatoryRecord {
-    type Error = std::num::TryFromIntError;
-    fn try_from(
+impl<'a> From<models::SignatoryRecordV2<'a>> for SignatoryRecord {
+    fn from(
         models::SignatoryRecordV2 {
             address,
             proposal,
@@ -609,13 +515,13 @@ impl<'a> TryFrom<models::SignatoryRecordV2<'a>> for SignatoryRecord {
             signed_off,
             ..
         }: models::SignatoryRecordV2,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             address: address.into_owned().into(),
             proposal: proposal.into_owned().into(),
             signatory: signatory.into_owned().into(),
             signed_off,
-        })
+        }
     }
 }
 
@@ -749,14 +655,14 @@ impl Proposal {
     }
 
     pub async fn multi_choice(&self, ctx: &AppContext) -> FieldResult<Option<MultiChoice>> {
-        ctx.proposal_multi_choice_loader
+        ctx.spl_proposal_multi_choice_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
     }
 
     pub async fn governance(&self, ctx: &AppContext) -> FieldResult<Option<Governance>> {
-        ctx.governance_loader
+        ctx.spl_governance_loader
             .load(self.governance.clone())
             .await
             .map_err(Into::into)
@@ -766,23 +672,22 @@ impl Proposal {
         &self,
         ctx: &AppContext,
     ) -> FieldResult<Option<TokenOwnerRecord>> {
-        ctx.token_owner_record_loader
+        ctx.spl_token_owner_record_loader
             .load(self.token_owner_record.clone())
             .await
             .map_err(Into::into)
     }
 
     pub async fn proposal_options(&self, ctx: &AppContext) -> FieldResult<Vec<ProposalOption>> {
-        ctx.proposal_options_loader
+        ctx.spl_proposal_options_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
     }
 }
 
-impl<'a> TryFrom<models::ProposalV2<'a>> for Proposal {
-    type Error = std::num::TryFromIntError;
-    fn try_from(
+impl<'a> From<models::ProposalV2<'a>> for Proposal {
+    fn from(
         models::ProposalV2 {
             address,
             governance,
@@ -812,8 +717,8 @@ impl<'a> TryFrom<models::ProposalV2<'a>> for Proposal {
             description_link,
             ..
         }: models::ProposalV2,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             address: address.into_owned().into(),
             governance: governance.into_owned().into(),
             governing_token_mint: governing_token_mint.into_owned().into(),
@@ -840,7 +745,7 @@ impl<'a> TryFrom<models::ProposalV2<'a>> for Proposal {
             vote_threshold_percentage: vote_threshold_percentage.map(Into::into),
             name: name.into_owned(),
             description_link: description_link.into_owned(),
-        })
+        }
     }
 }
 
@@ -894,19 +799,18 @@ pub struct MultiChoice {
     max_winning_options: i32,
 }
 
-impl<'a> TryFrom<models::MultiChoice<'a>> for MultiChoice {
-    type Error = std::num::TryFromIntError;
-    fn try_from(
+impl<'a> From<models::MultiChoice<'a>> for MultiChoice {
+    fn from(
         models::MultiChoice {
             max_voter_options,
             max_winning_options,
             ..
         }: models::MultiChoice,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             max_voter_options: max_voter_options.into(),
             max_winning_options: max_winning_options.into(),
-        })
+        }
     }
 }
 
@@ -929,7 +833,7 @@ impl From<InstructionExecutionFlagsEnum> for InstructionExecutionFlags {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, GraphQLObject)]
 pub struct ProposalOption {
     pub proposal_address: PublicKey<Proposal>,
     pub label: String,
@@ -940,41 +844,8 @@ pub struct ProposalOption {
     pub transactions_next_index: i32,
 }
 
-#[graphql_object(Context = AppContext)]
-#[graphql(description = "SPLGovernance Proposal option")]
-impl ProposalOption {
-    fn proposal_address(&self) -> &PublicKey<Proposal> {
-        &self.proposal_address
-    }
-
-    fn label(&self) -> &str {
-        &self.label
-    }
-
-    fn vote_weight(&self) -> &I64 {
-        &self.vote_weight
-    }
-
-    fn vote_result(&self) -> &OptionVoteResult {
-        &self.vote_result
-    }
-
-    fn transactions_executed_count(&self) -> i32 {
-        self.transactions_executed_count
-    }
-
-    fn transactions_count(&self) -> i32 {
-        self.transactions_count
-    }
-
-    fn transactions_next_index(&self) -> i32 {
-        self.transactions_next_index
-    }
-}
-
-impl<'a> TryFrom<models::ProposalOption<'a>> for ProposalOption {
-    type Error = std::num::TryFromIntError;
-    fn try_from(
+impl<'a> From<models::ProposalOption<'a>> for ProposalOption {
+    fn from(
         models::ProposalOption {
             proposal_address,
             label,
@@ -985,8 +856,8 @@ impl<'a> TryFrom<models::ProposalOption<'a>> for ProposalOption {
             transactions_next_index,
             ..
         }: models::ProposalOption,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             proposal_address: proposal_address.into_owned().into(),
             label: label.into_owned(),
             vote_weight: vote_weight.into(),
@@ -994,7 +865,7 @@ impl<'a> TryFrom<models::ProposalOption<'a>> for ProposalOption {
             transactions_executed_count: transactions_executed_count.into(),
             transactions_count: transactions_count.into(),
             transactions_next_index: transactions_next_index.into(),
-        })
+        }
     }
 }
 

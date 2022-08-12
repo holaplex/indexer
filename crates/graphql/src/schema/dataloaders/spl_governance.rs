@@ -1,6 +1,9 @@
-use objects::spl_governance::{
-    Governance, GovernanceConfig, MultiChoice, Proposal, ProposalOption, Realm, RealmConfig,
-    TokenOwnerRecord, VoteChoice, VoteRecord,
+use objects::{
+    spl_governance::{
+        Governance, GovernanceConfig, MultiChoice, Proposal, ProposalOption, Realm, RealmConfig,
+        TokenOwnerRecord, VoteChoice, VoteRecord,
+    },
+    wallet::Wallet,
 };
 use scalars::PublicKey;
 use tables::{
@@ -10,7 +13,6 @@ use tables::{
 };
 
 use super::prelude::*;
-use crate::schema::objects::wallet::Wallet;
 
 #[async_trait]
 impl TryBatchFn<PublicKey<VoteRecord>, Vec<VoteChoice>> for Batcher {
