@@ -46,6 +46,19 @@ pub struct AppContext {
     pub auction_houses_loader: Loader<PublicKey<StoreConfig>, Vec<AuctionHouse>>,
     pub bid_receipt_loader: Loader<PublicKey<BidReceipt>, Option<BidReceipt>>,
     pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
+    pub candymachine_collection_pda_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineCollectionPda>>,
+    pub candymachine_config_line_loader:
+        Loader<PublicKey<CandyMachine>, Vec<CandyMachineConfigLine>>,
+    pub candymachine_creator_loader: Loader<PublicKey<CandyMachine>, Vec<CandyMachineCreator>>,
+    pub candymachine_end_settings_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineEndSetting>>,
+    pub candymachine_gatekeeper_configs_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineGateKeeperConfig>>,
+    pub candymachine_hidden_settings_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineHiddenSetting>>,
+    pub candymachine_whitelist_mint_settings_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineWhitelistMintSetting>>,
     pub collection_count_loader: Loader<PublicKey<StoreCreator>, Option<i32>>,
     pub collection_floor_price_loader: Loader<PublicKey<Collection>, Option<CollectionFloorPrice>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
@@ -76,22 +89,10 @@ pub struct AppContext {
     pub store_auction_houses_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
     pub storefront_loader: Loader<PublicKey<Storefront>, Option<Storefront>>,
-    pub candymachine_creator_loader: Loader<PublicKey<CandyMachine>, Vec<CandyMachineCreator>>,
-    pub candymachine_collection_pda_loader:
-        Loader<PublicKey<CandyMachine>, Option<CandyMachineCollectionPda>>,
-    pub candymachine_config_line_loader:
-        Loader<PublicKey<CandyMachine>, Vec<CandyMachineConfigLine>>,
-    pub candymachine_end_settings_loader:
-        Loader<PublicKey<CandyMachine>, Option<CandyMachineEndSetting>>,
-    pub candymachine_whitelist_mint_settings_loader:
-        Loader<PublicKey<CandyMachine>, Option<CandyMachineWhitelistMintSetting>>,
-    pub candymachine_hidden_settings_loader:
-        Loader<PublicKey<CandyMachine>, Option<CandyMachineHiddenSetting>>,
-    pub candymachine_gatekeeper_configs_loader:
-        Loader<PublicKey<CandyMachine>, Option<CandyMachineGateKeeperConfig>>,
+
+    pub twitter_handle_loader: Loader<PublicKey<Wallet>, Option<String>>,
 
     // Twitter dataloaders
-    pub twitter_handle_loader: Loader<PublicKey<Wallet>, Option<String>>,
     pub twitter_profile_loader: Loader<String, Option<TwitterProfile>, TwitterBatcher>,
 }
 
@@ -111,6 +112,13 @@ impl AppContext {
             auction_houses_loader: Loader::new(batcher.clone()),
             bid_receipt_loader: Loader::new(batcher.clone()),
             bid_receipts_loader: Loader::new(batcher.clone()),
+            candymachine_collection_pda_loader: Loader::new(batcher.clone()),
+            candymachine_config_line_loader: Loader::new(batcher.clone()),
+            candymachine_creator_loader: Loader::new(batcher.clone()),
+            candymachine_end_settings_loader: Loader::new(batcher.clone()),
+            candymachine_gatekeeper_configs_loader: Loader::new(batcher.clone()),
+            candymachine_hidden_settings_loader: Loader::new(batcher.clone()),
+            candymachine_whitelist_mint_settings_loader: Loader::new(batcher.clone()),
             collection_count_loader: Loader::new(batcher.clone()),
             collection_floor_price_loader: Loader::new(batcher.clone()),
             collection_loader: Loader::new(batcher.clone()),
@@ -141,14 +149,8 @@ impl AppContext {
             store_auction_houses_loader: Loader::new(batcher.clone()),
             store_creator_loader: Loader::new(batcher.clone()),
             storefront_loader: Loader::new(batcher.clone()),
-            candymachine_creator_loader: Loader::new(batcher.clone()),
-            candymachine_collection_pda_loader: Loader::new(batcher.clone()),
-            candymachine_config_line_loader: Loader::new(batcher.clone()),
-            candymachine_end_settings_loader: Loader::new(batcher.clone()),
-            candymachine_whitelist_mint_settings_loader: Loader::new(batcher.clone()),
-            candymachine_hidden_settings_loader: Loader::new(batcher.clone()),
-            candymachine_gatekeeper_configs_loader: Loader::new(batcher.clone()),
             twitter_handle_loader: Loader::new(batcher),
+
             twitter_profile_loader: Loader::new(twitter_batcher),
         }
     }
