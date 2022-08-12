@@ -14,6 +14,16 @@ array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
     FROM listings
     LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
     WHERE seller = $1
+    AND canceled_at IS NULL
+UNION
+SELECT listings.id as id, metadata, auction_house, price, auction_house, canceled_at as created_at,
+array[seller] as wallets,
+array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
+'cancel_listing' as activity_type
+    FROM listings
+    LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
+    WHERE seller = $1
+    AND canceled_at IS NOT NULL
 UNION
 SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at,
 array[seller, buyer] as wallets,
