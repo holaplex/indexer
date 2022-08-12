@@ -1,3 +1,4 @@
+use indexer_core::db::custom_types::{EndSettingType, WhitelistMintMode};
 use objects::wallet::Wallet;
 use scalars::{PublicKey, U64};
 
@@ -81,6 +82,7 @@ impl CandyMachine {
         &self.items_available
     }
 
+    #[graphql(description = "NOTE - this is currently bugged and will only return one creator")]
     pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<CandyMachineCreator>> {
         ctx.candymachine_creator_loader
             .load(self.address.clone())
@@ -98,8 +100,49 @@ impl CandyMachine {
             .map_err(Into::into)
     }
 
+    #[graphql(description = "NOTE - this is currently bugged and will always be empty")]
     pub async fn config_lines(&self, ctx: &AppContext) -> FieldResult<Vec<CandyMachineConfigLine>> {
         ctx.candymachine_config_line_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn end_setting(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<CandyMachineEndSetting>> {
+        ctx.candymachine_end_settings_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn whitelist_mint_setting(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<CandyMachineWhitelistMintSetting>> {
+        ctx.candymachine_whitelist_mint_settings_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn hidden_setting(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<CandyMachineHiddenSetting>> {
+        ctx.candymachine_hidden_settings_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn gate_keeper_config(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<CandyMachineGateKeeperConfig>> {
+        ctx.candymachine_gatekeeper_configs_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
@@ -229,6 +272,150 @@ impl<'a> From<models::CMConfigLine<'a>> for CandyMachineConfigLine {
             uri: uri.into_owned(),
             idx,
             taken,
+        }
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct CandyMachineEndSetting {
+    pub candy_machine_address: PublicKey<CandyMachine>,
+    pub end_setting_type: CandyMachineEndSettingType,
+    pub number: U64,
+}
+
+#[derive(Debug, Clone, juniper::GraphQLEnum)]
+pub enum CandyMachineEndSettingType {
+    Date,
+    Amount,
+}
+
+impl From<EndSettingType> for CandyMachineEndSettingType {
+    fn from(v: EndSettingType) -> Self {
+        match v {
+            EndSettingType::Date => CandyMachineEndSettingType::Date,
+            EndSettingType::Amount => CandyMachineEndSettingType::Amount,
+        }
+    }
+}
+
+impl<'a> TryFrom<models::CMEndSetting<'a>> for CandyMachineEndSetting {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::CMEndSetting {
+            candy_machine_address,
+            end_setting_type,
+            number,
+        }: models::CMEndSetting,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            candy_machine_address: candy_machine_address.into(),
+            end_setting_type: end_setting_type.into(),
+            number: number.try_into()?,
+        })
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct CandyMachineWhitelistMintSetting {
+    pub candy_machine_address: PublicKey<CandyMachine>,
+    pub mode: CandyMachineWhitelistMintMode,
+    pub mint: PublicKey<TokenMint>,
+    pub presale: bool,
+    pub discount_price: Option<U64>,
+}
+
+#[derive(Debug, Clone, juniper::GraphQLEnum)]
+pub enum CandyMachineWhitelistMintMode {
+    BurnEveryTime,
+    NeverBurn,
+}
+
+impl From<WhitelistMintMode> for CandyMachineWhitelistMintMode {
+    fn from(v: WhitelistMintMode) -> Self {
+        match v {
+            WhitelistMintMode::BurnEveryTime => CandyMachineWhitelistMintMode::BurnEveryTime,
+            WhitelistMintMode::NeverBurn => CandyMachineWhitelistMintMode::NeverBurn,
+        }
+    }
+}
+
+impl<'a> TryFrom<models::CMWhitelistMintSetting<'a>> for CandyMachineWhitelistMintSetting {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::CMWhitelistMintSetting {
+            candy_machine_address,
+            mode,
+            mint,
+            presale,
+            discount_price,
+        }: models::CMWhitelistMintSetting,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            candy_machine_address: candy_machine_address.into(),
+            mode: mode.into(),
+            mint: mint.into(),
+            presale,
+            discount_price: discount_price.map(U64::try_from).transpose()?,
+        })
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct CandyMachineHiddenSetting {
+    pub candy_machine_address: PublicKey<CandyMachine>,
+    pub name: String,
+    pub uri: String,
+    #[graphql(description = "lowercase hex string of the hash bytes")]
+    pub hash: String,
+}
+
+// TODO(will): is there a builtin for this?
+pub fn to_hex_string(bytes: Vec<u8>) -> String {
+    let strs: Vec<String> = bytes.iter().map(|b| format!("{:02x}", b)).collect();
+    strs.join("")
+}
+
+impl<'a> TryFrom<models::CMHiddenSetting<'a>> for CandyMachineHiddenSetting {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::CMHiddenSetting {
+            candy_machine_address,
+            name,
+            uri,
+            hash,
+        }: models::CMHiddenSetting,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            candy_machine_address: candy_machine_address.into(),
+            name: name.into_owned(),
+            uri: uri.into_owned(),
+            hash: to_hex_string(hash),
+        })
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct CandyMachineGateKeeperConfig {
+    pub candy_machine_address: PublicKey<CandyMachine>,
+    pub gatekeeper_network: String,
+    pub expire_on_use: bool,
+}
+
+impl<'a> From<models::CMGateKeeperConfig<'a>> for CandyMachineGateKeeperConfig {
+    fn from(
+        models::CMGateKeeperConfig {
+            candy_machine_address,
+            gatekeeper_network,
+            expire_on_use,
+        }: models::CMGateKeeperConfig,
+    ) -> Self {
+        Self {
+            candy_machine_address: candy_machine_address.into(),
+            gatekeeper_network: gatekeeper_network.into_owned(),
+            expire_on_use,
         }
     }
 }

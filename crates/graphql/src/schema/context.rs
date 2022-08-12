@@ -9,7 +9,10 @@ use objects::{
     ah_purchase::Purchase as AhPurchase,
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
-    candymachine::{CandyMachine, CandyMachineCreator},
+    candymachine::{
+        CandyMachine, CandyMachineCollectionPda, CandyMachineConfigLine, CandyMachineCreator,
+        CandyMachineEndSetting, CandyMachineWhitelistMintSetting,
+    },
     genopets::{GenoHabitat, GenoRentalAgreement},
     graph_connection::GraphConnection,
     listing::{Bid, Listing},
@@ -28,7 +31,7 @@ use scalars::{
 };
 
 use super::{
-    objects::candymachine::{CandyMachineCollectionPda, CandyMachineConfigLine},
+    objects::candymachine::{CandyMachineGateKeeperConfig, CandyMachineHiddenSetting},
     prelude::*,
 };
 
@@ -78,6 +81,14 @@ pub struct AppContext {
         Loader<PublicKey<CandyMachine>, Option<CandyMachineCollectionPda>>,
     pub candymachine_config_line_loader:
         Loader<PublicKey<CandyMachine>, Vec<CandyMachineConfigLine>>,
+    pub candymachine_end_settings_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineEndSetting>>,
+    pub candymachine_whitelist_mint_settings_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineWhitelistMintSetting>>,
+    pub candymachine_hidden_settings_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineHiddenSetting>>,
+    pub candymachine_gatekeeper_configs_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineGateKeeperConfig>>,
 
     // Twitter dataloaders
     pub twitter_handle_loader: Loader<PublicKey<Wallet>, Option<String>>,
@@ -133,6 +144,10 @@ impl AppContext {
             candymachine_creator_loader: Loader::new(batcher.clone()),
             candymachine_collection_pda_loader: Loader::new(batcher.clone()),
             candymachine_config_line_loader: Loader::new(batcher.clone()),
+            candymachine_end_settings_loader: Loader::new(batcher.clone()),
+            candymachine_whitelist_mint_settings_loader: Loader::new(batcher.clone()),
+            candymachine_hidden_settings_loader: Loader::new(batcher.clone()),
+            candymachine_gatekeeper_configs_loader: Loader::new(batcher.clone()),
             twitter_handle_loader: Loader::new(batcher),
             twitter_profile_loader: Loader::new(twitter_batcher),
         }

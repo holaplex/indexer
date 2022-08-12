@@ -3,6 +3,7 @@ pub mod ah_offer;
 pub mod ah_purchase;
 pub mod auction_house;
 pub mod bid_receipt;
+pub mod candymachine;
 pub mod collection;
 pub mod genopets;
 pub mod graph_connection;
@@ -14,7 +15,6 @@ pub mod stats;
 pub mod store_creator;
 pub mod storefront;
 pub mod wallet;
-pub mod candymachine;
 
 pub(self) mod batcher;
 
