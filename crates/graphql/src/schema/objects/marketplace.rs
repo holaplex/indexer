@@ -81,7 +81,7 @@ impl Marketplace {
 
     pub async fn auction_houses(&self, context: &AppContext) -> FieldResult<Vec<AuctionHouse>> {
         context
-            .auction_houses_loader
+            .store_auction_houses_loader
             .load(self.config_address.clone())
             .await
             .map_err(Into::into)
