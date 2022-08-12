@@ -1048,6 +1048,7 @@ table! {
         fetch_uri -> Text,
         slot -> Int8,
         write_version -> Int8,
+        name -> Nullable<Text>,
     }
 }
 
@@ -1070,7 +1071,7 @@ table! {
         edition_pda -> Varchar,
         token_standard -> Nullable<Token_standard>,
         slot -> Nullable<Int8>,
-        burned -> Bool,
+        burned_at -> Nullable<Timestamp>,
     }
 }
 

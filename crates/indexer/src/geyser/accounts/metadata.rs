@@ -49,7 +49,7 @@ pub(crate) async fn process(
             slot.try_into()
                 .context("Metadata slot was too big to store")?,
         ),
-        burned: false,
+        burned_at: None,
     };
 
     let first_verified_creator: Option<Pubkey> = meta

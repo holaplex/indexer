@@ -189,8 +189,8 @@ pub struct Metadata<'a> {
     pub token_standard: Option<TokenStandardEnum>,
     /// Solana slot number
     pub slot: Option<i64>,
-    /// Indicates whether the NFT was burned
-    pub burned: bool,
+    /// Timestamp when the NFT was burned
+    pub burned_at: Option<NaiveDateTime>,
 }
 
 /// A row in the `storefronts` table
@@ -506,6 +506,8 @@ pub struct MetadataJson<'a> {
     pub slot: i64,
     /// The write version of the most recent update for this account
     pub write_version: i64,
+    /// Metadata name
+    pub name: Option<Cow<'a, str>>,
 }
 
 /// A row in the `files` table

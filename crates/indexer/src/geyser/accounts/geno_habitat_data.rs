@@ -153,5 +153,7 @@ pub(crate) async fn process(
         process_rent(client, addr, rent, slot, write_version).await?;
     }
 
+    client.search().upsert_geno_habitat(false, key).await?;
+
     Ok(())
 }

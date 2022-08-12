@@ -21,8 +21,8 @@ COPY Cargo.toml Cargo.lock ./
 RUN cargo build --profile docker \
   --features " \
     holaplex-indexer/geyser, \
-    holaplex-indexer/http \
-    holaplex-indexer/search \
+    holaplex-indexer/http, \
+    holaplex-indexer/search, \
   " \
   --bin holaplex-indexer-geyser \
   --bin holaplex-indexer-http \
