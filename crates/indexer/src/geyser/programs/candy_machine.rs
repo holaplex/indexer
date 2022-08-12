@@ -78,16 +78,18 @@ pub async fn process_collection_pda(client: &Client, update: AccountUpdate) -> R
     candy_machine::process_collection_pda(client, update.key, collection_pda).await
 }
 
-pub async fn process_config_line(client: &Client, update: AccountUpdate) -> Result<()> {
-    let config_line: ConfigLine = ConfigLine::deserialize(&mut update.data.as_slice())
-        .context("Failed to deserialize config line")?;
+// pub async fn process_config_line(client: &Client, update: AccountUpdate) -> Result<()> {
+//     let config_line: ConfigLine = ConfigLine::deserialize(&mut update.data.as_slice())
+//         .context("Failed to deserialize config line")?;
 
-    candy_machine::process_config_line(client, update.key, config_line).await
-}
+//     candy_machine::process_config_line(client, update.key, config_line).await
+// }
 
 pub async fn process_cm(client: &Client, update: AccountUpdate) -> Result<()> {
     let candy_machine: CandyMachine = CandyMachine::try_deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize candy_machine")?;
+
+    let config_lines = parse_cm_config_lines(&data, candy_machine.data.items_available);
 
     candy_machine::process(client, update.key, candy_machine).await
 }
@@ -95,7 +97,6 @@ pub async fn process_cm(client: &Client, update: AccountUpdate) -> Result<()> {
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
     match update.data.len() {
         COLLECTION_PDA_SIZE => process_collection_pda(client, update).await,
-        CONFIG_LINE_SIZE => process_config_line(client, update).await,
         _ => process_cm(client, update).await,
     }
 }
