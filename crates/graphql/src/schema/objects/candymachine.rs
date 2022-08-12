@@ -267,7 +267,7 @@ impl<'a> From<models::CMConfigLine<'a>> for CandyMachineConfigLine {
         }: models::CMConfigLine,
     ) -> Self {
         Self {
-            candy_machine_address: address.into(),
+            candy_machine_address: candy_machine_address.into(),
             name: name.into_owned(),
             uri: uri.into_owned(),
             idx,
