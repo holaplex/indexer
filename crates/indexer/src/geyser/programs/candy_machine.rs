@@ -85,8 +85,11 @@ pub async fn process_cm(client: &Client, update: AccountUpdate) -> Result<()> {
     let items_available = usize::try_from(candy_machine.data.items_available);
     // TODO(will): log warning if conversion fails
 
-    match (items_available, candy_machine.data.hidden_settings) {
-        (Ok(items_available), None) => {
+    match (
+        items_available,
+        candy_machine.data.hidden_settings.is_none(),
+    ) {
+        (Ok(items_available), true) => {
             let config_lines = parse_cm_config_lines(&update.data, items_available);
             candy_machine::process(client, update.key, candy_machine, Some(config_lines)).await
         },
