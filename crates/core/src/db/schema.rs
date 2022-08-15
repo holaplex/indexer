@@ -1050,6 +1050,7 @@ table! {
         fetch_uri -> Text,
         slot -> Int8,
         write_version -> Int8,
+        name -> Nullable<Text>,
     }
 }
 

@@ -76,7 +76,7 @@ impl AhListing {
 
     pub async fn auction_house(&self, context: &AppContext) -> FieldResult<Option<AuctionHouse>> {
         context
-            .store_auction_houses_loader
+            .auction_house_loader
             .load(self.auction_house.clone())
             .await
             .map_err(Into::into)

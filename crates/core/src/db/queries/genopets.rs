@@ -23,7 +23,9 @@ use crate::{
 
 /// Input parameters for the [`list_habitats`] query.
 #[derive(Debug)]
-pub struct ListHabitatOptions<W, H> {
+pub struct ListHabitatOptions<M, W, H> {
+    /// Select habitats by their NFT mint addresses
+    pub mints: Option<Vec<M>>,
     /// Select only habitats owned by any of the given public keys
     pub owners: Option<Vec<W>>,
     /// Select only habitats rented by any of the given public keys
@@ -60,15 +62,20 @@ pub struct ListHabitatOptions<W, H> {
 ///
 /// # Errors
 /// This function fails if the underlying query returns an error.
-pub fn list_habitats<W: ToSql<Text, Pg> + ToSql<Nullable<Text>, Pg>, H: ToSql<Text, Pg>>(
+pub fn list_habitats<
+    M: ToSql<Text, Pg>,
+    W: ToSql<Text, Pg> + ToSql<Nullable<Text>, Pg>,
+    H: ToSql<Text, Pg>,
+>(
     conn: &Connection,
-    opts: ListHabitatOptions<W, H>,
+    opts: ListHabitatOptions<M, W, H>,
 ) -> Result<Vec<GenoHabitatData<'static>>> {
     let mut query = geno_habitat_datas::table
         .select(geno_habitat_datas::all_columns)
         .into_boxed();
 
     let ListHabitatOptions {
+        mints,
         owners,
         renters,
         harvesters,
@@ -84,6 +91,10 @@ pub fn list_habitats<W: ToSql<Text, Pg> + ToSql<Nullable<Text>, Pg>, H: ToSql<Te
         limit,
         offset,
     } = opts;
+
+    if let Some(mints) = mints {
+        query = query.filter(geno_habitat_datas::habitat_mint.eq(any(mints)));
+    }
 
     if let Some(owners) = owners {
         query = query.filter(

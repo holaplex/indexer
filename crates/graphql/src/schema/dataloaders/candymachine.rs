@@ -1,16 +1,16 @@
-use indexer_core::db::tables::{
-    candy_machine_end_settings, candy_machine_gate_keeper_configs, candy_machine_hidden_settings,
-    candy_machine_whitelist_mint_settings,
-};
-use scalars::PublicKey;
-use tables::{candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators};
-
-use super::prelude::*;
-use crate::schema::objects::candymachine::{
+use objects::candymachine::{
     CandyMachine, CandyMachineCollectionPda, CandyMachineConfigLine, CandyMachineCreator,
     CandyMachineEndSetting, CandyMachineGateKeeperConfig, CandyMachineHiddenSetting,
     CandyMachineWhitelistMintSetting,
 };
+use scalars::PublicKey;
+use tables::{
+    candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators,
+    candy_machine_end_settings, candy_machine_gate_keeper_configs, candy_machine_hidden_settings,
+    candy_machine_whitelist_mint_settings,
+};
+
+use super::prelude::*;
 
 #[async_trait]
 impl TryBatchFn<PublicKey<CandyMachine>, Vec<CandyMachineCreator>> for Batcher {
