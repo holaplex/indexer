@@ -8,7 +8,7 @@ on:
 
 jobs:
   pre_job:
-    # continue-on-error: true # Uncomment once integration is finished
+    continue-on-error: true
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
@@ -18,7 +18,8 @@ jobs:
         with:
           concurrent_skipping: same_content_newer
           skip_after_successful_duplicate: true
-          do_not_skip: '["pull_request", "workflow_dispatch", "schedule", "release"]'
+            #do_not_skip: '["pull_request", "workflow_dispatch", "schedule", "release"]'
+          do_not_skip: '["workflow_dispatch", "schedule", "release"]'
 
   debug-build:
     name: cargo build/test (debug profile)
