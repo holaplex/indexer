@@ -81,3 +81,4 @@ FROM base AS graphql
 
 COPY --from=build build/bin/holaplex-indexer-graphql bin/
 COPY --from=build build/scripts/docker/graphql.sh startup.sh
+##
