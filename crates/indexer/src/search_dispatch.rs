@@ -36,6 +36,7 @@ pub struct Client {
     meili_client: meilisearch::client::Client,
 }
 
+#[allow(dead_code)]
 impl Client {
     pub async fn new(
         conn: &indexer_rabbitmq::lapin::Connection,

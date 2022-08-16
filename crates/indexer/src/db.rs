@@ -34,6 +34,7 @@ impl Pool {
     /// # Errors
     /// This function fails if `r2d2` cannot acquire a database connection or
     /// the provided callback returns an error.
+    #[allow(dead_code)]
     pub(crate) async fn run<T: 'static + Send, E: 'static + Into<indexer_core::error::Error>>(
         &self,
         f: impl FnOnce(&PooledConnection) -> Result<T, E> + Send + 'static,
