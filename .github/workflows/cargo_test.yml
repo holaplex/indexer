@@ -4,11 +4,26 @@ on:
   pull_request:
     branches: [master]
   push:
-    branches: [dev, master]
+    branches: [dev, master, mpw/skip-duplicate-ci]
 
 jobs:
+  pre_job:
+    # continue-on-error: true # Uncomment once integration is finished
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v4
+        with:
+          concurrent_skipping: 'same_content_newer'
+          skip_after_successful_duplicate: 'true'
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
+
   debug-build:
     name: cargo build/test (debug profile)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: indexer-test-runner
     steps:
       - uses: actions/checkout@v2
@@ -35,6 +50,8 @@ jobs:
 
   release-build:
     name: cargo build/test (release profile)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: indexer-test-runner
     steps:
       - uses: actions/checkout@v2
