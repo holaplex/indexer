@@ -176,32 +176,35 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
 }
 
 const COLLECTION_ACTIVITES_QUERY: &str = r"
-SELECT listings.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
+SELECT listings.id as id, metadata, auction_house, price, created_at, marketplace_program,
     array[seller] as wallets,
     array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
     'listing' as activity_type
         FROM listings
-        LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
-        WHERE metadata = $1
+        LEFT JOIN twitter_handle_name_services ON(twitter_handle_name_services.wallet_address = listings.seller)
+        INNER JOIN metadata_collection_keys ON(metadata_collection_keys.metadata_address = listings.metadata)
+        WHERE metadata_collection_keys.collection_address = $1
         AND ('LISTINGS' = ANY($2) OR $2 IS NULL)
     UNION
-    SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
+    SELECT purchases.id as id, metadata, auction_house, price, created_at, marketplace_program,
     array[seller, buyer] as wallets,
     array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
     'purchase' as activity_type
         FROM purchases
-        LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchases.seller)
-        LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
-        WHERE metadata = $1
+        LEFT JOIN twitter_handle_name_services sth ON(sth.wallet_address = purchases.seller)
+        LEFT JOIN twitter_handle_name_services bth ON(bth.wallet_address = purchases.buyer)
+        INNER JOIN metadata_collection_keys ON(metadata_collection_keys.metadata_address = purchases.metadata)
+        WHERE metadata_collection_keys.collection_address = $1
         AND ('PURCHASES' = ANY($2) OR $2 IS NULL)
     UNION
-    SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
+    SELECT offers.id as id, metadata, auction_house, price, created_at, marketplace_program,
     array[buyer] as wallets,
     array[bth.twitter_handle] as wallet_twitter_handles,
     'offer' as activity_type
         FROM offers
-        LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = offers.buyer)
-        WHERE metadata = $1
+        LEFT JOIN twitter_handle_name_services bth ON(bth.wallet_address = offers.buyer)
+        INNER JOIN metadata_collection_keys ON(metadata_collection_keys.metadata_address = offers.metadata)
+        WHERE metadata_collection_keys.collection_address = $1
         AND offers.purchase_id IS NULL
         AND ('OFFERS' = ANY($2) OR $2 IS NULL)
     ORDER BY created_at DESC

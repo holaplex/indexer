@@ -112,8 +112,8 @@ impl Client {
             .context("Failed to send indirect metadata message")
     }
 
-    pub async fn upsert_geno_habitat(&self, is_for_backfill: bool, key: Pubkey) -> Result<()> {
-        self.dispatch_indirect_meta(is_for_backfill, "geno_habitats", key)
+    pub async fn upsert_geno_habitat(&self, is_for_backfill: bool, mint: Pubkey) -> Result<()> {
+        self.dispatch_indirect_meta(is_for_backfill, "geno_habitats", mint)
             .await
     }
 

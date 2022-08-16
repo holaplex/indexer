@@ -9,6 +9,10 @@ use objects::{
     ah_purchase::Purchase as AhPurchase,
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
+    candymachine::{
+        CandyMachine, CandyMachineCollectionPda, CandyMachineConfigLine, CandyMachineCreator,
+        CandyMachineEndSetting, CandyMachineWhitelistMintSetting,
+    },
     genopets::{GenoHabitat, GenoRentalAgreement},
     graph_connection::GraphConnection,
     listing::{Bid, Listing},
@@ -16,6 +20,10 @@ use objects::{
     nft::{Collection, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
     profile::TwitterProfile,
     purchase_receipt::PurchaseReceipt,
+    spl_governance::{
+        Governance, GovernanceConfig, MultiChoice, Proposal, ProposalOption, Realm, RealmConfig,
+        TokenOwnerRecord, VoteChoice, VoteRecord,
+    },
     stats::{MarketStats, MintStats},
     store_creator::StoreCreator,
     storefront::Storefront,
@@ -26,7 +34,10 @@ use scalars::{
     PublicKey,
 };
 
-use super::prelude::*;
+use super::{
+    objects::candymachine::{CandyMachineGateKeeperConfig, CandyMachineHiddenSetting},
+    prelude::*,
+};
 
 #[derive(Clone)]
 pub struct AppContext {
@@ -36,9 +47,21 @@ pub struct AppContext {
     pub ah_listing_loader: Loader<Uuid, Option<AhListing>>,
     pub ah_listings_loader: Loader<PublicKey<Nft>, Vec<AhListing>>,
     pub auction_house_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
-    pub auction_houses_loader: Loader<PublicKey<StoreConfig>, Vec<AuctionHouse>>,
     pub bid_receipt_loader: Loader<PublicKey<BidReceipt>, Option<BidReceipt>>,
     pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
+    pub candymachine_collection_pda_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineCollectionPda>>,
+    pub candymachine_config_line_loader:
+        Loader<PublicKey<CandyMachine>, Vec<CandyMachineConfigLine>>,
+    pub candymachine_creator_loader: Loader<PublicKey<CandyMachine>, Vec<CandyMachineCreator>>,
+    pub candymachine_end_settings_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineEndSetting>>,
+    pub candymachine_gatekeeper_configs_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineGateKeeperConfig>>,
+    pub candymachine_hidden_settings_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineHiddenSetting>>,
+    pub candymachine_whitelist_mint_settings_loader:
+        Loader<PublicKey<CandyMachine>, Option<CandyMachineWhitelistMintSetting>>,
     pub collection_count_loader: Loader<PublicKey<StoreCreator>, Option<i32>>,
     pub collection_floor_price_loader: Loader<PublicKey<Collection>, Option<CollectionFloorPrice>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
@@ -66,7 +89,18 @@ pub struct AppContext {
     pub purchase_receipt_loader: Loader<PublicKey<PurchaseReceipt>, Option<PurchaseReceipt>>,
     pub purchase_receipts_loader: Loader<PublicKey<Nft>, Vec<PurchaseReceipt>>,
     pub purchases_loader: Loader<PublicKey<Nft>, Vec<AhPurchase>>,
-    pub store_auction_houses_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
+    pub spl_approve_vote_choices_loader: Loader<PublicKey<VoteRecord>, Vec<VoteChoice>>,
+    pub spl_governance_loader: Loader<PublicKey<Governance>, Option<Governance>>,
+    pub spl_governance_config_loader: Loader<PublicKey<Governance>, Option<GovernanceConfig>>,
+    pub spl_proposal_loader: Loader<PublicKey<Proposal>, Option<Proposal>>,
+    pub spl_proposal_options_loader: Loader<PublicKey<Proposal>, Vec<ProposalOption>>,
+    pub spl_proposal_multi_choice_loader: Loader<PublicKey<Proposal>, Option<MultiChoice>>,
+    pub spl_realm_loader: Loader<PublicKey<Realm>, Option<Realm>>,
+    pub spl_realm_config_loader: Loader<PublicKey<Realm>, Option<RealmConfig>>,
+    pub spl_token_owner_record_loader:
+        Loader<PublicKey<TokenOwnerRecord>, Option<TokenOwnerRecord>>,
+    pub spl_vote_record_token_owner_loader: Loader<PublicKey<Wallet>, Vec<TokenOwnerRecord>>,
+    pub store_auction_houses_loader: Loader<PublicKey<StoreConfig>, Vec<AuctionHouse>>,
     pub store_creator_loader: Loader<PublicKey<StoreConfig>, Vec<StoreCreator>>,
     pub storefront_loader: Loader<PublicKey<Storefront>, Option<Storefront>>,
     pub twitter_handle_loader: Loader<PublicKey<Wallet>, Option<String>>,
@@ -88,9 +122,15 @@ impl AppContext {
             ah_listing_loader: Loader::new(batcher.clone()),
             ah_listings_loader: Loader::new(batcher.clone()),
             auction_house_loader: Loader::new(batcher.clone()),
-            auction_houses_loader: Loader::new(batcher.clone()),
             bid_receipt_loader: Loader::new(batcher.clone()),
             bid_receipts_loader: Loader::new(batcher.clone()),
+            candymachine_collection_pda_loader: Loader::new(batcher.clone()),
+            candymachine_config_line_loader: Loader::new(batcher.clone()),
+            candymachine_creator_loader: Loader::new(batcher.clone()),
+            candymachine_end_settings_loader: Loader::new(batcher.clone()),
+            candymachine_gatekeeper_configs_loader: Loader::new(batcher.clone()),
+            candymachine_hidden_settings_loader: Loader::new(batcher.clone()),
+            candymachine_whitelist_mint_settings_loader: Loader::new(batcher.clone()),
             collection_count_loader: Loader::new(batcher.clone()),
             collection_floor_price_loader: Loader::new(batcher.clone()),
             collection_loader: Loader::new(batcher.clone()),
@@ -118,6 +158,16 @@ impl AppContext {
             purchase_receipt_loader: Loader::new(batcher.clone()),
             purchase_receipts_loader: Loader::new(batcher.clone()),
             purchases_loader: Loader::new(batcher.clone()),
+            spl_approve_vote_choices_loader: Loader::new(batcher.clone()),
+            spl_governance_loader: Loader::new(batcher.clone()),
+            spl_governance_config_loader: Loader::new(batcher.clone()),
+            spl_proposal_loader: Loader::new(batcher.clone()),
+            spl_proposal_options_loader: Loader::new(batcher.clone()),
+            spl_proposal_multi_choice_loader: Loader::new(batcher.clone()),
+            spl_realm_loader: Loader::new(batcher.clone()),
+            spl_realm_config_loader: Loader::new(batcher.clone()),
+            spl_token_owner_record_loader: Loader::new(batcher.clone()),
+            spl_vote_record_token_owner_loader: Loader::new(batcher.clone()),
             store_auction_houses_loader: Loader::new(batcher.clone()),
             store_creator_loader: Loader::new(batcher.clone()),
             storefront_loader: Loader::new(batcher.clone()),
