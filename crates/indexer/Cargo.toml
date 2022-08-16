@@ -17,7 +17,7 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 default = []
 geyser = [
   "genostub",
-  "reqwest-client",
+  "reqwest",
   "search-dispatch",
   "serde_json",
   "indexer-rabbitmq/geyser",
@@ -27,15 +27,12 @@ geyser = [
 ]
 http = [
   "cid",
-  "reqwest-client",
+  "reqwest",
   "search-dispatch",
   "serde_json",
   "indexer-rabbitmq/http-indexer",
   "indexer-rabbitmq/producer",
   "indexer-rabbitmq/search-indexer",
-]
-reqwest-client = [
-  "reqwest",
 ]
 search = [
   "crossbeam",
@@ -45,6 +42,9 @@ search = [
 ]
 search-dispatch = [
   "serde_json",
+  "indexer-core/meilisearch",
+  "indexer-rabbitmq/producer",
+  "indexer-rabbitmq/search-indexer",
 ]
 
 [[bin]]

@@ -6,9 +6,9 @@ use indexer_core::{
     db::{insert_into, models::Storefront, tables::storefronts, PooledConnection},
     hash::{DashSet, HashMap},
     pubkeys::find_store_address,
+    url::Url,
     util,
 };
-use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 

@@ -29,12 +29,6 @@ pub enum AssetHint {
     Arweave,
 }
 
-impl From<i32> for ImageSize {
-    fn from(value: i32) -> Self {
-        Self::from_repr(value).unwrap_or(Self::Original)
-    }
-}
-
 impl<'a> AssetIdentifier<'a> {
     /// Attempt to parse IPFS or Arweave asset IDs from a URL.
     ///
@@ -233,6 +227,12 @@ mod cdn {
         Medium = 800,
         /// large image
         Large = 1400,
+    }
+
+    impl From<i32> for ImageSize {
+        fn from(value: i32) -> Self {
+            Self::from_repr(value).unwrap_or(Self::Original)
+        }
     }
 
     /// Common arguments for binaries using [`proxy_url`]

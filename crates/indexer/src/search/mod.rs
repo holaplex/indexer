@@ -12,9 +12,9 @@ use indexer_core::{
         twitter_handle_name_services,
     },
     meilisearch::IndirectMetadataDocument,
+    url::Url,
 };
 use indexer_rabbitmq::search_indexer::{self, Message};
-use reqwest::Url;
 
 use crate::prelude::*;
 
