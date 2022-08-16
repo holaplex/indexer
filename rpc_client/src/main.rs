@@ -41,14 +41,13 @@ fn main() {
             .filter(metadatas::burned_at.is_not_null())
             .order_by(metadatas::slot.asc())
             .select(metadatas::slot)
-            .first::<Option<i64>>(&conn)
-            .optional()
+            .first(&conn)
             .context("could not load earliest slot")?;
 
         // TODO: Check for index on burned_at
         let total_count = metadatas::table
             .filter(metadatas::burned_at.is_null())
-            .filter(metadatas::slot.lt(eariliest_burn_slot.unwrap()))
+            .filter(metadatas::slot.lt(eariliest_burn_slot))
             .count()
             .get_result::<i64>(&conn)
             .context("could not get count")?;
@@ -57,10 +56,10 @@ fn main() {
         let mut i = 0;
         let limit = 1000;
         while i < total_count {
-            // slot less than the earliest burn slot;
+            // slot greater than the earliest burn slot;
             let addressess = metadatas::table
                 .filter(metadatas::burned_at.is_null())
-                .filter(metadatas::slot.lt(eariliest_burn_slot.unwrap()))
+                .filter(metadatas::slot.lt(eariliest_burn_slot))
                 .offset(i)
                 .limit(limit)
                 .order_by(metadatas::slot.asc())
