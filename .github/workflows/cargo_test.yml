@@ -18,8 +18,6 @@ jobs:
         with:
           concurrent_skipping: same_content_newer
           skip_after_successful_duplicate: true
-          paths_ignore: []
-          paths: []
           do_not_skip: ["pull_request", "workflow_dispatch", "schedule", "release"]
 
   debug-build:
