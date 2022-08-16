@@ -20,7 +20,7 @@ jobs:
           skip_after_successful_duplicate: true
           cancel_others: true
             #do_not_skip: '["pull_request", "workflow_dispatch", "schedule", "release"]'
-          do_not_skip: '["workflow_dispatch", "schedule", "release"]'
+          do_not_skip: '["pull_request", workflow_dispatch", "schedule", "release"]'
 
   debug-build:
     name: cargo build/test (debug profile)
