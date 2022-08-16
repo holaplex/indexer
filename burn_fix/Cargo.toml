@@ -6,12 +6,9 @@ name = "holaplex-rpc-client"
 version = "0.0.0"
 edition = "2021"
 
-
 [dependencies]
 solana-client = "1.7.11"
 solana-program = "1.7.11"
-anyhow = "1.0.45"
-
 
 [dependencies.indexer-core]
 package = "holaplex-indexer-core"

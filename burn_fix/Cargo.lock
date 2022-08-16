@@ -2452,7 +2452,6 @@ dependencies = [
 name = "holaplex-rpc-client"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "holaplex-indexer",
  "holaplex-indexer-core",
  "solana-client",

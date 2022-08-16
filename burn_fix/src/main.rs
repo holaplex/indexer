@@ -42,25 +42,27 @@ fn main() {
             .order_by(metadatas::slot.asc())
             .select(metadatas::slot)
             .first::<Option<i64>>(&conn)
-            .optional()
+            .ok()
+            .flatten()
             .context("could not load earliest slot")?;
 
         // TODO: Check for index on burned_at
         let total_count = metadatas::table
             .filter(metadatas::burned_at.is_null())
-            .filter(metadatas::slot.lt(eariliest_burn_slot.unwrap()))
+            .filter(metadatas::slot.lt(eariliest_burn_slot))
             .count()
             .get_result::<i64>(&conn)
             .context("could not get count")?;
 
         debug!("TOTAL UNBURNED COUNT: {:?}", total_count);
+
         let mut i = 0;
         let limit = 1000;
         while i < total_count {
             // slot less than the earliest burn slot;
             let addressess = metadatas::table
                 .filter(metadatas::burned_at.is_null())
-                .filter(metadatas::slot.lt(eariliest_burn_slot.unwrap()))
+                .filter(metadatas::slot.lt(eariliest_burn_slot))
                 .offset(i)
                 .limit(limit)
                 .order_by(metadatas::slot.asc())
@@ -69,11 +71,11 @@ fn main() {
                 .context("could not load metadatas")?;
 
             addressess.into_iter().try_for_each(|address: String| {
-                let key: Pubkey = address.parse().unwrap();
+                let key: Pubkey = address.parse()?;
                 let exists = account_exists(key, &client);
                 if let Ok(false) = exists {
                     debug!("manually burning: {:?}", address);
-                    remove_metadata(address, &conn)?;
+                    remove_metadata(address, &conn, &client)?;
                 }
                 Result::<_>::Ok(())
             })?;
@@ -85,10 +87,12 @@ fn main() {
     });
 }
 
-fn remove_metadata(metadata_address: String, conn: &Connection) -> Result<()> {
+fn remove_metadata(metadata_address: String, conn: &Connection, client: &RpcClient) -> Result<()> {
     let now = Local::now().naive_utc();
+    let slot = i64::try_from(client.get_slot().context("failed to get slot")?)?;
+
     update(metadatas::table.filter(metadatas::address.eq(metadata_address)))
-        .set(metadatas::burned_at.eq(now))
+        .set((metadatas::burned_at.eq(now), metadatas::slot.eq(slot)))
         .execute(conn)
         .context("couldnt set burned_at")?;
 
