@@ -144,26 +144,20 @@ mod tests {
         ];
 
         for filename in filenames {
-            println!("\n---------------------------------------------");
             println!("Reading Candy Machine {:?}", filename);
             let data = load_account_dump(filename);
             let cm = CandyMachine::try_deserialize(&mut data.as_slice()).unwrap();
             println!("Candy Machine: {}", filename);
-            println!("Items Available: {:?}", cm.data.items_available);
-            println!("Items Redeemed: {:?}", cm.items_redeemed);
 
             let results = parse_cm_config_lines(&data, cm.data.items_available as usize);
 
             let available_count = results.len();
             let mut taken_count = 0;
-            for (config_line, idx, taken) in results.iter() {
+            for (_, _, taken) in results.iter() {
                 if *taken {
                     taken_count += 1;
                 }
             }
-
-            println!("available_count: {}", available_count);
-            println!("taken_count: {}", taken_count);
 
             if cm.data.hidden_settings.is_some() {
                 assert_eq!(available_count, 0);
