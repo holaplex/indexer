@@ -2,7 +2,10 @@
 use diesel::{pg::Pg, prelude::*, serialize::ToSql, sql_types::Text};
 
 use crate::{
-    db::{models::WalletActivity, Connection},
+    db::{
+        models::{Nft, WalletActivity},
+        Connection,
+    },
     error::prelude::*,
 };
 
@@ -63,4 +66,39 @@ pub fn activities(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<Ve
         .bind(address)
         .load(conn)
         .context("Failed to load wallet(s) activities")
+}
+
+const COLLECTED_COLLECTIONS_QUERY: &str = r"
+SELECT
+    metadatas.address,
+    metadatas.name,
+    metadatas.seller_fee_basis_points,
+    metadatas.update_authority_address,
+    metadatas.mint_address,
+    metadatas.primary_sale_happened,
+    metadatas.uri,
+    metadatas.slot,
+    metadata_jsons.description,
+    metadata_jsons.image,
+    metadata_jsons.animation_url,
+    metadata_jsons.external_url,
+    metadata_jsons.category,
+    metadata_jsons.model,
+    current_metadata_owners.token_account_address
+        FROM metadatas
+        INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
+        INNER JOIN metadata_collection_keys ON (metadata_collection_keys.collection_address = metadatas.mint_address)
+        INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address)
+        WHERE current_metadata_owners.owner_address = $1
+    -- $1: address::text";
+
+/// Load collected collections for a wallet.
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
+pub fn collected_collections(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<Vec<Nft>> {
+    diesel::sql_query(COLLECTED_COLLECTIONS_QUERY)
+        .bind(address)
+        .load(conn)
+        .context("Failed to load wallet(s) collected collections")
 }

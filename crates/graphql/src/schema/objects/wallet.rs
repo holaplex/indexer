@@ -8,7 +8,7 @@ use objects::{
 use scalars::PublicKey;
 use tables::{bids, graph_connections};
 
-use super::prelude::*;
+use super::{nft::Collection, prelude::*};
 use crate::schema::scalars::U64;
 
 #[derive(Debug, Clone)]
@@ -124,6 +124,18 @@ impl WalletNftCount {
 }
 
 #[derive(Debug, Clone)]
+pub struct CollectedCollection {
+    wallet: PublicKey<Wallet>,
+}
+
+impl CollectedCollection {
+    #[must_use]
+    pub fn new(wallet: PublicKey<Wallet>) -> Self {
+        Self { wallet }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct WalletActivity {
     pub id: Uuid,
     pub metadata: PublicKey<Nft>,
@@ -215,6 +227,13 @@ impl Wallet {
 
     pub fn twitter_handle(&self) -> Option<&str> {
         self.twitter_handle.as_deref()
+    }
+
+    pub fn collected_collections(&self, ctx: &AppContext) -> FieldResult<Vec<CollectedCollection>> {
+        let conn = ctx.shared.db.get()?;
+
+        let collections = queries::wallet::collected_collections(&conn, &self.address)?;
+        Ok(collections.into_iter().map(Into::into).collect())
     }
 
     pub fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<WalletActivity>> {
