@@ -147,7 +147,7 @@ mod tests {
             println!("\n---------------------------------------------");
             println!("Reading Candy Machine {:?}", filename);
             let data = load_account_dump(filename);
-            let cm: CandyMachine = CandyMachine::try_deserialize(&mut data.as_slice()).unwrap();
+            let cm = CandyMachine::try_deserialize(&mut data.as_slice()).unwrap();
             println!("Candy Machine: {}", filename);
             println!("Items Available: {:?}", cm.data.items_available);
             println!("Items Redeemed: {:?}", cm.items_redeemed);
