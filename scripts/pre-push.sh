@@ -4,12 +4,9 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-lib_flags=(--workspace --lib)
+lib_flags=(--workspace --lib --all-features)
 build_flags=("${lib_flags[@]}")
 build_flags+=(--bins)
-
-test_flags=("$build_flags")
-test_flags+=(--features test-internal)
 
 [[ -z "$CARGO" ]] && CARGO=cargo
 

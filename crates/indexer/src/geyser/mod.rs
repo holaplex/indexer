@@ -3,9 +3,6 @@
 mod accounts;
 mod client;
 mod instructions;
-#[cfg(feature = "test-internal")]
-pub mod programs;
-#[cfg(not(feature = "test-internal"))]
 mod programs;
 
 use std::{collections::HashSet, fmt, sync::Arc};

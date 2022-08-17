@@ -14,7 +14,7 @@ keywords = ["solana", "metaplex", "holaplex", "web3"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [features]
-default = ["geyser", "http", "reqwest-client", "search", "search-dispatch"]
+default = []
 geyser = [
   "genostub",
   "reqwest-client",
@@ -46,7 +46,6 @@ search = [
 search-dispatch = [
   "serde_json",
 ]
-test-internal = []
 
 [[bin]]
 name = "holaplex-indexer-geyser"
