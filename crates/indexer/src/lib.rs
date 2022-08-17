@@ -14,8 +14,6 @@ pub mod db;
 pub mod geyser;
 #[cfg(feature = "http")]
 pub mod http;
-#[cfg(feature = "http")]
-pub mod legacy_storefronts;
 #[cfg(feature = "reqwest")]
 pub(crate) mod reqwest;
 #[cfg(feature = "search")]

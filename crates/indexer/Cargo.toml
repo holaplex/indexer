@@ -56,10 +56,6 @@ name = "holaplex-indexer-http"
 required-features = ["http"]
 
 [[bin]]
-name = "holaplex-indexer-legacy-storefronts"
-required-features = ["http"]
-
-[[bin]]
 name = "holaplex-indexer-search"
 required-features = ["search"]
 
