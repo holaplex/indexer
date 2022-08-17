@@ -1,4 +1,4 @@
-use objects::candymachine::{
+use objects::candy_machine::{
     CandyMachine, CandyMachineCollectionPda, CandyMachineConfigLine, CandyMachineCreator,
     CandyMachineEndSetting, CandyMachineGateKeeperConfig, CandyMachineHiddenSetting,
     CandyMachineWhitelistMintSetting,

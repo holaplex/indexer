@@ -4,7 +4,7 @@ pub mod ah_purchase;
 pub mod auction_house;
 pub mod bid_receipt;
 pub mod bonding_change;
-pub mod candymachine;
+pub mod candy_machine;
 pub mod chart;
 pub mod creator;
 pub mod denylist;
