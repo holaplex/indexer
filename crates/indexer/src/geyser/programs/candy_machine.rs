@@ -15,6 +15,7 @@ const COLLECTION_PDA_SIZE: usize = 8 + 64;
 /// returns a vector containing tuples: (`config_line`, index, taken)
 ///
 /// it is important that this not be called if the candy machine has hidden settings
+#[must_use]
 pub fn parse_cm_config_lines(
     data: &[u8],
     items_available: usize,
