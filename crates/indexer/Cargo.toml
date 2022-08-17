@@ -60,6 +60,7 @@ name = "holaplex-indexer-search"
 required-features = ["search"]
 
 [dependencies]
+arrayref = "0.3.6"
 async-trait = "0.1.52"
 crossbeam = { version = "0.8.1", optional = true }
 futures-util = "0.3.21"

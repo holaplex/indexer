@@ -61,13 +61,13 @@ impl TryBatchFn<PublicKey<CandyMachine>, Vec<CandyMachineConfigLine>> for Batche
         let conn = self.db()?;
 
         let rows: Vec<models::CMConfigLine> = candy_machine_config_lines::table
-            .filter(candy_machine_config_lines::address.eq(any(addresses)))
+            .filter(candy_machine_config_lines::candy_machine_address.eq(any(addresses)))
             .load(&conn)
             .context("Failed to candy machine config lines")?;
 
         Ok(rows
             .into_iter()
-            .map(|r| (r.address.clone(), r.try_into()))
+            .map(|r| (r.candy_machine_address.clone(), r.try_into()))
             .batch(addresses))
     }
 }

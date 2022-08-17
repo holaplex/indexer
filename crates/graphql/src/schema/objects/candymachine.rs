@@ -253,14 +253,26 @@ pub struct CandyMachineConfigLine {
     pub candy_machine_address: PublicKey<CandyMachine>,
     pub name: String,
     pub uri: String,
+    pub idx: i32,
+    pub taken: bool,
 }
 
 impl<'a> From<models::CMConfigLine<'a>> for CandyMachineConfigLine {
-    fn from(models::CMConfigLine { address, name, uri }: models::CMConfigLine) -> Self {
+    fn from(
+        models::CMConfigLine {
+            candy_machine_address,
+            name,
+            uri,
+            idx,
+            taken,
+        }: models::CMConfigLine,
+    ) -> Self {
         Self {
-            candy_machine_address: address.into(),
+            candy_machine_address: candy_machine_address.into(),
             name: name.into_owned(),
             uri: uri.into_owned(),
+            idx,
+            taken,
         }
     }
 }
