@@ -547,7 +547,7 @@ impl Collection {
         let conn = ctx.shared.db.get()?;
         let rows = queries::collections::collection_activities(
             &conn,
-            &self.0.address,
+            &self.0.mint_address,
             event_types,
             limit,
             offset,
