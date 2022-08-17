@@ -94,12 +94,13 @@ async fn process_config_lines(
 
     for config_line in &config_lines {
         let db_config_line = CMConfigLine {
-            candy_machine_address: Owned(bs58::encode(key).into_string()),
-            name: Owned(config_line.0.name.trim_matches(char::from(0)).to_owned()),
-            uri: Owned(config_line.0.uri.trim_matches(char::from(0)).to_owned()),
-            idx: i32::try_from(config_line.1).unwrap_or(-1i32),
+            candy_machine_address: Owned(key.to_string()),
+            name: Owned(config_line.0.name.trim_matches('\0').to_owned()),
+            uri: Owned(config_line.0.uri.trim_matches('\0').to_owned()),
+            idx: i32::try_from(config_line.1).unwrap_or(-1),
             taken: config_line.2,
         };
+
         db_config_lines.push(db_config_line);
     }
 
@@ -124,7 +125,7 @@ async fn process_config_lines(
             })
         })
         .await
-        .context("failed to insert candy machine config lines")?;
+        .context("Failed to insert candy machine config lines")?;
 
     Ok(())
 }

@@ -2900,7 +2900,6 @@ dependencies = [
  "anchor-lang 0.21.0",
  "anchor-lang 0.22.1",
  "anchor-lang 0.24.2",
- "arrayref",
  "async-trait",
  "borsh",
  "bs58 0.4.0",
