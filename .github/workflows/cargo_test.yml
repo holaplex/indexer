@@ -2,14 +2,28 @@ name: Cargo test
 
 on:
   pull_request:
-    branches: [master]
+    branches: [dev, master]
   push:
     branches: [dev, master]
 
 jobs:
-  debug-build:
+  debug-test:
     name: cargo build/test (debug profile)
     runs-on: indexer-test-runner
+
+    services:
+      postgres:
+        image: postgres:14.1
+
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: ci
+
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -28,14 +42,39 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
 
-      - uses: actions-rs/cargo@v1
+      - name: cargo test --lib
+        uses: actions-rs/cargo@v1
+        env:
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci
         with:
           command: test
-          args: --all --lib --bins --all-features --profile=debug-lite
+          args: --workspace --lib --all-features --profile=debug-lite
 
-  release-build:
+      - name: cargo test --bins
+        uses: actions-rs/cargo@v1
+        env:
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci
+        with:
+          command: test
+          args: --workspace --bins --all-features --profile=debug-lite
+
+  release-test:
     name: cargo build/test (release profile)
     runs-on: indexer-test-runner
+
+    services:
+      postgres:
+        image: postgres:14.1
+
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: ci
+
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -54,7 +93,18 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
 
-      - uses: actions-rs/cargo@v1
+      - name: cargo test --lib --release
+        uses: actions-rs/cargo@v1
+        env:
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci
         with:
           command: test
-          args: --all --lib --bins --all-features --profile=release-lite
+          args: --workspace --lib --all-features --profile=release-lite
+
+      - name: cargo test --bins --release
+        uses: actions-rs/cargo@v1
+        env:
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci
+        with:
+          command: test
+          args: --workspace --bins --all-features --profile=release-lite
