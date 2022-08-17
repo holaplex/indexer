@@ -2924,6 +2924,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "holaplex-indexer-burn-fix"
+version = "0.0.0"
+dependencies = [
+ "holaplex-indexer",
+ "holaplex-indexer-core",
+ "solana-client",
+ "solana-program",
+]
+
+[[package]]
 name = "holaplex-indexer-core"
 version = "0.1.0"
 dependencies = [
