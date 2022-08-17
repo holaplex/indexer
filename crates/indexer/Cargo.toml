@@ -83,6 +83,10 @@ name = "holaplex-indexer-http"
 required-features = ["http"]
 
 [[bin]]
+name = "holaplex-indexer-job-runner"
+required-features = ["job-runner"]
+
+[[bin]]
 name = "holaplex-indexer-search"
 required-features = ["search"]
 
