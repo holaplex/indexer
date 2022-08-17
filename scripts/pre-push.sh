@@ -15,4 +15,4 @@ diff --unified <(./diesel.sh print-schema) crates/core/src/db/schema.rs
 "$CARGO" clippy "${build_flags[@]}" --no-deps
 "$CARGO" doc "${lib_flags[@]}" --no-deps
 "$CARGO" build "${build_flags[@]}"
-"$CARGO" test "${test_flags[@]}"
+"$CARGO" test "${build_flags[@]}"
