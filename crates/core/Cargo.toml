@@ -38,7 +38,7 @@ required-features = ["db"]
 # Basic utilities
 anyhow = "1.0.45"
 base64 = "0.13.0"
-chrono = "0.4.19"
+chrono = "0.4.22"
 clap = { version = "3.0.7", features = ["derive", "env"] }
 dotenv = "0.15.0"
 env_logger = "0.9.0"
