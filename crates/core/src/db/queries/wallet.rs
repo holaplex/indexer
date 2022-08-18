@@ -3,7 +3,7 @@ use diesel::{pg::Pg, prelude::*, serialize::ToSql, sql_types::Text};
 
 use crate::{
     db::{
-        models::{Nft, WalletActivity, CollectedCollection},
+        models::{CollectedCollection, Nft, WalletActivity},
         Connection,
     },
     error::prelude::*,
@@ -82,7 +82,10 @@ SELECT
 ///
 /// # Errors
 /// This function fails if the underlying SQL query returns an error
-pub fn collected_collections(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<Vec<CollectedCollection>> {
+pub fn collected_collections(
+    conn: &Connection,
+    address: impl ToSql<Text, Pg>,
+) -> Result<Vec<CollectedCollection>> {
     diesel::sql_query(COLLECTED_COLLECTIONS_QUERY)
         .bind(address)
         .load(conn)

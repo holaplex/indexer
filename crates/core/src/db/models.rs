@@ -1088,12 +1088,12 @@ pub struct TwitterHandle<'a> {
 /// A row in a `collected_collections` query of a wallet
 #[derive(Debug, Clone, QueryableByName)]
 pub struct CollectedCollection<'a> {
-     /// The collection for which data is collected
-     #[sql_type = "VarChar"]
-     pub collection: Cow<'a, str>,
-     /// The nfts from this collection owned by the wallet
-     #[sql_type = "Nullable<Int8>"]
-     pub nfts_owned: Option<i64>,
+    /// The collection for which data is collected
+    #[sql_type = "VarChar"]
+    pub collection: Cow<'a, str>,
+    /// The nfts from this collection owned by the wallet
+    #[sql_type = "Nullable<Int8>"]
+    pub nfts_owned: Option<i64>,
 }
 
 /// A row in the `metadata_collection_keys` table

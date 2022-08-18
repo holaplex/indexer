@@ -6,7 +6,10 @@ use objects::{
     profile::TwitterProfile,
 };
 use scalars::PublicKey;
-use tables::{bids, graph_connections};
+use tables::{
+    bids, current_metadata_owners, graph_connections, metadata_collection_keys, metadata_jsons,
+    metadatas,
+};
 
 use super::{nft::Collection, prelude::*};
 use crate::schema::scalars::U64;
@@ -125,7 +128,7 @@ impl WalletNftCount {
 
 #[derive(Debug, Clone)]
 pub struct CollectedCollection {
-    collection: PublicKey<Collection>,
+    collection: PublicKey<Nft>,
     nfts_owned: Option<U64>,
 }
 
@@ -147,13 +150,31 @@ impl<'a> TryFrom<models::CollectedCollection<'a>> for CollectedCollection {
 
 #[graphql_object(Context = AppContext)]
 impl CollectedCollection {
-    fn collection(&self, context: &AppContext) -> FieldResult<PublicKey<Collection>> {
-        // let conn = context.shared.db.get()?;
-        // let collection = queries::collections::collection(&conn, &self.collection)?;
-        // Ok(collection.into())
-
+    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
+        let conn = ctx.shared.db.get()?;
+        metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .inner_join(
+                metadata_collection_keys::table
+                    .on(metadata_collection_keys::collection_address.eq(metadatas::mint_address)),
+            )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+            )
+            .filter(metadata_collection_keys::collection_address.eq(&self.collection))
+            .filter(metadata_collection_keys::verified.eq(true))
+            .select(queries::metadatas::NFT_COLUMNS)
+            .first::<models::Nft>(&conn)
+            .optional()
+            .context("Failed to load Collection NFT by collection address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
     }
-    
+
     fn nfts_owned(&self) -> Option<U64> {
         self.nfts_owned
     }
