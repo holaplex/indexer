@@ -125,13 +125,37 @@ impl WalletNftCount {
 
 #[derive(Debug, Clone)]
 pub struct CollectedCollection {
-    wallet: PublicKey<Wallet>,
+    collection: PublicKey<Collection>,
+    nfts_owned: Option<U64>,
 }
 
+impl<'a> TryFrom<models::CollectedCollection<'a>> for CollectedCollection {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::CollectedCollection {
+            collection,
+            nfts_owned,
+        }: models::CollectedCollection,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            collection: collection.into(),
+            nfts_owned: nfts_owned.map(TryInto::try_into).transpose()?,
+        })
+    }
+}
+
+#[graphql_object(Context = AppContext)]
 impl CollectedCollection {
-    #[must_use]
-    pub fn new(wallet: PublicKey<Wallet>) -> Self {
-        Self { wallet }
+    fn collection(&self, context: &AppContext) -> FieldResult<PublicKey<Collection>> {
+        // let conn = context.shared.db.get()?;
+        // let collection = queries::collections::collection(&conn, &self.collection)?;
+        // Ok(collection.into())
+
+    }
+    
+    fn nfts_owned(&self) -> Option<U64> {
+        self.nfts_owned
     }
 }
 
@@ -233,7 +257,11 @@ impl Wallet {
         let conn = ctx.shared.db.get()?;
 
         let collections = queries::wallet::collected_collections(&conn, &self.address)?;
-        Ok(collections.into_iter().map(Into::into).collect())
+        collections
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     pub fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<WalletActivity>> {
