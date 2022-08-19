@@ -129,7 +129,8 @@ impl WalletNftCount {
 #[derive(Debug, Clone)]
 pub struct CollectedCollection {
     collection: PublicKey<Nft>,
-    nfts_owned: Option<U64>,
+    nfts_owned: i32,
+    estimated_value: U64,
 }
 
 impl<'a> TryFrom<models::CollectedCollection<'a>> for CollectedCollection {
@@ -139,11 +140,13 @@ impl<'a> TryFrom<models::CollectedCollection<'a>> for CollectedCollection {
         models::CollectedCollection {
             collection,
             nfts_owned,
+            estimated_value,
         }: models::CollectedCollection,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             collection: collection.into(),
-            nfts_owned: nfts_owned.map(TryInto::try_into).transpose()?,
+            nfts_owned: nfts_owned.try_into()?,
+            estimated_value: estimated_value.try_into()?,
         })
     }
 }
@@ -175,8 +178,12 @@ impl CollectedCollection {
             .map_err(Into::into)
     }
 
-    fn nfts_owned(&self) -> Option<U64> {
+    fn nfts_owned(&self) -> i32 {
         self.nfts_owned
+    }
+
+    fn estimated_value(&self) -> U64 {
+        self.estimated_value
     }
 }
 

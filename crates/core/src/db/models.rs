@@ -1092,8 +1092,11 @@ pub struct CollectedCollection<'a> {
     #[sql_type = "VarChar"]
     pub collection: Cow<'a, str>,
     /// The nfts from this collection owned by the wallet
-    #[sql_type = "Nullable<Int8>"]
-    pub nfts_owned: Option<i64>,
+    #[sql_type = "Int8"]
+    pub nfts_owned: i64,
+    /// The estimated value of the collection owend by the wallet
+    #[sql_type = "Int8"]
+    pub estimated_value: i64,
 }
 
 /// A row in the `metadata_collection_keys` table

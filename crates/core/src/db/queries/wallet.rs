@@ -3,7 +3,7 @@ use diesel::{pg::Pg, prelude::*, serialize::ToSql, sql_types::Text};
 
 use crate::{
     db::{
-        models::{CollectedCollection, Nft, WalletActivity},
+        models::{CollectedCollection, WalletActivity},
         Connection,
     },
     error::prelude::*,
@@ -70,12 +70,17 @@ pub fn activities(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<Ve
 
 const COLLECTED_COLLECTIONS_QUERY: &str = r"
 SELECT
-    metadata_collection_keys.collection_address as collection, COUNT(metadatas.address) as nfts_owned
+    metadata_collection_keys.collection_address as collection,
+	COUNT(metadatas.address) as nfts_owned,
+	coalesce(collection_stats.floor_price * COUNT(metadatas.address), 0) as estimated_value
     FROM metadatas
     INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address)
-    INNER JOIN metadata_collection_keys ON (metadata_collection_keys.collection_address = metadatas.mint_address)
+    INNER JOIN metadata_collection_keys ON (metadata_collection_keys.metadata_address = metadatas.address)
+	INNER JOIN collection_stats ON (metadata_collection_keys.collection_address = collection_stats.collection_address)
     WHERE current_metadata_owners.owner_address = $1
-    GROUP BY metadata_collection_keys.collection_address;
+    AND metadata_collection_keys.verified
+    GROUP BY metadata_collection_keys.collection_address, collection_stats.floor_price
+	ORDER BY estimated_value DESC;
     -- $1: address::text";
 
 /// Load collected collections for a wallet.
