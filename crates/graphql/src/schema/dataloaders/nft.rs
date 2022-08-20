@@ -41,7 +41,7 @@ impl TryBatchFn<PublicKey<Nft>, Option<Collection>> for Batcher {
         let conn = self.db()?;
 
         let rows: Vec<(String, models::Nft)> = metadatas::table
-            .inner_join(
+            .left_join(
                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
             )
             .inner_join(
