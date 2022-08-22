@@ -559,6 +559,31 @@ impl Collection {
             .map_err(Into::into)
     }
 
+    #[graphql(description = "Lowest price of currently listed NFTs in the collection.")]
+    async fn floor_price(&self, context: &AppContext) -> FieldResult<Option<scalars::I64>> {
+        Ok(context
+            .collection_floor_price_loader
+            .load(self.0.mint_address.clone().into())
+            .await?
+            .map(|dataloaders::collection::CollectionFloorPrice(floor_price)| floor_price))
+    }
+
+    #[graphql(
+        description = "Count of wallets that currently hold at least one NFT from the collection."
+    )]
+    pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<scalars::I64> {
+        Ok(scalars::I64::from(0))
+    }
+
+    #[graphql(description = "Count of active listings of NFTs in the collection.")]
+    pub async fn listed_count(&self, ctx: &AppContext) -> FieldResult<scalars::I64> {
+        let conn = ctx.shared.db.get()?;
+        queries::collections::listed_count(&conn, self.0.mint_address.clone())
+            .map(Into::into)
+            .map_err(Into::into)
+    }
+
+    #[graphql(description = "Count of NFTs in the collection.")]
     async fn nft_count(&self, context: &AppContext) -> FieldResult<Option<scalars::I64>> {
         Ok(context
             .collection_nft_count_loader
@@ -567,12 +592,11 @@ impl Collection {
             .map(|dataloaders::collection::CollectionNftCount(nft_count)| nft_count))
     }
 
-    async fn floor_price(&self, context: &AppContext) -> FieldResult<Option<scalars::I64>> {
-        Ok(context
-            .collection_floor_price_loader
-            .load(self.0.mint_address.clone().into())
-            .await?
-            .map(|dataloaders::collection::CollectionFloorPrice(floor_price)| floor_price))
+    #[graphql(
+        description = "Total of all sales of all NFTs in the collection over all time, in lamports."
+    )]
+    pub async fn volume_total(&self, ctx: &AppContext) -> FieldResult<Option<scalars::I64>> {
+        Ok(Some(scalars::I64::from(0)))
     }
 
     #[graphql(deprecated = "use `nft { address }`")]

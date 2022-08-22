@@ -1,10 +1,10 @@
 //! Query utilities for collections.
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use chrono::{DateTime, Utc};
 use diesel::{
     pg::Pg,
-    sql_types::{Array, Integer, Nullable, Text, Timestamp},
+    sql_types::{Array, BigInt, Integer, Nullable, Text, Timestamp},
     types::ToSql,
     RunQueryDsl,
 };
@@ -212,7 +212,7 @@ SELECT listings.id as id, metadata, auction_house, price, created_at, marketplac
     OFFSET $4;
 
  -- $1: address::text
- -- $2: evnet_types::text[]
+ -- $2: event_types::text[]
  -- $3: limit::integer
  -- $4: offset::integer";
 
@@ -234,4 +234,43 @@ pub fn collection_activities(
         .bind(offset)
         .load(conn)
         .context("Failed to load collection activities")
+}
+
+const LISTED_COUNT_QUERY: &str = r"
+SELECT COUNT(listings.id) AS count
+FROM listings
+INNER JOIN metadatas ON(listings.metadata = metadatas.address)
+INNER JOIN metadata_collection_keys ON(metadatas.address = metadata_collection_keys.metadata_address)
+INNER JOIN auction_houses ON(listings.auction_house = auction_houses.address)
+WHERE
+    metadata_collection_keys.collection_address = $1
+	AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
+	AND listings.purchase_id IS NULL
+	AND listings.canceled_at IS NULL
+	AND metadata_collection_keys.verified = true
+GROUP BY metadata_collection_keys.collection_address;
+
+-- $1: address::text";
+
+/// Computes the count of active listings of NFTs in the collection.
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
+pub fn listed_count(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<i64> {
+    let query_result = diesel::sql_query(LISTED_COUNT_QUERY)
+        .bind(address)
+        .load::<Count>(conn)
+        .context("Failed to load collection listing count")?;
+
+    if query_result.len() == 0 {
+        bail!("Collection not found.")
+    } else {
+        Ok(query_result.first().unwrap().count)
+    }
+}
+
+#[derive(QueryableByName)]
+struct Count {
+    #[sql_type = "BigInt"]
+    count: i64,
 }
