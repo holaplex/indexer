@@ -596,11 +596,24 @@ impl Collection {
     }
 
     #[graphql(
-        description = "Total of all sales of all NFTs in the collection over all time, in lamports."
+        description = "Total of all sales of all NFTs in the collection over all time, in lamports.",
+        arguments(
+            start_date(
+                description = "Compute volume over purchases made later than this date (ISO 8601 format like 2022-07-04T17:06:10Z)"
+            ),
+            end_date(
+                description = "Compute volume over purchases made earlier than this date (ISO 8601 format like 2022-07-04T17:06:10Z)"
+            )
+        )
     )]
-    pub async fn volume_total(&self, ctx: &AppContext) -> FieldResult<scalars::I64> {
+    pub async fn volume_total(
+        &self,
+        ctx: &AppContext,
+        start_date: DateTime<Utc>,
+        end_date: DateTime<Utc>,
+    ) -> FieldResult<scalars::I64> {
         let conn = ctx.shared.db.get()?;
-        queries::collections::volume_total(&conn, self.0.mint_address.clone())
+        queries::collections::volume_total(&conn, self.0.mint_address.clone(), start_date, end_date)
             .map(Into::into)
             .map_err(Into::into)
     }

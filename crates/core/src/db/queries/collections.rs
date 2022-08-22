@@ -277,29 +277,42 @@ INNER JOIN metadata_collection_keys ON(metadatas.address = metadata_collection_k
 INNER JOIN auction_houses ON(purchases.auction_house = auction_houses.address)
 WHERE
     metadata_collection_keys.collection_address = $1
+    AND purchases.created_at >= $2
+    AND purchases.created_at <= $3
 	AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
 	AND metadata_collection_keys.verified = true
 GROUP BY metadata_collection_keys.collection_address;
 
--- $1: address::text";
+-- $1: address::text
+-- $2: start date::timestamp
+-- $3: end date::timestamp";
 
 /// Computes the total of all sales of all NFTs in the collection over all time, in lamports.
 ///
 /// # Errors
 /// This function fails if the underlying SQL query returns an error
-pub fn volume_total(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<i64> {
+pub fn volume_total(
+    conn: &Connection,
+    address: impl ToSql<Text, Pg>,
+    start_date: DateTime<Utc>,
+    end_date: DateTime<Utc>,
+) -> Result<i64> {
     let query_result = diesel::sql_query(VOLUME_TOTAL_QUERY)
         .bind(address)
+        .bind::<Timestamp, _>(start_date.naive_utc())
+        .bind::<Timestamp, _>(end_date.naive_utc())
         .load::<BigIntWrapper>(conn)
         .context("Failed to load collection volume total")?;
 
     if query_result.len() == 0 {
-        bail!("Collection not found.")
+        // ideally we'd throw if the collection isnt found and return
+        // 0 if there were no sales over the given time period, but 
+        // this is a more performant compromise
+        Ok(0)
     } else {
         Ok(query_result.first().unwrap().value)
     }
 }
-
 
 const HOLDER_COUNT_QUERY: &str = r"
 SELECT metadata_collection_keys.collection_address AS collection, COUNT(DISTINCT current_metadata_owners.owner_address) as value
