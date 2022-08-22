@@ -63,3 +63,6 @@ rename to signatory_records;
 
 alter table token_owner_records_v2
 rename to token_owner_records;
+
+alter table realms
+drop column reserved_v2;

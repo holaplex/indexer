@@ -553,7 +553,6 @@ pub(crate) async fn process_realmv2(
         voting_proposal_count: data.voting_proposal_count.try_into()?,
         authority: data.authority.map(|a| Owned(a.to_string())),
         name: Owned(data.name.to_string()),
-        reserved_v2: Owned(vec![128; 0]),
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
     };

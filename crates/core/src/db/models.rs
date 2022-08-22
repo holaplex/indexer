@@ -2616,7 +2616,6 @@ pub struct Realm<'a> {
     pub voting_proposal_count: i16,
     pub authority: Option<Cow<'a, str>>,
     pub name: Cow<'a, str>,
-    pub reserved_v2: Cow<'a, [u8]>,
     /// The slot number of this account's last known update
     pub slot: i64,
     /// The write version of this account's last known update
@@ -2755,6 +2754,7 @@ pub struct SignatoryRecord<'a> {
 #[allow(missing_docs)]
 #[derive(Debug, Clone, QueryableByName)]
 pub struct SplGovernanceProposal {
+    /// Union of `ProposalV1` and `ProposalV2`
     #[sql_type = "VarChar"]
     pub address: String,
     #[sql_type = "GovernanceAccountType"]
@@ -2771,7 +2771,6 @@ pub struct SplGovernanceProposal {
     pub signatories_count: i16,
     #[sql_type = "diesel::sql_types::SmallInt"]
     pub signatories_signed_off_count: i16,
-
     #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
     pub yes_votes_count: Option<i64>,
     #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
@@ -2808,7 +2807,6 @@ pub struct SplGovernanceProposal {
     pub name: String,
     #[sql_type = "VarChar"]
     pub description_link: String,
-
     #[sql_type = "Nullable<ProposalVoteType>"]
     pub vote_type: Option<ProposalVoteTypeEnum>,
     #[sql_type = "Nullable<diesel::sql_types::BigInt>"]

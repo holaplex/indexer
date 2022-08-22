@@ -1452,7 +1452,6 @@ table! {
         voting_proposal_count -> Int2,
         authority -> Nullable<Varchar>,
         name -> Text,
-        reserved_v2 -> Bytea,
         slot -> Int8,
         write_version -> Int8,
     }
