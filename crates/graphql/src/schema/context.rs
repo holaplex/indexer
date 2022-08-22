@@ -21,7 +21,7 @@ use objects::{
     profile::TwitterProfile,
     purchase_receipt::PurchaseReceipt,
     spl_governance::{
-        Governance, GovernanceConfig, MultiChoice, ProposalV2, ProposalOption, Realm, RealmConfig,
+        Governance, GovernanceConfig, MultiChoice, ProposalOption, ProposalV2, Realm, RealmConfig,
         TokenOwnerRecord, VoteChoice, VoteRecordV2,
     },
     stats::{MarketStats, MintStats},

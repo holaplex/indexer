@@ -23,7 +23,8 @@ use objects::{
     nft::{Collection, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
     profile::{ProfilesStats, TwitterProfile},
     spl_governance::{
-        Governance, ProposalV2, Realm, SignatoryRecord, TokenOwnerRecord, VoteRecord, VoteRecordV2,
+        Governance, Proposal, ProposalV2, Realm, SignatoryRecord, TokenOwnerRecord, VoteRecord,
+        VoteRecordV2,
     },
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
@@ -1265,36 +1266,27 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(description = "Filter on SPL Governance proposals")] addresses: Option<
-            Vec<PublicKey<ProposalV2>>,
+            Vec<PublicKey<Proposal>>,
         >,
         #[graphql(description = "Filter on spl governance")] governances: Option<
             Vec<PublicKey<Governance>>,
         >,
-    ) -> FieldResult<Vec<ProposalV2>> {
+    ) -> FieldResult<Vec<Proposal>> {
         if addresses.is_none() && governances.is_none() {
             return Err(FieldError::new(
                 "You must supply atleast one filter",
-                graphql_value!({ "Filters": "addresses: Vec<PublicKey<ProposalV2>>, governances: Vec<PublicKey<Governance>>" }),
+                graphql_value!({ "Filters": "addresses: Vec<PublicKey<Proposal>>, governances: Vec<PublicKey<Governance>>" }),
             ));
         }
 
         let conn = context.shared.db.get()?;
-        let mut query = proposals_v2::table
-            .select(proposals_v2::all_columns)
-            .into_boxed();
 
-        if let Some(addresses) = addresses {
-            query = query.filter(proposals_v2::address.eq(any(addresses)));
-        }
-        if let Some(governances) = governances {
-            query = query.filter(proposals_v2::governance.eq(any(governances)));
-        }
+        let proposals: Vec<models::SplGovernanceProposal> =
+            queries::spl_governance::proposals(&conn, addresses, governances)?;
 
-        query
-            .load::<models::ProposalV2>(&conn)
-            .context("Failed to load spl governance proposals.")?
+        proposals
             .into_iter()
-            .map(ProposalV2::try_from)
+            .map(Proposal::try_from)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
@@ -1303,9 +1295,9 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         #[graphql(description = "Filter on SPL VoteRecordV2 pubkeys")] addresses: Option<
-            Vec<PublicKey<VoteRecordV2>>,
+            Vec<PublicKey<VoteRecord>>,
         >,
-        #[graphql(description = "Filter on Proposals")] proposals: Option<Vec<PublicKey<ProposalV2>>>,
+        #[graphql(description = "Filter on Proposals")] proposals: Option<Vec<PublicKey<Proposal>>>,
         #[graphql(description = "Filter on GoverningTokenOwners")] governing_token_owners: Option<
             Vec<PublicKey<Wallet>>,
         >,
@@ -1318,7 +1310,7 @@ impl QueryRoot {
         {
             return Err(FieldError::new(
                 "You must supply atleast one filter",
-                graphql_value!({ "Filters": "addresses: Vec<PublicKey<VoteRecordV2>>, proposals: Vec<PublicKey<ProposalV2>>, governing_token_owners: Vec<PublicKey<Wallet>>, is_relinquished: bool" }),
+                graphql_value!({ "Filters": "addresses: Vec<PublicKey<VoteRecordV2>>, proposals: Vec<PublicKey<Proposal>>, governing_token_owners: Vec<PublicKey<Wallet>>, is_relinquished: bool" }),
             ));
         }
 
@@ -1345,12 +1337,14 @@ impl QueryRoot {
         #[graphql(description = "Filter on SPL SignatoryRecord pubkeys")] addresses: Option<
             Vec<PublicKey<SignatoryRecord>>,
         >,
-        #[graphql(description = "Filter on Proposals")] proposals: Option<Vec<PublicKey<ProposalV2>>>,
+        #[graphql(description = "Filter on Proposals")] proposals: Option<
+            Vec<PublicKey<ProposalV2>>,
+        >,
     ) -> FieldResult<Vec<SignatoryRecord>> {
         if addresses.is_none() && proposals.is_none() {
             return Err(FieldError::new(
                 "You must supply atleast one filter",
-                graphql_value!({ "Filters": "addresses: Vec<PublicKey<SignatoryRecord>>, proposals: Vec<PublicKey<ProposalV2>>" }),
+                graphql_value!({ "Filters": "addresses: Vec<PublicKey<SignatoryRecord>>, proposals: Vec<PublicKey<Proposal>>" }),
             ));
         }
 

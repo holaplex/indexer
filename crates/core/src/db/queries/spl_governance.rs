@@ -9,7 +9,10 @@ use diesel::{
 };
 
 use crate::{
-    db::{models::VoteRecord, Connection},
+    db::{
+        models::{SplGovernanceProposal, VoteRecord},
+        Connection,
+    },
     error::Result,
 };
 
@@ -43,7 +46,7 @@ SELECT ADDRESS,
 	SLOT,
 	WRITE_VERSION
 FROM VOTE_RECORDS_V2
-WHERE ADDRESS = ANY($1)
+WHERE (ADDRESS = ANY($1) OR $1 is null)
     AND (PROPOSAL = ANY($2) OR $2 is null)
     AND (GOVERNING_TOKEN_OWNER = ANY($3) OR $3 is null)
     AND (is_relinquished = $4 OR $4 is null);
@@ -66,4 +69,89 @@ pub fn vote_records(
         .bind(is_relinquished)
         .load(conn)
         .context("Failed to load vote records")
+}
+
+const PROPOSALS_QUERY: &str = r"
+SELECT ADDRESS,
+	ACCOUNT_TYPE,
+	GOVERNANCE,
+	GOVERNING_TOKEN_MINT,
+	STATE,
+	TOKEN_OWNER_RECORD,
+	SIGNATORIES_COUNT,
+	SIGNATORIES_SIGNED_OFF_COUNT,
+	YES_VOTES_COUNT,
+	NO_VOTES_COUNT,
+	INSTRUCTIONS_EXECUTED_COUNT,
+	INSTRUCTIONS_COUNT,
+	INSTRUCTIONS_NEXT_INDEX,
+	NULL AS VOTE_TYPE,
+	NULL AS DENY_VOTE_WEIGHT,
+	NULL AS VETO_VOTE_WEIGHT,
+	NULL AS ABSTAIN_VOTE_WEIGHT,
+	NULL AS START_VOTING_AT,
+	DRAFT_AT,
+	SIGNING_OFF_AT,
+	VOTING_AT,
+	NULL AS VOTING_AT_SLOT,
+	VOTING_COMPLETED_AT,
+	EXECUTING_AT,
+	CLOSED_AT,
+	EXECUTION_FLAGS,
+	MAX_VOTE_WEIGHT,
+	NULL AS MAX_VOTING_TIME,
+	VOTE_THRESHOLD_TYPE,
+	VOTE_THRESHOLD_PERCENTAGE,
+	NAME,
+	DESCRIPTION_LINK
+FROM PROPOSALS_V1
+WHERE (ADDRESS = ANY($1) or $1 is null) AND (governance = any($2) or $2 is null)
+UNION ALL
+SELECT ADDRESS,
+	ACCOUNT_TYPE,
+	GOVERNANCE,
+	GOVERNING_TOKEN_MINT,
+	STATE,
+	TOKEN_OWNER_RECORD,
+	SIGNATORIES_COUNT,
+	SIGNATORIES_SIGNED_OFF_COUNT,
+	NULL AS YES_VOTES_COUNT,
+	NULL AS NO_VOTES_COUNT,
+	NULL AS INSTRUCTIONS_EXECUTED_COUNT,
+	NULL AS INSTRUCTIONS_COUNT,
+	NULL AS INSTRUCTIONS_NEXT_INDEX,
+	VOTE_TYPE,
+	DENY_VOTE_WEIGHT,
+	VETO_VOTE_WEIGHT,
+	ABSTAIN_VOTE_WEIGHT,
+	START_VOTING_AT,
+	DRAFT_AT,
+	SIGNING_OFF_AT,
+	VOTING_AT,
+	VOTING_AT_SLOT,
+	VOTING_COMPLETED_AT,
+	EXECUTING_AT,
+	CLOSED_AT,
+	EXECUTION_FLAGS,
+	MAX_VOTE_WEIGHT,
+	MAX_VOTING_TIME,
+	VOTE_THRESHOLD_TYPE,
+	VOTE_THRESHOLD_PERCENTAGE,
+	NAME,
+	DESCRIPTION_LINK
+FROM PROPOSALS_V2
+WHERE (ADDRESS = ANY($1) or $1 is null) AND (governance = any($2) or $2 is null);
+ -- $1: addresses::text[]
+ -- $2: governances::text[]";
+
+pub fn proposals(
+    conn: &Connection,
+    addresses: impl ToSql<Nullable<Array<Text>>, Pg>,
+    governances: impl ToSql<Nullable<Array<Text>>, Pg>,
+) -> Result<Vec<SplGovernanceProposal>> {
+    diesel::sql_query(PROPOSALS_QUERY)
+        .bind(addresses)
+        .bind(governances)
+        .load(conn)
+        .context("Failed to load proposals")
 }

@@ -79,6 +79,83 @@ impl<'a> TryFrom<models::Governance<'a>> for Governance {
     }
 }
 
+#[derive(Debug, Clone, juniper::GraphQLEnum)]
+pub enum GovernanceAccountType {
+    Uninitialized,
+    RealmV1,
+    TokenOwnerRecordV1,
+    GovernanceV1,
+    ProgramGovernanceV1,
+    ProposalV1,
+    SignatoryRecordV1,
+    VoteRecordV1,
+    ProposalInstructionV1,
+    MintGovernanceV1,
+    TokenGovernanceV1,
+    RealmConfig,
+    VoteRecordV2,
+    ProposalTransactionV2,
+    ProposalV2,
+    ProgramMetadata,
+    RealmV2,
+    TokenOwnerRecordV2,
+    GovernanceV2,
+    ProgramGovernanceV2,
+    MintGovernanceV2,
+    TokenGovernanceV2,
+    SignatoryRecordV2,
+}
+
+impl From<GovernanceAccountTypeEnum> for GovernanceAccountType {
+    fn from(v: GovernanceAccountTypeEnum) -> Self {
+        match v {
+            GovernanceAccountTypeEnum::Uninitialized => GovernanceAccountType::Uninitialized,
+            GovernanceAccountTypeEnum::RealmV1 => GovernanceAccountType::RealmV1,
+            GovernanceAccountTypeEnum::TokenOwnerRecordV1 => {
+                GovernanceAccountType::TokenOwnerRecordV1
+            },
+            GovernanceAccountTypeEnum::GovernanceV1 => GovernanceAccountType::GovernanceV1,
+            GovernanceAccountTypeEnum::ProgramGovernanceV1 => {
+                GovernanceAccountType::ProgramGovernanceV1
+            },
+            GovernanceAccountTypeEnum::ProposalV1 => GovernanceAccountType::ProposalV1,
+            GovernanceAccountTypeEnum::SignatoryRecordV1 => {
+                GovernanceAccountType::SignatoryRecordV1
+            },
+            GovernanceAccountTypeEnum::VoteRecordV1 => GovernanceAccountType::VoteRecordV1,
+            GovernanceAccountTypeEnum::ProposalInstructionV1 => {
+                GovernanceAccountType::ProposalInstructionV1
+            },
+            GovernanceAccountTypeEnum::MintGovernanceV1 => GovernanceAccountType::MintGovernanceV1,
+            GovernanceAccountTypeEnum::TokenGovernanceV1 => {
+                GovernanceAccountType::TokenGovernanceV1
+            },
+            GovernanceAccountTypeEnum::RealmConfig => GovernanceAccountType::RealmConfig,
+            GovernanceAccountTypeEnum::VoteRecordV2 => GovernanceAccountType::VoteRecordV2,
+            GovernanceAccountTypeEnum::ProposalTransactionV2 => {
+                GovernanceAccountType::ProposalTransactionV2
+            },
+            GovernanceAccountTypeEnum::ProposalV2 => GovernanceAccountType::ProposalV2,
+            GovernanceAccountTypeEnum::ProgramMetadata => GovernanceAccountType::ProgramMetadata,
+            GovernanceAccountTypeEnum::RealmV2 => GovernanceAccountType::RealmV2,
+            GovernanceAccountTypeEnum::TokenOwnerRecordV2 => {
+                GovernanceAccountType::TokenOwnerRecordV2
+            },
+            GovernanceAccountTypeEnum::GovernanceV2 => GovernanceAccountType::GovernanceV2,
+            GovernanceAccountTypeEnum::ProgramGovernanceV2 => {
+                GovernanceAccountType::ProgramGovernanceV2
+            },
+            GovernanceAccountTypeEnum::MintGovernanceV2 => GovernanceAccountType::MintGovernanceV2,
+            GovernanceAccountTypeEnum::TokenGovernanceV2 => {
+                GovernanceAccountType::TokenGovernanceV2
+            },
+            GovernanceAccountTypeEnum::SignatoryRecordV2 => {
+                GovernanceAccountType::SignatoryRecordV2
+            },
+        }
+    }
+}
+
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct GovernanceConfig {
     pub governance_address: PublicKey<Governance>,
@@ -630,9 +707,218 @@ impl<'a> From<models::SignatoryRecordV2<'a>> for SignatoryRecord {
     }
 }
 
+#[derive(derive_more::From, juniper::GraphQLUnion)]
+#[graphql(
+  Context = AppContext,
+)]
+pub enum Proposal {
+    ProposalV1(ProposalV1),
+    ProposalV2(ProposalV2),
+}
+
+#[derive(thiserror::Error, Debug)]
+#[error("Invalid proposal variant")]
+pub struct TryFromProposalError;
+
+impl TryFrom<models::SplGovernanceProposal> for Proposal {
+    type Error = TryFromProposalError;
+
+    fn try_from(
+        models::SplGovernanceProposal {
+            address,
+            account_type,
+            governance,
+            governing_token_mint,
+            state,
+            token_owner_record,
+            signatories_count,
+            signatories_signed_off_count,
+            yes_votes_count,
+            no_votes_count,
+            instructions_executed_count,
+            instructions_count,
+            instructions_next_index,
+            draft_at,
+            signing_off_at,
+            voting_at,
+            voting_at_slot,
+            voting_completed_at,
+            executing_at,
+            closed_at,
+            execution_flags,
+            max_vote_weight,
+            max_voting_time,
+            vote_threshold_type,
+            vote_threshold_percentage,
+            name,
+            description_link,
+            vote_type,
+            deny_vote_weight,
+            veto_vote_weight,
+            abstain_vote_weight,
+            start_voting_at,
+        }: models::SplGovernanceProposal,
+    ) -> Result<Self, Self::Error> {
+        match account_type {
+            GovernanceAccountTypeEnum::ProposalV1 => Ok(Self::ProposalV1(ProposalV1 {
+                address: address.into(),
+                account_type: account_type.into(),
+                governance: governance.into(),
+                governing_token_mint: governing_token_mint.into(),
+                state: state.into(),
+                token_owner_record: token_owner_record.into(),
+                signatories_count: signatories_count.into(),
+                signatories_signed_off_count: signatories_signed_off_count.into(),
+                yes_votes_count: yes_votes_count.unwrap().into(),
+                no_votes_count: no_votes_count.unwrap().into(),
+                instructions_executed_count: instructions_executed_count.unwrap().into(),
+                instructions_count: instructions_count.unwrap().into(),
+                instructions_next_index: instructions_next_index.unwrap().into(),
+                draft_at: DateTime::from_utc(draft_at, Utc),
+                signing_off_at: signing_off_at.map(|v| DateTime::from_utc(v, Utc)),
+                voting_at: voting_at.map(|v| DateTime::from_utc(v, Utc)),
+                voting_at_slot: voting_at_slot.map(Into::into),
+                voting_completed_at: voting_completed_at.map(|v| DateTime::from_utc(v, Utc)),
+                executing_at: executing_at.map(|v| DateTime::from_utc(v, Utc)),
+                closed_at: closed_at.map(|v| DateTime::from_utc(v, Utc)),
+                execution_flags: execution_flags.into(),
+                max_vote_weight: max_vote_weight.map(Into::into),
+                vote_threshold_type: vote_threshold_type.map(Into::into),
+                vote_threshold_percentage: vote_threshold_percentage.map(Into::into),
+                name,
+                description_link,
+            })),
+            GovernanceAccountTypeEnum::ProposalV2 => Ok(Self::ProposalV2(ProposalV2 {
+                address: address.into(),
+                account_type: account_type.into(),
+                governance: governance.into(),
+                governing_token_mint: governing_token_mint.into(),
+                state: state.into(),
+                token_owner_record: token_owner_record.into(),
+                signatories_count: signatories_count.into(),
+                signatories_signed_off_count: signatories_signed_off_count.into(),
+                vote_type: vote_type.unwrap().into(),
+                deny_vote_weight: deny_vote_weight.map(Into::into),
+                veto_vote_weight: veto_vote_weight.map(Into::into),
+                abstain_vote_weight: abstain_vote_weight.map(Into::into),
+                start_voting_at: start_voting_at.map(|v| DateTime::from_utc(v, Utc)),
+                draft_at: DateTime::from_utc(draft_at, Utc),
+                signing_off_at: signing_off_at.map(|v| DateTime::from_utc(v, Utc)),
+                voting_at: voting_at.map(|v| DateTime::from_utc(v, Utc)),
+                voting_at_slot: voting_at_slot.map(Into::into),
+                voting_completed_at: voting_completed_at.map(|v| DateTime::from_utc(v, Utc)),
+                executing_at: executing_at.map(|v| DateTime::from_utc(v, Utc)),
+                closed_at: closed_at.map(|v| DateTime::from_utc(v, Utc)),
+                execution_flags: execution_flags.into(),
+                max_vote_weight: max_vote_weight.map(Into::into),
+                max_voting_time: max_voting_time.map(Into::into),
+                vote_threshold_type: vote_threshold_type.map(Into::into),
+                vote_threshold_percentage: vote_threshold_percentage.map(Into::into),
+                name,
+                description_link,
+            })),
+            _ => Err(TryFromProposalError),
+        }
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct ProposalV1 {
+    pub address: PublicKey<ProposalV2>,
+    pub account_type: GovernanceAccountType,
+    pub governance: PublicKey<Governance>,
+    pub governing_token_mint: PublicKey<TokenMint>,
+    pub state: ProposalState,
+    pub token_owner_record: PublicKey<TokenOwnerRecord>,
+    pub signatories_count: i32,
+    pub signatories_signed_off_count: i32,
+    pub yes_votes_count: I64,
+    pub no_votes_count: I64,
+    pub instructions_executed_count: i32,
+    pub instructions_count: i32,
+    pub instructions_next_index: i32,
+    pub draft_at: DateTime<Utc>,
+    pub signing_off_at: Option<DateTime<Utc>>,
+    pub voting_at: Option<DateTime<Utc>>,
+    pub voting_at_slot: Option<I64>,
+    pub voting_completed_at: Option<DateTime<Utc>>,
+    pub executing_at: Option<DateTime<Utc>>,
+    pub closed_at: Option<DateTime<Utc>>,
+    pub execution_flags: InstructionExecutionFlags,
+    pub max_vote_weight: Option<I64>,
+    pub vote_threshold_type: Option<VoteThreshold>,
+    pub vote_threshold_percentage: Option<i32>,
+    pub name: String,
+    pub description_link: String,
+}
+
+impl<'a> From<models::ProposalV1<'a>> for ProposalV1 {
+    fn from(
+        models::ProposalV1 {
+            address,
+            account_type,
+            governance,
+            governing_token_mint,
+            state,
+            token_owner_record,
+            signatories_count,
+            signatories_signed_off_count,
+            yes_votes_count,
+            no_votes_count,
+            instructions_executed_count,
+            instructions_count,
+            instructions_next_index,
+            draft_at,
+            signing_off_at,
+            voting_at,
+            voting_at_slot,
+            voting_completed_at,
+            executing_at,
+            closed_at,
+            execution_flags,
+            max_vote_weight,
+            vote_threshold_type,
+            vote_threshold_percentage,
+            name,
+            description_link,
+            ..
+        }: models::ProposalV1,
+    ) -> Self {
+        Self {
+            address: address.into_owned().into(),
+            account_type: account_type.into(),
+            governance: governance.into_owned().into(),
+            governing_token_mint: governing_token_mint.into_owned().into(),
+            state: state.into(),
+            token_owner_record: token_owner_record.into_owned().into(),
+            signatories_count: signatories_count.into(),
+            signatories_signed_off_count: signatories_signed_off_count.into(),
+            yes_votes_count: yes_votes_count.into(),
+            no_votes_count: no_votes_count.into(),
+            instructions_executed_count: instructions_executed_count.into(),
+            instructions_count: instructions_count.into(),
+            instructions_next_index: instructions_next_index.into(),
+            draft_at: DateTime::from_utc(draft_at, Utc),
+            signing_off_at: signing_off_at.map(|v| DateTime::from_utc(v, Utc)),
+            voting_at: voting_at.map(|v| DateTime::from_utc(v, Utc)),
+            voting_at_slot: voting_at_slot.map(Into::into),
+            voting_completed_at: voting_completed_at.map(|v| DateTime::from_utc(v, Utc)),
+            executing_at: executing_at.map(|v| DateTime::from_utc(v, Utc)),
+            closed_at: closed_at.map(|v| DateTime::from_utc(v, Utc)),
+            execution_flags: execution_flags.into(),
+            max_vote_weight: max_vote_weight.map(Into::into),
+            vote_threshold_type: vote_threshold_type.map(Into::into),
+            vote_threshold_percentage: vote_threshold_percentage.map(Into::into),
+            name: name.into_owned(),
+            description_link: description_link.into_owned(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ProposalV2 {
     pub address: PublicKey<ProposalV2>,
+    pub account_type: GovernanceAccountType,
     pub governance: PublicKey<Governance>,
     pub governing_token_mint: PublicKey<TokenMint>,
     pub state: ProposalState,
@@ -795,6 +1081,7 @@ impl<'a> From<models::ProposalV2<'a>> for ProposalV2 {
     fn from(
         models::ProposalV2 {
             address,
+            account_type,
             governance,
             governing_token_mint,
             state,
@@ -825,6 +1112,7 @@ impl<'a> From<models::ProposalV2<'a>> for ProposalV2 {
     ) -> Self {
         Self {
             address: address.into_owned().into(),
+            account_type: account_type.into(),
             governance: governance.into_owned().into(),
             governing_token_mint: governing_token_mint.into_owned().into(),
             state: state.into(),

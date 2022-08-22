@@ -12,12 +12,12 @@ use uuid::Uuid;
 #[allow(clippy::wildcard_imports)]
 use super::schema::*;
 use crate::db::custom_types::{
-    EndSettingType, GovernanceAccountType, GovernanceAccountTypeEnum,
+    EndSettingType, GovernanceAccountType, GovernanceAccountTypeEnum, InstructionExecutionFlags,
     InstructionExecutionFlagsEnum, ListingEventLifecycle, ListingEventLifecycleEnum,
     MintMaxVoteEnum, OfferEventLifecycle, OfferEventLifecycleEnum, OptionVoteResultEnum,
-    ProposalStateEnum, ProposalVoteTypeEnum, TokenStandardEnum, TransactionExecutionStatusEnum,
-    VoteRecordV2Vote, VoteRecordV2VoteEnum, VoteThresholdEnum, VoteTippingEnum, VoteWeightV1,
-    VoteWeightV1Enum, WhitelistMintMode,
+    ProposalState, ProposalStateEnum, ProposalVoteType, ProposalVoteTypeEnum, TokenStandardEnum,
+    TransactionExecutionStatusEnum, VoteRecordV2Vote, VoteRecordV2VoteEnum, VoteThresholdEnum,
+    VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum, WhitelistMintMode,
 };
 
 /// A row in the `bids` table
@@ -2750,6 +2750,77 @@ pub struct SignatoryRecordV2<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+}
+
+#[allow(missing_docs)]
+#[derive(Debug, Clone, QueryableByName)]
+pub struct SplGovernanceProposal {
+    #[sql_type = "VarChar"]
+    pub address: String,
+    #[sql_type = "GovernanceAccountType"]
+    pub account_type: GovernanceAccountTypeEnum,
+    #[sql_type = "VarChar"]
+    pub governance: String,
+    #[sql_type = "VarChar"]
+    pub governing_token_mint: String,
+    #[sql_type = "ProposalState"]
+    pub state: ProposalStateEnum,
+    #[sql_type = "VarChar"]
+    pub token_owner_record: String,
+    #[sql_type = "diesel::sql_types::SmallInt"]
+    pub signatories_count: i16,
+    #[sql_type = "diesel::sql_types::SmallInt"]
+    pub signatories_signed_off_count: i16,
+
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub yes_votes_count: Option<i64>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub no_votes_count: Option<i64>,
+    #[sql_type = "Nullable<diesel::sql_types::SmallInt>"]
+    pub instructions_executed_count: Option<i16>,
+    #[sql_type = "Nullable<diesel::sql_types::SmallInt>"]
+    pub instructions_count: Option<i16>,
+    #[sql_type = "Nullable<diesel::sql_types::SmallInt>"]
+    pub instructions_next_index: Option<i16>,
+    #[sql_type = "Timestamptz"]
+    pub draft_at: NaiveDateTime,
+    #[sql_type = "Nullable<Timestamptz>"]
+    pub signing_off_at: Option<NaiveDateTime>,
+    #[sql_type = "Nullable<Timestamptz>"]
+    pub voting_at: Option<NaiveDateTime>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub voting_at_slot: Option<i64>,
+    #[sql_type = "Nullable<Timestamptz>"]
+    pub voting_completed_at: Option<NaiveDateTime>,
+    #[sql_type = "Nullable<Timestamptz>"]
+    pub executing_at: Option<NaiveDateTime>,
+    #[sql_type = "Nullable<Timestamptz>"]
+    pub closed_at: Option<NaiveDateTime>,
+    #[sql_type = "InstructionExecutionFlags"]
+    pub execution_flags: InstructionExecutionFlagsEnum,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub max_vote_weight: Option<i64>,
+    #[sql_type = "Nullable<VoteThresholdType>"]
+    pub vote_threshold_type: Option<VoteThresholdEnum>,
+    #[sql_type = "Nullable<diesel::sql_types::SmallInt>"]
+    pub vote_threshold_percentage: Option<i16>,
+    #[sql_type = "VarChar"]
+    pub name: String,
+    #[sql_type = "VarChar"]
+    pub description_link: String,
+
+    #[sql_type = "Nullable<ProposalVoteType>"]
+    pub vote_type: Option<ProposalVoteTypeEnum>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub deny_vote_weight: Option<i64>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub veto_vote_weight: Option<i64>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub abstain_vote_weight: Option<i64>,
+    #[sql_type = "Nullable<Timestamptz>"]
+    pub start_voting_at: Option<NaiveDateTime>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub max_voting_time: Option<i64>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
