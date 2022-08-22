@@ -1,3 +1,5 @@
+use bigdecimal::{BigDecimal, ParseBigDecimalError, ToPrimitive};
+
 use super::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -61,5 +63,18 @@ impl TryFrom<i64> for U64 {
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
         value.try_into().map(Self)
+    }
+}
+
+impl TryFrom<BigDecimal> for U64 {
+    type Error = ParseBigDecimalError;
+
+    fn try_from(value: BigDecimal) -> Result<Self, Self::Error> {
+        value
+            .to_u64()
+            .ok_or_else(|| {
+                ParseBigDecimalError::Other(String::from("Integer is too large to store."))
+            })
+            .map(Self)
     }
 }

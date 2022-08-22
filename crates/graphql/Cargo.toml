@@ -30,6 +30,7 @@ serde_json = "1.0.70"
 solana-client = "~1.9.5"
 thiserror = "1.0.30"
 tokio = { version = "1.18.2", default-features = false }
+bigdecimal = "0.1.0"
 
 [dependencies.indexer-core]
 package = "holaplex-indexer-core"

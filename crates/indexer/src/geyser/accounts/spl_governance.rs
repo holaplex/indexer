@@ -5,23 +5,24 @@ use indexer_core::{
             GovernanceAccountTypeEnum, InstructionExecutionFlagsEnum, MintMaxVoteEnum,
             OptionVoteResultEnum, ProposalStateEnum, ProposalVoteTypeEnum,
             TransactionExecutionStatusEnum, VoteRecordV2VoteEnum, VoteThresholdEnum,
-            VoteTippingEnum,
+            VoteTippingEnum, VoteWeightV1Enum,
         },
         insert_into,
         models::{
             Governance, GovernanceConfig as DbGovernanceConfig, MultiChoice,
             ProposalOption as DbProposalOption, ProposalTransaction,
             ProposalTransactionInstruction, ProposalTransactionInstructionAccount,
-            ProposalV2 as DbProposalV2, Realm, RealmConfig as DbRealmConfig,
-            SignatoryRecordV2 as DbSignatoryRecordV2, TokenOwnerRecordV2 as DbTokenOwnerRecordV2,
-            VoteChoice as DbVoteChoice, VoteRecordV2 as DbVoteRecordV2,
+            ProposalV1 as DbProposalV1, ProposalV2 as DbProposalV2, Realm,
+            RealmConfig as DbRealmConfig, SignatoryRecordV2 as DbSignatoryRecordV2,
+            TokenOwnerRecordV2 as DbTokenOwnerRecordV2, VoteChoice as DbVoteChoice,
+            VoteRecordV1 as DbVoteRecordV1, VoteRecordV2 as DbVoteRecordV2,
         },
         tables::{
             governance_configs, governances, proposal_options,
             proposal_transaction_instruction_accounts, proposal_transaction_instructions,
-            proposal_transactions, proposal_vote_type_multi_choices, proposals_v2, realm_configs,
-            realms, signatory_records_v2, token_owner_records_v2,
-            vote_record_v2_vote_approve_vote_choices, vote_records_v2,
+            proposal_transactions, proposal_vote_type_multi_choices, proposals_v1, proposals_v2,
+            realm_configs, realms, signatory_records_v2, token_owner_records_v2,
+            vote_record_v2_vote_approve_vote_choices, vote_records_v1, vote_records_v2,
         },
     },
     prelude::*,
@@ -139,6 +140,17 @@ impl From<VoteTipping> for VoteTippingEnum {
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct GovernanceV1 {
+    pub account_type: GovernanceAccountType,
+    pub realm: Pubkey,
+    pub governed_account: Pubkey,
+    pub proposals_count: u32,
+    pub config: GovernanceConfig,
+    pub reserved: [u8; 6],
+    pub voting_proposal_count: u16,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub struct GovernanceV2 {
     pub account_type: GovernanceAccountType,
     pub realm: Pubkey,
@@ -162,6 +174,17 @@ pub struct GovernanceConfig {
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct RealmV1 {
+    pub account_type: GovernanceAccountType,
+    pub community_mint: Pubkey,
+    pub config: RealmConfig,
+    pub reserved: [u8; 6],
+    pub voting_proposal_count: u16,
+    pub authority: Option<Pubkey>,
+    pub name: String,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub struct RealmV2 {
     pub account_type: GovernanceAccountType,
     pub community_mint: Pubkey,
@@ -181,6 +204,21 @@ pub struct RealmConfig {
     pub min_community_weight_to_create_governance: u64,
     pub community_mint_max_vote_weight_source: MintMaxVoteWeightSource,
     pub council_mint: Option<Pubkey>,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct VoteRecordV1 {
+    pub account_type: GovernanceAccountType,
+    pub proposal: Pubkey,
+    pub governing_token_owner: Pubkey,
+    pub is_relinquished: bool,
+    pub vote_weight: VoteWeightV1,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub enum VoteWeightV1 {
+    Yes(u64),
+    No(u64),
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
@@ -220,7 +258,7 @@ pub struct VoteChoice {
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
-pub struct TokenOwnerRecordV2 {
+pub struct TokenOwnerRecordV1 {
     pub account_type: GovernanceAccountType,
     pub realm: Pubkey,
     pub governing_token_mint: Pubkey,
@@ -231,16 +269,14 @@ pub struct TokenOwnerRecordV2 {
     pub outstanding_proposal_count: u8,
     pub reserved: [u8; 7],
     pub governance_delegate: Option<Pubkey>,
-    pub reserved_v2: [u8; 128],
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
-pub struct SignatoryRecordV2 {
+pub struct SignatoryRecordV1 {
     pub account_type: GovernanceAccountType,
     pub proposal: Pubkey,
     pub signatory: Pubkey,
     pub signed_off: bool,
-    pub reserved_v2: [u8; 8],
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
@@ -251,6 +287,34 @@ pub struct ProposalOption {
     pub transactions_executed_count: u16,
     pub transactions_count: u16,
     pub transactions_next_index: u16,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct ProposalV1 {
+    pub account_type: GovernanceAccountType,
+    pub governance: Pubkey,
+    pub governing_token_mint: Pubkey,
+    pub state: ProposalState,
+    pub token_owner_record: Pubkey,
+    pub signatories_count: u8,
+    pub signatories_signed_off_count: u8,
+    pub yes_votes_count: u64,
+    pub no_votes_count: u64,
+    pub instructions_executed_count: u16,
+    pub instructions_count: u16,
+    pub instructions_next_index: u16,
+    pub draft_at: UnixTimestamp,
+    pub signing_off_at: Option<UnixTimestamp>,
+    pub voting_at: Option<UnixTimestamp>,
+    pub voting_at_slot: Option<Slot>,
+    pub voting_completed_at: Option<UnixTimestamp>,
+    pub executing_at: Option<UnixTimestamp>,
+    pub closed_at: Option<UnixTimestamp>,
+    pub execution_flags: InstructionExecutionFlags,
+    pub max_vote_weight: Option<u64>,
+    pub vote_threshold_percentage: Option<VoteThresholdPercentage>,
+    pub name: String,
+    pub description_link: String,
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
@@ -405,7 +469,7 @@ pub struct InstructionData {
 pub(crate) async fn process_governance(
     client: &Client,
     key: Pubkey,
-    data: GovernanceV2,
+    data: GovernanceV1,
     slot: u64,
     write_version: u64,
 ) -> Result<()> {
@@ -477,7 +541,7 @@ pub(crate) async fn process_governance(
 pub(crate) async fn process_realmv2(
     client: &Client,
     key: Pubkey,
-    data: RealmV2,
+    data: RealmV1,
     slot: u64,
     write_version: u64,
 ) -> Result<()> {
@@ -489,7 +553,7 @@ pub(crate) async fn process_realmv2(
         voting_proposal_count: data.voting_proposal_count.try_into()?,
         authority: data.authority.map(|a| Owned(a.to_string())),
         name: Owned(data.name.to_string()),
-        reserved_v2: Owned(data.reserved_v2.to_vec()),
+        reserved_v2: Owned(vec![128; 0]),
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
     };
@@ -540,6 +604,46 @@ pub(crate) async fn process_realmv2(
         })
         .await
         .context("Failed to insert realm config")?;
+
+    Ok(())
+}
+
+pub(crate) async fn process_vote_record_v1(
+    client: &Client,
+    key: Pubkey,
+    data: VoteRecordV1,
+    slot: u64,
+    write_version: u64,
+) -> Result<()> {
+    let (vote_type, vote_weight) = match data.vote_weight {
+        VoteWeightV1::Yes(w) => (VoteWeightV1Enum::Yes, i64::try_from(w)?),
+        VoteWeightV1::No(w) => (VoteWeightV1Enum::No, i64::try_from(w)?),
+    };
+
+    let row = DbVoteRecordV1 {
+        address: Owned(key.to_string()),
+        account_type: data.account_type.into(),
+        proposal: Owned(data.proposal.to_string()),
+        governing_token_owner: Owned(data.governing_token_owner.to_string()),
+        is_relinquished: data.is_relinquished,
+        vote_type,
+        vote_weight,
+        slot: slot.try_into()?,
+        write_version: write_version.try_into()?,
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(vote_records_v1::table)
+                .values(&row)
+                .on_conflict(vote_records_v1::address)
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
+        .context("Failed to insert vote record v2")?;
 
     Ok(())
 }
@@ -608,10 +712,10 @@ pub(crate) async fn process_vote_record_v2(
     Ok(())
 }
 
-pub(crate) async fn process_token_owner_record_v2(
+pub(crate) async fn process_token_owner_record(
     client: &Client,
     key: Pubkey,
-    data: TokenOwnerRecordV2,
+    data: TokenOwnerRecordV1,
     slot: u64,
     write_version: u64,
 ) -> Result<()> {
@@ -647,10 +751,10 @@ pub(crate) async fn process_token_owner_record_v2(
     Ok(())
 }
 
-pub(crate) async fn process_signatory_record_v2(
+pub(crate) async fn process_signatory_record(
     client: &Client,
     key: Pubkey,
-    data: SignatoryRecordV2,
+    data: SignatoryRecordV1,
     slot: u64,
     write_version: u64,
 ) -> Result<()> {
@@ -676,6 +780,71 @@ pub(crate) async fn process_signatory_record_v2(
         })
         .await
         .context("Failed to insert signatory record v2")?;
+
+    Ok(())
+}
+
+#[allow(clippy::too_many_lines)]
+pub(crate) async fn process_proposal_v1(
+    client: &Client,
+    key: Pubkey,
+    data: ProposalV1,
+    slot: u64,
+    write_version: u64,
+) -> Result<()> {
+    let (vote_threshold_type, vote_threshold_percentage) = match data.vote_threshold_percentage {
+        Some(VoteThresholdPercentage::YesVote(p)) => {
+            (Some(VoteThresholdEnum::YesVote), Some(i16::try_from(p)?))
+        },
+        Some(VoteThresholdPercentage::Quorum(p)) => {
+            (Some(VoteThresholdEnum::Quorum), Some(i16::try_from(p)?))
+        },
+        _ => (None, None),
+    };
+
+    let row = DbProposalV1 {
+        address: Owned(key.to_string()),
+        account_type: data.account_type.into(),
+        governance: Owned(data.governance.to_string()),
+        governing_token_mint: Owned(data.governing_token_mint.to_string()),
+        state: data.state.into(),
+        token_owner_record: Owned(data.token_owner_record.to_string()),
+        signatories_count: data.signatories_count.try_into()?,
+        signatories_signed_off_count: data.signatories_signed_off_count.try_into()?,
+        yes_votes_count: data.yes_votes_count.try_into()?,
+        no_votes_count: data.no_votes_count.try_into()?,
+        instructions_executed_count: data.instructions_executed_count.try_into()?,
+        instructions_count: data.instructions_count.try_into()?,
+        instructions_next_index: data.instructions_next_index.try_into()?,
+        draft_at: unix_timestamp(data.draft_at)?,
+        signing_off_at: data.signing_off_at.map(unix_timestamp).transpose()?,
+        voting_at: data.voting_at.map(unix_timestamp).transpose()?,
+        voting_at_slot: data.voting_at_slot.map(TryInto::try_into).transpose()?,
+        voting_completed_at: data.voting_completed_at.map(unix_timestamp).transpose()?,
+        executing_at: data.executing_at.map(unix_timestamp).transpose()?,
+        closed_at: data.closed_at.map(unix_timestamp).transpose()?,
+        execution_flags: data.execution_flags.into(),
+        max_vote_weight: data.max_vote_weight.map(TryInto::try_into).transpose()?,
+        vote_threshold_type,
+        vote_threshold_percentage,
+        name: Owned(data.name.to_string()),
+        description_link: Owned(data.description_link.to_string()),
+        slot: slot.try_into()?,
+        write_version: write_version.try_into()?,
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(proposals_v1::table)
+                .values(&row)
+                .on_conflict(proposals_v1::address)
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
+        .context("Failed to insert proposal v1")?;
 
     Ok(())
 }

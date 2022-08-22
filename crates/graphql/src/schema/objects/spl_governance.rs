@@ -1,11 +1,12 @@
 use indexer_core::db::custom_types::{
-    InstructionExecutionFlagsEnum, MintMaxVoteEnum, OptionVoteResultEnum, ProposalStateEnum,
-    ProposalVoteTypeEnum, VoteRecordV2VoteEnum, VoteThresholdEnum, VoteTippingEnum,
+    GovernanceAccountTypeEnum, InstructionExecutionFlagsEnum, MintMaxVoteEnum,
+    OptionVoteResultEnum, ProposalStateEnum, ProposalVoteTypeEnum, VoteRecordV2VoteEnum,
+    VoteThresholdEnum, VoteTippingEnum, VoteWeightV1Enum,
 };
 use objects::wallet::Wallet;
 use scalars::{
     markers::{GovernanceDelegate, GovernedAccount, TokenMint},
-    PublicKey, I64,
+    PublicKey, I64, U64,
 };
 
 use super::prelude::*;
@@ -83,7 +84,7 @@ pub struct GovernanceConfig {
     pub governance_address: PublicKey<Governance>,
     pub vote_threshold_type: VoteThreshold,
     pub vote_threshold_percentage: i32,
-    pub min_community_weight_to_create_proposal: I64,
+    pub min_community_weight_to_create_proposal: U64,
     pub min_instruction_hold_up_time: I64,
     pub max_voting_time: I64,
     pub vote_tipping: VoteTipping,
@@ -91,8 +92,10 @@ pub struct GovernanceConfig {
     pub min_council_weight_to_create_proposal: I64,
 }
 
-impl<'a> From<models::GovernanceConfig<'a>> for GovernanceConfig {
-    fn from(
+impl<'a> TryFrom<models::GovernanceConfig<'a>> for GovernanceConfig {
+    type Error = bigdecimal::ParseBigDecimalError;
+
+    fn try_from(
         models::GovernanceConfig {
             governance_address,
             vote_threshold_type,
@@ -105,18 +108,19 @@ impl<'a> From<models::GovernanceConfig<'a>> for GovernanceConfig {
             min_council_weight_to_create_proposal,
             ..
         }: models::GovernanceConfig,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
             governance_address: governance_address.into_owned().into(),
             vote_threshold_type: vote_threshold_type.into(),
             vote_threshold_percentage: vote_threshold_percentage.into(),
-            min_community_weight_to_create_proposal: min_community_weight_to_create_proposal.into(),
+            min_community_weight_to_create_proposal: min_community_weight_to_create_proposal
+                .try_into()?,
             min_instruction_hold_up_time: min_instruction_hold_up_time.into(),
             max_voting_time: max_voting_time.into(),
             vote_tipping: vote_tipping.into(),
             proposal_cool_off_time: proposal_cool_off_time.into(),
             min_council_weight_to_create_proposal: min_council_weight_to_create_proposal.into(),
-        }
+        })
     }
 }
 
@@ -219,14 +223,16 @@ pub struct RealmConfig {
     pub realm_address: PublicKey<Realm>,
     pub use_community_voter_weight_addin: bool,
     pub use_max_community_voter_weight_addin: bool,
-    pub min_community_weight_to_create_governance: I64,
+    pub min_community_weight_to_create_governance: U64,
     pub community_mint_max_vote_weight_source: MintMaxVoteWeightSource,
     pub community_mint_max_vote_weight: I64,
     pub council_mint: Option<PublicKey<TokenMint>>,
 }
 
-impl<'a> From<models::RealmConfig<'a>> for RealmConfig {
-    fn from(
+impl<'a> TryFrom<models::RealmConfig<'a>> for RealmConfig {
+    type Error = bigdecimal::ParseBigDecimalError;
+
+    fn try_from(
         models::RealmConfig {
             realm_address,
             use_community_voter_weight_addin,
@@ -237,17 +243,17 @@ impl<'a> From<models::RealmConfig<'a>> for RealmConfig {
             council_mint,
             ..
         }: models::RealmConfig,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
             realm_address: realm_address.into_owned().into(),
             use_community_voter_weight_addin,
             use_max_community_voter_weight_addin,
             min_community_weight_to_create_governance: min_community_weight_to_create_governance
-                .into(),
+                .try_into()?,
             community_mint_max_vote_weight_source: community_mint_max_vote_weight_source.into(),
             community_mint_max_vote_weight: community_mint_max_vote_weight.into(),
             council_mint: council_mint.map(Into::into),
-        }
+        })
     }
 }
 
@@ -266,10 +272,58 @@ impl From<MintMaxVoteEnum> for MintMaxVoteWeightSource {
     }
 }
 
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct VoteRecordV1 {
+    pub address: PublicKey<VoteRecordV1>,
+    pub proposal: PublicKey<ProposalV2>,
+    pub governing_token_owner: PublicKey<Wallet>,
+    pub is_relinquished: bool,
+    pub vote_type: VoteWeightV1,
+    pub vote_weight: I64,
+}
+
+#[derive(Debug, Clone, juniper::GraphQLEnum)]
+pub enum VoteWeightV1 {
+    Yes,
+    No,
+}
+
+impl From<VoteWeightV1Enum> for VoteWeightV1 {
+    fn from(v: VoteWeightV1Enum) -> Self {
+        match v {
+            VoteWeightV1Enum::Yes => VoteWeightV1::Yes,
+            VoteWeightV1Enum::No => VoteWeightV1::No,
+        }
+    }
+}
+
+impl<'a> From<models::VoteRecordV1<'a>> for VoteRecordV1 {
+    fn from(
+        models::VoteRecordV1 {
+            address,
+            proposal,
+            governing_token_owner,
+            is_relinquished,
+            vote_type,
+            vote_weight,
+            ..
+        }: models::VoteRecordV1,
+    ) -> Self {
+        Self {
+            address: address.into_owned().into(),
+            proposal: proposal.into_owned().into(),
+            governing_token_owner: governing_token_owner.into_owned().into(),
+            is_relinquished,
+            vote_type: vote_type.into(),
+            vote_weight: vote_weight.into(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
-pub struct VoteRecord {
-    pub address: PublicKey<VoteRecord>,
-    pub proposal: PublicKey<Proposal>,
+pub struct VoteRecordV2 {
+    pub address: PublicKey<VoteRecordV2>,
+    pub proposal: PublicKey<ProposalV2>,
     pub governing_token_owner: PublicKey<Wallet>,
     pub is_relinquished: bool,
     pub voter_weight: I64,
@@ -285,9 +339,9 @@ pub enum Vote {
 }
 
 #[graphql_object(Context = AppContext)]
-#[graphql(description = "SPLGovernance VoteRecord account")]
-impl VoteRecord {
-    fn address(&self) -> &PublicKey<VoteRecord> {
+#[graphql(description = "SPLGovernance VoteRecordV2 account")]
+impl VoteRecordV2 {
+    fn address(&self) -> &PublicKey<VoteRecordV2> {
         &self.address
     }
 
@@ -314,7 +368,7 @@ impl VoteRecord {
             .map_err(Into::into)
     }
 
-    pub async fn proposal(&self, ctx: &AppContext) -> FieldResult<Option<Proposal>> {
+    pub async fn proposal(&self, ctx: &AppContext) -> FieldResult<Option<ProposalV2>> {
         ctx.spl_proposal_loader
             .load(self.proposal.clone())
             .await
@@ -332,7 +386,7 @@ impl VoteRecord {
     }
 }
 
-impl<'a> From<models::VoteRecordV2<'a>> for VoteRecord {
+impl<'a> From<models::VoteRecordV2<'a>> for VoteRecordV2 {
     fn from(
         models::VoteRecordV2 {
             address,
@@ -366,9 +420,60 @@ impl From<VoteRecordV2VoteEnum> for Vote {
     }
 }
 
+#[derive(derive_more::From, juniper::GraphQLUnion)]
+#[graphql(
+  Context = AppContext,
+)]
+pub enum VoteRecord {
+    VoteRecordV1(VoteRecordV1),
+    VoteRecordV2(VoteRecordV2),
+}
+
+#[derive(thiserror::Error, Debug)]
+#[error("Invalid vote_record variant")]
+pub struct TryFromError;
+
+impl TryFrom<models::VoteRecord> for VoteRecord {
+    type Error = TryFromError;
+
+    fn try_from(
+        models::VoteRecord {
+            address,
+            account_type,
+            proposal,
+            governing_token_owner,
+            is_relinquished,
+            vote_type,
+            vote_weight,
+            voter_weight,
+            vote,
+        }: models::VoteRecord,
+    ) -> Result<Self, Self::Error> {
+        match account_type {
+            GovernanceAccountTypeEnum::VoteRecordV1 => Ok(Self::VoteRecordV1(VoteRecordV1 {
+                address: address.into(),
+                proposal: proposal.into(),
+                governing_token_owner: governing_token_owner.into(),
+                is_relinquished,
+                vote_type: vote_type.unwrap().into(),
+                vote_weight: vote_weight.unwrap().into(),
+            })),
+            GovernanceAccountTypeEnum::VoteRecordV2 => Ok(Self::VoteRecordV2(VoteRecordV2 {
+                address: address.into(),
+                proposal: proposal.into(),
+                governing_token_owner: governing_token_owner.into(),
+                is_relinquished,
+                vote: vote.unwrap().into(),
+                voter_weight: voter_weight.unwrap().into(),
+            })),
+            _ => Err(TryFromError),
+        }
+    }
+}
+
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct VoteChoice {
-    pub address: PublicKey<VoteRecord>,
+    pub address: PublicKey<VoteRecordV2>,
     pub rank: i32,
     pub weight_percentage: i32,
 }
@@ -478,7 +583,7 @@ impl<'a> From<models::TokenOwnerRecordV2<'a>> for TokenOwnerRecord {
 #[derive(Debug, Clone)]
 pub struct SignatoryRecord {
     pub address: PublicKey<SignatoryRecord>,
-    pub proposal: PublicKey<Proposal>,
+    pub proposal: PublicKey<ProposalV2>,
     pub signatory: PublicKey<Wallet>,
     pub signed_off: bool,
 }
@@ -498,7 +603,7 @@ impl SignatoryRecord {
         self.signed_off
     }
 
-    pub async fn proposal(&self, ctx: &AppContext) -> FieldResult<Option<Proposal>> {
+    pub async fn proposal(&self, ctx: &AppContext) -> FieldResult<Option<ProposalV2>> {
         ctx.spl_proposal_loader
             .load(self.proposal.clone())
             .await
@@ -526,8 +631,8 @@ impl<'a> From<models::SignatoryRecordV2<'a>> for SignatoryRecord {
 }
 
 #[derive(Debug, Clone)]
-pub struct Proposal {
-    pub address: PublicKey<Proposal>,
+pub struct ProposalV2 {
+    pub address: PublicKey<ProposalV2>,
     pub governance: PublicKey<Governance>,
     pub governing_token_mint: PublicKey<TokenMint>,
     pub state: ProposalState,
@@ -557,8 +662,8 @@ pub struct Proposal {
 
 #[graphql_object(Context = AppContext)]
 #[graphql(description = "SPLGovernance ProposalV2 account")]
-impl Proposal {
-    fn address(&self) -> &PublicKey<Proposal> {
+impl ProposalV2 {
+    fn address(&self) -> &PublicKey<ProposalV2> {
         &self.address
     }
 
@@ -686,7 +791,7 @@ impl Proposal {
     }
 }
 
-impl<'a> From<models::ProposalV2<'a>> for Proposal {
+impl<'a> From<models::ProposalV2<'a>> for ProposalV2 {
     fn from(
         models::ProposalV2 {
             address,
@@ -835,7 +940,7 @@ impl From<InstructionExecutionFlagsEnum> for InstructionExecutionFlags {
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct ProposalOption {
-    pub proposal_address: PublicKey<Proposal>,
+    pub proposal_address: PublicKey<ProposalV2>,
     pub label: String,
     pub vote_weight: I64,
     pub vote_result: OptionVoteResult,

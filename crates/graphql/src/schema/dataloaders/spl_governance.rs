@@ -1,7 +1,7 @@
 use objects::{
     spl_governance::{
-        Governance, GovernanceConfig, MultiChoice, Proposal, ProposalOption, Realm, RealmConfig,
-        TokenOwnerRecord, VoteChoice, VoteRecord,
+        Governance, GovernanceConfig, MultiChoice, ProposalOption, ProposalV2, Realm, RealmConfig,
+        TokenOwnerRecord, VoteChoice, VoteRecordV2,
     },
     wallet::Wallet,
 };
@@ -15,11 +15,11 @@ use tables::{
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<PublicKey<VoteRecord>, Vec<VoteChoice>> for Batcher {
+impl TryBatchFn<PublicKey<VoteRecordV2>, Vec<VoteChoice>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<VoteRecord>],
-    ) -> TryBatchMap<PublicKey<VoteRecord>, Vec<VoteChoice>> {
+        addresses: &[PublicKey<VoteRecordV2>],
+    ) -> TryBatchMap<PublicKey<VoteRecordV2>, Vec<VoteChoice>> {
         let conn = self.db()?;
 
         let rows: Vec<models::VoteChoice> = vote_record_v2_vote_approve_vote_choices::table
@@ -80,11 +80,11 @@ impl TryBatchFn<PublicKey<Realm>, Option<RealmConfig>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Proposal>, Vec<ProposalOption>> for Batcher {
+impl TryBatchFn<PublicKey<ProposalV2>, Vec<ProposalOption>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<Proposal>],
-    ) -> TryBatchMap<PublicKey<Proposal>, Vec<ProposalOption>> {
+        addresses: &[PublicKey<ProposalV2>],
+    ) -> TryBatchMap<PublicKey<ProposalV2>, Vec<ProposalOption>> {
         let conn = self.db()?;
 
         let rows: Vec<models::ProposalOption> = proposal_options::table
@@ -122,11 +122,11 @@ impl TryBatchFn<PublicKey<Realm>, Option<Realm>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Proposal>, Option<Proposal>> for Batcher {
+impl TryBatchFn<PublicKey<ProposalV2>, Option<ProposalV2>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<Proposal>],
-    ) -> TryBatchMap<PublicKey<Proposal>, Option<Proposal>> {
+        addresses: &[PublicKey<ProposalV2>],
+    ) -> TryBatchMap<PublicKey<ProposalV2>, Option<ProposalV2>> {
         let conn = self.db()?;
 
         let rows: Vec<models::ProposalV2> = proposals_v2::table
@@ -143,11 +143,11 @@ impl TryBatchFn<PublicKey<Proposal>, Option<Proposal>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Proposal>, Option<MultiChoice>> for Batcher {
+impl TryBatchFn<PublicKey<ProposalV2>, Option<MultiChoice>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<Proposal>],
-    ) -> TryBatchMap<PublicKey<Proposal>, Option<MultiChoice>> {
+        addresses: &[PublicKey<ProposalV2>],
+    ) -> TryBatchMap<PublicKey<ProposalV2>, Option<MultiChoice>> {
         let conn = self.db()?;
 
         let rows: Vec<models::MultiChoice> = proposal_vote_type_multi_choices::table
