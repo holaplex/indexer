@@ -572,7 +572,10 @@ impl Collection {
         description = "Count of wallets that currently hold at least one NFT from the collection."
     )]
     pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<scalars::I64> {
-        Ok(scalars::I64::from(0))
+        let conn = ctx.shared.db.get()?;
+        queries::collections::holder_count(&conn, self.0.mint_address.clone())
+            .map(Into::into)
+            .map_err(Into::into)
     }
 
     #[graphql(description = "Count of active listings of NFTs in the collection.")]
@@ -595,8 +598,11 @@ impl Collection {
     #[graphql(
         description = "Total of all sales of all NFTs in the collection over all time, in lamports."
     )]
-    pub async fn volume_total(&self, ctx: &AppContext) -> FieldResult<Option<scalars::I64>> {
-        Ok(Some(scalars::I64::from(0)))
+    pub async fn volume_total(&self, ctx: &AppContext) -> FieldResult<scalars::I64> {
+        let conn = ctx.shared.db.get()?;
+        queries::collections::volume_total(&conn, self.0.mint_address.clone())
+            .map(Into::into)
+            .map_err(Into::into)
     }
 
     #[graphql(deprecated = "use `nft { address }`")]
