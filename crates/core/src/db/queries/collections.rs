@@ -1,6 +1,6 @@
 //! Query utilities for collections.
 
-use anyhow::{bail, Context};
+use anyhow::{anyhow, Context};
 use chrono::{DateTime, Utc};
 use diesel::{
     pg::Pg,
@@ -262,10 +262,10 @@ pub fn listed_count(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<
         .load::<BigIntWrapper>(conn)
         .context("Failed to load collection listing count")?;
 
-    if query_result.is_empty() {
-        bail!("Collection not found.")
-    }
-    unsafe { Ok(query_result.get_unchecked(0).value) }
+    query_result
+        .get(0)
+        .ok_or_else(|| anyhow!("Collection not found."))
+        .map(|w| w.value)
 }
 
 const VOLUME_TOTAL_QUERY: &str = r"
@@ -303,13 +303,10 @@ pub fn volume_total(
         .load::<BigIntWrapper>(conn)
         .context("Failed to load collection volume total")?;
 
-    if query_result.is_empty() {
-        // ideally we'd throw if the collection isnt found and return
-        // 0 if there were no sales over the given time period, but
-        // this is a more performant compromise
-        return Ok(0);
-    }
-    unsafe { Ok(query_result.get_unchecked(0).value) }
+    // ideally we'd throw if the collection isnt found and return
+    // 0 if there were no sales over the given time period, but
+    // this is a more performant compromise
+    Ok(query_result.get(0).map_or(0, |w| w.value))
 }
 
 const HOLDER_COUNT_QUERY: &str = r"
@@ -335,10 +332,10 @@ pub fn holder_count(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<
         .load::<BigIntWrapper>(conn)
         .context("Failed to load collection holder count")?;
 
-    if query_result.is_empty() {
-        bail!("Collection not found.")
-    }
-    unsafe { Ok(query_result.get_unchecked(0).value) }
+    query_result
+        .get(0)
+        .ok_or_else(|| anyhow!("Collection not found."))
+        .map(|w| w.value)
 }
 
 // This struct is needed to fulfill the QueryableByName
