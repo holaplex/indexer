@@ -98,7 +98,7 @@ futures-util = "0.3.21"
 hostname = "0.3.1"
 serde = { version = "1.0.133", features = ["derive"] }
 solana-program = "~1.9.5"
-strum = { version = "0.24.0", features = ["derive"] }
+strum = { version = "0.24.1", features = ["derive"] }
 thiserror = "1.0.30"
 tokio = { version = "1.13.0", features = ["macros", "rt", "rt-multi-thread", "signal", "sync"] }
 tokio-executor-trait = "2.1.0"
@@ -148,7 +148,7 @@ optional = true
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
 # tag = "v0.5.0" # TODO: restore this
-rev = "4c2cbd4"
+rev = "9290227"
 
 # Workspace dependencies
 [dependencies.genostub]
