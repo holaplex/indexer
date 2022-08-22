@@ -58,8 +58,8 @@ alter column min_community_weight_to_create_proposal type numeric;
 alter table realm_configs
 alter column min_community_weight_to_create_governance type numeric;
 
-ALTER TABLE signatory_records_v2
-  RENAME TO signatory_records;
+alter table signatory_records_v2
+rename to signatory_records;
 
-ALTER TABLE token_owner_records_v2
-  RENAME TO token_owner_records;
+alter table token_owner_records_v2
+rename to token_owner_records;
