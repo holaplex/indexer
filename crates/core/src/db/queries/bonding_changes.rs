@@ -54,3 +54,11 @@ pub fn list(
         .load(conn)
         .context("Failed to load enriched bonding changes")
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_list() {
+        todo!("Test list()");
+    }
+}

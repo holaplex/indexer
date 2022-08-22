@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+cd "$(dirname "$0")"
 
 for f in '' .dev .local; do
   f="./.env$f"
@@ -13,6 +14,6 @@ done
 
 export DATABASE_URL
 
-cd "$(dirname "$0")"/crates/core
+cd crates/core
 
-diesel "$@"
+exec diesel "$@"

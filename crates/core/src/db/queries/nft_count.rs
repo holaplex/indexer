@@ -303,3 +303,16 @@ pub fn store_creators(
         .load(conn)
         .context("Failed to load store creators counts")
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::db::test::prelude::*;
+
+    #[test]
+    fn test_store_creators_minimal_passes() {
+        let conn = connect();
+
+        std::mem::drop(super::store_creators(&conn, Vec::<String>::new()).unwrap());
+        todo!("Check that the result is non-empty");
+    }
+}

@@ -235,3 +235,49 @@ pub fn collection_activities(
         .load(conn)
         .context("Failed to load collection activities")
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::db::test::prelude::*;
+
+    #[test]
+    fn test_collections_featured_by_marketcap_returns_non_empty() {
+        let conn = connect();
+
+        let result = super::by_market_cap(
+            &conn,
+            None::<Vec<String>>,
+            OrderDirection::Desc,
+            Utc.ymd(1901, 1, 1).and_hms(0, 0, 0),
+            Utc.ymd(3000, 1, 1).and_hms(0, 0, 0),
+            50,
+            0,
+        )
+        .unwrap();
+
+        assert!(!result.is_empty(), "Expected at least one row");
+    }
+
+    #[test]
+    fn test_collections_featured_by_volume_returns_non_empty() {
+        let conn = connect();
+
+        let result = super::by_volume(
+            &conn,
+            None::<Vec<String>>,
+            OrderDirection::Desc,
+            Utc.ymd(1901, 1, 1).and_hms(0, 0, 0),
+            Utc.ymd(3000, 1, 1).and_hms(0, 0, 0),
+            50,
+            0,
+        )
+        .unwrap();
+
+        assert!(!result.is_empty(), "Expected at least one row");
+    }
+
+    #[test]
+    fn test_collection_activities() {
+        todo!("Test collection_activities()");
+    }
+}

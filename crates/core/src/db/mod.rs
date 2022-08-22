@@ -118,6 +118,31 @@ impl From<ConnectMode> for ConnectionType {
     }
 }
 
+fn migrate<C: diesel::Connection>(
+    conn: &C,
+    desc: impl std::fmt::Display,
+    run: impl FnOnce(&C, &mut dyn std::io::Write) -> Result<(), diesel_migrations::RunMigrationsError>,
+) -> Result<()> {
+    info!("Running {}...", desc);
+
+    let mut out = vec![];
+
+    run(conn, &mut out).with_context(|| format!("Failed to run {}", desc))?;
+
+    match std::str::from_utf8(&out) {
+        Ok(s) => {
+            let s = s.trim();
+
+            if !s.is_empty() {
+                info!("Output from {}:\n{}", desc, s);
+            }
+        },
+        Err(e) => warn!("Failed to read output from {}: {}", desc, e),
+    }
+
+    Ok(())
+}
+
 /// Create a pooled connection to the Postgres database, using the given CLI
 /// arguments and a hint indicating if the database is writable.
 ///
@@ -159,8 +184,6 @@ pub fn connect(args: ConnectArgs, mode: ConnectMode) -> Result<ConnectResult> {
         .build(man)
         .context("Failed to create database connection pool")?;
 
-    let mut out = vec![];
-
     if cfg!(not(debug_assertions)) && matches!(ty, ConnectionType::Default) {
         warn!("Cannot determine if database is writable; assuming yes");
     }
@@ -187,25 +210,64 @@ pub fn connect(args: ConnectArgs, mode: ConnectMode) -> Result<ConnectResult> {
     };
 
     if migrated {
-        info!("Running database migrations...");
-
-        embedded_migrations::run_with_output(
-            &pool.get().context("Failed to connect to the database")?,
-            &mut out,
-        )
-        .context("Failed to run database migrations")?;
-    }
-
-    match std::str::from_utf8(&out) {
-        Ok(s) => {
-            let s = s.trim();
-
-            if !s.is_empty() {
-                info!("Output from migrations:\n{}", s);
-            }
-        },
-        Err(e) => warn!("Failed to read migration output: {}", e),
+        migrate(
+            &*pool
+                .get()
+                .context("Failed to acquire database connection")?,
+            "database migrations",
+            embedded_migrations::run_with_output,
+        )?;
     }
 
     Ok(ConnectResult { pool, ty, migrated })
+}
+
+#[cfg(test)]
+pub mod test {
+    embed_migrations!("test_migrations");
+
+    fn initialize() -> super::ConnectResult {
+        dotenv::from_filename(".env.dev").expect("Failed to load .env.dev");
+        dotenv::from_filename(".env").expect("Failed to load .env");
+
+        let conn_args = super::ConnectArgs {
+            database_read_url: None,
+            database_write_url: Some(
+                std::env::var("DATABASE_URL")
+                    .expect("Failed to load DATABASE_URL from environment"),
+            ),
+            database_url: None,
+        };
+        let res = super::connect(conn_args, super::ConnectMode::Write { migrate: true })
+            .expect("Failed to connect to database");
+
+        super::migrate(
+            &*res
+                .pool
+                .get()
+                .expect("Failed to acquire database connection"),
+            "test seed migrations",
+            embedded_migrations::run_with_output,
+        )
+        .expect("Seed migrations failed");
+
+        res
+    }
+
+    lazy_static::lazy_static! {
+        static ref DATABASE: super::ConnectResult = initialize();
+    }
+
+    #[must_use]
+    pub fn connect() -> super::PooledConnection {
+        DATABASE
+            .pool
+            .get()
+            .expect("Failed to acquire database connection")
+    }
+
+    pub mod prelude {
+        pub use super::connect;
+        pub use crate::{db::custom_types::*, prelude::*};
+    }
 }

@@ -141,3 +141,19 @@ pub fn collection(
         .load(conn)
         .context("Failed to load collection mint stats")
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_mint() {
+        todo!("Test mint()");
+    }
+    #[test]
+    fn test_market() {
+        todo!("Test market()");
+    }
+    #[test]
+    fn test_collection() {
+        todo!("Test collection()");
+    }
+}

@@ -136,3 +136,19 @@ pub fn total_volume_prices(
         .load(conn)
         .context("Failed to load average prices")
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_floor_prices() {
+        todo!("Test floor_prices()");
+    }
+    #[test]
+    fn test_average_prices() {
+        todo!("Test average_prices()");
+    }
+    #[test]
+    fn test_total_volume_prices() {
+        todo!("Test total_volume_prices()");
+    }
+}

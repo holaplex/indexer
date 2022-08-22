@@ -64,3 +64,11 @@ pub fn activities(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<Ve
         .load(conn)
         .context("Failed to load wallet(s) activities")
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_activities() {
+        todo!("Test activities()");
+    }
+}

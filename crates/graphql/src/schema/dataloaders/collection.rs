@@ -11,6 +11,14 @@ use tables::collection_stats;
 
 use super::prelude::*;
 
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn refactor_me() {
+        todo!("Move the sql_query call into indexer_core and add tests");
+    }
+}
+
 #[async_trait]
 impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
     async fn load(

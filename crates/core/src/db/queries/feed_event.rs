@@ -370,3 +370,15 @@ pub fn list_relay(
         .load(conn)
         .context("Failed to load feed events")
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_list() {
+        todo!("Test list()");
+    }
+    #[test]
+    fn test_list_relay() {
+        todo!("Test list_relay()");
+    }
+}

@@ -468,3 +468,15 @@ pub fn activities(
         .load(conn)
         .context("Failed to load nft(s) activities")
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_list() {
+        todo!("Test list()");
+    }
+    #[test]
+    fn test_activities() {
+        todo!("Test activities()");
+    }
+}
