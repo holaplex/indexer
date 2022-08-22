@@ -262,11 +262,10 @@ pub fn listed_count(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<
         .load::<BigIntWrapper>(conn)
         .context("Failed to load collection listing count")?;
 
-    if query_result.len() == 0 {
+    if query_result.is_empty() {
         bail!("Collection not found.")
-    } else {
-        Ok(query_result.first().unwrap().value)
     }
+    unsafe { Ok(query_result.get_unchecked(0).value) }
 }
 
 const VOLUME_TOTAL_QUERY: &str = r"
@@ -304,14 +303,13 @@ pub fn volume_total(
         .load::<BigIntWrapper>(conn)
         .context("Failed to load collection volume total")?;
 
-    if query_result.len() == 0 {
+    if query_result.is_empty() {
         // ideally we'd throw if the collection isnt found and return
-        // 0 if there were no sales over the given time period, but 
+        // 0 if there were no sales over the given time period, but
         // this is a more performant compromise
-        Ok(0)
-    } else {
-        Ok(query_result.first().unwrap().value)
+        return Ok(0);
     }
+    unsafe { Ok(query_result.get_unchecked(0).value) }
 }
 
 const HOLDER_COUNT_QUERY: &str = r"
@@ -337,11 +335,10 @@ pub fn holder_count(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<
         .load::<BigIntWrapper>(conn)
         .context("Failed to load collection holder count")?;
 
-    if query_result.len() == 0 {
+    if query_result.is_empty() {
         bail!("Collection not found.")
-    } else {
-        Ok(query_result.first().unwrap().value)
     }
+    unsafe { Ok(query_result.get_unchecked(0).value) }
 }
 
 // This struct is needed to fulfill the QueryableByName
