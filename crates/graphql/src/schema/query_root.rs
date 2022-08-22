@@ -24,7 +24,6 @@ use objects::{
     profile::{ProfilesStats, TwitterProfile},
     spl_governance::{
         Governance, Proposal, ProposalV2, Realm, SignatoryRecord, TokenOwnerRecord, VoteRecord,
-        VoteRecordV2,
     },
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
@@ -34,9 +33,8 @@ use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
     candy_machine_datas, candy_machines, current_metadata_owners, geno_habitat_datas, governances,
-    graph_connections, metadata_jsons, metadatas, proposals_v2, realms, signatory_records_v2,
-    store_config_jsons, storefronts, token_owner_records_v2, twitter_handle_name_services,
-    vote_records_v2, wallet_totals,
+    graph_connections, metadata_jsons, metadatas, realms, signatory_records_v2, store_config_jsons,
+    storefronts, token_owner_records, twitter_handle_name_services, wallet_totals,
 };
 
 use super::{enums::OrderDirection, prelude::*};
@@ -1201,20 +1199,20 @@ impl QueryRoot {
         }
 
         let conn = context.shared.db.get()?;
-        let mut query = token_owner_records_v2::table
-            .select(token_owner_records_v2::all_columns)
+        let mut query = token_owner_records::table
+            .select(token_owner_records::all_columns)
             .into_boxed();
 
         if let Some(addresses) = addresses {
-            query = query.filter(token_owner_records_v2::address.eq(any(addresses)));
+            query = query.filter(token_owner_records::address.eq(any(addresses)));
         }
 
         if let Some(realms) = realms {
-            query = query.filter(token_owner_records_v2::realm.eq(any(realms)));
+            query = query.filter(token_owner_records::realm.eq(any(realms)));
         }
 
         if let Some(mints) = governing_token_mints {
-            query = query.filter(token_owner_records_v2::governing_token_mint.eq(any(mints)));
+            query = query.filter(token_owner_records::governing_token_mint.eq(any(mints)));
         }
 
         query

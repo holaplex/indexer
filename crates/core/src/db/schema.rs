@@ -1639,7 +1639,7 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    token_owner_records_v2 (address) {
+    token_owner_records (address) {
         address -> Varchar,
         account_type -> Governanceaccounttype,
         realm -> Varchar,
@@ -1969,7 +1969,7 @@ allow_tables_to_appear_in_same_query!(
     storefronts,
     stores,
     sub_account_infos,
-    token_owner_records_v2,
+    token_owner_records,
     transactions,
     twitter_handle_name_services,
     tx_instruction_keys,

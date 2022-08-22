@@ -1,4 +1,4 @@
-//! Query utilities for NFT activity.
+//! Query utilities for SPL GOVERNANCE
 
 use anyhow::Context;
 use diesel::{
@@ -17,44 +17,30 @@ use crate::{
 };
 
 const VOTE_RECORDS_QUERY: &str = r"
-SELECT ADDRESS,
-	ACCOUNT_TYPE,
-	PROPOSAL,
-	GOVERNING_TOKEN_OWNER,
-	IS_RELINQUISHED,
-	NULL as voter_weight,
-	NULL as vote,
-	VOTE_TYPE,
-	VOTE_WEIGHT,
-	SLOT,
-	WRITE_VERSION
-FROM VOTE_RECORDS_V1
-WHERE ADDRESS = ANY($1)
-	AND (PROPOSAL = ANY($2) OR $2 is null)
-	AND (GOVERNING_TOKEN_OWNER = ANY($3) OR $3 is null)
-	AND (is_relinquished = $4 OR $4 is null)
-UNION ALL
-SELECT ADDRESS,
-	ACCOUNT_TYPE,
-	PROPOSAL,
-	GOVERNING_TOKEN_OWNER,
-	IS_RELINQUISHED,
-	VOTER_WEIGHT,
-	VOTE,
-	NULL as VOTE_TYPE,
-	NULL as VOTE_WEIGHT,
-	SLOT,
-	WRITE_VERSION
-FROM VOTE_RECORDS_V2
-WHERE (ADDRESS = ANY($1) OR $1 is null)
-    AND (PROPOSAL = ANY($2) OR $2 is null)
-    AND (GOVERNING_TOKEN_OWNER = ANY($3) OR $3 is null)
-    AND (is_relinquished = $4 OR $4 is null);
+select 	address, account_type, proposal, governing_token_owner, is_relinquished, null as voter_weight,
+		null as vote, vote_type, vote_weight, slot, write_version
+from vote_records_v1
+where address = any($1)
+	and (proposal = any($2) or $2 is null)
+	and (governing_token_owner = any($3) or $3 is null)
+	and (is_relinquished = $4 or $4 is null)
+union all
+select 	address, account_type, proposal, governing_token_owner, is_relinquished, voter_weight,
+		vote, null as vote_type, null as vote_weight, slot, write_version
+from vote_records_v2
+where (address = any($1) or $1 is null)
+    and (proposal = any($2) or $2 is null)
+    and (governing_token_owner = any($3) or $3 is null)
+    and (is_relinquished = $4 or $4 is null);
  -- $1: addresses::text[]
  -- $2: proposals::text[]
  -- $3: governing_token_owners::text[]
  -- $4: is_relinquished::bool";
 
+/// Load all spl governance vote records including V1 and V2
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
 pub fn vote_records(
     conn: &Connection,
     addresses: impl ToSql<Nullable<Array<Text>>, Pg>,
@@ -72,78 +58,29 @@ pub fn vote_records(
 }
 
 const PROPOSALS_QUERY: &str = r"
-SELECT ADDRESS,
-	ACCOUNT_TYPE,
-	GOVERNANCE,
-	GOVERNING_TOKEN_MINT,
-	STATE,
-	TOKEN_OWNER_RECORD,
-	SIGNATORIES_COUNT,
-	SIGNATORIES_SIGNED_OFF_COUNT,
-	YES_VOTES_COUNT,
-	NO_VOTES_COUNT,
-	INSTRUCTIONS_EXECUTED_COUNT,
-	INSTRUCTIONS_COUNT,
-	INSTRUCTIONS_NEXT_INDEX,
-	NULL AS VOTE_TYPE,
-	NULL AS DENY_VOTE_WEIGHT,
-	NULL AS VETO_VOTE_WEIGHT,
-	NULL AS ABSTAIN_VOTE_WEIGHT,
-	NULL AS START_VOTING_AT,
-	DRAFT_AT,
-	SIGNING_OFF_AT,
-	VOTING_AT,
-	NULL AS VOTING_AT_SLOT,
-	VOTING_COMPLETED_AT,
-	EXECUTING_AT,
-	CLOSED_AT,
-	EXECUTION_FLAGS,
-	MAX_VOTE_WEIGHT,
-	NULL AS MAX_VOTING_TIME,
-	VOTE_THRESHOLD_TYPE,
-	VOTE_THRESHOLD_PERCENTAGE,
-	NAME,
-	DESCRIPTION_LINK
-FROM PROPOSALS_V1
-WHERE (ADDRESS = ANY($1) or $1 is null) AND (governance = any($2) or $2 is null)
-UNION ALL
-SELECT ADDRESS,
-	ACCOUNT_TYPE,
-	GOVERNANCE,
-	GOVERNING_TOKEN_MINT,
-	STATE,
-	TOKEN_OWNER_RECORD,
-	SIGNATORIES_COUNT,
-	SIGNATORIES_SIGNED_OFF_COUNT,
-	NULL AS YES_VOTES_COUNT,
-	NULL AS NO_VOTES_COUNT,
-	NULL AS INSTRUCTIONS_EXECUTED_COUNT,
-	NULL AS INSTRUCTIONS_COUNT,
-	NULL AS INSTRUCTIONS_NEXT_INDEX,
-	VOTE_TYPE,
-	DENY_VOTE_WEIGHT,
-	VETO_VOTE_WEIGHT,
-	ABSTAIN_VOTE_WEIGHT,
-	START_VOTING_AT,
-	DRAFT_AT,
-	SIGNING_OFF_AT,
-	VOTING_AT,
-	VOTING_AT_SLOT,
-	VOTING_COMPLETED_AT,
-	EXECUTING_AT,
-	CLOSED_AT,
-	EXECUTION_FLAGS,
-	MAX_VOTE_WEIGHT,
-	MAX_VOTING_TIME,
-	VOTE_THRESHOLD_TYPE,
-	VOTE_THRESHOLD_PERCENTAGE,
-	NAME,
-	DESCRIPTION_LINK
-FROM PROPOSALS_V2
-WHERE (ADDRESS = ANY($1) or $1 is null) AND (governance = any($2) or $2 is null);
+select 	address, account_type, governance, governing_token_mint, state, token_owner_record, signatories_count,
+		signatories_signed_off_count, yes_votes_count, no_votes_count, instructions_executed_count,
+		instructions_count, instructions_next_index, null as vote_type, null as deny_vote_weight, null as veto_vote_weight,
+		null as abstain_vote_weight, null as start_voting_at, draft_at, signing_off_at, voting_at, null as voting_at_slot,
+		voting_completed_at, executing_at, closed_at, execution_flags, max_vote_weight, null as max_voting_time,
+		vote_threshold_type, vote_threshold_percentage, name, description_link
+from proposals_v1
+where (address = any($1) or $1 is null) and (governance = any($2) or $2 is null)
+union all
+select 	address, account_type, governance, governing_token_mint, state, token_owner_record, signatories_count,
+		signatories_signed_off_count, null as yes_votes_count, null as no_votes_count, null as instructions_executed_count,
+		null as instructions_count, null as instructions_next_index, vote_type, deny_vote_weight, veto_vote_weight, abstain_vote_weight,
+		start_voting_at, draft_at, signing_off_at, voting_at, voting_at_slot, voting_completed_at, executing_at, closed_at, execution_flags,
+		max_vote_weight, max_voting_time, vote_threshold_type, vote_threshold_percentage, name, description_link
+from proposals_v2
+where (address = any($1) or $1 is null) and (governance = any($2) or $2 is null);
  -- $1: addresses::text[]
  -- $2: governances::text[]";
 
+/// Load all spl governance proposals including V1 and V2
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
 pub fn proposals(
     conn: &Connection,
     addresses: impl ToSql<Nullable<Array<Text>>, Pg>,

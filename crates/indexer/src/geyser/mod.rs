@@ -63,95 +63,95 @@ pub async fn process_message<H: std::hash::BuildHasher>(
 
     match msg {
         // Accounts
-        // Message::AccountUpdate(update)
-        //     if update.owner == pubkeys::METADATA && check_ignore(IgnoreType::Metadata, &update) =>
-        // {
-        //     programs::metadata::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::AUCTION => {
-        //     programs::auction::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::METAPLEX => {
-        //     programs::metaplex::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::AUCTION_HOUSE => {
-        //     programs::auction_house::process(client, update).await
-        // },
-        // Message::AccountUpdate(update)
-        //     if update.owner == pubkeys::TOKEN && check_ignore(IgnoreType::Tokens, &update) =>
-        // {
-        //     programs::token::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::GRAPH_PROGRAM => {
-        //     programs::graph::process(client, update).await
-        // },
-        // Message::AccountUpdate(update)
-        //     if update.owner == pubkeys::CANDY_MACHINE
-        //         && check_ignore(IgnoreType::CandyMachine, &update) =>
-        // {
-        //     programs::candy_machine::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::NAME_SERVICE => {
-        //     programs::name_service::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::CARDINAL_TOKEN_MANAGER => {
-        //     programs::cardinal_token_manager::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::CARDINAL_TIME_INVALIDATOR => {
-        //     programs::cardinal_time_invalidator::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::CARDINAL_USE_INVALIDATOR => {
-        //     programs::cardinal_use_invalidator::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::CARDINAL_PAID_CLAIM_APPROVER => {
-        //     programs::cardinal_paid_claim_approver::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::GOKI_SMART_WALLET => {
-        //     programs::goki_smart_wallet::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::TRIBECA_LOCKED_VOTER => {
-        //     programs::tribeca_locked_voter::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::TRIBECA_GOVERN => {
-        //     programs::tribeca_govern::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::NAMESPACES => {
-        //     programs::namespaces::process(client, update).await
-        // },
-        // Message::AccountUpdate(update) if update.owner == pubkeys::TOKEN_BONDING => {
-        //     programs::token_bonding::process(client, update).await
-        // },
+        Message::AccountUpdate(update)
+            if update.owner == pubkeys::METADATA && check_ignore(IgnoreType::Metadata, &update) =>
+        {
+            programs::metadata::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::AUCTION => {
+            programs::auction::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::METAPLEX => {
+            programs::metaplex::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::AUCTION_HOUSE => {
+            programs::auction_house::process(client, update).await
+        },
+        Message::AccountUpdate(update)
+            if update.owner == pubkeys::TOKEN && check_ignore(IgnoreType::Tokens, &update) =>
+        {
+            programs::token::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::GRAPH_PROGRAM => {
+            programs::graph::process(client, update).await
+        },
+        Message::AccountUpdate(update)
+            if update.owner == pubkeys::CANDY_MACHINE
+                && check_ignore(IgnoreType::CandyMachine, &update) =>
+        {
+            programs::candy_machine::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::NAME_SERVICE => {
+            programs::name_service::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::CARDINAL_TOKEN_MANAGER => {
+            programs::cardinal_token_manager::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::CARDINAL_TIME_INVALIDATOR => {
+            programs::cardinal_time_invalidator::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::CARDINAL_USE_INVALIDATOR => {
+            programs::cardinal_use_invalidator::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::CARDINAL_PAID_CLAIM_APPROVER => {
+            programs::cardinal_paid_claim_approver::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::GOKI_SMART_WALLET => {
+            programs::goki_smart_wallet::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::TRIBECA_LOCKED_VOTER => {
+            programs::tribeca_locked_voter::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::TRIBECA_GOVERN => {
+            programs::tribeca_govern::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::NAMESPACES => {
+            programs::namespaces::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::TOKEN_BONDING => {
+            programs::token_bonding::process(client, update).await
+        },
         Message::AccountUpdate(update) if update.owner == pubkeys::SPL_GOVERNANCE => {
             programs::spl_governance::process(client, update).await
         },
-        // Message::AccountUpdate(update) if update.owner == genostub::ID => {
-        //     programs::genopets::process(client, update).await
-        // },
+        Message::AccountUpdate(update) if update.owner == genostub::ID => {
+            programs::genopets::process(client, update).await
+        },
 
         // Instructions
-        // Message::InstructionNotify(ins) if ins.program == pubkeys::AUCTION_HOUSE => {
-        //     programs::auction_house::process_instruction(client, &ins.data, &ins.accounts, ins.slot)
-        //         .await
-        // },
-        // Message::InstructionNotify(ins) if ins.program == pubkeys::ME_HAUS => {
-        //     programs::magic_eden_haus::process_instruction(
-        //         client,
-        //         &ins.data,
-        //         &ins.accounts,
-        //         ins.slot,
-        //     )
-        //     .await
-        // },
-        // Message::InstructionNotify(ins) if ins.program == pubkeys::TOKEN => {
-        //     programs::token::process_instruction(client, &ins.data, &ins.accounts, ins.slot).await
-        // },
+        Message::InstructionNotify(ins) if ins.program == pubkeys::AUCTION_HOUSE => {
+            programs::auction_house::process_instruction(client, &ins.data, &ins.accounts, ins.slot)
+                .await
+        },
+        Message::InstructionNotify(ins) if ins.program == pubkeys::ME_HAUS => {
+            programs::magic_eden_haus::process_instruction(
+                client,
+                &ins.data,
+                &ins.accounts,
+                ins.slot,
+            )
+            .await
+        },
+        Message::InstructionNotify(ins) if ins.program == pubkeys::TOKEN => {
+            programs::token::process_instruction(client, &ins.data, &ins.accounts, ins.slot).await
+        },
 
         // Fallbacks
         Message::AccountUpdate(update) => {
-            // debug!(
-            //     "Unhandled account update for program {}",
-            //     bs58::encode(update.owner).into_string()
-            // );
+            debug!(
+                "Unhandled account update for program {}",
+                bs58::encode(update.owner).into_string()
+            );
             Ok(())
         },
         Message::InstructionNotify { .. } => Ok(()),

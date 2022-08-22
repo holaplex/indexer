@@ -22,7 +22,7 @@ const TOKEN_OWNER_RECORD_V1: u8 = GovernanceAccountType::TokenOwnerRecordV1 as u
 const TOKEN_OWNER_RECORD_V2: u8 = GovernanceAccountType::TokenOwnerRecordV2 as u8;
 const PROPOSAL_V1: u8 = GovernanceAccountType::ProposalV1 as u8;
 const PROPOSAL_V2: u8 = GovernanceAccountType::ProposalV2 as u8;
-const SIGNATORY_RECORD_V1: u8 = GovernanceAccountType::SignatoryRecordV2 as u8;
+const SIGNATORY_RECORD_V1: u8 = GovernanceAccountType::SignatoryRecordV1 as u8;
 const SIGNATORY_RECORD_V2: u8 = GovernanceAccountType::SignatoryRecordV2 as u8;
 const PROPOSAL_TRANSACTION_V2: u8 = GovernanceAccountType::ProposalTransactionV2 as u8;
 

@@ -21,7 +21,7 @@ use indexer_core::{
             governance_configs, governances, proposal_options,
             proposal_transaction_instruction_accounts, proposal_transaction_instructions,
             proposal_transactions, proposal_vote_type_multi_choices, proposals_v1, proposals_v2,
-            realm_configs, realms, signatory_records_v2, token_owner_records_v2,
+            realm_configs, realms, signatory_records_v2, token_owner_records,
             vote_record_v2_vote_approve_vote_choices, vote_records_v1, vote_records_v2,
         },
     },
@@ -738,9 +738,9 @@ pub(crate) async fn process_token_owner_record(
     client
         .db()
         .run(move |db| {
-            insert_into(token_owner_records_v2::table)
+            insert_into(token_owner_records::table)
                 .values(&row)
-                .on_conflict(token_owner_records_v2::address)
+                .on_conflict(token_owner_records::address)
                 .do_update()
                 .set(&row)
                 .execute(db)

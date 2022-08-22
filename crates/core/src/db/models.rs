@@ -2716,7 +2716,7 @@ pub struct VoteChoice<'a> {
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
-#[table_name = "token_owner_records_v2"]
+#[table_name = "token_owner_records"]
 #[allow(missing_docs)]
 pub struct TokenOwnerRecordV2<'a> {
     pub address: Cow<'a, str>,

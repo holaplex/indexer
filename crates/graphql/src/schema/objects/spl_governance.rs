@@ -14,6 +14,7 @@ use super::prelude::*;
 #[derive(Debug, Clone)]
 pub struct Governance {
     pub address: PublicKey<Governance>,
+    pub account_type: GovernanceAccountType,
     pub realm: PublicKey<Realm>,
     pub governed_account: PublicKey<GovernedAccount>,
     pub proposals_count: I64,
@@ -25,6 +26,10 @@ pub struct Governance {
 impl Governance {
     fn address(&self) -> &PublicKey<Governance> {
         &self.address
+    }
+
+    fn account_type(&self) -> &GovernanceAccountType {
+        &self.account_type
     }
 
     fn governed_account(&self) -> &PublicKey<GovernedAccount> {
@@ -62,6 +67,7 @@ impl<'a> TryFrom<models::Governance<'a>> for Governance {
     fn try_from(
         models::Governance {
             address,
+            account_type,
             realm,
             governed_account,
             proposals_count,
@@ -71,6 +77,7 @@ impl<'a> TryFrom<models::Governance<'a>> for Governance {
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             address: address.into_owned().into(),
+            account_type: account_type.into(),
             realm: realm.into_owned().into(),
             governed_account: governed_account.into_owned().into(),
             proposals_count: proposals_count.into(),
@@ -236,6 +243,7 @@ impl From<VoteTippingEnum> for VoteTipping {
 #[derive(Debug, Clone)]
 pub struct Realm {
     pub address: PublicKey<Realm>,
+    pub account_type: GovernanceAccountType,
     pub community_mint: PublicKey<TokenMint>,
     pub voting_proposal_count: i32,
     pub authority: Option<PublicKey<Wallet>>,
@@ -247,6 +255,10 @@ pub struct Realm {
 impl Realm {
     fn address(&self) -> &PublicKey<Realm> {
         &self.address
+    }
+
+    fn account_type(&self) -> &GovernanceAccountType {
+        &self.account_type
     }
 
     fn community_mint(&self) -> &PublicKey<TokenMint> {
@@ -278,6 +290,7 @@ impl<'a> TryFrom<models::Realm<'a>> for Realm {
     fn try_from(
         models::Realm {
             address,
+            account_type,
             community_mint,
             voting_proposal_count,
             authority,
@@ -287,6 +300,7 @@ impl<'a> TryFrom<models::Realm<'a>> for Realm {
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             address: address.into_owned().into(),
+            account_type: account_type.into(),
             community_mint: community_mint.into_owned().into(),
             voting_proposal_count: voting_proposal_count.try_into()?,
             authority: authority.map(Into::into),
@@ -349,14 +363,55 @@ impl From<MintMaxVoteEnum> for MintMaxVoteWeightSource {
     }
 }
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 pub struct VoteRecordV1 {
     pub address: PublicKey<VoteRecordV1>,
-    pub proposal: PublicKey<ProposalV2>,
+    pub proposal: PublicKey<ProposalV1>,
     pub governing_token_owner: PublicKey<Wallet>,
     pub is_relinquished: bool,
     pub vote_type: VoteWeightV1,
     pub vote_weight: I64,
+}
+
+#[graphql_object(Context = AppContext)]
+#[graphql(description = "SPLGovernance VoteRecordV2 account")]
+impl VoteRecordV1 {
+    fn address(&self) -> &PublicKey<VoteRecordV1> {
+        &self.address
+    }
+
+    fn governing_token_owner(&self) -> &PublicKey<Wallet> {
+        &self.governing_token_owner
+    }
+
+    fn is_relinquished(&self) -> bool {
+        self.is_relinquished
+    }
+
+    pub fn vote_weight(&self) -> &I64 {
+        &self.vote_weight
+    }
+
+    pub fn vote_type(&self) -> &VoteWeightV1 {
+        &self.vote_type
+    }
+
+    pub async fn proposal(&self, ctx: &AppContext) -> FieldResult<Option<ProposalV1>> {
+        ctx.spl_proposalv1_loader
+            .load(self.proposal.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn token_owner_records(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Vec<TokenOwnerRecord>> {
+        ctx.spl_vote_record_token_owner_loader
+            .load(self.governing_token_owner.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 #[derive(Debug, Clone, juniper::GraphQLEnum)]
@@ -446,7 +501,7 @@ impl VoteRecordV2 {
     }
 
     pub async fn proposal(&self, ctx: &AppContext) -> FieldResult<Option<ProposalV2>> {
-        ctx.spl_proposal_loader
+        ctx.spl_proposalv2_loader
             .load(self.proposal.clone())
             .await
             .map_err(Into::into)
@@ -575,6 +630,7 @@ impl<'a> From<models::VoteChoice<'a>> for VoteChoice {
 #[derive(Debug, Clone)]
 pub struct TokenOwnerRecord {
     pub address: PublicKey<TokenOwnerRecord>,
+    pub account_type: GovernanceAccountType,
     pub realm: PublicKey<Realm>,
     pub governing_token_mint: PublicKey<TokenMint>,
     pub governing_token_owner: PublicKey<Wallet>,
@@ -590,6 +646,10 @@ pub struct TokenOwnerRecord {
 impl TokenOwnerRecord {
     fn address(&self) -> &PublicKey<TokenOwnerRecord> {
         &self.address
+    }
+
+    fn account_type(&self) -> &GovernanceAccountType {
+        &self.account_type
     }
 
     fn governing_token_mint(&self) -> &PublicKey<TokenMint> {
@@ -632,6 +692,7 @@ impl<'a> From<models::TokenOwnerRecordV2<'a>> for TokenOwnerRecord {
     fn from(
         models::TokenOwnerRecordV2 {
             address,
+            account_type,
             realm,
             governing_token_mint,
             governing_token_owner,
@@ -645,6 +706,7 @@ impl<'a> From<models::TokenOwnerRecordV2<'a>> for TokenOwnerRecord {
     ) -> Self {
         Self {
             address: address.into_owned().into(),
+            account_type: account_type.into(),
             realm: realm.into_owned().into(),
             governing_token_mint: governing_token_mint.into_owned().into(),
             governing_token_owner: governing_token_owner.into_owned().into(),
@@ -660,7 +722,8 @@ impl<'a> From<models::TokenOwnerRecordV2<'a>> for TokenOwnerRecord {
 #[derive(Debug, Clone)]
 pub struct SignatoryRecord {
     pub address: PublicKey<SignatoryRecord>,
-    pub proposal: PublicKey<ProposalV2>,
+    pub account_type: GovernanceAccountType,
+    pub proposal: PublicKey<Proposal>,
     pub signatory: PublicKey<Wallet>,
     pub signed_off: bool,
 }
@@ -672,6 +735,10 @@ impl SignatoryRecord {
         &self.address
     }
 
+    fn account_type(&self) -> &GovernanceAccountType {
+        &self.account_type
+    }
+
     fn signatory(&self) -> &PublicKey<Wallet> {
         &self.signatory
     }
@@ -680,7 +747,7 @@ impl SignatoryRecord {
         self.signed_off
     }
 
-    pub async fn proposal(&self, ctx: &AppContext) -> FieldResult<Option<ProposalV2>> {
+    pub async fn proposal(&self, ctx: &AppContext) -> FieldResult<Option<Proposal>> {
         ctx.spl_proposal_loader
             .load(self.proposal.clone())
             .await
@@ -692,6 +759,7 @@ impl<'a> From<models::SignatoryRecordV2<'a>> for SignatoryRecord {
     fn from(
         models::SignatoryRecordV2 {
             address,
+            account_type,
             proposal,
             signatory,
             signed_off,
@@ -700,6 +768,7 @@ impl<'a> From<models::SignatoryRecordV2<'a>> for SignatoryRecord {
     ) -> Self {
         Self {
             address: address.into_owned().into(),
+            account_type: account_type.into(),
             proposal: proposal.into_owned().into(),
             signatory: signatory.into_owned().into(),
             signed_off,
@@ -707,7 +776,7 @@ impl<'a> From<models::SignatoryRecordV2<'a>> for SignatoryRecord {
     }
 }
 
-#[derive(derive_more::From, juniper::GraphQLUnion)]
+#[derive(Debug, Clone, derive_more::From, juniper::GraphQLUnion)]
 #[graphql(
   Context = AppContext,
 )]
@@ -822,9 +891,9 @@ impl TryFrom<models::SplGovernanceProposal> for Proposal {
     }
 }
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 pub struct ProposalV1 {
-    pub address: PublicKey<ProposalV2>,
+    pub address: PublicKey<ProposalV1>,
     pub account_type: GovernanceAccountType,
     pub governance: PublicKey<Governance>,
     pub governing_token_mint: PublicKey<TokenMint>,
@@ -850,6 +919,121 @@ pub struct ProposalV1 {
     pub vote_threshold_percentage: Option<i32>,
     pub name: String,
     pub description_link: String,
+}
+
+#[graphql_object(Context = AppContext)]
+#[graphql(description = "SPLGovernance ProposalV1 account")]
+impl ProposalV1 {
+    fn address(&self) -> &PublicKey<ProposalV1> {
+        &self.address
+    }
+
+    fn account_type(&self) -> &GovernanceAccountType {
+        &self.account_type
+    }
+
+    fn governing_token_mint(&self) -> &PublicKey<TokenMint> {
+        &self.governing_token_mint
+    }
+
+    fn state(&self) -> &ProposalState {
+        &self.state
+    }
+
+    fn signatories_count(&self) -> i32 {
+        self.signatories_count
+    }
+
+    fn signatories_signed_off_count(&self) -> i32 {
+        self.signatories_signed_off_count
+    }
+
+    fn yes_votes_count(&self) -> &I64 {
+        &self.yes_votes_count
+    }
+
+    fn no_votes_count(&self) -> &I64 {
+        &self.no_votes_count
+    }
+
+    fn instructions_executed_count(&self) -> i32 {
+        self.instructions_executed_count
+    }
+    fn instructions_count(&self) -> i32 {
+        self.instructions_count
+    }
+    fn instructions_next_index(&self) -> i32 {
+        self.instructions_next_index
+    }
+
+    fn draft_at(&self) -> DateTime<Utc> {
+        self.draft_at
+    }
+
+    fn signing_off_at(&self) -> &Option<DateTime<Utc>> {
+        &self.signing_off_at
+    }
+
+    fn voting_at(&self) -> &Option<DateTime<Utc>> {
+        &self.voting_at
+    }
+
+    fn voting_at_slot(&self) -> &Option<I64> {
+        &self.voting_at_slot
+    }
+
+    fn voting_completed_at(&self) -> &Option<DateTime<Utc>> {
+        &self.voting_completed_at
+    }
+
+    fn executing_at(&self) -> &Option<DateTime<Utc>> {
+        &self.executing_at
+    }
+
+    fn closed_at(&self) -> &Option<DateTime<Utc>> {
+        &self.closed_at
+    }
+
+    fn execution_flags(&self) -> &InstructionExecutionFlags {
+        &self.execution_flags
+    }
+
+    fn max_vote_weight(&self) -> &Option<I64> {
+        &self.max_vote_weight
+    }
+
+    fn vote_threshold_type(&self) -> &Option<VoteThreshold> {
+        &self.vote_threshold_type
+    }
+
+    fn vote_threshold_percentage(&self) -> &Option<i32> {
+        &self.vote_threshold_percentage
+    }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn description(&self) -> &str {
+        &self.description_link
+    }
+
+    pub async fn governance(&self, ctx: &AppContext) -> FieldResult<Option<Governance>> {
+        ctx.spl_governance_loader
+            .load(self.governance.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn token_owner_record(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<TokenOwnerRecord>> {
+        ctx.spl_token_owner_record_loader
+            .load(self.token_owner_record.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 impl<'a> From<models::ProposalV1<'a>> for ProposalV1 {

@@ -1,14 +1,15 @@
+use indexer_core::db::queries::spl_governance;
 use objects::{
     spl_governance::{
-        Governance, GovernanceConfig, MultiChoice, ProposalOption, ProposalV2, Realm, RealmConfig,
-        TokenOwnerRecord, VoteChoice, VoteRecordV2,
+        Governance, GovernanceConfig, MultiChoice, Proposal, ProposalOption, ProposalV1,
+        ProposalV2, Realm, RealmConfig, TokenOwnerRecord, VoteChoice, VoteRecordV2,
     },
     wallet::Wallet,
 };
 use scalars::PublicKey;
 use tables::{
     governance_configs, governances, proposal_options, proposal_vote_type_multi_choices,
-    proposals_v2, realm_configs, realms, token_owner_records_v2,
+    proposals_v1, proposals_v2, realm_configs, realms, token_owner_records,
     vote_record_v2_vote_approve_vote_choices,
 };
 
@@ -171,9 +172,9 @@ impl TryBatchFn<PublicKey<Wallet>, Vec<TokenOwnerRecord>> for Batcher {
     ) -> TryBatchMap<PublicKey<Wallet>, Vec<TokenOwnerRecord>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::TokenOwnerRecordV2> = token_owner_records_v2::table
-            .filter(token_owner_records_v2::governing_token_owner.eq(any(addresses)))
-            .select(token_owner_records_v2::all_columns)
+        let rows: Vec<models::TokenOwnerRecordV2> = token_owner_records::table
+            .filter(token_owner_records::governing_token_owner.eq(any(addresses)))
+            .select(token_owner_records::all_columns)
             .load(&conn)
             .context("Failed to load token owner record")?;
 
@@ -213,15 +214,57 @@ impl TryBatchFn<PublicKey<TokenOwnerRecord>, Option<TokenOwnerRecord>> for Batch
     ) -> TryBatchMap<PublicKey<TokenOwnerRecord>, Option<TokenOwnerRecord>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::TokenOwnerRecordV2> = token_owner_records_v2::table
-            .filter(token_owner_records_v2::address.eq(any(addresses)))
-            .select(token_owner_records_v2::all_columns)
+        let rows: Vec<models::TokenOwnerRecordV2> = token_owner_records::table
+            .filter(token_owner_records::address.eq(any(addresses)))
+            .select(token_owner_records::all_columns)
             .load(&conn)
             .context("Failed to load token owner record")?;
 
         Ok(rows
             .into_iter()
             .map(|tor| (tor.address.clone(), tor.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<ProposalV1>, Option<ProposalV1>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<ProposalV1>],
+    ) -> TryBatchMap<PublicKey<ProposalV1>, Option<ProposalV1>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::ProposalV1> = proposals_v1::table
+            .filter(proposals_v1::address.eq(any(addresses)))
+            .select(proposals_v1::all_columns)
+            .load(&conn)
+            .context("Failed to load v1 proposal")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|p| (p.address.clone(), p.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<Proposal>, Option<Proposal>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Proposal>],
+    ) -> TryBatchMap<PublicKey<Proposal>, Option<Proposal>> {
+        let conn = self.db()?;
+
+        let proposals: Vec<models::SplGovernanceProposal> = spl_governance::proposals(
+            &conn,
+            addresses,
+            Option::<Vec<PublicKey<Governance>>>::None,
+        )?;
+
+        Ok(proposals
+            .into_iter()
+            .map(|p| (p.address.clone(), p.try_into()))
             .batch(addresses))
     }
 }
