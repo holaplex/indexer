@@ -642,7 +642,7 @@ pub struct TokenOwnerRecord {
 }
 
 #[graphql_object(Context = AppContext)]
-#[graphql(description = "SPLGovernance TokenOwnerRecordV2 account")]
+#[graphql(description = "SPLGovernance TokenOwnerRecord account")]
 impl TokenOwnerRecord {
     fn address(&self) -> &PublicKey<TokenOwnerRecord> {
         &self.address
@@ -688,9 +688,9 @@ impl TokenOwnerRecord {
     }
 }
 
-impl<'a> From<models::TokenOwnerRecordV2<'a>> for TokenOwnerRecord {
+impl<'a> From<models::TokenOwnerRecord<'a>> for TokenOwnerRecord {
     fn from(
-        models::TokenOwnerRecordV2 {
+        models::TokenOwnerRecord {
             address,
             account_type,
             realm,
@@ -702,7 +702,7 @@ impl<'a> From<models::TokenOwnerRecordV2<'a>> for TokenOwnerRecord {
             outstanding_proposal_count,
             governance_delegate,
             ..
-        }: models::TokenOwnerRecordV2,
+        }: models::TokenOwnerRecord,
     ) -> Self {
         Self {
             address: address.into_owned().into(),
@@ -729,7 +729,7 @@ pub struct SignatoryRecord {
 }
 
 #[graphql_object(Context = AppContext)]
-#[graphql(description = "SPLGovernance SignatoryRecordV2 account")]
+#[graphql(description = "SPLGovernance SignatoryRecord account")]
 impl SignatoryRecord {
     fn address(&self) -> &PublicKey<SignatoryRecord> {
         &self.address
@@ -755,16 +755,16 @@ impl SignatoryRecord {
     }
 }
 
-impl<'a> From<models::SignatoryRecordV2<'a>> for SignatoryRecord {
+impl<'a> From<models::SignatoryRecord<'a>> for SignatoryRecord {
     fn from(
-        models::SignatoryRecordV2 {
+        models::SignatoryRecord {
             address,
             account_type,
             proposal,
             signatory,
             signed_off,
             ..
-        }: models::SignatoryRecordV2,
+        }: models::SignatoryRecord,
     ) -> Self {
         Self {
             address: address.into_owned().into(),

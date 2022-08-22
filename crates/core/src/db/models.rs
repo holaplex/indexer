@@ -2718,7 +2718,7 @@ pub struct VoteChoice<'a> {
 #[diesel(treat_none_as_null = true)]
 #[table_name = "token_owner_records"]
 #[allow(missing_docs)]
-pub struct TokenOwnerRecordV2<'a> {
+pub struct TokenOwnerRecord<'a> {
     pub address: Cow<'a, str>,
     pub account_type: GovernanceAccountTypeEnum,
     pub realm: Cow<'a, str>,
@@ -2738,9 +2738,9 @@ pub struct TokenOwnerRecordV2<'a> {
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
-#[table_name = "signatory_records_v2"]
+#[table_name = "signatory_records"]
 #[allow(missing_docs)]
-pub struct SignatoryRecordV2<'a> {
+pub struct SignatoryRecord<'a> {
     pub address: Cow<'a, str>,
     pub account_type: GovernanceAccountTypeEnum,
     pub proposal: Cow<'a, str>,

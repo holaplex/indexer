@@ -33,7 +33,7 @@ use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
     candy_machine_datas, candy_machines, current_metadata_owners, geno_habitat_datas, governances,
-    graph_connections, metadata_jsons, metadatas, realms, signatory_records_v2, store_config_jsons,
+    graph_connections, metadata_jsons, metadatas, realms, signatory_records, store_config_jsons,
     storefronts, token_owner_records, twitter_handle_name_services, wallet_totals,
 };
 
@@ -1216,7 +1216,7 @@ impl QueryRoot {
         }
 
         query
-            .load::<models::TokenOwnerRecordV2>(&conn)
+            .load::<models::TokenOwnerRecord>(&conn)
             .context("Failed to load spl token owner records.")?
             .into_iter()
             .map(TokenOwnerRecord::try_from)
@@ -1348,20 +1348,20 @@ impl QueryRoot {
 
         let conn = context.shared.db.get()?;
 
-        let mut query = signatory_records_v2::table
-            .select(signatory_records_v2::all_columns)
+        let mut query = signatory_records::table
+            .select(signatory_records::all_columns)
             .into_boxed();
 
         if let Some(addresses) = addresses {
-            query = query.filter(signatory_records_v2::address.eq(any(addresses)));
+            query = query.filter(signatory_records::address.eq(any(addresses)));
         }
 
         if let Some(proposals) = proposals {
-            query = query.filter(signatory_records_v2::proposal.eq(any(proposals)));
+            query = query.filter(signatory_records::proposal.eq(any(proposals)));
         }
 
         query
-            .load::<models::SignatoryRecordV2>(&conn)
+            .load::<models::SignatoryRecord>(&conn)
             .context("Failed to load spl governance signatory records.")?
             .into_iter()
             .map(SignatoryRecord::try_from)

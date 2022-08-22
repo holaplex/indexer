@@ -13,15 +13,15 @@ use indexer_core::{
             ProposalOption as DbProposalOption, ProposalTransaction,
             ProposalTransactionInstruction, ProposalTransactionInstructionAccount,
             ProposalV1 as DbProposalV1, ProposalV2 as DbProposalV2, Realm,
-            RealmConfig as DbRealmConfig, SignatoryRecordV2 as DbSignatoryRecordV2,
-            TokenOwnerRecordV2 as DbTokenOwnerRecordV2, VoteChoice as DbVoteChoice,
+            RealmConfig as DbRealmConfig, SignatoryRecord as DbSignatoryRecord,
+            TokenOwnerRecord as DbTokenOwnerRecord, VoteChoice as DbVoteChoice,
             VoteRecordV1 as DbVoteRecordV1, VoteRecordV2 as DbVoteRecordV2,
         },
         tables::{
             governance_configs, governances, proposal_options,
             proposal_transaction_instruction_accounts, proposal_transaction_instructions,
             proposal_transactions, proposal_vote_type_multi_choices, proposals_v1, proposals_v2,
-            realm_configs, realms, signatory_records_v2, token_owner_records,
+            realm_configs, realms, signatory_records, token_owner_records,
             vote_record_v2_vote_approve_vote_choices, vote_records_v1, vote_records_v2,
         },
     },
@@ -719,7 +719,7 @@ pub(crate) async fn process_token_owner_record(
     slot: u64,
     write_version: u64,
 ) -> Result<()> {
-    let row = DbTokenOwnerRecordV2 {
+    let row = DbTokenOwnerRecord {
         address: Owned(key.to_string()),
         account_type: data.account_type.into(),
         realm: Owned(data.realm.to_string()),
@@ -758,7 +758,7 @@ pub(crate) async fn process_signatory_record(
     slot: u64,
     write_version: u64,
 ) -> Result<()> {
-    let row = DbSignatoryRecordV2 {
+    let row = DbSignatoryRecord {
         address: Owned(key.to_string()),
         account_type: data.account_type.into(),
         proposal: Owned(data.proposal.to_string()),
@@ -771,9 +771,9 @@ pub(crate) async fn process_signatory_record(
     client
         .db()
         .run(move |db| {
-            insert_into(signatory_records_v2::table)
+            insert_into(signatory_records::table)
                 .values(&row)
-                .on_conflict(signatory_records_v2::address)
+                .on_conflict(signatory_records::address)
                 .do_update()
                 .set(&row)
                 .execute(db)

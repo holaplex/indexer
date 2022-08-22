@@ -172,7 +172,7 @@ impl TryBatchFn<PublicKey<Wallet>, Vec<TokenOwnerRecord>> for Batcher {
     ) -> TryBatchMap<PublicKey<Wallet>, Vec<TokenOwnerRecord>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::TokenOwnerRecordV2> = token_owner_records::table
+        let rows: Vec<models::TokenOwnerRecord> = token_owner_records::table
             .filter(token_owner_records::governing_token_owner.eq(any(addresses)))
             .select(token_owner_records::all_columns)
             .load(&conn)
@@ -214,7 +214,7 @@ impl TryBatchFn<PublicKey<TokenOwnerRecord>, Option<TokenOwnerRecord>> for Batch
     ) -> TryBatchMap<PublicKey<TokenOwnerRecord>, Option<TokenOwnerRecord>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::TokenOwnerRecordV2> = token_owner_records::table
+        let rows: Vec<models::TokenOwnerRecord> = token_owner_records::table
             .filter(token_owner_records::address.eq(any(addresses)))
             .select(token_owner_records::all_columns)
             .load(&conn)
