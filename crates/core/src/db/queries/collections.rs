@@ -276,30 +276,19 @@ INNER JOIN metadata_collection_keys ON(metadatas.address = metadata_collection_k
 INNER JOIN auction_houses ON(purchases.auction_house = auction_houses.address)
 WHERE
     metadata_collection_keys.collection_address = $1
-    AND purchases.created_at >= $2
-    AND purchases.created_at <= $3
 	AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
 	AND metadata_collection_keys.verified = true
 GROUP BY metadata_collection_keys.collection_address;
 
--- $1: address::text
--- $2: start date::timestamp
--- $3: end date::timestamp";
+-- $1: address::text";
 
 /// Computes the total of all sales of all NFTs in the collection over all time, in lamports.
 ///
 /// # Errors
 /// This function fails if the underlying SQL query returns an error
-pub fn volume_total(
-    conn: &Connection,
-    address: impl ToSql<Text, Pg>,
-    start_date: DateTime<Utc>,
-    end_date: DateTime<Utc>,
-) -> Result<i64> {
+pub fn volume_total(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<i64> {
     let query_result = diesel::sql_query(VOLUME_TOTAL_QUERY)
         .bind(address)
-        .bind::<Timestamp, _>(start_date.naive_utc())
-        .bind::<Timestamp, _>(end_date.naive_utc())
         .load::<BigIntWrapper>(conn)
         .context("Failed to load collection volume total")?;
 
@@ -322,7 +311,7 @@ GROUP BY metadata_collection_keys.collection_address;
 
 -- $1: address::text";
 
-/// Computes the total of all sales of all NFTs in the collection over all time, in lamports.
+/// Computes the count of wallets that currently hold at least one NFT from the collection.
 ///
 /// # Errors
 /// This function fails if the underlying SQL query returns an error
