@@ -28,6 +28,7 @@ RUN cargo build --locked \
     holaplex-indexer/job-runner, \
     holaplex-indexer/search, \
   " \
+  --bin holaplex-indexer-dispatcher \
   --bin holaplex-indexer-geyser \
   --bin holaplex-indexer-http \
   --bin holaplex-indexer-job-runner \
@@ -55,6 +56,14 @@ RUN mkdir -p bin
 COPY .env .env.prod ./
 
 CMD ["./startup.sh"]
+
+FROM base AS dispatcher-base
+
+COPY --from=build build/bin/holaplex-indexer-dispatcher bin/
+
+FROM dispatcher-base AS dispatch-refresh-table
+
+COPY --from=build build/scripts/docker/dispatch-refresh-table.sh startup.sh
 
 FROM base AS geyser-consumer
 
