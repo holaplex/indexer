@@ -6,10 +6,7 @@ use objects::{
     profile::TwitterProfile,
 };
 use scalars::PublicKey;
-use tables::{
-    bids, current_metadata_owners, graph_connections, metadata_collection_keys, metadata_jsons,
-    metadatas,
-};
+use tables::{bids, graph_connections};
 
 use super::{nft::Collection, prelude::*};
 use crate::schema::scalars::U64;
@@ -155,24 +152,8 @@ impl<'a> TryFrom<models::CollectedCollection<'a>> for CollectedCollection {
 impl CollectedCollection {
     async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
         let conn = ctx.shared.db.get()?;
-        metadatas::table
-            .inner_join(
-                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
-            )
-            .inner_join(
-                metadata_collection_keys::table
-                    .on(metadata_collection_keys::collection_address.eq(metadatas::mint_address)),
-            )
-            .inner_join(
-                current_metadata_owners::table
-                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
-            )
-            .filter(metadata_collection_keys::collection_address.eq(&self.collection))
-            .filter(metadata_collection_keys::verified.eq(true))
-            .select(queries::metadatas::NFT_COLUMNS)
-            .first::<models::Nft>(&conn)
-            .optional()
-            .context("Failed to load Collection NFT by collection address.")?
+
+        queries::collections::get(&conn, &self.collection)?
             .map(TryInto::try_into)
             .transpose()
             .map_err(Into::into)
