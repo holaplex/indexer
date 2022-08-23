@@ -156,6 +156,21 @@ impl GenoHabitat {
             .map_err(Into::into)
     }
 
+    pub async fn sub_habitat_data(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Vec<Option<GenoHabitat>>> {
+        future::join_all(
+            self.sub_habitats
+                .iter()
+                .map(|a| ctx.geno_habitat_loader.load(a.clone())),
+        )
+        .await
+        .into_iter()
+        .collect::<Result<_, _>>()
+        .map_err(Into::into)
+    }
+
     pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_by_mint_loader
             .load(self.habitat_mint.clone())
