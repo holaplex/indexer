@@ -1,9 +1,9 @@
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
+    bigdecimal::BigDecimal,
     db::{
         expression::dsl::sum,
         queries,
-        sql_types::Numeric,
         tables::{
             auction_houses, bid_receipts, current_metadata_owners, listing_receipts, listings,
             metadata_collection_keys, metadata_jsons, metadatas, purchases,
@@ -593,8 +593,9 @@ impl Collection {
             .distinct_on(current_metadata_owners::owner_address)
             .count()
             .get_result::<i64>(&conn)
-            .context("Failed to load collection holder count")
-            .map(TryInto::try_into)
+            .context("Failed to load collection holder count")?
+            .try_into()
+            .context("Collection holder count was too big to convert to U64")
             .map_err(Into::into)
     }
 
@@ -617,8 +618,9 @@ impl Collection {
             .filter(listings::canceled_at.is_null())
             .count()
             .get_result::<i64>(&conn)
-            .context("Failed to load collection active listing count")
-            .map(TryInto::try_into)
+            .context("Failed to load collection active listing count")?
+            .try_into()
+            .context("Collection listed count was too big to convert to U64")
             .map_err(Into::into)
     }
 
@@ -649,11 +651,11 @@ impl Collection {
             .filter(auction_houses::treasury_mint.eq("So11111111111111111111111111111111111111112"))
             .filter(metadata_collection_keys::verified.eq(true))
             .select(sum(purchases::price))
-            .first(&conn)
-            .optional()
-            .context("Failed to load collection volume total")
-            .map(|v| v.unwrap_or(Numeric::default()))
-            .map(Into::into)
+            .first::<Option<BigDecimal>>(&conn)
+            .context("Failed to load collection volume total")?
+            .unwrap_or(BigDecimal::default())
+            .try_into()
+            .context("Collection volume was too big to convert to U64")
             .map_err(Into::into)
     }
 

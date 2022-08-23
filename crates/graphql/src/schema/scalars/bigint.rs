@@ -1,7 +1,4 @@
-use indexer_core::{
-    bigdecimal::{BigDecimal, ParseBigDecimalError, ToPrimitive},
-    chrono::format::Numeric,
-};
+use indexer_core::bigdecimal::{BigDecimal, ParseBigDecimalError, ToPrimitive};
 
 use super::prelude::*;
 
@@ -79,11 +76,5 @@ impl TryFrom<BigDecimal> for U64 {
                 ParseBigDecimalError::Other(String::from("Integer is too large to store."))
             })
             .map(Self)
-    }
-}
-
-impl From<Numeric> for U64 {
-    fn from(value: Numeric) -> Self {
-        Self(value)
     }
 }
