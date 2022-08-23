@@ -1,0 +1,21 @@
+[package]
+name = "holaplex-indexer-burn-fix"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "burn-fix"
+path = "main.rs"
+
+[dependencies]
+solana-client = "1.9.15"
+solana-program = "1.9.15"
+
+[dependencies.indexer-core]
+package = "holaplex-indexer-core"
+path = "../core"
+
+[dependencies.indexer]
+package = "holaplex-indexer"
+path = "../indexer"

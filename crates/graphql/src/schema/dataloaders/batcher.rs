@@ -1,7 +1,6 @@
 use std::{collections::HashMap, hash::Hash, sync::Arc};
 
-use indexer_core::assets::proxy_twitter_handle_url;
-use reqwest::Url;
+use indexer_core::{assets::proxy_twitter_handle_url, url::Url};
 
 use super::prelude::*;
 use crate::SharedData;

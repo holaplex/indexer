@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
-use indexer_core::db::{
-    delete, insert_into,
-    models::{StoreAuctionHouse, StoreConfigJson, StoreCreator},
-    tables::{store_auction_houses, store_config_jsons, store_creators},
+use indexer_core::{
+    db::{
+        delete, insert_into,
+        models::{StoreAuctionHouse, StoreConfigJson, StoreCreator},
+        tables::{store_auction_houses, store_config_jsons, store_creators},
+    },
+    url::Url,
 };
-use reqwest::Url;
 use serde::{Deserialize, Serialize};
 
 use super::Client;

@@ -123,7 +123,10 @@ async fn process_creators(client: &Client, key: Pubkey, creators: Vec<Creator>) 
             .run(move |db| {
                 insert_into(candy_machine_creators::table)
                     .values(&c)
-                    .on_conflict(candy_machine_creators::candy_machine_address)
+                    .on_conflict((
+                        candy_machine_creators::candy_machine_address,
+                        candy_machine_creators::creator_address,
+                    ))
                     .do_update()
                     .set(&c)
                     .execute(db)

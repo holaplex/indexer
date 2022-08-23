@@ -26,7 +26,6 @@ RUN cargo build --profile docker \
   " \
   --bin holaplex-indexer-geyser \
   --bin holaplex-indexer-http \
-  --bin holaplex-indexer-legacy-storefronts \
   --bin holaplex-indexer-search \
   --bin holaplex-indexer-migrator \
   --bin holaplex-indexer-graphql
@@ -61,11 +60,6 @@ FROM base AS http-consumer
 
 COPY --from=build build/bin/holaplex-indexer-http bin/
 COPY --from=build build/scripts/docker/http-consumer.sh startup.sh
-
-FROM base AS legacy-storefronts
-
-COPY --from=build build/bin/holaplex-indexer-legacy-storefronts bin/
-COPY --from=build build/scripts/docker/legacy-storefronts.sh startup.sh
 
 FROM base AS search-consumer
 

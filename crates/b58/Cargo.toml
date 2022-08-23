@@ -12,6 +12,7 @@ repository = "https://github.com/holaplex/indexer"
 license = "AGPL-3.0-or-later"
 keywords = ["base58"]
 categories = ["command-line-utilities"]
+publish = false
 
 [[bin]]
 name = "b58"
@@ -19,5 +20,5 @@ path = "main.rs"
 
 [dependencies]
 bs58 = "0.4.0"
-clap = "3.0.0-beta.5"
+clap = { version = "3.1.12", features = ["derive"] }
 hex = "0.4.3"

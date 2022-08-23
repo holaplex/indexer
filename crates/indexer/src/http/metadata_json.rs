@@ -18,8 +18,8 @@ use indexer_core::{
     meilisearch::errors::{
         Error::Meilisearch, ErrorCode as MeiliSearchErrorCode, MeilisearchError,
     },
+    url::Url,
 };
-use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 

@@ -4,6 +4,7 @@ use indexer_core::{
         queries,
         tables::{bid_receipts, listing_receipts, metadata_jsons},
     },
+    url::Url,
     util::unix_timestamp,
     uuid::Uuid,
 };
@@ -11,7 +12,6 @@ use objects::{
     ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
     profile::TwitterProfile, wallet::Wallet,
 };
-use reqwest::Url;
 use scalars::{PublicKey, U64};
 use serde_json::Value;
 
@@ -547,7 +547,7 @@ impl Collection {
         let conn = ctx.shared.db.get()?;
         let rows = queries::collections::collection_activities(
             &conn,
-            &self.0.address,
+            &self.0.mint_address,
             event_types,
             limit,
             offset,
