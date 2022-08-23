@@ -2,14 +2,13 @@ use indexer_core::{db::queries, uuid::Uuid};
 use objects::{
     auction_house::AuctionHouse,
     listing::Bid,
-    nft::{Nft, NftCreator},
+    nft::{Collection, Nft, NftCreator},
     profile::TwitterProfile,
 };
-use scalars::PublicKey;
+use scalars::{PublicKey, U64};
 use tables::{bids, graph_connections};
 
-use super::{nft::Collection, prelude::*};
-use crate::schema::scalars::U64;
+use super::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct Wallet {
