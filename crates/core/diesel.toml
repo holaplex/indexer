@@ -15,6 +15,7 @@ import_types = [
     OptionVoteResult as Optionvoteresult, \
     MintMaxVoteType as Mintmaxvotetype, \
     VoteTipping as Votetipping, \
+    VoteWeightV1 as Voteweightv1, \
     VoteRecordV2Vote as Vote_record_v2_vote, \
     VoteThresholdType as Votethresholdtype, \
     GovernanceAccountType as Governanceaccounttype, \

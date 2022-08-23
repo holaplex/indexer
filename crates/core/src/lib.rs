@@ -19,6 +19,7 @@ extern crate diesel;
 extern crate diesel_migrations;
 
 pub extern crate base64;
+pub extern crate bigdecimal;
 pub extern crate chrono;
 pub extern crate clap;
 pub extern crate num_cpus;
