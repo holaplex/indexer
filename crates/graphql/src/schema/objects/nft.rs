@@ -8,12 +8,14 @@ use indexer_core::{
     util::unix_timestamp,
     uuid::Uuid,
 };
+use itertools::Itertools;
 use objects::{
     ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
     profile::TwitterProfile, wallet::Wallet,
 };
 use scalars::{PublicKey, U64};
 use serde_json::Value;
+use tables::{attributes, metadata_collection_keys};
 
 use super::prelude::*;
 
@@ -528,6 +530,18 @@ If no value is provided, it will return XSmall")))]
     }
 }
 
+#[derive(Debug, Clone, GraphQLObject, PartialEq, Eq, PartialOrd, Ord)]
+struct AttributeVariant {
+    name: String,
+    count: i32,
+}
+
+#[derive(Debug, GraphQLObject, PartialEq, Eq, PartialOrd, Ord)]
+struct AttributeGroup {
+    name: String,
+    variants: Vec<AttributeVariant>,
+}
+
 #[derive(Debug, Clone)]
 pub struct Collection(pub Nft);
 
@@ -535,6 +549,58 @@ pub struct Collection(pub Nft);
 impl Collection {
     fn nft(&self) -> &Nft {
         &self.0
+    }
+
+    pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
+        let conn = context.shared.db.get()?;
+
+        let metadata_attributes: Vec<models::MetadataAttribute> =
+            attributes::table
+                .inner_join(metadata_collection_keys::table.on(
+                    attributes::metadata_address.eq(metadata_collection_keys::metadata_address),
+                ))
+                .filter(metadata_collection_keys::collection_address.eq(&self.0.mint_address))
+                .filter(metadata_collection_keys::verified.eq(true))
+                .select(attributes::all_columns)
+                .load(&conn)
+                .context("Failed to load metadata attributes")?;
+
+        Ok(metadata_attributes
+            .into_iter()
+            .try_fold(
+                HashMap::new(),
+                |mut groups,
+                 models::MetadataAttribute {
+                     trait_type, value, ..
+                 }| {
+                    *groups
+                        .entry(
+                            trait_type
+                                .ok_or_else(|| anyhow!("Missing trait type from attribute"))?
+                                .into_owned(),
+                        )
+                        .or_insert_with(HashMap::new)
+                        .entry(value)
+                        .or_insert(0) += 1;
+
+                    Result::<_>::Ok(groups)
+                },
+            )?
+            .into_iter()
+            .map(|(name, vars)| AttributeGroup {
+                name,
+                variants: vars
+                    .into_iter()
+                    .map(|(name, count)| {
+                        let name = name.map_or_else(String::new, Cow::into_owned);
+
+                        AttributeVariant { name, count }
+                    })
+                    .sorted()
+                    .collect(),
+            })
+            .sorted()
+            .collect::<Vec<_>>())
     }
 
     pub async fn activities(
