@@ -1,12 +1,12 @@
 //! Query utilities for collections.
 
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use chrono::{DateTime, Utc};
 use diesel::{
     pg::Pg,
-    sql_types::{Array, BigInt, Integer, Nullable, Text, Timestamp},
-    types::ToSql,
-    RunQueryDsl,
+    prelude::*,
+    serialize::ToSql,
+    sql_types::{Array, Integer, Nullable, Text, Timestamp},
 };
 
 use crate::{
@@ -234,103 +234,4 @@ pub fn collection_activities(
         .bind(offset)
         .load(conn)
         .context("Failed to load collection activities")
-}
-
-const LISTED_COUNT_QUERY: &str = r"
-SELECT COUNT(listings.id) AS value
-FROM listings
-INNER JOIN metadatas ON(listings.metadata = metadatas.address)
-INNER JOIN metadata_collection_keys ON(metadatas.address = metadata_collection_keys.metadata_address)
-INNER JOIN auction_houses ON(listings.auction_house = auction_houses.address)
-WHERE
-    metadata_collection_keys.collection_address = $1
-	AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
-	AND listings.purchase_id IS NULL
-	AND listings.canceled_at IS NULL
-	AND metadata_collection_keys.verified = true
-GROUP BY metadata_collection_keys.collection_address;
-
--- $1: address::text";
-
-/// Computes the count of active listings of NFTs in the collection.
-///
-/// # Errors
-/// This function fails if the underlying SQL query returns an error
-pub fn listed_count(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<i64> {
-    let query_result = diesel::sql_query(LISTED_COUNT_QUERY)
-        .bind(address)
-        .load::<BigIntWrapper>(conn)
-        .context("Failed to load collection listing count")?;
-
-    query_result
-        .get(0)
-        .ok_or_else(|| anyhow!("Collection not found."))
-        .map(|w| w.value)
-}
-
-const VOLUME_TOTAL_QUERY: &str = r"
-SELECT CAST(SUM(purchases.price) AS BIGINT) AS value
-FROM purchases
-INNER JOIN metadatas ON(purchases.metadata = metadatas.address)
-INNER JOIN metadata_collection_keys ON(metadatas.address = metadata_collection_keys.metadata_address)
-INNER JOIN auction_houses ON(purchases.auction_house = auction_houses.address)
-WHERE
-    metadata_collection_keys.collection_address = $1
-	AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
-	AND metadata_collection_keys.verified = true
-GROUP BY metadata_collection_keys.collection_address;
-
--- $1: address::text";
-
-/// Computes the total of all sales of all NFTs in the collection over all time, in lamports.
-///
-/// # Errors
-/// This function fails if the underlying SQL query returns an error
-pub fn volume_total(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<i64> {
-    let query_result = diesel::sql_query(VOLUME_TOTAL_QUERY)
-        .bind(address)
-        .load::<BigIntWrapper>(conn)
-        .context("Failed to load collection volume total")?;
-
-    // ideally we'd throw if the collection isnt found and return
-    // 0 if there were no sales over the given time period, but
-    // this is a more performant compromise
-    Ok(query_result.get(0).map_or(0, |w| w.value))
-}
-
-const HOLDER_COUNT_QUERY: &str = r"
-SELECT metadata_collection_keys.collection_address AS collection, COUNT(DISTINCT current_metadata_owners.owner_address) as value
-FROM metadata_collection_keys
-INNER JOIN metadatas ON(metadatas.address = metadata_collection_keys.metadata_address)
-INNER JOIN current_metadata_owners ON(current_metadata_owners.mint_address = metadatas.mint_address)
-WHERE
-    metadata_collection_keys.collection_address = $1
-	AND metadatas.burned_at IS NULL
-	AND metadata_collection_keys.verified = true
-GROUP BY metadata_collection_keys.collection_address;
-
--- $1: address::text";
-
-/// Computes the count of wallets that currently hold at least one NFT from the collection.
-///
-/// # Errors
-/// This function fails if the underlying SQL query returns an error
-pub fn holder_count(conn: &Connection, address: impl ToSql<Text, Pg>) -> Result<i64> {
-    let query_result = diesel::sql_query(HOLDER_COUNT_QUERY)
-        .bind(address)
-        .load::<BigIntWrapper>(conn)
-        .context("Failed to load collection holder count")?;
-
-    query_result
-        .get(0)
-        .ok_or_else(|| anyhow!("Collection not found."))
-        .map(|w| w.value)
-}
-
-// This struct is needed to fulfill the QueryableByName
-// requirement by diesel
-#[derive(QueryableByName)]
-struct BigIntWrapper {
-    #[sql_type = "BigInt"]
-    value: i64,
 }

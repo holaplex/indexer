@@ -1,8 +1,13 @@
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     db::{
+        expression::dsl::sum,
         queries,
-        tables::{bid_receipts, listing_receipts, metadata_jsons},
+        sql_types::Numeric,
+        tables::{
+            auction_houses, bid_receipts, current_metadata_owners, listing_receipts, listings,
+            metadata_collection_keys, metadata_jsons, metadatas, purchases,
+        },
     },
     url::Url,
     util::unix_timestamp,
@@ -571,18 +576,49 @@ impl Collection {
     #[graphql(
         description = "Count of wallets that currently hold at least one NFT from the collection."
     )]
-    pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<scalars::I64> {
+    pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<scalars::U64> {
         let conn = ctx.shared.db.get()?;
-        queries::collections::holder_count(&conn, self.0.mint_address.clone())
-            .map(Into::into)
+        metadata_collection_keys::table
+            .inner_join(
+                metadatas::table
+                    .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
+            )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+            )
+            .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address))
+            .filter(metadatas::burned_at.is_null())
+            .filter(metadata_collection_keys::verified.eq(true))
+            .distinct_on(current_metadata_owners::owner_address)
+            .count()
+            .get_result::<i64>(&conn)
+            .context("Failed to load collection holder count")
+            .map(TryInto::try_into)
             .map_err(Into::into)
     }
 
     #[graphql(description = "Count of active listings of NFTs in the collection.")]
-    pub async fn listed_count(&self, ctx: &AppContext) -> FieldResult<scalars::I64> {
+    pub async fn listed_count(&self, ctx: &AppContext) -> FieldResult<scalars::U64> {
         let conn = ctx.shared.db.get()?;
-        queries::collections::listed_count(&conn, self.0.mint_address.clone())
-            .map(Into::into)
+        listings::table
+            .inner_join(metadatas::table.on(metadatas::address.eq(listings::metadata)))
+            .inner_join(
+                metadata_collection_keys::table
+                    .on(metadata_collection_keys::metadata_address.eq(metadatas::address)),
+            )
+            .inner_join(
+                auction_houses::table.on(listings::auction_house.eq(auction_houses::address)),
+            )
+            .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address))
+            .filter(auction_houses::treasury_mint.eq("So11111111111111111111111111111111111111112"))
+            .filter(metadata_collection_keys::verified.eq(true))
+            .filter(listings::purchase_id.is_null())
+            .filter(listings::canceled_at.is_null())
+            .count()
+            .get_result::<i64>(&conn)
+            .context("Failed to load collection active listing count")
+            .map(TryInto::try_into)
             .map_err(Into::into)
     }
 
@@ -598,9 +634,25 @@ impl Collection {
     #[graphql(
         description = "Total of all sales of all NFTs in the collection over all time, in lamports."
     )]
-    pub async fn volume_total(&self, ctx: &AppContext) -> FieldResult<scalars::I64> {
+    pub async fn volume_total(&self, ctx: &AppContext) -> FieldResult<scalars::U64> {
         let conn = ctx.shared.db.get()?;
-        queries::collections::volume_total(&conn, self.0.mint_address.clone())
+        purchases::table
+            .inner_join(metadatas::table.on(metadatas::address.eq(purchases::metadata)))
+            .inner_join(
+                metadata_collection_keys::table
+                    .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
+            )
+            .inner_join(
+                auction_houses::table.on(purchases::auction_house.eq(auction_houses::address)),
+            )
+            .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address))
+            .filter(auction_houses::treasury_mint.eq("So11111111111111111111111111111111111111112"))
+            .filter(metadata_collection_keys::verified.eq(true))
+            .select(sum(purchases::price))
+            .first(&conn)
+            .optional()
+            .context("Failed to load collection volume total")
+            .map(|v| v.unwrap_or(Numeric::default()))
             .map(Into::into)
             .map_err(Into::into)
     }
