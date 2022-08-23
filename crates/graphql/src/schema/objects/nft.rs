@@ -587,10 +587,11 @@ impl Collection {
                 current_metadata_owners::table
                     .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
             )
-            .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address))
+            .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address.clone()))
             .filter(metadatas::burned_at.is_null())
             .filter(metadata_collection_keys::verified.eq(true))
-            .distinct_on(current_metadata_owners::owner_address)
+            .select(current_metadata_owners::owner_address)
+            .distinct()
             .count()
             .get_result::<i64>(&conn)
             .context("Failed to load collection holder count")?
@@ -611,7 +612,7 @@ impl Collection {
             .inner_join(
                 auction_houses::table.on(listings::auction_house.eq(auction_houses::address)),
             )
-            .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address))
+            .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address.clone()))
             .filter(auction_houses::treasury_mint.eq("So11111111111111111111111111111111111111112"))
             .filter(metadata_collection_keys::verified.eq(true))
             .filter(listings::purchase_id.is_null())
@@ -647,13 +648,13 @@ impl Collection {
             .inner_join(
                 auction_houses::table.on(purchases::auction_house.eq(auction_houses::address)),
             )
-            .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address))
+            .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address.clone()))
             .filter(auction_houses::treasury_mint.eq("So11111111111111111111111111111111111111112"))
             .filter(metadata_collection_keys::verified.eq(true))
             .select(sum(purchases::price))
             .first::<Option<BigDecimal>>(&conn)
             .context("Failed to load collection volume total")?
-            .unwrap_or(BigDecimal::default())
+            .unwrap_or_default()
             .try_into()
             .context("Collection volume was too big to convert to U64")
             .map_err(Into::into)
