@@ -8,9 +8,8 @@ use diesel::{
     prelude::*,
     query_builder::{QueryFragment, QueryId},
     query_source::joins::{Inner, Join, JoinOn},
+    serialize::ToSql,
     sql_types::{Array, Integer, Nullable, Text, Timestamp},
-    types::ToSql,
-    RunQueryDsl,
 };
 
 use crate::{
@@ -276,7 +275,7 @@ SELECT listings.id as id, metadata, auction_house, price, created_at, marketplac
     OFFSET $4;
 
  -- $1: address::text
- -- $2: evnet_types::text[]
+ -- $2: event_types::text[]
  -- $3: limit::integer
  -- $4: offset::integer";
 
