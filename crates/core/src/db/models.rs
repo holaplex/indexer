@@ -1087,6 +1087,20 @@ pub struct TwitterHandle<'a> {
     pub write_version: i64,
 }
 
+/// A row in a `collected_collections` query of a wallet
+#[derive(Debug, Clone, QueryableByName)]
+pub struct CollectedCollection<'a> {
+    /// The collection for which data is collected
+    #[sql_type = "VarChar"]
+    pub collection: Cow<'a, str>,
+    /// The nfts from this collection owned by the wallet
+    #[sql_type = "Int8"]
+    pub nfts_owned: i64,
+    /// The estimated value of the collection owend by the wallet
+    #[sql_type = "Int8"]
+    pub estimated_value: i64,
+}
+
 /// A row in the `metadata_collection_keys` table
 /// Each collection is an NFT
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
