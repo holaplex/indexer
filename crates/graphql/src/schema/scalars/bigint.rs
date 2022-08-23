@@ -1,4 +1,4 @@
-use bigdecimal::{BigDecimal, ParseBigDecimalError, ToPrimitive};
+use indexer_core::bigdecimal::{BigDecimal, ParseBigDecimalError, ToPrimitive};
 
 use super::prelude::*;
 

@@ -1,7 +1,10 @@
-use indexer_core::db::custom_types::{
-    GovernanceAccountTypeEnum, InstructionExecutionFlagsEnum, MintMaxVoteEnum,
-    OptionVoteResultEnum, ProposalStateEnum, ProposalVoteTypeEnum, VoteRecordV2VoteEnum,
-    VoteThresholdEnum, VoteTippingEnum, VoteWeightV1Enum,
+use indexer_core::{
+    bigdecimal,
+    db::custom_types::{
+        GovernanceAccountTypeEnum, InstructionExecutionFlagsEnum, MintMaxVoteEnum,
+        OptionVoteResultEnum, ProposalStateEnum, ProposalVoteTypeEnum, VoteRecordV2VoteEnum,
+        VoteThresholdEnum, VoteTippingEnum, VoteWeightV1Enum,
+    },
 };
 use objects::wallet::Wallet;
 use scalars::{

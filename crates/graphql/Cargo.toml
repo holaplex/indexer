@@ -17,7 +17,6 @@ categories = ["cryptocurrency::cryptocurrencies", "web-programming"]
 actix-cors = "0.6.0-beta.8"
 actix-web = "4.0.0-beta.21"
 async-trait = "0.1"
-bigdecimal = "0.1.0"
 dataloader = "0.14.0"
 derive_more = "0.99.17"
 futures-util = "0.3.21"

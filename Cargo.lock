@@ -3000,7 +3000,6 @@ dependencies = [
  "actix-cors",
  "actix-web",
  "async-trait",
- "bigdecimal",
  "dataloader",
  "derive_more",
  "futures-util",
