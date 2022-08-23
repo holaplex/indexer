@@ -38,6 +38,7 @@ required-features = ["db"]
 # Basic utilities
 anyhow = "1.0.45"
 base64 = "0.13.0"
+bigdecimal = "0.1.0"
 chrono = "0.4.22"
 clap = { version = "3.0.7", features = ["derive", "env"] }
 dotenv = "0.15.0"
@@ -54,7 +55,6 @@ sea-query-attr = "0.1.1"
 sea-query-driver = "0.1.1"
 strum = { version = "0.24.0", features = ["derive"] }
 uuid = "0.8.2"
-bigdecimal = "0.1.0"
 
 # Fast hash tables
 ahash = "0.7.6"
