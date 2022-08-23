@@ -4,6 +4,7 @@
 
 use std::borrow::Cow;
 
+use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use diesel::sql_types::{Array, Bool, Int4, Int8, Nullable, Text, Timestamp, Timestamptz, VarChar};
 use uuid::Uuid;
@@ -11,11 +12,12 @@ use uuid::Uuid;
 #[allow(clippy::wildcard_imports)]
 use super::schema::*;
 use crate::db::custom_types::{
-    EndSettingType, GovernanceAccountTypeEnum, InstructionExecutionFlagsEnum,
-    ListingEventLifecycle, ListingEventLifecycleEnum, MintMaxVoteEnum, OfferEventLifecycle,
-    OfferEventLifecycleEnum, OptionVoteResultEnum, ProposalStateEnum, ProposalVoteTypeEnum,
-    TokenStandardEnum, TransactionExecutionStatusEnum, VoteRecordV2VoteEnum, VoteThresholdEnum,
-    VoteTippingEnum, WhitelistMintMode,
+    EndSettingType, GovernanceAccountType, GovernanceAccountTypeEnum, InstructionExecutionFlags,
+    InstructionExecutionFlagsEnum, ListingEventLifecycle, ListingEventLifecycleEnum,
+    MintMaxVoteEnum, OfferEventLifecycle, OfferEventLifecycleEnum, OptionVoteResultEnum,
+    ProposalState, ProposalStateEnum, ProposalVoteType, ProposalVoteTypeEnum, TokenStandardEnum,
+    TransactionExecutionStatusEnum, VoteRecordV2Vote, VoteRecordV2VoteEnum, VoteThresholdEnum,
+    VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum, WhitelistMintMode,
 };
 
 /// A row in the `bids` table
@@ -2591,7 +2593,7 @@ pub struct GovernanceConfig<'a> {
     pub governance_address: Cow<'a, str>,
     pub vote_threshold_type: VoteThresholdEnum,
     pub vote_threshold_percentage: i16,
-    pub min_community_weight_to_create_proposal: i64,
+    pub min_community_weight_to_create_proposal: BigDecimal,
     pub min_instruction_hold_up_time: i64,
     pub max_voting_time: i64,
     pub vote_tipping: VoteTippingEnum,
@@ -2614,7 +2616,6 @@ pub struct Realm<'a> {
     pub voting_proposal_count: i16,
     pub authority: Option<Cow<'a, str>>,
     pub name: Cow<'a, str>,
-    pub reserved_v2: Cow<'a, [u8]>,
     /// The slot number of this account's last known update
     pub slot: i64,
     /// The write version of this account's last known update
@@ -2629,10 +2630,28 @@ pub struct RealmConfig<'a> {
     pub use_community_voter_weight_addin: bool,
     pub use_max_community_voter_weight_addin: bool,
     pub reserved: Cow<'a, [u8]>,
-    pub min_community_weight_to_create_governance: i64,
+    pub min_community_weight_to_create_governance: BigDecimal,
     pub community_mint_max_vote_weight_source: MintMaxVoteEnum,
     pub community_mint_max_vote_weight: i64,
     pub council_mint: Option<Cow<'a, str>>,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "vote_records_v1"]
+#[allow(missing_docs)]
+pub struct VoteRecordV1<'a> {
+    pub address: Cow<'a, str>,
+    pub account_type: GovernanceAccountTypeEnum,
+    pub proposal: Cow<'a, str>,
+    pub governing_token_owner: Cow<'a, str>,
+    pub is_relinquished: bool,
+    pub vote_type: VoteWeightV1Enum,
+    pub vote_weight: i64,
     /// The slot number of this account's last known update
     pub slot: i64,
     /// The write version of this account's last known update
@@ -2657,6 +2676,29 @@ pub struct VoteRecordV2<'a> {
     pub write_version: i64,
 }
 
+#[allow(missing_docs)]
+#[derive(Debug, Clone, QueryableByName)]
+pub struct VoteRecord {
+    #[sql_type = "VarChar"]
+    pub address: String,
+    #[sql_type = "GovernanceAccountType"]
+    pub account_type: GovernanceAccountTypeEnum,
+    #[sql_type = "VarChar"]
+    pub proposal: String,
+    #[sql_type = "VarChar"]
+    pub governing_token_owner: String,
+    #[sql_type = "Bool"]
+    pub is_relinquished: bool,
+    #[sql_type = "Nullable<VoteWeightV1>"]
+    pub vote_type: Option<VoteWeightV1Enum>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub vote_weight: Option<i64>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub voter_weight: Option<i64>,
+    #[sql_type = "Nullable<VoteRecordV2Vote>"]
+    pub vote: Option<VoteRecordV2VoteEnum>,
+}
+
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "vote_record_v2_vote_approve_vote_choices"]
@@ -2673,9 +2715,9 @@ pub struct VoteChoice<'a> {
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
-#[table_name = "token_owner_records_v2"]
+#[table_name = "token_owner_records"]
 #[allow(missing_docs)]
-pub struct TokenOwnerRecordV2<'a> {
+pub struct TokenOwnerRecord<'a> {
     pub address: Cow<'a, str>,
     pub account_type: GovernanceAccountTypeEnum,
     pub realm: Cow<'a, str>,
@@ -2695,14 +2737,121 @@ pub struct TokenOwnerRecordV2<'a> {
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
-#[table_name = "signatory_records_v2"]
+#[table_name = "signatory_records"]
 #[allow(missing_docs)]
-pub struct SignatoryRecordV2<'a> {
+pub struct SignatoryRecord<'a> {
     pub address: Cow<'a, str>,
     pub account_type: GovernanceAccountTypeEnum,
     pub proposal: Cow<'a, str>,
     pub signatory: Cow<'a, str>,
     pub signed_off: bool,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[allow(missing_docs)]
+#[derive(Debug, Clone, QueryableByName)]
+pub struct SplGovernanceProposal {
+    /// Union of `ProposalV1` and `ProposalV2`
+    #[sql_type = "VarChar"]
+    pub address: String,
+    #[sql_type = "GovernanceAccountType"]
+    pub account_type: GovernanceAccountTypeEnum,
+    #[sql_type = "VarChar"]
+    pub governance: String,
+    #[sql_type = "VarChar"]
+    pub governing_token_mint: String,
+    #[sql_type = "ProposalState"]
+    pub state: ProposalStateEnum,
+    #[sql_type = "VarChar"]
+    pub token_owner_record: String,
+    #[sql_type = "diesel::sql_types::SmallInt"]
+    pub signatories_count: i16,
+    #[sql_type = "diesel::sql_types::SmallInt"]
+    pub signatories_signed_off_count: i16,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub yes_votes_count: Option<i64>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub no_votes_count: Option<i64>,
+    #[sql_type = "Nullable<diesel::sql_types::SmallInt>"]
+    pub instructions_executed_count: Option<i16>,
+    #[sql_type = "Nullable<diesel::sql_types::SmallInt>"]
+    pub instructions_count: Option<i16>,
+    #[sql_type = "Nullable<diesel::sql_types::SmallInt>"]
+    pub instructions_next_index: Option<i16>,
+    #[sql_type = "Timestamptz"]
+    pub draft_at: NaiveDateTime,
+    #[sql_type = "Nullable<Timestamptz>"]
+    pub signing_off_at: Option<NaiveDateTime>,
+    #[sql_type = "Nullable<Timestamptz>"]
+    pub voting_at: Option<NaiveDateTime>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub voting_at_slot: Option<i64>,
+    #[sql_type = "Nullable<Timestamptz>"]
+    pub voting_completed_at: Option<NaiveDateTime>,
+    #[sql_type = "Nullable<Timestamptz>"]
+    pub executing_at: Option<NaiveDateTime>,
+    #[sql_type = "Nullable<Timestamptz>"]
+    pub closed_at: Option<NaiveDateTime>,
+    #[sql_type = "InstructionExecutionFlags"]
+    pub execution_flags: InstructionExecutionFlagsEnum,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub max_vote_weight: Option<i64>,
+    #[sql_type = "Nullable<VoteThresholdType>"]
+    pub vote_threshold_type: Option<VoteThresholdEnum>,
+    #[sql_type = "Nullable<diesel::sql_types::SmallInt>"]
+    pub vote_threshold_percentage: Option<i16>,
+    #[sql_type = "VarChar"]
+    pub name: String,
+    #[sql_type = "VarChar"]
+    pub description_link: String,
+    #[sql_type = "Nullable<ProposalVoteType>"]
+    pub vote_type: Option<ProposalVoteTypeEnum>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub deny_vote_weight: Option<i64>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub veto_vote_weight: Option<i64>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub abstain_vote_weight: Option<i64>,
+    #[sql_type = "Nullable<Timestamptz>"]
+    pub start_voting_at: Option<NaiveDateTime>,
+    #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
+    pub max_voting_time: Option<i64>,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "proposals_v1"]
+#[allow(missing_docs)]
+pub struct ProposalV1<'a> {
+    pub address: Cow<'a, str>,
+    pub account_type: GovernanceAccountTypeEnum,
+    pub governance: Cow<'a, str>,
+    pub governing_token_mint: Cow<'a, str>,
+    pub state: ProposalStateEnum,
+    pub token_owner_record: Cow<'a, str>,
+    pub signatories_count: i16,
+    pub signatories_signed_off_count: i16,
+    pub yes_votes_count: i64,
+    pub no_votes_count: i64,
+    pub instructions_executed_count: i16,
+    pub instructions_count: i16,
+    pub instructions_next_index: i16,
+    pub draft_at: NaiveDateTime,
+    pub signing_off_at: Option<NaiveDateTime>,
+    pub voting_at: Option<NaiveDateTime>,
+    pub voting_at_slot: Option<i64>,
+    pub voting_completed_at: Option<NaiveDateTime>,
+    pub executing_at: Option<NaiveDateTime>,
+    pub closed_at: Option<NaiveDateTime>,
+    pub execution_flags: InstructionExecutionFlagsEnum,
+    pub max_vote_weight: Option<i64>,
+    pub vote_threshold_type: Option<VoteThresholdEnum>,
+    pub vote_threshold_percentage: Option<i16>,
+    pub name: Cow<'a, str>,
+    pub description_link: Cow<'a, str>,
     /// The slot number of this account's last known update
     pub slot: i64,
     /// The write version of this account's last known update

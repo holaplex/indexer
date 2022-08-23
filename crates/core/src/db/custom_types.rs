@@ -511,3 +511,31 @@ impl FromSql<TransactionExecutionStatus, Pg> for TransactionExecutionStatusEnum 
         from_bytes(bytes)
     }
 }
+
+/// `SPL Governance VoteRecordV1` vote weight type
+#[derive(SqlType, Debug, Clone, Copy)]
+/// Represents database `voteweightv1` enum
+#[postgres(type_name = "voteweightv1")]
+pub struct VoteWeightV1;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "VoteWeightV1"]
+#[allow(missing_docs)]
+pub enum VoteWeightV1Enum {
+    Yes,
+    No,
+}
+
+impl ToSql<VoteWeightV1, Pg> for VoteWeightV1Enum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<VoteWeightV1, Pg> for VoteWeightV1Enum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}
