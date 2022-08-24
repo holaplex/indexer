@@ -35,12 +35,12 @@ pub fn parse_cm_config_lines(
     // This could occur if this function is called on a candy machine that uses hiddensettings instead of
     // config lines
     let bytes_needed_for_taken_bitmask = items_available / 8 + (items_available % 8).min(1);
-    let expected_taken_len = taken_bitmask_start + bytes_needed_for_taken_bitmask;
+    let total_expected_data_len = taken_bitmask_start + bytes_needed_for_taken_bitmask;
 
-    if expected_taken_len >= data.len() {
+    if total_expected_data_len >= data.len() {
         bail!(
             "Config line bytes would overflow available data ({} vs {})",
-            expected_taken_len,
+            total_expected_data_len,
             data.len()
         );
     }
@@ -87,7 +87,7 @@ pub async fn process_cm(client: &Client, update: AccountUpdate) -> Result<()> {
     let items_available = usize::try_from(candy_machine.data.items_available)
         .context("Failed to convert available item count")?;
 
-    let lines = if candy_machine.data.hidden_settings.is_some() {
+    let lines = if candy_machine.data.hidden_settings.is_none() {
         Some(
             parse_cm_config_lines(&update.data, items_available)
                 .context("Failed to parse candy machine lines")?,
@@ -138,7 +138,11 @@ mod tests {
             "candy_machines/AoHidoffmkL4xURViNgbA4YyeDw82FAYUZfomL3X5BoU.dmp",
             "candy_machines/piA76RvvmCt7UWEmJSBVA6xMoXqwvEAELwJoqeHK6i3.dmp",
             "candy_machines/CiBuYi3W3aVQbMWcjvfKBpwjHS6fViuuxQdSUUqkjkn4.dmp",
-            "candy_machines/ACDPaQ3uGy33KsBKiUH4azDX4q7Nxk3QwW3trALEdFmB.dmp", /* this one has hidden settings */
+            // This candy machine has hidden settings, but for some reason has allocated space
+            // for all the config lines that would be needed, however they are all empty.
+            // This results in returning a results array with zero as none of the config
+            // lines are marked as available
+            "candy_machines/ACDPaQ3uGy33KsBKiUH4azDX4q7Nxk3QwW3trALEdFmB.dmp",
         ];
 
         for filename in filenames {
@@ -146,7 +150,6 @@ mod tests {
             let data = load_account_dump(filename).unwrap();
             let cm = CandyMachine::try_deserialize(&mut data.as_slice()).unwrap();
             println!("Candy Machine: {}", filename);
-
             let avail = usize::try_from(cm.data.items_available).unwrap();
             let results = parse_cm_config_lines(&data, avail).unwrap();
 
