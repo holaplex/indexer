@@ -64,6 +64,21 @@ jobs:
           docker push $image_tag
           echo "::set-output name=image::$image_tag"
 
+      - name: Build, tag, and push job runner image
+        id: build-jobs-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+
+        run: |
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          app=job-runner
+          image_tag="$ECR_REGISTRY/$ECR_REPOSITORY:$app-${GITHUB_REF##*/}-$git_hash"
+          docker build -t $image_tag --target $app .
+          echo "Pushing image to ECR..."
+          docker push $image_tag
+          echo "::set-output name=image::$image_tag"
+
       - name: Build, tag, and push Meilisearch consumer image
         id: build-search-image
         env:
