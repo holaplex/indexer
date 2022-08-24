@@ -578,14 +578,14 @@ impl Collection {
     )]
     pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<scalars::U64> {
         let conn = ctx.shared.db.get()?;
-        let unique_holders = current_metadata_owners::table
+        let unique_holders = metadata_collection_keys::table
             .inner_join(
                 metadatas::table
-                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+                    .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
             )
             .inner_join(
-                metadata_collection_keys::table
-                    .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
             )
             .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address.clone()))
             .filter(metadatas::burned_at.is_null())
@@ -594,7 +594,9 @@ impl Collection {
             .load::<String>(&conn)
             .context("Failed to load collection holder count")?;
 
-        i64::try_from(unique_holders.len())?.try_into().map_err(Into::into)
+        i64::try_from(unique_holders.len())?
+            .try_into()
+            .map_err(Into::into)
     }
 
     #[graphql(description = "Count of active listings of NFTs in the collection.")]
