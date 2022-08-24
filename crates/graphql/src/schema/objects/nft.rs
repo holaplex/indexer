@@ -596,6 +596,7 @@ impl Collection {
 
         i64::try_from(unique_holders.len())?
             .try_into()
+            .context("Collection holder count was too big to convert to U64")
             .map_err(Into::into)
     }
 
