@@ -578,26 +578,23 @@ impl Collection {
     )]
     pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<scalars::U64> {
         let conn = ctx.shared.db.get()?;
-        metadata_collection_keys::table
+        let unique_holders = current_metadata_owners::table
             .inner_join(
                 metadatas::table
-                    .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
             )
             .inner_join(
-                current_metadata_owners::table
-                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+                metadata_collection_keys::table
+                    .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
             )
             .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address.clone()))
             .filter(metadatas::burned_at.is_null())
-            .filter(metadata_collection_keys::verified.eq(true))
             .select(current_metadata_owners::owner_address)
-            .distinct()
-            .count()
-            .get_result::<i64>(&conn)
-            .context("Failed to load collection holder count")?
-            .try_into()
-            .context("Collection holder count was too big to convert to U64")
-            .map_err(Into::into)
+            .distinct_on(current_metadata_owners::owner_address)
+            .load::<String>(&conn)
+            .context("Failed to load collection holder count")?;
+
+        i64::try_from(unique_holders.len())?.try_into().map_err(Into::into)
     }
 
     #[graphql(description = "Count of active listings of NFTs in the collection.")]
@@ -609,12 +606,7 @@ impl Collection {
                 metadata_collection_keys::table
                     .on(metadata_collection_keys::metadata_address.eq(metadatas::address)),
             )
-            .inner_join(
-                auction_houses::table.on(listings::auction_house.eq(auction_houses::address)),
-            )
             .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address.clone()))
-            .filter(auction_houses::treasury_mint.eq("So11111111111111111111111111111111111111112"))
-            .filter(metadata_collection_keys::verified.eq(true))
             .filter(listings::purchase_id.is_null())
             .filter(listings::canceled_at.is_null())
             .count()
