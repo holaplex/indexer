@@ -87,7 +87,7 @@ impl CandyMachine {
 
     #[graphql(description = "NOTE - this is currently bugged and will only return one creator")]
     pub async fn creators(&self, ctx: &AppContext) -> FieldResult<Vec<CandyMachineCreator>> {
-        ctx.candymachine_creator_loader
+        ctx.candy_machine_creator_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
@@ -97,7 +97,7 @@ impl CandyMachine {
         &self,
         ctx: &AppContext,
     ) -> FieldResult<Option<CandyMachineCollectionPda>> {
-        ctx.candymachine_collection_pda_loader
+        ctx.candy_machine_collection_pda_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
@@ -105,7 +105,7 @@ impl CandyMachine {
 
     #[graphql(description = "NOTE - this is currently bugged and will always be empty")]
     pub async fn config_lines(&self, ctx: &AppContext) -> FieldResult<Vec<CandyMachineConfigLine>> {
-        ctx.candymachine_config_line_loader
+        ctx.candy_machine_config_line_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
@@ -115,7 +115,7 @@ impl CandyMachine {
         &self,
         ctx: &AppContext,
     ) -> FieldResult<Option<CandyMachineEndSetting>> {
-        ctx.candymachine_end_settings_loader
+        ctx.candy_machine_end_settings_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
@@ -125,7 +125,7 @@ impl CandyMachine {
         &self,
         ctx: &AppContext,
     ) -> FieldResult<Option<CandyMachineWhitelistMintSetting>> {
-        ctx.candymachine_whitelist_mint_settings_loader
+        ctx.candy_machine_whitelist_mint_settings_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
@@ -135,7 +135,7 @@ impl CandyMachine {
         &self,
         ctx: &AppContext,
     ) -> FieldResult<Option<CandyMachineHiddenSetting>> {
-        ctx.candymachine_hidden_settings_loader
+        ctx.candy_machine_hidden_settings_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
@@ -145,7 +145,7 @@ impl CandyMachine {
         &self,
         ctx: &AppContext,
     ) -> FieldResult<Option<CandyMachineGateKeeperConfig>> {
-        ctx.candymachine_gatekeeper_configs_loader
+        ctx.candy_machine_gatekeeper_configs_loader
             .load(self.address.clone())
             .await
             .map_err(Into::into)
@@ -253,14 +253,26 @@ pub struct CandyMachineConfigLine {
     pub candy_machine_address: PublicKey<CandyMachine>,
     pub name: String,
     pub uri: String,
+    pub idx: i32,
+    pub taken: bool,
 }
 
 impl<'a> From<models::CMConfigLine<'a>> for CandyMachineConfigLine {
-    fn from(models::CMConfigLine { address, name, uri }: models::CMConfigLine) -> Self {
+    fn from(
+        models::CMConfigLine {
+            candy_machine_address,
+            name,
+            uri,
+            idx,
+            taken,
+        }: models::CMConfigLine,
+    ) -> Self {
         Self {
-            candy_machine_address: address.into(),
+            candy_machine_address: candy_machine_address.into(),
             name: name.into_owned(),
             uri: uri.into_owned(),
+            idx,
+            taken,
         }
     }
 }

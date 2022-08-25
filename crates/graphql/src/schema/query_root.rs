@@ -10,7 +10,7 @@ use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
     bonding_change::EnrichedBondingChange,
-    candymachine::CandyMachine,
+    candy_machine::CandyMachine,
     chart::PriceChart,
     creator::Creator,
     denylist::Denylist,
@@ -49,6 +49,29 @@ struct AttributeFilter {
 impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
     fn from(AttributeFilter { trait_type, values }: AttributeFilter) -> Self {
         Self { trait_type, values }
+    }
+}
+
+impl QueryRoot {
+    fn candy_machine(context: &AppContext, address: String) -> FieldResult<Option<CandyMachine>> {
+        let conn = context.shared.db.get()?;
+
+        candy_machines::table
+            .inner_join(
+                candy_machine_datas::table
+                    .on(candy_machines::address.eq(candy_machine_datas::candy_machine_address)),
+            )
+            .filter(candy_machines::address.eq(address))
+            .select((
+                candy_machines::all_columns,
+                candy_machine_datas::all_columns,
+            ))
+            .first::<(models::CandyMachine, models::CandyMachineData)>(&conn)
+            .optional()
+            .context("Failed to load candy machine by address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
     }
 }
 
@@ -650,30 +673,18 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
-    #[graphql(description = "Get a candymachine by the candymachine config address")]
-    fn candymachine(
+    #[graphql(deprecated = "Deprecated alias for candyMachine")]
+    fn candymachine(&self, ctx: &AppContext, addr: String) -> FieldResult<Option<CandyMachine>> {
+        Self::candy_machine(ctx, addr)
+    }
+
+    #[graphql(description = "Get a candy machine by the candy machine config address")]
+    fn candy_machine(
         &self,
         context: &AppContext,
-        #[graphql(description = "address of the candymachine config")] address: String,
+        #[graphql(description = "address of the candy machine config")] address: String,
     ) -> FieldResult<Option<CandyMachine>> {
-        let conn = context.shared.db.get()?;
-
-        candy_machines::table
-            .inner_join(
-                candy_machine_datas::table
-                    .on(candy_machines::address.eq(candy_machine_datas::candy_machine_address)),
-            )
-            .filter(candy_machines::address.eq(address))
-            .select((
-                candy_machines::all_columns,
-                candy_machine_datas::all_columns,
-            ))
-            .first::<(models::CandyMachine, models::CandyMachineData)>(&conn)
-            .optional()
-            .context("Failed to load candy machine by address.")?
-            .map(TryInto::try_into)
-            .transpose()
-            .map_err(Into::into)
+        Self::candy_machine(context, address)
     }
 
     fn storefronts(&self, context: &AppContext) -> FieldResult<Vec<Storefront>> {

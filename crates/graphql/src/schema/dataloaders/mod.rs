@@ -3,7 +3,7 @@ pub mod ah_offer;
 pub mod ah_purchase;
 pub mod auction_house;
 pub mod bid_receipt;
-pub mod candymachine;
+pub mod candy_machine;
 pub mod collection;
 pub mod genopets;
 pub mod graph_connection;

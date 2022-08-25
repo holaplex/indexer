@@ -887,11 +887,15 @@ pub struct CandyMachineData<'a> {
 #[table_name = "candy_machine_config_lines"]
 pub struct CMConfigLine<'a> {
     /// ConfigLine account address
-    pub address: Cow<'a, str>,
+    pub candy_machine_address: Cow<'a, str>,
     /// Name
     pub name: Cow<'a, str>,
     /// URI pointing to JSON representing the asset
     pub uri: Cow<'a, str>,
+    /// The index of the config line within the candy machine data
+    pub idx: i32,
+    /// Bool indicating if this config line has been minted (true) or not minted (false)
+    pub taken: bool,
 }
 
 /// A row in the `candy_machine_creators` table
