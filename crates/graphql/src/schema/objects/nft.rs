@@ -594,9 +594,9 @@ impl Collection {
             .load::<String>(&conn)
             .context("Failed to load collection holder count")?;
 
-        i64::try_from(unique_holders.len())?
-            .try_into()
+        u64::try_from(unique_holders.len())
             .context("Collection holder count was too big to convert to U64")
+            .map(Into::into)
             .map_err(Into::into)
     }
 
@@ -609,7 +609,12 @@ impl Collection {
                 metadata_collection_keys::table
                     .on(metadata_collection_keys::metadata_address.eq(metadatas::address)),
             )
+            .inner_join(
+                auction_houses::table.on(listings::auction_house.eq(auction_houses::address)),
+            )
             .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address.clone()))
+            .filter(auction_houses::treasury_mint.eq("So11111111111111111111111111111111111111112"))
+            .filter(metadata_collection_keys::verified.eq(true))
             .filter(listings::purchase_id.is_null())
             .filter(listings::canceled_at.is_null())
             .count()
