@@ -578,7 +578,7 @@ impl Collection {
     )]
     pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<scalars::U64> {
         let conn = ctx.shared.db.get()?;
-        metadata_collection_keys::table
+        let unique_holders = metadata_collection_keys::table
             .inner_join(
                 metadatas::table
                     .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
@@ -589,14 +589,14 @@ impl Collection {
             )
             .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address.clone()))
             .filter(metadatas::burned_at.is_null())
-            .filter(metadata_collection_keys::verified.eq(true))
             .select(current_metadata_owners::owner_address)
-            .distinct()
-            .count()
-            .get_result::<i64>(&conn)
-            .context("Failed to load collection holder count")?
-            .try_into()
+            .distinct_on(current_metadata_owners::owner_address)
+            .load::<String>(&conn)
+            .context("Failed to load collection holder count")?;
+
+        u64::try_from(unique_holders.len())
             .context("Collection holder count was too big to convert to U64")
+            .map(Into::into)
             .map_err(Into::into)
     }
 
