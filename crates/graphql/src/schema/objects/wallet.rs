@@ -172,6 +172,7 @@ pub struct WalletActivity {
     pub id: Uuid,
     pub metadata: PublicKey<Nft>,
     pub auction_house: PublicKey<AuctionHouse>,
+    pub marketplace_program_address: String,
     pub price: U64,
     pub created_at: DateTime<Utc>,
     pub wallets: Vec<Wallet>,
@@ -186,6 +187,7 @@ impl TryFrom<models::WalletActivity> for WalletActivity {
             id,
             metadata,
             auction_house,
+            marketplace_program,
             price,
             created_at,
             wallets,
@@ -197,6 +199,7 @@ impl TryFrom<models::WalletActivity> for WalletActivity {
             id,
             metadata: metadata.into(),
             auction_house: auction_house.into(),
+            marketplace_program_address: marketplace_program,
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
             wallets: wallets
@@ -233,6 +236,10 @@ impl WalletActivity {
 
     fn activity_type(&self) -> &str {
         &self.activity_type
+    }
+
+    fn marketplace_program_address(&self) -> &str {
+        &self.marketplace_program_address
     }
 
     pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
@@ -272,10 +279,17 @@ impl Wallet {
             .map_err(Into::into)
     }
 
-    pub fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<WalletActivity>> {
+    pub fn activities(
+        &self,
+        ctx: &AppContext,
+        event_types: Option<Vec<String>>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<WalletActivity>> {
         let conn = ctx.shared.db.get()?;
 
-        let activities = queries::wallet::activities(&conn, &self.address)?;
+        let activities =
+            queries::wallet::activities(&conn, &self.address, event_types, limit, offset)?;
 
         activities
             .into_iter()
