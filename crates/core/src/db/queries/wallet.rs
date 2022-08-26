@@ -74,16 +74,13 @@ pub fn activities(
     limit: impl ToSql<Integer, Pg>,
     offset: impl ToSql<Integer, Pg>,
 ) -> Result<Vec<WalletActivity>> {
-    let query = diesel::sql_query(ACTIVITES_QUERY)
+    diesel::sql_query(ACTIVITES_QUERY)
         .bind(address)
         .bind(event_types)
         .bind(limit)
         .bind(offset)
         .load(conn)
-        .context("Failed to load wallet(s) activities");
-    println!("Query Result: {:?}", query);
-
-    query
+        .context("Failed to load wallet(s) activities")
 }
 
 const COLLECTED_COLLECTIONS_QUERY: &str = r"
