@@ -2664,6 +2664,23 @@ pub struct RealmConfig<'a> {
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct RealmConfigAccount<'a> {
+    pub address: Cow<'a, str>,
+    pub account_type: GovernanceAccountTypeEnum,
+    pub realm: Cow<'a, str>,
+    pub community_voter_weight_addin: Option<Cow<'a, str>>,
+    pub max_community_voter_weight_addin: Option<Cow<'a, str>>,
+    pub council_voter_weight_addin: Option<Cow<'a, str>>,
+    pub council_max_vote_weight_addin: Option<Cow<'a, str>>,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
 #[table_name = "vote_records_v1"]
 #[allow(missing_docs)]
 pub struct VoteRecordV1<'a> {

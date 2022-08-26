@@ -1,0 +1,1 @@
+drop table if exists realm_config_accounts;

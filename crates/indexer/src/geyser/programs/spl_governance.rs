@@ -3,10 +3,11 @@ use borsh::BorshDeserialize;
 use super::{
     accounts::spl_governance::{
         process_governance, process_proposal_transaction, process_proposal_v1, process_proposal_v2,
-        process_realmv2, process_signatory_record, process_token_owner_record,
-        process_vote_record_v1, process_vote_record_v2, GovernanceAccountType, GovernanceV1,
-        ProposalTransactionV2, ProposalV1, ProposalV2, RealmV1, SignatoryRecordV1,
-        TokenOwnerRecordV1, VoteRecordV1, VoteRecordV2,
+        process_realm_config, process_realmv2, process_signatory_record,
+        process_token_owner_record, process_vote_record_v1, process_vote_record_v2,
+        GovernanceAccountType, GovernanceV1, ProposalTransactionV2, ProposalV1, ProposalV2,
+        RealmConfigAccount, RealmV1, SignatoryRecordV1, TokenOwnerRecordV1, VoteRecordV1,
+        VoteRecordV2,
     },
     AccountUpdate, Client,
 };
@@ -25,6 +26,7 @@ const PROPOSAL_V2: u8 = GovernanceAccountType::ProposalV2 as u8;
 const SIGNATORY_RECORD_V1: u8 = GovernanceAccountType::SignatoryRecordV1 as u8;
 const SIGNATORY_RECORD_V2: u8 = GovernanceAccountType::SignatoryRecordV2 as u8;
 const PROPOSAL_TRANSACTION_V2: u8 = GovernanceAccountType::ProposalTransactionV2 as u8;
+const REALM_CONFIG: u8 = GovernanceAccountType::RealmConfig as u8;
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
     let discrimintator = update.data[0];
@@ -43,6 +45,7 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
             process_signatory_record_account(client, update).await
         },
         PROPOSAL_TRANSACTION_V2 => process_proposal_transaction_account(client, update).await,
+        REALM_CONFIG => process_realm_config_account(client, update).await,
         _ => Ok(()),
     }
 }
@@ -101,6 +104,13 @@ async fn process_signatory_record_account(client: &Client, update: AccountUpdate
         .context("Failed to deserialize signatory record v2 account ")?;
 
     process_signatory_record(client, update.key, acc, update.slot, update.write_version).await
+}
+
+async fn process_realm_config_account(client: &Client, update: AccountUpdate) -> Result<()> {
+    let acc: RealmConfigAccount = RealmConfigAccount::deserialize(&mut update.data.as_slice())
+        .context("Failed to deserialize realm config account ")?;
+
+    process_realm_config(client, update.key, acc, update.slot, update.write_version).await
 }
 
 async fn process_proposal_transaction_account(

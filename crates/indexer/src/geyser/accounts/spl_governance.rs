@@ -13,15 +13,16 @@ use indexer_core::{
             ProposalOption as DbProposalOption, ProposalTransaction,
             ProposalTransactionInstruction, ProposalTransactionInstructionAccount,
             ProposalV1 as DbProposalV1, ProposalV2 as DbProposalV2, Realm,
-            RealmConfig as DbRealmConfig, SignatoryRecord as DbSignatoryRecord,
-            TokenOwnerRecord as DbTokenOwnerRecord, VoteChoice as DbVoteChoice,
-            VoteRecordV1 as DbVoteRecordV1, VoteRecordV2 as DbVoteRecordV2,
+            RealmConfig as DbRealmConfig, RealmConfigAccount as DbRealmConfigAccount,
+            SignatoryRecord as DbSignatoryRecord, TokenOwnerRecord as DbTokenOwnerRecord,
+            VoteChoice as DbVoteChoice, VoteRecordV1 as DbVoteRecordV1,
+            VoteRecordV2 as DbVoteRecordV2,
         },
         tables::{
             governance_configs, governances, proposal_options,
             proposal_transaction_instruction_accounts, proposal_transaction_instructions,
             proposal_transactions, proposal_vote_type_multi_choices, proposals_v1, proposals_v2,
-            realm_configs, realms, signatory_records, token_owner_records,
+            realm_config_accounts, realm_configs, realms, signatory_records, token_owner_records,
             vote_record_v2_vote_approve_vote_choices, vote_records_v1, vote_records_v2,
         },
     },
@@ -204,6 +205,17 @@ pub struct RealmConfig {
     pub min_community_weight_to_create_governance: u64,
     pub community_mint_max_vote_weight_source: MintMaxVoteWeightSource,
     pub council_mint: Option<Pubkey>,
+}
+
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct RealmConfigAccount {
+    pub account_type: GovernanceAccountType,
+    pub realm: Pubkey,
+    pub community_voter_weight_addin: Option<Pubkey>,
+    pub max_community_voter_weight_addin: Option<Pubkey>,
+    pub council_voter_weight_addin: Option<Pubkey>,
+    pub council_max_vote_weight_addin: Option<Pubkey>,
+    pub reserved: [u8; 128],
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
@@ -603,6 +615,49 @@ pub(crate) async fn process_realmv2(
         })
         .await
         .context("Failed to insert realm config")?;
+
+    Ok(())
+}
+
+pub(crate) async fn process_realm_config(
+    client: &Client,
+    key: Pubkey,
+    data: RealmConfigAccount,
+    slot: u64,
+    write_version: u64,
+) -> Result<()> {
+    let row = DbRealmConfigAccount {
+        address: Owned(key.to_string()),
+        account_type: data.account_type.into(),
+        realm: Owned(data.realm.to_string()),
+        community_voter_weight_addin: data
+            .community_voter_weight_addin
+            .map(|d| Owned(d.to_string())),
+        max_community_voter_weight_addin: data
+            .max_community_voter_weight_addin
+            .map(|d| Owned(d.to_string())),
+        council_voter_weight_addin: data
+            .council_voter_weight_addin
+            .map(|d| Owned(d.to_string())),
+        council_max_vote_weight_addin: data
+            .council_max_vote_weight_addin
+            .map(|d| Owned(d.to_string())),
+        slot: slot.try_into()?,
+        write_version: write_version.try_into()?,
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(realm_config_accounts::table)
+                .values(&row)
+                .on_conflict(realm_config_accounts::address)
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
+        .context("Failed to insert realm configaccount")?;
 
     Ok(())
 }
