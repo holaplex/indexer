@@ -344,6 +344,10 @@ pub struct WalletActivity {
     #[sql_type = "VarChar"]
     pub auction_house: String,
 
+    /// The marketplace program pubkey
+    #[sql_type = "VarChar"]
+    pub marketplace_program: String,
+
     /// The price of listing or purchase
     #[sql_type = "Int8"]
     pub price: i64,
