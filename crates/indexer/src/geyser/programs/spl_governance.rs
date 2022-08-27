@@ -15,6 +15,8 @@ use crate::prelude::*;
 
 const GOVERNANCE_V1: u8 = GovernanceAccountType::GovernanceV1 as u8;
 const GOVERNANCE_V2: u8 = GovernanceAccountType::GovernanceV2 as u8;
+const TOKEN_GOVERNANCE_V1: u8 = GovernanceAccountType::TokenGovernanceV1 as u8;
+const TOKEN_GOVERNANCE_V2: u8 = GovernanceAccountType::TokenGovernanceV2 as u8;
 const REALM_V1: u8 = GovernanceAccountType::RealmV1 as u8;
 const REALM_V2: u8 = GovernanceAccountType::RealmV2 as u8;
 const VOTE_RECORD_V1: u8 = GovernanceAccountType::VoteRecordV1 as u8;
@@ -32,7 +34,9 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
     let discrimintator = update.data[0];
 
     match discrimintator {
-        GOVERNANCE_V1 | GOVERNANCE_V2 => process_governance_account(client, update).await,
+        GOVERNANCE_V1 | GOVERNANCE_V2 | TOKEN_GOVERNANCE_V1 | TOKEN_GOVERNANCE_V2 => {
+            process_governance_account(client, update).await
+        },
         REALM_V1 | REALM_V2 => process_realm_account(client, update).await,
         VOTE_RECORD_V1 => process_vote_recordv1_account(client, update).await,
         VOTE_RECORD_V2 => process_vote_recordv2_account(client, update).await,
