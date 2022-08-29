@@ -168,6 +168,44 @@ impl CollectedCollection {
 }
 
 #[derive(Debug, Clone)]
+pub struct CreatedCollection {
+    collection: PublicKey<Nft>,
+    nfts_created: i32,
+}
+
+impl<'a> TryFrom<models::CreatedCollection<'a>> for CreatedCollection {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::CreatedCollection {
+            collection,
+            nfts_created,
+        }: models::CreatedCollection,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            collection: collection.into(),
+            nfts_created: nfts_created.try_into()?,
+        })
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl CreatedCollection {
+    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
+        let conn = ctx.shared.db.get()?;
+
+        queries::collections::get(&conn, &self.collection)?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
+    }
+
+    fn nfts_created(&self) -> i32 {
+        self.nfts_created
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct WalletActivity {
     pub id: Uuid,
     pub metadata: PublicKey<Nft>,
@@ -272,6 +310,17 @@ impl Wallet {
         let conn = ctx.shared.db.get()?;
 
         let collections = queries::wallet::collected_collections(&conn, &self.address)?;
+        collections
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    pub fn created_collections(&self, ctx: &AppContext) -> FieldResult<Vec<CreatedCollection>> {
+        let conn = ctx.shared.db.get()?;
+
+        let collections = queries::wallet::created_collections(&conn, &self.address)?;
         collections
             .into_iter()
             .map(TryInto::try_into)
