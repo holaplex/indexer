@@ -170,21 +170,16 @@ impl CollectedCollection {
 #[derive(Debug, Clone)]
 pub struct CreatedCollection {
     collection: PublicKey<Nft>,
-    nfts_created: i32,
 }
 
 impl<'a> TryFrom<models::CreatedCollection<'a>> for CreatedCollection {
     type Error = std::num::TryFromIntError;
 
     fn try_from(
-        models::CreatedCollection {
-            collection,
-            nfts_created,
-        }: models::CreatedCollection,
+        models::CreatedCollection { collection }: models::CreatedCollection,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             collection: collection.into(),
-            nfts_created: nfts_created.try_into()?,
         })
     }
 }
@@ -198,10 +193,6 @@ impl CreatedCollection {
             .map(TryInto::try_into)
             .transpose()
             .map_err(Into::into)
-    }
-
-    fn nfts_created(&self) -> i32 {
-        self.nfts_created
     }
 }
 

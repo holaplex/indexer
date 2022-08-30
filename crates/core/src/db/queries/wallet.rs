@@ -117,19 +117,12 @@ pub fn collected_collections(
 
 const CREATED_COLLECTIONS_QUERY: &str = r"
 SELECT
-    metadata_collection_keys.collection_address as collection,
-	COUNT(metadatas.address) as nfts_created
+    metadata_collection_keys.collection_address as collection
     FROM metadatas
-    INNER JOIN metadata_creators ON (metadata_creators.metadata_address = metadatas.address)
-    INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
     INNER JOIN metadata_collection_keys ON (metadata_collection_keys.metadata_address = metadatas.address)
-	INNER JOIN collection_stats ON (metadata_collection_keys.collection_address = collection_stats.collection_address)
-    INNER JOIN metadatas collection_metadatas ON (collection_metadatas.mint_address = metadata_collection_keys.collection_address)
-	INNER JOIN metadata_jsons collection_metadata_jsons ON (collection_metadata_jsons.metadata_address = collection_metadatas.address)
-    WHERE metadata_creators.creator_address = $1
+    WHERE metadatas.update_authority_address = $1
     AND metadata_collection_keys.verified
-    GROUP BY metadata_collection_keys.collection_address, collection_stats.floor_price
-	ORDER BY collection_stats.floor_price DESC;
+    GROUP BY metadata_collection_keys.collection_address;
     -- $1: address::text";
 
 /// Load created collections for a wallet.
