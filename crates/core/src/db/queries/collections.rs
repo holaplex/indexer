@@ -116,8 +116,7 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
                 WHERE
                     ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
                     AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
-                    AND purchases.created_at >= $2
-                    AND purchases.created_at <= $3
+                    AND AGE(purchases.created_at, NOW()) <= '1 days'
                     AND metadata_collection_keys.verified = true
                 GROUP BY metadata_collection_keys.collection_address
                 ORDER BY volume {order_direction}
@@ -189,8 +188,7 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
                     WHERE
                         ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
                         AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
-                        AND listings.created_at >= $2
-                        AND listings.created_at <= $3
+                        AND AGE(listings.created_at, NOW()) <= '1 days'
                         AND listings.purchase_id IS NULL
                         AND listings.canceled_at IS NULL
                         AND metadata_collection_keys.verified = true
