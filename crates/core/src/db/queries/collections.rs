@@ -3,21 +3,84 @@
 use anyhow::Context;
 use chrono::{DateTime, Utc};
 use diesel::{
+    expression::{operators::Eq, AsExpression, NonAggregate},
     pg::Pg,
+    prelude::*,
+    query_builder::{QueryFragment, QueryId},
+    query_source::joins::{Inner, Join, JoinOn},
+    serialize::ToSql,
     sql_types::{Array, Integer, Nullable, Text, Timestamp},
-    types::ToSql,
-    RunQueryDsl,
 };
 
 use crate::{
     db::{
         custom_types::OrderDirection,
         models::{Nft, NftActivity},
+        queries::metadatas::NFT_COLUMNS,
+        tables::{current_metadata_owners, metadata_collection_keys, metadata_jsons, metadatas},
         Connection,
     },
     error::Result,
     prelude::*,
 };
+
+/// Query collection by address
+///
+/// # Errors
+/// returns an error when the underlying queries throw an error
+pub fn get<A: AsExpression<Text>>(conn: &Connection, address: A) -> Result<Option<Nft>>
+where
+    <A as AsExpression<Text>>::Expression: QueryId
+        + QueryFragment<Pg>
+        + AppearsOnTable<
+            JoinOn<
+                Join<
+                    JoinOn<
+                        Join<
+                            JoinOn<
+                                Join<metadatas::table, metadata_jsons::table, Inner>,
+                                Eq<
+                                    metadatas::columns::address,
+                                    metadata_jsons::columns::metadata_address,
+                                >,
+                            >,
+                            metadata_collection_keys::table,
+                            Inner,
+                        >,
+                        Eq<
+                            metadata_collection_keys::columns::collection_address,
+                            metadatas::columns::mint_address,
+                        >,
+                    >,
+                    current_metadata_owners::table,
+                    Inner,
+                >,
+                Eq<
+                    current_metadata_owners::columns::mint_address,
+                    metadatas::columns::mint_address,
+                >,
+            >,
+        > + NonAggregate,
+{
+    metadatas::table
+        .inner_join(
+            metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+        )
+        .inner_join(
+            metadata_collection_keys::table
+                .on(metadata_collection_keys::collection_address.eq(metadatas::mint_address)),
+        )
+        .inner_join(
+            current_metadata_owners::table
+                .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+        )
+        .filter(metadata_collection_keys::collection_address.eq(address))
+        .filter(metadata_collection_keys::verified.eq(true))
+        .select(NFT_COLUMNS)
+        .first::<Nft>(conn)
+        .optional()
+        .context("Failed to load Collection NFT by collection address")
+}
 
 /// Query collections ordered by volume
 ///
@@ -198,7 +261,7 @@ SELECT listings.id as id, metadata, auction_house, price, created_at, marketplac
     OFFSET $4;
 
  -- $1: address::text
- -- $2: evnet_types::text[]
+ -- $2: event_types::text[]
  -- $3: limit::integer
  -- $4: offset::integer";
 

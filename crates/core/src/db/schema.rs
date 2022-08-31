@@ -203,10 +203,12 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    candy_machine_config_lines (address) {
-        address -> Varchar,
+    candy_machine_config_lines (candy_machine_address, idx) {
+        candy_machine_address -> Varchar,
         name -> Text,
         uri -> Text,
+        idx -> Int4,
+        taken -> Bool,
     }
 }
 
@@ -1425,6 +1427,24 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    realm_config_accounts (address) {
+        address -> Varchar,
+        account_type -> Governanceaccounttype,
+        realm -> Varchar,
+        community_voter_weight_addin -> Nullable<Varchar>,
+        max_community_voter_weight_addin -> Nullable<Varchar>,
+        council_voter_weight_addin -> Nullable<Varchar>,
+        council_max_vote_weight_addin -> Nullable<Varchar>,
+        slot -> Int8,
+        write_version -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     realm_configs (realm_address) {
         realm_address -> Varchar,
         use_community_voter_weight_addin -> Bool,
@@ -1954,6 +1974,7 @@ allow_tables_to_appear_in_same_query!(
     purchase_events,
     purchase_receipts,
     purchases,
+    realm_config_accounts,
     realm_configs,
     realms,
     sell_instructions,

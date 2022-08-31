@@ -30,6 +30,7 @@ pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
     candy_machine: CandyMachine,
+    config_lines: Option<Vec<(ConfigLine, usize, bool)>>,
 ) -> Result<()> {
     let cm = DbCandyMachine {
         address: Owned(bs58::encode(key).into_string()),
@@ -59,6 +60,10 @@ pub(crate) async fn process(
         Box::pin(process_creators(client, key, candy_machine.data.creators)),
     ];
 
+    if let Some(config_lines) = config_lines {
+        futures.push(Box::pin(process_config_lines(client, key, config_lines)));
+    }
+
     if let Some(es) = candy_machine.data.end_settings {
         futures.push(Box::pin(process_end_settings(client, key, es)));
     };
@@ -76,6 +81,51 @@ pub(crate) async fn process(
     }
 
     join_all(futures).await;
+
+    Ok(())
+}
+
+async fn process_config_lines(
+    client: &Client,
+    key: Pubkey,
+    config_lines: Vec<(ConfigLine, usize, bool)>,
+) -> Result<()> {
+    let mut db_config_lines: Vec<CMConfigLine> = Vec::new();
+
+    for config_line in &config_lines {
+        let db_config_line = CMConfigLine {
+            candy_machine_address: Owned(key.to_string()),
+            name: Owned(config_line.0.name.trim_matches('\0').to_owned()),
+            uri: Owned(config_line.0.uri.trim_matches('\0').to_owned()),
+            idx: i32::try_from(config_line.1).unwrap_or(-1),
+            taken: config_line.2,
+        };
+
+        db_config_lines.push(db_config_line);
+    }
+
+    client
+        .db()
+        .run(move |db| {
+            db.build_transaction().read_write().run(|| {
+                for cl in &db_config_lines {
+                    insert_into(candy_machine_config_lines::table)
+                        .values(cl)
+                        .on_conflict((
+                            candy_machine_config_lines::candy_machine_address,
+                            candy_machine_config_lines::idx,
+                        ))
+                        .do_update()
+                        .set(cl)
+                        .execute(db)
+                        .context("Failed to insert config line")?;
+                }
+
+                Result::<_>::Ok(())
+            })
+        })
+        .await
+        .context("Failed to insert candy machine config lines")?;
 
     Ok(())
 }
@@ -242,31 +292,6 @@ async fn process_whitelist_mint_settings(
         })
         .await
         .context("failed to insert whitelist mint setting")?;
-    Ok(())
-}
-pub(crate) async fn process_config_line(
-    client: &Client,
-    key: Pubkey,
-    config_line: ConfigLine,
-) -> Result<()> {
-    let row = CMConfigLine {
-        address: Owned(bs58::encode(key).into_string()),
-        name: Owned(config_line.name),
-        uri: Owned(config_line.uri.trim_end_matches('\0').to_owned()),
-    };
-
-    client
-        .db()
-        .run(move |db| {
-            insert_into(candy_machine_config_lines::table)
-                .values(&row)
-                .on_conflict(candy_machine_config_lines::address)
-                .do_update()
-                .set(&row)
-                .execute(db)
-        })
-        .await
-        .context("failed to insert config line")?;
     Ok(())
 }
 

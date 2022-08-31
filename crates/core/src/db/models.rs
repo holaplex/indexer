@@ -344,6 +344,10 @@ pub struct WalletActivity {
     #[sql_type = "VarChar"]
     pub auction_house: String,
 
+    /// The marketplace program pubkey
+    #[sql_type = "VarChar"]
+    pub marketplace_program: String,
+
     /// The price of listing or purchase
     #[sql_type = "Int8"]
     pub price: i64,
@@ -887,11 +891,15 @@ pub struct CandyMachineData<'a> {
 #[table_name = "candy_machine_config_lines"]
 pub struct CMConfigLine<'a> {
     /// ConfigLine account address
-    pub address: Cow<'a, str>,
+    pub candy_machine_address: Cow<'a, str>,
     /// Name
     pub name: Cow<'a, str>,
     /// URI pointing to JSON representing the asset
     pub uri: Cow<'a, str>,
+    /// The index of the config line within the candy machine data
+    pub idx: i32,
+    /// Bool indicating if this config line has been minted (true) or not minted (false)
+    pub taken: bool,
 }
 
 /// A row in the `candy_machine_creators` table
@@ -1085,6 +1093,20 @@ pub struct TwitterHandle<'a> {
     pub from_cardinal: bool,
     /// write version from solana
     pub write_version: i64,
+}
+
+/// A row in a `collected_collections` query of a wallet
+#[derive(Debug, Clone, QueryableByName)]
+pub struct CollectedCollection<'a> {
+    /// The collection for which data is collected
+    #[sql_type = "VarChar"]
+    pub collection: Cow<'a, str>,
+    /// The nfts from this collection owned by the wallet
+    #[sql_type = "Int8"]
+    pub nfts_owned: i64,
+    /// The estimated value of the collection owend by the wallet
+    #[sql_type = "Int8"]
+    pub estimated_value: i64,
 }
 
 /// A row in the `metadata_collection_keys` table
@@ -2634,6 +2656,23 @@ pub struct RealmConfig<'a> {
     pub community_mint_max_vote_weight_source: MintMaxVoteEnum,
     pub community_mint_max_vote_weight: i64,
     pub council_mint: Option<Cow<'a, str>>,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct RealmConfigAccount<'a> {
+    pub address: Cow<'a, str>,
+    pub account_type: GovernanceAccountTypeEnum,
+    pub realm: Cow<'a, str>,
+    pub community_voter_weight_addin: Option<Cow<'a, str>>,
+    pub max_community_voter_weight_addin: Option<Cow<'a, str>>,
+    pub council_voter_weight_addin: Option<Cow<'a, str>>,
+    pub council_max_vote_weight_addin: Option<Cow<'a, str>>,
     /// The slot number of this account's last known update
     pub slot: i64,
     /// The write version of this account's last known update
