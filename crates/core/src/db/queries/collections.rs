@@ -45,42 +45,41 @@ pub fn by_volume(
 fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
     format!(
         r"
-        WITH volume_table (collection, volume) as (
-            SELECT metadata_collection_keys.collection_address AS collection, SUM(purchases.price) AS volume
-                FROM purchases
-                INNER JOIN metadatas on (purchases.metadata = metadatas.address)
-                INNER JOIN metadata_collection_keys on (metadatas.address = metadata_collection_keys.metadata_address)
-                INNER JOIN auction_houses on (purchases.auction_house = auction_houses.address)
-                WHERE
-                    ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
-                    AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
-                    AND purchases.created_at >= $2
-                    AND purchases.created_at <= $3
-                    AND metadata_collection_keys.verified = true
-                GROUP BY metadata_collection_keys.collection_address
-                ORDER BY volume {order_direction}
-                LIMIT $4
-                OFFSET $5
-        ) SELECT
-            metadatas.address,
-            metadatas.name,
-            metadatas.seller_fee_basis_points,
-            metadatas.update_authority_address,
-            metadatas.mint_address,
-            metadatas.primary_sale_happened,
-            metadatas.uri,
-            metadatas.slot,
-            metadata_jsons.description,
-            metadata_jsons.image,
-            metadata_jsons.animation_url,
-            metadata_jsons.external_url,
-            metadata_jsons.category,
-            metadata_jsons.model,
-            current_metadata_owners.token_account_address
-        FROM metadatas
-        INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
-        INNER JOIN volume_table ON (volume_table.collection = metadatas.mint_address)
-        INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address)
+        WITH collection_volumes AS (
+            SELECT SUM(purchases.price) as total_volume,
+            metadata_collection_keys.collection_address as collection
+            FROM purchases
+            INNER JOIN metadatas ON (metadatas.address = purchases.metadata)
+            INNER JOIN metadata_collection_keys ON (metadata_collection_keys.metadata_address = metadatas.address)
+            WHERE
+            ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
+            AND purchases.created_at >= $2
+            AND purchases.created_at <= $3
+            AND purchases.marketplace_program = 'M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K'
+            GROUP BY collection
+            ORDER BY total_volume {order_direction}
+            LIMIT $4
+            OFFSET $5
+        )         SELECT
+                    metadatas.address,
+                    metadatas.name,
+                    metadatas.seller_fee_basis_points,
+                    metadatas.update_authority_address,
+                    metadatas.mint_address,
+                    metadatas.primary_sale_happened,
+                    metadatas.uri,
+                    metadatas.slot,
+                    metadata_jsons.description,
+                    metadata_jsons.image,
+                    metadata_jsons.animation_url,
+                    metadata_jsons.external_url,
+                    metadata_jsons.category,
+                    metadata_jsons.model,
+                    current_metadata_owners.token_account_address
+                FROM metadatas
+                INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
+                INNER JOIN collection_volumes ON (collection_volumes.collection = metadatas.mint_address)
+                INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address);
     -- $1: addresses::text[]
     -- $2: start date::timestamp
     -- $3: end date::timestamp
