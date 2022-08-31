@@ -1,8 +1,210 @@
-use indexer_core::db::models;
+use indexer_core::{
+    db::{models, queries::genopets},
+    meilisearch::IndirectMetadataDocument,
+};
 use objects::{nft::Nft, wallet::Wallet};
 use scalars::{markers::TokenMint, PublicKey, I64};
 
 use super::prelude::*;
+
+#[derive(Debug, GraphQLInputObject)]
+/// Input parameters for the `genoHabitatsCounted` query
+pub struct GenoHabitatsParams {
+    /// Filter by habitat NFT addresses
+    pub mints: Option<Vec<PublicKey<TokenMint>>>,
+    /// Filter by habitat NFT owners
+    pub owners: Option<Vec<PublicKey<Wallet>>>,
+    /// Filter by renter addresses
+    pub renters: Option<Vec<PublicKey<Wallet>>>,
+    /// Filter by harvester addresses
+    pub harvesters: Option<Vec<String>>,
+    /// Filter by genesis (or non-genesis)
+    pub genesis: Option<bool>,
+    /// Filter by elements
+    pub elements: Option<Vec<i32>>,
+    /// Minimum habitat level to return
+    pub min_level: Option<i32>,
+    /// Maximum habitat level to return
+    pub max_level: Option<i32>,
+    /// Minimum habitat sequence number to return
+    pub min_sequence: Option<i32>,
+    /// Maximum habitat sequence number to return
+    pub max_sequence: Option<i32>,
+    /// Filter by guild IDs
+    pub guilds: Option<Vec<i32>>,
+    /// Minimum habitat durability to return
+    pub min_durability: Option<i32>,
+    /// Maximum habitat durability to return
+    pub max_durability: Option<i32>,
+    /// Minimum habitat expiry timestamp to return
+    pub min_expiry: Option<DateTime<Utc>>,
+    /// Maximum habitat expiry timestamp to return
+    pub max_expiry: Option<DateTime<Utc>>,
+    /// Filter by open (or closed) market
+    pub harvester_open_market: Option<bool>,
+    /// Filter by rental open (or closed) market
+    pub rental_open_market: Option<bool>,
+    /// Filter habitats by a fuzzy text-search query
+    pub term: Option<String>,
+    /// Field to sort results by (default `ADDRESS`)
+    pub sort_field: Option<GenoHabitatSortField>,
+    /// True to sort results in descending order (default false)
+    pub sort_desc: Option<bool>,
+    /// Maximum number of results to return (max 250)
+    pub limit: i32,
+    /// Pagination offset
+    pub offset: i32,
+}
+
+impl GenoHabitatsParams {
+    pub async fn into_db_opts(
+        self,
+        ctx: &AppContext,
+    ) -> juniper::FieldResult<
+        genopets::ListHabitatOptions<PublicKey<TokenMint>, PublicKey<Wallet>, String>,
+    > {
+        use std::ops::Bound;
+
+        fn make_range<T>(min: Option<T>, max: Option<T>) -> (Bound<T>, Bound<T>) {
+            (
+                min.map_or(Bound::Unbounded, Bound::Included),
+                max.map_or(Bound::Unbounded, Bound::Included),
+            )
+        }
+
+        let GenoHabitatsParams {
+            mints,
+            owners,
+            renters,
+            harvesters,
+            genesis,
+            elements,
+            min_level,
+            max_level,
+            min_sequence,
+            max_sequence,
+            guilds,
+            min_durability,
+            max_durability,
+            min_expiry,
+            max_expiry,
+            harvester_open_market,
+            rental_open_market,
+            term,
+            sort_field,
+            sort_desc,
+            limit,
+            offset,
+        } = self;
+
+        let mints = match (mints, term) {
+            (m, None) => m,
+            (None, Some(ref t)) => Some({
+                ctx.shared
+                    .search
+                    .index("geno_habitats")
+                    .search()
+                    .with_query(t)
+                    .with_limit(ctx.shared.pre_query_search_limit)
+                    .execute::<IndirectMetadataDocument>()
+                    .await
+                    .context("Failed to load search results for Genopets habitats")?
+                    .hits
+                    .into_iter()
+                    .map(|r| r.result.mint_address.into())
+                    .collect()
+            }),
+            (Some(_), Some(_)) => {
+                return Err(FieldError::new(
+                    "The mints and term parameters cannot be combined",
+                    graphql_value!(["mints", "term"]),
+                ));
+            },
+        };
+
+        if limit > 250 {
+            return Err(FieldError::new(
+                "The query limit cannot be higher than 250",
+                graphql_value!(limit),
+            ));
+        }
+
+        Ok(genopets::ListHabitatOptions {
+            mints,
+            owners,
+            renters,
+            harvesters,
+            genesis,
+            elements: elements
+                .map(|e| e.into_iter().map(TryInto::try_into).collect())
+                .transpose()
+                .context("Failed to convert elements parameter")?,
+            levels: make_range(
+                min_level
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .context("Failed to convert min level")?,
+                max_level
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .context("Failed to convert max level")?,
+            ),
+            sequences: make_range(min_sequence.map(Into::into), max_sequence.map(Into::into)),
+            guilds,
+            durabilities: make_range(min_durability, max_durability),
+            expiries: make_range(min_expiry, max_expiry),
+            harvester_open_market,
+            rental_open_market,
+            sort_field: sort_field.unwrap_or(GenoHabitatSortField::Address).into(),
+            sort_desc: sort_desc.unwrap_or(false),
+            limit: limit.into(),
+            offset: offset.into(),
+        })
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+#[graphql(description = "A list of Genopets habitats", Context = AppContext)]
+pub struct GenoHabitatList {
+    pub habitats: Vec<GenoHabitat>,
+    pub total_count_hint: Option<I64>,
+}
+
+impl From<genopets::HabitatList> for GenoHabitatList {
+    fn from((habitats, total_count_hint): genopets::HabitatList) -> Self {
+        Self {
+            habitats: habitats.into_iter().map(Into::into).collect(),
+            total_count_hint: total_count_hint.map(Into::into),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, GraphQLEnum)]
+/// Input sorting parameter for the `genoHabitatsCounted` query
+pub enum GenoHabitatSortField {
+    /// Sort by the `address` field
+    Address,
+    /// Sort by the `level` field
+    Level,
+    /// Sort by the `expiryTimestamp` field
+    Lifespan,
+    /// Sort by the `kiHarvested` field
+    KiHarvested,
+    /// Sort by the `crystalsRefined` field
+    CrystalsRefined,
+}
+
+impl From<GenoHabitatSortField> for genopets::HabitatSortField {
+    fn from(field: GenoHabitatSortField) -> Self {
+        match field {
+            GenoHabitatSortField::Address => Self::Address,
+            GenoHabitatSortField::Level => Self::Level,
+            GenoHabitatSortField::Lifespan => Self::Lifespan,
+            GenoHabitatSortField::KiHarvested => Self::KiHarvested,
+            GenoHabitatSortField::CrystalsRefined => Self::CrystalsRefined,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 #[allow(clippy::struct_excessive_bools)]
