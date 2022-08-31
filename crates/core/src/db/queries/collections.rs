@@ -16,6 +16,7 @@ use crate::{
         Connection,
     },
     error::Result,
+    prelude::*,
 };
 
 /// Query collections ordered by volume
@@ -115,57 +116,43 @@ pub fn by_market_cap(
 fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
     format!(
         r"
-        WITH market_cap_table (collection, market_cap) AS (
-            SELECT floor_prices.collection, MIN(floor_prices.floor_price) * MAX(nft_counts.nft_count) AS market_cap
-            FROM (
-                    SELECT metadata_collection_keys.collection_address AS collection, MIN(listings.price) AS floor_price
-                    FROM listings
-                    INNER JOIN metadatas ON(listings.metadata = metadatas.address)
-                    INNER JOIN metadata_collection_keys ON(metadatas.address = metadata_collection_keys.metadata_address)
-                    INNER JOIN auction_houses ON(listings.auction_house = auction_houses.address)
-                    WHERE
-                        ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
-                        AND auction_houses.treasury_mint = 'So11111111111111111111111111111111111111112'
-                        AND listings.created_at >= $2
-                        AND listings.created_at <= $3
-                        AND listings.purchase_id IS NULL
-                        AND listings.canceled_at IS NULL
-                        AND metadata_collection_keys.verified = true
-                    GROUP BY metadata_collection_keys.collection_address
-                    HAVING COUNT(listings) > 2
-                ) floor_prices,
-                (
-                    SELECT metadata_collection_keys.collection_address AS collection, COUNT (metadata_collection_keys.metadata_address) AS nft_count
-                    FROM metadata_collection_keys
-                    WHERE metadata_collection_keys.verified = true
-                    GROUP BY metadata_collection_keys.collection_address
-                ) nft_counts
-                WHERE nft_counts.collection = floor_prices.collection
-                GROUP BY floor_prices.collection
+        WITH market_caps AS (
+            SELECT MIN(listings.price) * collection_stats.nft_count as market_cap,
+            collection_stats.collection_address as collection
+            FROM listings
+            INNER JOIN metadatas ON (metadatas.address = listings.metadata)
+            INNER JOIN metadata_collection_keys ON (metadata_collection_keys.metadata_address = metadatas.address)
+            INNER JOIN collection_stats ON (collection_stats.collection_address = metadata_collection_keys.collection_address)
+            WHERE listings.purchase_id IS NULL
+            AND ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
+            AND listings.canceled_at IS NULL
+            AND listings.created_at >= $2
+            AND listings.created_at <= $3
+            AND listings.marketplace_program = 'M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K'
+            GROUP BY collection_stats.collection_address
             ORDER BY market_cap {order_direction}
             LIMIT $4
             OFFSET $5
-        )
-        SELECT
-            metadatas.address,
-            metadatas.name,
-            metadatas.seller_fee_basis_points,
-            metadatas.update_authority_address,
-            metadatas.mint_address,
-            metadatas.primary_sale_happened,
-            metadatas.uri,
-            metadatas.slot,
-            metadata_jsons.description,
-            metadata_jsons.image,
-            metadata_jsons.animation_url,
-            metadata_jsons.external_url,
-            metadata_jsons.category,
-            metadata_jsons.model,
-            current_metadata_owners.token_account_address
-        FROM metadatas
-        INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
-        INNER JOIN market_cap_table ON (market_cap_table.collection = metadatas.mint_address)
-        INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address)
+        )   SELECT
+                metadatas.address,
+                metadatas.name,
+                metadatas.seller_fee_basis_points,
+                metadatas.update_authority_address,
+                metadatas.mint_address,
+                metadatas.primary_sale_happened,
+                metadatas.uri,
+                metadatas.slot,
+                metadata_jsons.description,
+                metadata_jsons.image,
+                metadata_jsons.animation_url,
+                metadata_jsons.external_url,
+                metadata_jsons.category,
+                metadata_jsons.model,
+                current_metadata_owners.token_account_address
+                FROM metadatas
+                INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
+                INNER JOIN market_caps ON (market_caps.collection = metadatas.mint_address)
+                INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address);
     -- $1: addresses::text[]
     -- $2: start date::timestamp
     -- $3: end date::timestamp

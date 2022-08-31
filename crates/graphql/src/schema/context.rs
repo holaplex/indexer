@@ -120,7 +120,6 @@ impl AppContext {
 
         Self {
             shared,
-
             ah_listing_loader: Loader::new(batcher.clone()),
             ah_listings_loader: Loader::new(batcher.clone()),
             auction_house_loader: Loader::new(batcher.clone()),
@@ -176,7 +175,6 @@ impl AppContext {
             store_creator_loader: Loader::new(batcher.clone()),
             storefront_loader: Loader::new(batcher.clone()),
             twitter_handle_loader: Loader::new(batcher),
-
             twitter_profile_loader: Loader::new(twitter_batcher),
         }
     }
