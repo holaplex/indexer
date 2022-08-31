@@ -5,8 +5,8 @@ use indexer_core::{
         expression::dsl::sum,
         queries,
         tables::{
-            auction_houses, bid_receipts, current_metadata_owners, listing_receipts, listings,
-            metadata_collection_keys, metadata_jsons, metadatas, purchases,
+            attributes, auction_houses, bid_receipts, current_metadata_owners, listing_receipts,
+            listings, metadata_collection_keys, metadata_jsons, metadatas, purchases,
         },
     },
     url::Url,
@@ -20,7 +20,6 @@ use objects::{
 };
 use scalars::{PublicKey, U64};
 use serde_json::Value;
-use tables::{attributes, metadata_collection_keys};
 
 use super::prelude::*;
 
