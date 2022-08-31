@@ -34,7 +34,7 @@ jobs:
 
       - name: install dependencies
         run: |
-          cargo install diesel_cli -f --no-default-features --features postgres
+          cargo install diesel_cli --version '^1' -f --no-default-features --features postgres
 
       - name: run check
         run: |
