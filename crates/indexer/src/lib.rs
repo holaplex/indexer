@@ -14,6 +14,8 @@ pub mod db;
 pub mod geyser;
 #[cfg(feature = "http")]
 pub mod http;
+#[cfg(feature = "job-runner")]
+pub mod jobs;
 #[cfg(feature = "reqwest")]
 pub(crate) mod reqwest;
 #[cfg(feature = "search")]
