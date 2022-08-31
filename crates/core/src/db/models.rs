@@ -329,6 +329,28 @@ pub struct NftActivity {
     pub activity_type: String,
 }
 
+/// Collection nfts count from the union of `collection_stats` and `me_collection_stats` table
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct CollectionNftCount {
+    /// Collection address or id
+    #[sql_type = "Text"]
+    pub collection: String,
+    /// nfts count
+    #[sql_type = "Int8"]
+    pub nft_count: i64,
+}
+
+/// Collection floor price from the union of `collection_stats` and `me_collection_stats` table
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct CollectionFloorPrice {
+    /// Collection address or id
+    #[sql_type = "Text"]
+    pub collection: String,
+    /// Collection floor price
+    #[sql_type = "Nullable<Int8>"]
+    pub floor_price: Option<i64>,
+}
+
 /// Union of `listings` and `purchases` for a `WalletActivity`
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct WalletActivity {

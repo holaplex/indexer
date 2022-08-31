@@ -7,7 +7,6 @@ use objects::{
     store_creator::StoreCreator,
 };
 use scalars::{PublicKey, I64};
-use tables::collection_stats;
 
 use super::prelude::*;
 
@@ -141,18 +140,28 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionNftCount>> for Batcher {
     ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionNftCount>> {
         let conn = self.db()?;
 
-        let rows: Vec<(String, i64)> = collection_stats::table
-            .filter(collection_stats::collection_address.eq(any(addresses)))
-            .select((
-                collection_stats::collection_address,
-                collection_stats::nft_count,
-            ))
-            .load(&conn)
-            .context("Failed to load NFT count for collection")?;
+        let rows: Vec<models::CollectionNftCount> = sql_query(
+            "SELECT COLLECTION_ID::text AS COLLECTION, NFT_COUNT
+            FROM ME_COLLECTION_STATS
+            where COLLECTION_ID::text = ANY($1)
+            UNION ALL
+            SELECT COLLECTION_ADDRESS AS COLLECTION, NFT_COUNT
+            FROM COLLECTION_STATS
+            where COLLECTION_ADDRESS = ANY($1);
+            -- $1: addresses::text[]",
+        )
+        .bind::<Array<Text>, _>(addresses)
+        .load(&conn)
+        .context("Failed to load NFT count for collection")?;
 
         Ok(rows
             .into_iter()
-            .map(|(addr, count)| (addr, CollectionNftCount::from(count)))
+            .map(
+                |models::CollectionNftCount {
+                     collection,
+                     nft_count,
+                 }| { (collection, CollectionNftCount::from(nft_count)) },
+            )
             .batch(addresses))
     }
 }
@@ -165,19 +174,28 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionFloorPrice>> for Batcher
     ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionFloorPrice>> {
         let conn = self.db()?;
 
-        let rows: Vec<(String, Option<i64>)> = collection_stats::table
-            .filter(collection_stats::collection_address.eq(any(addresses)))
-            .select((
-                collection_stats::collection_address,
-                collection_stats::floor_price,
-            ))
-            .load(&conn)
-            .context("Failed to load floor price for collection")?;
+        let rows: Vec<models::CollectionFloorPrice> = sql_query(
+            "SELECT COLLECTION_ID::text AS COLLECTION, FLOOR_PRICE
+            FROM ME_COLLECTION_STATS
+            where COLLECTION_ID::text = ANY($1)
+            UNION ALL
+            SELECT COLLECTION_ADDRESS AS COLLECTION, FLOOR_PRICE
+            FROM COLLECTION_STATS
+            where COLLECTION_ADDRESS = ANY($1);",
+        )
+        .bind::<Array<Text>, _>(addresses)
+        .load(&conn)
+        .context("Failed to load floor price for collection")?;
 
         Ok(rows
             .into_iter()
-            .filter_map(|(addr, floor)| floor.map(|f| (addr, f)))
-            .map(|(addr, floor)| (addr, CollectionFloorPrice::from(floor)))
+            .filter_map(
+                |models::CollectionFloorPrice {
+                     collection,
+                     floor_price,
+                 }| floor_price.map(|f| (collection, f)),
+            )
+            .map(|(collection, f)| (collection, CollectionFloorPrice::from(f)))
             .batch(addresses))
     }
 }
