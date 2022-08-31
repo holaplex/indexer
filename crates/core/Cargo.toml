@@ -38,6 +38,7 @@ required-features = ["db"]
 # Basic utilities
 anyhow = "1.0.45"
 base64 = "0.13.0"
+bigdecimal = "0.1.0"
 chrono = "0.4.22"
 clap = { version = "3.0.7", features = ["derive", "env"] }
 dotenv = "0.15.0"
@@ -60,7 +61,7 @@ ahash = "0.7.6"
 dashmap = "4.0.2"
 
 # ORM
-diesel = { version = "1.4.8", features = ["postgres", "r2d2", "uuidv07", "chrono", "serde_json", "64-column-tables"], optional = true }
+diesel = { version = "1.4.8", features = ["postgres", "r2d2", "uuidv07", "chrono", "serde_json", "64-column-tables", "numeric"], optional = true }
 diesel_migrations = { version = "1.4.0", optional = true }
 diesel_full_text_search = { version = "1.0.1", git = "https://github.com/diesel-rs/diesel_full_text_search", rev = "886fe85", optional = true }
 

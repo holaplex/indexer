@@ -2,14 +2,13 @@ use indexer_core::{db::queries, uuid::Uuid};
 use objects::{
     auction_house::AuctionHouse,
     listing::Bid,
-    nft::{Nft, NftCreator},
+    nft::{Collection, Nft, NftCreator},
     profile::TwitterProfile,
 };
-use scalars::PublicKey;
+use scalars::{PublicKey, U64};
 use tables::{bids, graph_connections};
 
 use super::prelude::*;
-use crate::schema::scalars::U64;
 
 #[derive(Debug, Clone)]
 pub struct Wallet {
@@ -124,10 +123,56 @@ impl WalletNftCount {
 }
 
 #[derive(Debug, Clone)]
+pub struct CollectedCollection {
+    collection: PublicKey<Nft>,
+    nfts_owned: i32,
+    estimated_value: U64,
+}
+
+impl<'a> TryFrom<models::CollectedCollection<'a>> for CollectedCollection {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::CollectedCollection {
+            collection,
+            nfts_owned,
+            estimated_value,
+        }: models::CollectedCollection,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            collection: collection.into(),
+            nfts_owned: nfts_owned.try_into()?,
+            estimated_value: estimated_value.try_into()?,
+        })
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl CollectedCollection {
+    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
+        let conn = ctx.shared.db.get()?;
+
+        queries::collections::get(&conn, &self.collection)?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
+    }
+
+    fn nfts_owned(&self) -> i32 {
+        self.nfts_owned
+    }
+
+    fn estimated_value(&self) -> U64 {
+        self.estimated_value
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct WalletActivity {
     pub id: Uuid,
     pub metadata: PublicKey<Nft>,
     pub auction_house: PublicKey<AuctionHouse>,
+    pub marketplace_program_address: String,
     pub price: U64,
     pub created_at: DateTime<Utc>,
     pub wallets: Vec<Wallet>,
@@ -142,6 +187,7 @@ impl TryFrom<models::WalletActivity> for WalletActivity {
             id,
             metadata,
             auction_house,
+            marketplace_program,
             price,
             created_at,
             wallets,
@@ -153,6 +199,7 @@ impl TryFrom<models::WalletActivity> for WalletActivity {
             id,
             metadata: metadata.into(),
             auction_house: auction_house.into(),
+            marketplace_program_address: marketplace_program,
             price: price.try_into()?,
             created_at: DateTime::from_utc(created_at, Utc),
             wallets: wallets
@@ -191,6 +238,10 @@ impl WalletActivity {
         &self.activity_type
     }
 
+    fn marketplace_program_address(&self) -> &str {
+        &self.marketplace_program_address
+    }
+
     pub async fn nft(&self, ctx: &AppContext) -> FieldResult<Option<Nft>> {
         ctx.nft_loader
             .load(self.metadata.clone())
@@ -217,10 +268,28 @@ impl Wallet {
         self.twitter_handle.as_deref()
     }
 
-    pub fn activities(&self, ctx: &AppContext) -> FieldResult<Vec<WalletActivity>> {
+    pub fn collected_collections(&self, ctx: &AppContext) -> FieldResult<Vec<CollectedCollection>> {
         let conn = ctx.shared.db.get()?;
 
-        let activities = queries::wallet::activities(&conn, &self.address)?;
+        let collections = queries::wallet::collected_collections(&conn, &self.address)?;
+        collections
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    pub fn activities(
+        &self,
+        ctx: &AppContext,
+        event_types: Option<Vec<String>>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<WalletActivity>> {
+        let conn = ctx.shared.db.get()?;
+
+        let activities =
+            queries::wallet::activities(&conn, &self.address, event_types, limit, offset)?;
 
         activities
             .into_iter()

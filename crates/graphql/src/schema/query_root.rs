@@ -2,7 +2,6 @@ use indexer_core::{
     db::{
         expression::dsl::all,
         queries::{self, feed_event::EventType},
-        tables::metadata_collection_keys,
     },
     meilisearch::IndirectMetadataDocument,
 };
@@ -11,7 +10,7 @@ use objects::{
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
     bonding_change::EnrichedBondingChange,
-    candymachine::CandyMachine,
+    candy_machine::CandyMachine,
     chart::PriceChart,
     creator::Creator,
     denylist::Denylist,
@@ -22,7 +21,9 @@ use objects::{
     marketplace::Marketplace,
     nft::{Collection, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
     profile::{ProfilesStats, TwitterProfile},
-    spl_governance::{Governance, Proposal, Realm, SignatoryRecord, TokenOwnerRecord, VoteRecord},
+    spl_governance::{
+        Governance, Proposal, ProposalV2, Realm, SignatoryRecord, TokenOwnerRecord, VoteRecord,
+    },
     storefront::{Storefront, StorefrontColumns},
     wallet::Wallet,
 };
@@ -31,9 +32,8 @@ use serde_json::Value;
 use tables::{
     auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
     candy_machine_datas, candy_machines, current_metadata_owners, geno_habitat_datas, governances,
-    graph_connections, metadata_jsons, metadatas, proposals_v2, realms, signatory_records_v2,
-    store_config_jsons, storefronts, token_owner_records_v2, twitter_handle_name_services,
-    vote_records_v2, wallet_totals,
+    graph_connections, metadata_jsons, metadatas, realms, signatory_records, store_config_jsons,
+    storefronts, token_owner_records, twitter_handle_name_services, wallet_totals,
 };
 
 use super::{enums::OrderDirection, prelude::*};
@@ -49,6 +49,29 @@ struct AttributeFilter {
 impl From<AttributeFilter> for queries::metadatas::AttributeFilter {
     fn from(AttributeFilter { trait_type, values }: AttributeFilter) -> Self {
         Self { trait_type, values }
+    }
+}
+
+impl QueryRoot {
+    fn candy_machine(context: &AppContext, address: String) -> FieldResult<Option<CandyMachine>> {
+        let conn = context.shared.db.get()?;
+
+        candy_machines::table
+            .inner_join(
+                candy_machine_datas::table
+                    .on(candy_machines::address.eq(candy_machine_datas::candy_machine_address)),
+            )
+            .filter(candy_machines::address.eq(address))
+            .select((
+                candy_machines::all_columns,
+                candy_machine_datas::all_columns,
+            ))
+            .first::<(models::CandyMachine, models::CandyMachineData)>(&conn)
+            .optional()
+            .context("Failed to load candy machine by address.")?
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(Into::into)
     }
 }
 
@@ -650,30 +673,18 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
-    #[graphql(description = "Get a candymachine by the candymachine config address")]
-    fn candymachine(
+    #[graphql(deprecated = "Deprecated alias for candyMachine")]
+    fn candymachine(&self, ctx: &AppContext, addr: String) -> FieldResult<Option<CandyMachine>> {
+        Self::candy_machine(ctx, addr)
+    }
+
+    #[graphql(description = "Get a candy machine by the candy machine config address")]
+    fn candy_machine(
         &self,
         context: &AppContext,
-        #[graphql(description = "address of the candymachine config")] address: String,
+        #[graphql(description = "address of the candy machine config")] address: String,
     ) -> FieldResult<Option<CandyMachine>> {
-        let conn = context.shared.db.get()?;
-
-        candy_machines::table
-            .inner_join(
-                candy_machine_datas::table
-                    .on(candy_machines::address.eq(candy_machine_datas::candy_machine_address)),
-            )
-            .filter(candy_machines::address.eq(address))
-            .select((
-                candy_machines::all_columns,
-                candy_machine_datas::all_columns,
-            ))
-            .first::<(models::CandyMachine, models::CandyMachineData)>(&conn)
-            .optional()
-            .context("Failed to load candy machine by address.")?
-            .map(TryInto::try_into)
-            .transpose()
-            .map_err(Into::into)
+        Self::candy_machine(context, address)
     }
 
     fn storefronts(&self, context: &AppContext) -> FieldResult<Vec<Storefront>> {
@@ -765,24 +776,7 @@ impl QueryRoot {
     ) -> FieldResult<Option<Collection>> {
         let conn = context.shared.db.get()?;
 
-        metadatas::table
-            .inner_join(
-                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
-            )
-            .inner_join(
-                metadata_collection_keys::table
-                    .on(metadata_collection_keys::collection_address.eq(metadatas::mint_address)),
-            )
-            .inner_join(
-                current_metadata_owners::table
-                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
-            )
-            .filter(metadata_collection_keys::collection_address.eq(address))
-            .filter(metadata_collection_keys::verified.eq(true))
-            .select(queries::metadatas::NFT_COLUMNS)
-            .first::<models::Nft>(&conn)
-            .optional()
-            .context("Failed to load NFT by metadata address.")?
+        queries::collections::get(&conn, &address)?
             .map(TryInto::try_into)
             .transpose()
             .map_err(Into::into)
@@ -1198,24 +1192,24 @@ impl QueryRoot {
         }
 
         let conn = context.shared.db.get()?;
-        let mut query = token_owner_records_v2::table
-            .select(token_owner_records_v2::all_columns)
+        let mut query = token_owner_records::table
+            .select(token_owner_records::all_columns)
             .into_boxed();
 
         if let Some(addresses) = addresses {
-            query = query.filter(token_owner_records_v2::address.eq(any(addresses)));
+            query = query.filter(token_owner_records::address.eq(any(addresses)));
         }
 
         if let Some(realms) = realms {
-            query = query.filter(token_owner_records_v2::realm.eq(any(realms)));
+            query = query.filter(token_owner_records::realm.eq(any(realms)));
         }
 
         if let Some(mints) = governing_token_mints {
-            query = query.filter(token_owner_records_v2::governing_token_mint.eq(any(mints)));
+            query = query.filter(token_owner_records::governing_token_mint.eq(any(mints)));
         }
 
         query
-            .load::<models::TokenOwnerRecordV2>(&conn)
+            .load::<models::TokenOwnerRecord>(&conn)
             .context("Failed to load spl token owner records.")?
             .into_iter()
             .map(TokenOwnerRecord::try_from)
@@ -1277,20 +1271,11 @@ impl QueryRoot {
         }
 
         let conn = context.shared.db.get()?;
-        let mut query = proposals_v2::table
-            .select(proposals_v2::all_columns)
-            .into_boxed();
 
-        if let Some(addresses) = addresses {
-            query = query.filter(proposals_v2::address.eq(any(addresses)));
-        }
-        if let Some(governances) = governances {
-            query = query.filter(proposals_v2::governance.eq(any(governances)));
-        }
+        let proposals: Vec<models::SplGovernanceProposal> =
+            queries::spl_governance::proposals(&conn, addresses, governances)?;
 
-        query
-            .load::<models::ProposalV2>(&conn)
-            .context("Failed to load spl governance proposals.")?
+        proposals
             .into_iter()
             .map(Proposal::try_from)
             .collect::<Result<_, _>>()
@@ -1300,7 +1285,7 @@ impl QueryRoot {
     fn vote_records(
         &self,
         context: &AppContext,
-        #[graphql(description = "Filter on SPL VoteRecord pubkeys")] addresses: Option<
+        #[graphql(description = "Filter on SPL VoteRecordV2 pubkeys")] addresses: Option<
             Vec<PublicKey<VoteRecord>>,
         >,
         #[graphql(description = "Filter on Proposals")] proposals: Option<Vec<PublicKey<Proposal>>>,
@@ -1316,36 +1301,21 @@ impl QueryRoot {
         {
             return Err(FieldError::new(
                 "You must supply atleast one filter",
-                graphql_value!({ "Filters": "addresses: Vec<PublicKey<VoteRecord>>, proposals: Vec<PublicKey<Proposal>>, governing_token_owners: Vec<PublicKey<Wallet>>, is_relinquished: bool" }),
+                graphql_value!({ "Filters": "addresses: Vec<PublicKey<VoteRecordV2>>, proposals: Vec<PublicKey<Proposal>>, governing_token_owners: Vec<PublicKey<Wallet>>, is_relinquished: bool" }),
             ));
         }
 
         let conn = context.shared.db.get()?;
 
-        let mut query = vote_records_v2::table
-            .select(vote_records_v2::all_columns)
-            .into_boxed();
+        let vote_records: Vec<models::VoteRecord> = queries::spl_governance::vote_records(
+            &conn,
+            addresses,
+            proposals,
+            governing_token_owners,
+            is_relinquished,
+        )?;
 
-        if let Some(addresses) = addresses {
-            query = query.filter(vote_records_v2::address.eq(any(addresses)));
-        }
-
-        if let Some(proposals) = proposals {
-            query = query.filter(vote_records_v2::proposal.eq(any(proposals)));
-        }
-
-        if let Some(governing_token_owners) = governing_token_owners {
-            query = query
-                .filter(vote_records_v2::governing_token_owner.eq(any(governing_token_owners)));
-        }
-
-        if let Some(is_relinquished) = is_relinquished {
-            query = query.filter(vote_records_v2::is_relinquished.eq(is_relinquished));
-        }
-
-        query
-            .load::<models::VoteRecordV2>(&conn)
-            .context("Failed to load spl governance vote records.")?
+        vote_records
             .into_iter()
             .map(VoteRecord::try_from)
             .collect::<Result<_, _>>()
@@ -1358,7 +1328,9 @@ impl QueryRoot {
         #[graphql(description = "Filter on SPL SignatoryRecord pubkeys")] addresses: Option<
             Vec<PublicKey<SignatoryRecord>>,
         >,
-        #[graphql(description = "Filter on Proposals")] proposals: Option<Vec<PublicKey<Proposal>>>,
+        #[graphql(description = "Filter on Proposals")] proposals: Option<
+            Vec<PublicKey<ProposalV2>>,
+        >,
     ) -> FieldResult<Vec<SignatoryRecord>> {
         if addresses.is_none() && proposals.is_none() {
             return Err(FieldError::new(
@@ -1369,20 +1341,20 @@ impl QueryRoot {
 
         let conn = context.shared.db.get()?;
 
-        let mut query = signatory_records_v2::table
-            .select(signatory_records_v2::all_columns)
+        let mut query = signatory_records::table
+            .select(signatory_records::all_columns)
             .into_boxed();
 
         if let Some(addresses) = addresses {
-            query = query.filter(signatory_records_v2::address.eq(any(addresses)));
+            query = query.filter(signatory_records::address.eq(any(addresses)));
         }
 
         if let Some(proposals) = proposals {
-            query = query.filter(signatory_records_v2::proposal.eq(any(proposals)));
+            query = query.filter(signatory_records::proposal.eq(any(proposals)));
         }
 
         query
-            .load::<models::SignatoryRecordV2>(&conn)
+            .load::<models::SignatoryRecord>(&conn)
             .context("Failed to load spl governance signatory records.")?
             .into_iter()
             .map(SignatoryRecord::try_from)
