@@ -351,6 +351,14 @@ pub struct CollectionFloorPrice {
     pub floor_price: Option<i64>,
 }
 
+/// Count
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct Count {
+    /// Collection floor price
+    #[sql_type = "diesel::sql_types::Numeric"]
+    pub value: BigDecimal,
+}
+
 /// Union of `listings` and `purchases` for a `WalletActivity`
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct WalletActivity {
