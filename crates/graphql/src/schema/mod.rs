@@ -8,6 +8,7 @@ pub mod enums;
 pub(self) mod objects;
 mod query_root;
 pub(self) mod scalars;
+pub(self) mod services;
 
 pub(self) mod prelude {
     pub use std::{collections::HashMap, sync::Arc};
@@ -21,7 +22,7 @@ pub(self) mod prelude {
         GraphQLObject,
     };
 
-    pub(super) use super::{context::AppContext, dataloaders, objects, scalars};
+    pub(super) use super::{context::AppContext, dataloaders, objects, scalars, services};
     pub(crate) use crate::SharedData;
 }
 

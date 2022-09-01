@@ -1,9 +1,10 @@
-use std::collections::HashMap;
-
 use indexer_core::{db::queries::stats, prelude::*};
-use itertools::Itertools;
-use objects::{auction_house::AuctionHouse, profile::TwitterProfile, stats::MintStats};
+use objects::{
+    attributes::AttributeGroup, auction_house::AuctionHouse, profile::TwitterProfile,
+    stats::MintStats,
+};
 use scalars::PublicKey;
+use services;
 use tables::{attributes, metadata_creators};
 
 use super::prelude::*;
@@ -15,17 +16,6 @@ pub struct Creator {
     pub twitter_handle: Option<String>,
 }
 
-#[derive(Debug, Clone, GraphQLObject, PartialEq, Eq, PartialOrd, Ord)]
-struct AttributeVariant {
-    name: String,
-    count: i32,
-}
-
-#[derive(Debug, GraphQLObject, PartialEq, Eq, PartialOrd, Ord)]
-struct AttributeGroup {
-    name: String,
-    variants: Vec<AttributeVariant>,
-}
 #[derive(Debug, Clone)]
 struct CreatorCounts {
     creator: Creator,
@@ -98,42 +88,7 @@ impl Creator {
             .load(&conn)
             .context("Failed to load metadata attributes")?;
 
-        Ok(metadata_attributes
-            .into_iter()
-            .try_fold(
-                HashMap::new(),
-                |mut groups,
-                 models::MetadataAttribute {
-                     trait_type, value, ..
-                 }| {
-                    *groups
-                        .entry(
-                            trait_type
-                                .ok_or_else(|| anyhow!("Missing trait type from attribute"))?
-                                .into_owned(),
-                        )
-                        .or_insert_with(HashMap::new)
-                        .entry(value)
-                        .or_insert(0) += 1;
-
-                    Result::<_>::Ok(groups)
-                },
-            )?
-            .into_iter()
-            .map(|(name, vars)| AttributeGroup {
-                name,
-                variants: vars
-                    .into_iter()
-                    .map(|(name, count)| {
-                        let name = name.map_or_else(String::new, Cow::into_owned);
-
-                        AttributeVariant { name, count }
-                    })
-                    .sorted()
-                    .collect(),
-            })
-            .sorted()
-            .collect::<Vec<_>>())
+        services::attributes::group(metadata_attributes)
     }
 
     pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
