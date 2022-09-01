@@ -169,7 +169,7 @@ impl CollectedCollection {
 
 #[derive(Debug, Clone)]
 pub struct CreatedCollection {
-    collection: PublicKey<Collection>,
+    collection: PublicKey<Nft>,
 }
 
 impl<'a> TryFrom<models::CreatedCollection<'a>> for CreatedCollection {
@@ -187,7 +187,7 @@ impl<'a> TryFrom<models::CreatedCollection<'a>> for CreatedCollection {
 #[graphql_object(Context = AppContext)]
 impl CreatedCollection {
     async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        ctx.collection_loader
+        ctx.nft_collection_loader
             .load(self.collection.clone().into())
             .await
             .map_err(Into::into)

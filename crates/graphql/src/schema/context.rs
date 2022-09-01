@@ -60,7 +60,6 @@ pub struct AppContext {
         Loader<PublicKey<CandyMachine>, Option<CandyMachineHiddenSetting>>,
     pub candy_machine_whitelist_mint_settings_loader:
         Loader<PublicKey<CandyMachine>, Option<CandyMachineWhitelistMintSetting>>,
-    pub collection_loader: Loader<PublicKey<Collection>, Option<Collection>>,
     pub collection_count_loader: Loader<PublicKey<StoreCreator>, Option<i32>>,
     pub collection_floor_price_loader: Loader<PublicKey<Collection>, Option<CollectionFloorPrice>>,
     pub storecreator_nft_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
@@ -134,7 +133,6 @@ impl AppContext {
             candy_machine_gatekeeper_configs_loader: Loader::new(batcher.clone()),
             candy_machine_hidden_settings_loader: Loader::new(batcher.clone()),
             candy_machine_whitelist_mint_settings_loader: Loader::new(batcher.clone()),
-            collection_loader: Loader::new(batcher.clone()),
             collection_count_loader: Loader::new(batcher.clone()),
             collection_floor_price_loader: Loader::new(batcher.clone()),
             storecreator_nft_loader: Loader::new(batcher.clone()),
