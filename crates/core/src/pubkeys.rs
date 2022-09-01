@@ -52,8 +52,30 @@ pub static TOKEN_BONDING: Pubkey = pubkey!("TBondmkCYxaPCKG4CHYfVTcwQ8on31xnJrPz
 /// Cardinal .twitter namespace pubkey
 pub static CARDINAL_TWITTER_NAMESPACE: Pubkey =
     pubkey!("2zwXjjGEUrFMyE2CF2Ju4CJwMzwdbBMYnF2boEzgPhGu");
-/// Spl Governance program pubkey
-pub static SPL_GOVERNANCE: Pubkey = pubkey!("GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw");
+/// Spl Governance programs pubkey
+pub const SPL_GOVERNANCE: [Pubkey; 21] = [
+    pubkey!("gUAedF544JeE6NYbQakQvribHykUNgaPJqcgf3UQVnY"),
+    pubkey!("GqTPL6qRf5aUuqscLh8Rg2HTxPUXfhhAXDptTLhp1t2J"),
+    pubkey!("GovHgfDPyQ1GwazJTDY2avSVY8GGcpmCapmmCsymRaGe"),
+    pubkey!("GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw"),
+    pubkey!("J9uWvULFL47gtCPvgR3oN7W357iehn5WF2Vn9MJvcSxz"),
+    pubkey!("JPGov2SBA6f7XSJF5R4Si5jEJekGiyrwP2m7gSEqLUs"),
+    pubkey!("5hAykmD4YGcQ7Am3N7nC9kyELq6CThAkU82nhNKDJiCy"),
+    pubkey!("gSF1T5PdLc2EutzwAyeExvdW27ySDtFp88ri5Aymah6"),
+    pubkey!("AVoAYTs36yB5izAaBkxRG67wL1AMwG3vo41hKtUSb8is"),
+    pubkey!("GmtpXy362L8cZfkRmTZMYunWVe8TyRjX5B7sodPZ63LJ"),
+    pubkey!("GMpXgTSJt2nJ7zjD1RwbT2QyPhKqD2MjAZuEaLsfPYLF"),
+    pubkey!("bqTjmeob6XTdfh12px2fZq4aJMpfSY1R1nHZ44VgVZD"),
+    pubkey!("Ghope52FuF6HU3AAhJuAAyS2fiqbVhkAotb7YprL5tdS"),
+    pubkey!("5sGZEdn32y8nHax7TxEyoHuPS3UXfPWtisgm8kqxat8H"),
+    pubkey!("smfjietFKFJ4Sbw1cqESBTpPhF4CwbMwN8kBEC1e5ui"),
+    pubkey!("GMnke6kxYvqoAXgbFGnu84QzvNHoqqTnijWSXYYTFQbB"),
+    pubkey!("GCockTxUjxuMdojHiABVZ5NKp6At8eTKDiizbPjiCo4m"),
+    pubkey!("HT19EcD68zn7NoCF79b2ucQF8XaMdowyPt5ccS6g1PUx"),
+    pubkey!("GRNPT8MPw3LYY6RdjsgKeFji5kMiG1fSxnxDjDBu4s73"),
+    pubkey!("ALLGnZikNaJQeN4KCAbDjZRSzvSefUdeTpk18yfizZvT"),
+    pubkey!("A7kmu2kUcnQwAVn8B4znQmGJeUrsJ1WEhYVMtmiBLkEr"),
+];
 
 /// Find the address of a store given its owner's address
 pub fn find_store_address(owner: impl Borrow<Pubkey>) -> (Pubkey, u8) {
