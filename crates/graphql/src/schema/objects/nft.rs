@@ -13,13 +13,13 @@ use indexer_core::{
     util::unix_timestamp,
     uuid::Uuid,
 };
-use itertools::Itertools;
 use objects::{
-    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
-    profile::TwitterProfile, wallet::Wallet,
+    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, attributes::AttributeGroup,
+    auction_house::AuctionHouse, profile::TwitterProfile, wallet::Wallet,
 };
 use scalars::{PublicKey, U64};
 use serde_json::Value;
+use services;
 
 use super::prelude::*;
 
@@ -534,18 +534,6 @@ If no value is provided, it will return XSmall")))]
     }
 }
 
-#[derive(Debug, Clone, GraphQLObject, PartialEq, Eq, PartialOrd, Ord)]
-struct AttributeVariant {
-    name: String,
-    count: i32,
-}
-
-#[derive(Debug, GraphQLObject, PartialEq, Eq, PartialOrd, Ord)]
-struct AttributeGroup {
-    name: String,
-    variants: Vec<AttributeVariant>,
-}
-
 #[derive(Debug, Clone)]
 pub struct Collection(pub Nft);
 
@@ -569,42 +557,7 @@ impl Collection {
                 .load(&conn)
                 .context("Failed to load metadata attributes")?;
 
-        Ok(metadata_attributes
-            .into_iter()
-            .try_fold(
-                HashMap::new(),
-                |mut groups,
-                 models::MetadataAttribute {
-                     trait_type, value, ..
-                 }| {
-                    *groups
-                        .entry(
-                            trait_type
-                                .ok_or_else(|| anyhow!("Missing trait type from attribute"))?
-                                .into_owned(),
-                        )
-                        .or_insert_with(HashMap::new)
-                        .entry(value)
-                        .or_insert(0) += 1;
-
-                    Result::<_>::Ok(groups)
-                },
-            )?
-            .into_iter()
-            .map(|(name, vars)| AttributeGroup {
-                name,
-                variants: vars
-                    .into_iter()
-                    .map(|(name, count)| {
-                        let name = name.map_or_else(String::new, Cow::into_owned);
-
-                        AttributeVariant { name, count }
-                    })
-                    .sorted()
-                    .collect(),
-            })
-            .sorted()
-            .collect::<Vec<_>>())
+        services::attributes::group(metadata_attributes)
     }
 
     pub async fn activities(
