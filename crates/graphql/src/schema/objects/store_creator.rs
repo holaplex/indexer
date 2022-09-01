@@ -25,7 +25,7 @@ impl StoreCreator {
 
     pub async fn preview(&self, context: &AppContext) -> FieldResult<Vec<Nft>> {
         context
-            .collection_loader
+            .storecreator_nft_loader
             .load(self.creator_address.clone().into())
             .await
             .map_err(Into::into)
