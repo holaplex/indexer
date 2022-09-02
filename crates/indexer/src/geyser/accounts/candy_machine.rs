@@ -111,12 +111,7 @@ async fn process_config_lines(
                 for cl in &db_config_lines {
                     insert_into(candy_machine_config_lines::table)
                         .values(cl)
-                        .on_conflict((
-                            candy_machine_config_lines::candy_machine_address,
-                            candy_machine_config_lines::idx,
-                        ))
-                        .do_update()
-                        .set(cl)
+                        .on_conflict_do_nothing()
                         .execute(db)
                         .context("Failed to insert config line")?;
                 }
