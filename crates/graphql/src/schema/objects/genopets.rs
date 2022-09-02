@@ -222,8 +222,8 @@ pub struct GenoHabitat {
     pub ki_harvested: I64,
     pub seeds_spawned: bool,
     pub is_sub_habitat: bool,
-    pub parent_habitat: Option<PublicKey<GenoHabitat>>,
-    pub sub_habitats: Vec<PublicKey<GenoHabitat>>,
+    pub parent_habitat: Option<PublicKey<TokenMint>>,
+    pub sub_habitats: Vec<PublicKey<TokenMint>>,
     pub harvester_royalty_bips: i32,
     pub harvester_open_market: bool,
     pub total_ki_harvested: I64,
@@ -292,11 +292,11 @@ impl GenoHabitat {
         &self.is_sub_habitat
     }
 
-    pub fn parent_habitat(&self) -> &Option<PublicKey<GenoHabitat>> {
+    pub fn parent_habitat(&self) -> &Option<PublicKey<TokenMint>> {
         &self.parent_habitat
     }
 
-    pub fn sub_habitats(&self) -> &Vec<PublicKey<GenoHabitat>> {
+    pub fn sub_habitats(&self) -> &Vec<PublicKey<TokenMint>> {
         &self.sub_habitats
     }
 
@@ -356,6 +356,14 @@ impl GenoHabitat {
             .load(self.address.clone())
             .await
             .map_err(Into::into)
+    }
+
+    pub async fn parent_habitat_data(&self, ctx: &AppContext) -> FieldResult<Option<GenoHabitat>> {
+        Ok(if let Some(ref addr) = self.parent_habitat {
+            ctx.geno_habitat_loader.load(addr.clone()).await?
+        } else {
+            None
+        })
     }
 
     pub async fn sub_habitat_data(

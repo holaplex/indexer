@@ -64,7 +64,7 @@ pub struct AppContext {
     pub collection_floor_price_loader: Loader<PublicKey<Collection>, Option<CollectionFloorPrice>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
     pub collection_nft_count_loader: Loader<PublicKey<Collection>, Option<CollectionNftCount>>,
-    pub geno_habitat_loader: Loader<PublicKey<GenoHabitat>, Option<GenoHabitat>>,
+    pub geno_habitat_loader: Loader<PublicKey<TokenMint>, Option<GenoHabitat>>,
     pub geno_rental_agreement_loader: Loader<PublicKey<GenoHabitat>, Option<GenoRentalAgreement>>,
     pub graph_connection_loader: Loader<PublicKey<GraphConnection>, Option<GraphConnection>>,
     pub listing_bids_loader: Loader<PublicKey<Listing>, Vec<Bid>>,
