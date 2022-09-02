@@ -116,20 +116,13 @@ pub fn collected_collections(
 }
 
 const CREATED_COLLECTIONS_QUERY: &str = r"
-SELECT
-    collection_metadatas.address as collection
-    FROM metadatas collection_metadatas
-    INNER JOIN
-    (
-    SELECT metadata_collection_keys.collection_address AS mint
-    FROM metadatas
-    INNER JOIN metadata_collection_keys ON (metadata_collection_keys.metadata_address = metadatas.address)
-    WHERE metadatas.update_authority_address = $1
-    AND metadata_collection_keys.verified
-    ) created_collections ON (created_collections.mint = collection_metadatas.mint_address)
-    GROUP BY collection_metadatas.address
-    ;
-    -- $1: address::text";
+    SELECT metadatas.address
+        FROM metadatas
+    INNER JOIN collection_stats ON (metadata_collection_keys.collection_address = collection_stats.collection_address)
+    WHERE
+        collection_stats.verified
+        AND metadas.update_authority_address = $1;
+-- $1: address::text";
 
 /// Load created collections for a wallet.
 ///

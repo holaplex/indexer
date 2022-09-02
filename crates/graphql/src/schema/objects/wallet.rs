@@ -169,18 +169,14 @@ impl CollectedCollection {
 
 #[derive(Debug, Clone)]
 pub struct CreatedCollection {
-    collection: PublicKey<Nft>,
+    address: PublicKey<Nft>,
 }
 
-impl<'a> TryFrom<models::CreatedCollection<'a>> for CreatedCollection {
-    type Error = std::num::TryFromIntError;
-
-    fn try_from(
-        models::CreatedCollection { collection }: models::CreatedCollection,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            collection: collection.into(),
-        })
+impl From<models::CreatedCollection> for CreatedCollection {
+    fn from(models::CreatedCollection { address }: models::CreatedCollection) -> Self {
+        Self {
+            address: address.into(),
+        }
     }
 }
 
@@ -188,7 +184,7 @@ impl<'a> TryFrom<models::CreatedCollection<'a>> for CreatedCollection {
 impl CreatedCollection {
     async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
         ctx.nft_collection_loader
-            .load(self.collection.clone().into())
+            .load(self.address.clone())
             .await
             .map_err(Into::into)
     }

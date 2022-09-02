@@ -1111,10 +1111,10 @@ pub struct CollectedCollection<'a> {
 
 /// A row in a `created_collections` query of a wallet
 #[derive(Debug, Clone, QueryableByName)]
-pub struct CreatedCollection<'a> {
-    /// The collection for which data is collected
+pub struct CreatedCollection {
+    /// The metadata address for the collection
     #[sql_type = "VarChar"]
-    pub collection: Cow<'a, str>,
+    pub address: String,
 }
 
 /// A row in the `metadata_collection_keys` table
