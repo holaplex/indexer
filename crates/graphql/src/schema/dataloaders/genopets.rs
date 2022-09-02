@@ -19,7 +19,7 @@ impl TryBatchFn<PublicKey<TokenMint>, Option<GenoHabitat>> for Batcher {
 
         Ok(rows
             .into_iter()
-            .map(|r| (r.address.clone(), r.try_into()))
+            .map(|r| (r.habitat_mint.clone(), r.try_into()))
             .batch(addresses))
     }
 }
