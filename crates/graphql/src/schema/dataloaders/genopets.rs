@@ -1,21 +1,21 @@
 use objects::genopets::{GenoHabitat, GenoRentalAgreement};
-use scalars::PublicKey;
+use scalars::{markers::TokenMint, PublicKey};
 use tables::{geno_habitat_datas, geno_rental_agreements};
 
 use super::prelude::*;
 
 #[async_trait]
-impl TryBatchFn<PublicKey<GenoHabitat>, Option<GenoHabitat>> for Batcher {
+impl TryBatchFn<PublicKey<TokenMint>, Option<GenoHabitat>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<GenoHabitat>],
-    ) -> TryBatchMap<PublicKey<GenoHabitat>, Option<GenoHabitat>> {
+        addresses: &[PublicKey<TokenMint>],
+    ) -> TryBatchMap<PublicKey<TokenMint>, Option<GenoHabitat>> {
         let conn = self.db()?;
 
         let rows: Vec<models::GenoHabitatData> = geno_habitat_datas::table
-            .filter(geno_habitat_datas::address.eq(any(addresses)))
+            .filter(geno_habitat_datas::habitat_mint.eq(any(addresses)))
             .load(&conn)
-            .context("Failed to load Genopets habitats")?;
+            .context("Failed to load Genopets habitats by mint")?;
 
         Ok(rows
             .into_iter()

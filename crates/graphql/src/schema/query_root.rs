@@ -1043,20 +1043,35 @@ impl QueryRoot {
 
     #[graphql(
         description = "Query up to one Genopets habitat by the public key of its on-chain data",
-        arguments(address(description = "The address to query by"))
+        arguments(
+            address(description = "Select a habitat by its data account address"),
+            mint(description = "Select a habitat by its by mint address"),
+        )
     )]
     fn geno_habitat(
         &self,
         context: &AppContext,
-        address: PublicKey<GenoHabitat>,
+        address: Option<PublicKey<GenoHabitat>>,
+        mint: Option<PublicKey<TokenMint>>,
     ) -> FieldResult<Option<GenoHabitat>> {
         let conn = context.shared.db.get()?;
 
-        let row = geno_habitat_datas::table
-            .filter(geno_habitat_datas::address.eq(address))
-            .first::<models::GenoHabitatData>(&conn)
-            .optional()
-            .context("Failed to load Genopets habitat")?;
+        let row = match (address, mint) {
+            (None, None) | (Some(_), Some(_)) => {
+                return Err(FieldError::new(
+                    "Exactly one parameter must be specified",
+                    graphql_value!(["address", "mint"]),
+                ));
+            },
+            (Some(address), None) => geno_habitat_datas::table
+                .filter(geno_habitat_datas::address.eq(address))
+                .first::<models::GenoHabitatData>(&conn),
+            (None, Some(mint)) => geno_habitat_datas::table
+                .filter(geno_habitat_datas::habitat_mint.eq(mint))
+                .first::<models::GenoHabitatData>(&conn),
+        }
+        .optional()
+        .context("Failed to load Genopets habitat")?;
 
         Ok(row.map(Into::into))
     }
