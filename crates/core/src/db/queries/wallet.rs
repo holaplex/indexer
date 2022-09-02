@@ -116,12 +116,11 @@ pub fn collected_collections(
 }
 
 const CREATED_COLLECTIONS_QUERY: &str = r"
-    SELECT metadatas.address
-        FROM metadatas
-    INNER JOIN collection_stats ON (metadata_collection_keys.collection_address = collection_stats.collection_address)
+SELECT metadatas.address
+    FROM metadatas
+    INNER JOIN collection_stats ON (metadatas.mint_address = collection_stats.collection_address)
     WHERE
-        collection_stats.verified
-        AND metadas.update_authority_address = $1;
+        metadatas.update_authority_address = $1;
 -- $1: address::text";
 
 /// Load created collections for a wallet.

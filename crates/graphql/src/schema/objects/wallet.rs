@@ -150,11 +150,10 @@ impl<'a> TryFrom<models::CollectedCollection<'a>> for CollectedCollection {
 #[graphql_object(Context = AppContext)]
 impl CollectedCollection {
     async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        let conn = ctx.shared.db.get()?;
-
-        queries::collections::get(&conn, &self.collection)?
-            .map(TryInto::try_into)
-            .transpose()
+        ctx.nft_loader
+            .load(self.collection.clone())
+            .await
+            .map(|op| op.map(Into::into))
             .map_err(Into::into)
     }
 
@@ -183,9 +182,10 @@ impl From<models::CreatedCollection> for CreatedCollection {
 #[graphql_object(Context = AppContext)]
 impl CreatedCollection {
     async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        ctx.nft_collection_loader
+        ctx.nft_loader
             .load(self.address.clone())
             .await
+            .map(|op| op.map(Into::into))
             .map_err(Into::into)
     }
 }
