@@ -1109,6 +1109,14 @@ pub struct CollectedCollection<'a> {
     pub estimated_value: i64,
 }
 
+/// A row in a `created_collections` query of a wallet
+#[derive(Debug, Clone, QueryableByName)]
+pub struct CreatedCollection {
+    /// The metadata address for the collection
+    #[sql_type = "VarChar"]
+    pub address: String,
+}
+
 /// A row in the `metadata_collection_keys` table
 /// Each collection is an NFT
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]

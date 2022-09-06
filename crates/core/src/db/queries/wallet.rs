@@ -8,7 +8,7 @@ use diesel::{
 
 use crate::{
     db::{
-        models::{CollectedCollection, WalletActivity},
+        models::{CollectedCollection, CreatedCollection, WalletActivity},
         Connection,
     },
     error::prelude::*,
@@ -113,4 +113,26 @@ pub fn collected_collections(
         .bind(address)
         .load(conn)
         .context("Failed to load wallet(s) collected collections")
+}
+
+const CREATED_COLLECTIONS_QUERY: &str = r"
+SELECT metadatas.address
+    FROM metadatas
+    INNER JOIN collection_stats ON (metadatas.mint_address = collection_stats.collection_address)
+    WHERE
+        metadatas.update_authority_address = $1;
+-- $1: address::text";
+
+/// Load created collections for a wallet.
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
+pub fn created_collections(
+    conn: &Connection,
+    address: impl ToSql<Text, Pg>,
+) -> Result<Vec<CreatedCollection>> {
+    diesel::sql_query(CREATED_COLLECTIONS_QUERY)
+        .bind(address)
+        .load(conn)
+        .context("Failed to load wallet(s) created collections")
 }
