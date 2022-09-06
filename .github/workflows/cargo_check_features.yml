@@ -2,7 +2,7 @@ name: Check crate feature flags
 
 on:
   schedule:
-    - cron: '0 1,9 * * *'
+    - cron: '0 1,17 * * *'
 
 jobs:
   check:

@@ -5,8 +5,8 @@ use indexer_core::{
         expression::dsl::sum,
         queries,
         tables::{
-            auction_houses, bid_receipts, current_metadata_owners, listing_receipts, listings,
-            metadata_collection_keys, metadata_jsons, metadatas, purchases,
+            attributes, auction_houses, bid_receipts, current_metadata_owners, listing_receipts,
+            listings, metadata_collection_keys, metadata_jsons, metadatas, purchases,
         },
     },
     url::Url,
@@ -14,11 +14,12 @@ use indexer_core::{
     uuid::Uuid,
 };
 use objects::{
-    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
-    profile::TwitterProfile, wallet::Wallet,
+    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, attributes::AttributeGroup,
+    auction_house::AuctionHouse, profile::TwitterProfile, wallet::Wallet,
 };
 use scalars::{PublicKey, U64};
 use serde_json::Value;
+use services;
 
 use super::prelude::*;
 
@@ -536,10 +537,33 @@ If no value is provided, it will return XSmall")))]
 #[derive(Debug, Clone)]
 pub struct Collection(pub Nft);
 
+impl From<Nft> for Collection {
+    fn from(nft: Nft) -> Self {
+        Self(nft)
+    }
+}
+
 #[graphql_object(Context = AppContext)]
 impl Collection {
     fn nft(&self) -> &Nft {
         &self.0
+    }
+
+    pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
+        let conn = context.shared.db.get()?;
+
+        let metadata_attributes: Vec<models::MetadataAttribute> =
+            attributes::table
+                .inner_join(metadata_collection_keys::table.on(
+                    attributes::metadata_address.eq(metadata_collection_keys::metadata_address),
+                ))
+                .filter(metadata_collection_keys::collection_address.eq(&self.0.mint_address))
+                .filter(metadata_collection_keys::verified.eq(true))
+                .select(attributes::all_columns)
+                .load(&conn)
+                .context("Failed to load metadata attributes")?;
+
+        services::attributes::group(metadata_attributes)
     }
 
     pub async fn activities(

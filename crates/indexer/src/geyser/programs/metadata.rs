@@ -110,14 +110,15 @@ async fn process_master_edition_v2(client: &Client, update: AccountUpdate) -> Re
 }
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
-    let first_byte = update.data[0] as u8;
+    let first_byte = update.data.get(0).copied();
 
     match first_byte {
-        METADATA => process_metadata(client, update).await,
-        EDITION_V1 => process_edition(client, update).await,
-        MASTER_EDITION_V1 => process_master_edition_v1(client, update).await,
-        MASTER_EDITION_V2 => process_master_edition_v2(client, update).await,
-        b => {
+        None => Ok(()),
+        Some(METADATA) => process_metadata(client, update).await,
+        Some(EDITION_V1) => process_edition(client, update).await,
+        Some(MASTER_EDITION_V1) => process_master_edition_v1(client, update).await,
+        Some(MASTER_EDITION_V2) => process_master_edition_v2(client, update).await,
+        Some(b) => {
             trace!("Unhandled metadata key byte {:02x}", b);
 
             Ok(())

@@ -21,6 +21,21 @@ use crate::{
     error::prelude::*,
 };
 
+/// A habitat field by which to sort query results
+#[derive(Debug, Clone, Copy)]
+pub enum HabitatSortField {
+    /// Sorty by `address`
+    Address,
+    /// Sort by `level`
+    Level,
+    /// Sort by habitat lifespan (`expiry_timestamp`)
+    Lifespan,
+    /// Sort by `ki_harvested`
+    KiHarvested,
+    /// Sort by `crystals_refined`
+    CrystalsRefined,
+}
+
 /// Input parameters for the [`list_habitats`] query.
 #[derive(Debug)]
 pub struct ListHabitatOptions<M, W, H> {
@@ -52,16 +67,25 @@ pub struct ListHabitatOptions<M, W, H> {
     /// Select only habitats whose rental agreement's open-market flag matches
     /// the given value
     pub rental_open_market: Option<bool>,
+    /// Field to sort results on
+    pub sort_field: HabitatSortField,
+    /// True if rows should be sorted in descending order, false if they should
+    /// be sorted ascending
+    pub sort_desc: bool,
     /// Limit the number of returned rows
     pub limit: i64,
     /// Skip the first `n` resulting rows
     pub offset: i64,
 }
 
+/// Tuple of `(habitats, total_count_hint)`
+pub type HabitatList = (Vec<GenoHabitatData<'static>>, Option<i64>);
+
 /// List the Genopets `HabitatData` accounts matching the given query parameters
 ///
 /// # Errors
 /// This function fails if the underlying query returns an error.
+#[allow(clippy::too_many_lines)] // splitting this function would require naming eldritch types
 pub fn list_habitats<
     M: ToSql<Text, Pg>,
     W: ToSql<Text, Pg> + ToSql<Nullable<Text>, Pg>,
@@ -69,11 +93,7 @@ pub fn list_habitats<
 >(
     conn: &Connection,
     opts: ListHabitatOptions<M, W, H>,
-) -> Result<Vec<GenoHabitatData<'static>>> {
-    let mut query = geno_habitat_datas::table
-        .select(geno_habitat_datas::all_columns)
-        .into_boxed();
-
+) -> Result<HabitatList> {
     let ListHabitatOptions {
         mints,
         owners,
@@ -88,74 +108,146 @@ pub fn list_habitats<
         expiries,
         harvester_open_market,
         rental_open_market,
+        sort_field,
+        sort_desc,
         limit,
         offset,
     } = opts;
 
-    if let Some(mints) = mints {
-        query = query.filter(geno_habitat_datas::habitat_mint.eq(any(mints)));
-    }
+    let build_query = |sort| {
+        let mut query = geno_habitat_datas::table.into_boxed();
+        let mut count = true;
 
-    if let Some(owners) = owners {
-        query = query.filter(
-            geno_habitat_datas::habitat_mint.eq(any(current_metadata_owners::table
-                .filter(current_metadata_owners::owner_address.eq(any(owners)))
-                .select(current_metadata_owners::mint_address))),
-        );
-    }
+        if let Some(ref mints) = mints {
+            query = query.filter(geno_habitat_datas::habitat_mint.eq(any(mints)));
+        }
 
-    if let Some(renters) = renters {
-        query = query.filter(
-            geno_habitat_datas::address.eq(any(geno_rental_agreements::table
-                .filter(geno_rental_agreements::alchemist.eq(any(renters)))
-                .select(geno_rental_agreements::habitat_address))),
-        );
-    }
+        if let Some(ref owners) = owners {
+            query = query.filter(
+                geno_habitat_datas::habitat_mint.eq(any(current_metadata_owners::table
+                    .filter(current_metadata_owners::owner_address.eq(any(owners)))
+                    .select(current_metadata_owners::mint_address))),
+            );
 
-    if let Some(harvesters) = harvesters {
-        query = query.filter(geno_habitat_datas::harvester.eq(any(harvesters)));
-    }
+            count = false;
+        }
 
-    if let Some(genesis) = genesis {
-        query = query.filter(geno_habitat_datas::genesis.eq(genesis));
-    }
+        if let Some(ref renters) = renters {
+            query = query.filter(
+                geno_habitat_datas::address.eq(any(geno_rental_agreements::table
+                    .filter(geno_rental_agreements::alchemist.eq(any(renters)))
+                    .select(geno_rental_agreements::habitat_address))),
+            );
 
-    if let Some(elements) = elements {
-        query = query.filter(geno_habitat_datas::element.eq(any(elements)));
-    }
+            count = false;
+        }
 
-    query = handle_range(query, geno_habitat_datas::level, levels);
-    query = handle_range(query, geno_habitat_datas::sequence, sequences);
+        if let Some(ref harvesters) = harvesters {
+            query = query.filter(geno_habitat_datas::harvester.eq(any(harvesters)));
+        }
 
-    if let Some(guilds) = guilds {
-        query = query.filter(geno_habitat_datas::guild.eq(any(guilds)));
-    }
+        if let Some(genesis) = genesis {
+            query = query.filter(geno_habitat_datas::genesis.eq(genesis));
+        }
 
-    query = handle_range(query, geno_habitat_datas::durability, durabilities);
+        if let Some(ref elements) = elements {
+            query = query.filter(geno_habitat_datas::element.eq(any(elements)));
+        }
 
-    {
-        let (min, max) = expiries;
-        let min = min.map(|m| m.naive_utc());
-        let max = max.map(|m| m.naive_utc());
+        query = handle_range(query, geno_habitat_datas::level, levels);
+        query = handle_range(query, geno_habitat_datas::sequence, sequences);
 
-        query = handle_range(query, geno_habitat_datas::expiry_timestamp, (min, max));
-    }
+        if let Some(ref guilds) = guilds {
+            query = query.filter(geno_habitat_datas::guild.eq(any(guilds)));
+        }
 
-    if let Some(harvester_open_market) = harvester_open_market {
-        query = query.filter(geno_habitat_datas::harvester_open_market.eq(harvester_open_market));
-    }
+        query = handle_range(query, geno_habitat_datas::durability, durabilities);
 
-    if let Some(rental_open_market) = rental_open_market {
-        query = query.filter(
-            geno_habitat_datas::address.eq(any(geno_rental_agreements::table
-                .filter(geno_rental_agreements::open_market.eq(rental_open_market))
-                .select(geno_rental_agreements::habitat_address))),
-        );
-    }
+        {
+            let (min, max) = expiries;
+            let min = min.map(|m| m.naive_utc());
+            let max = max.map(|m| m.naive_utc());
 
-    query
-        .limit(limit)
-        .offset(offset)
-        .load(conn)
-        .context("Failed to load Genopets habitats")
+            query = handle_range(query, geno_habitat_datas::expiry_timestamp, (min, max));
+        }
+
+        if let Some(harvester_open_market) = harvester_open_market {
+            query =
+                query.filter(geno_habitat_datas::harvester_open_market.eq(harvester_open_market));
+        }
+
+        if let Some(rental_open_market) = rental_open_market {
+            query = query.filter(
+                geno_habitat_datas::address.eq(any(geno_rental_agreements::table
+                    .filter(geno_rental_agreements::open_market.eq(rental_open_market))
+                    .select(geno_rental_agreements::habitat_address))),
+            );
+
+            count = false;
+        }
+
+        if sort {
+            // If someone has a less stupid way to do this, I'm all ears
+            match (sort_field, sort_desc) {
+                (HabitatSortField::Address, false) => {
+                    query = query.order_by(geno_habitat_datas::address.asc());
+                },
+                (HabitatSortField::Address, true) => {
+                    query = query.order_by(geno_habitat_datas::address.desc());
+                },
+                (HabitatSortField::Level, false) => {
+                    query = query.order_by(geno_habitat_datas::level.asc());
+                },
+                (HabitatSortField::Level, true) => {
+                    query = query.order_by(geno_habitat_datas::level.desc());
+                },
+                (HabitatSortField::Lifespan, false) => {
+                    query = query.order_by(geno_habitat_datas::expiry_timestamp.asc());
+                },
+                (HabitatSortField::Lifespan, true) => {
+                    query = query.order_by(geno_habitat_datas::expiry_timestamp.desc());
+                },
+                (HabitatSortField::KiHarvested, false) => {
+                    query = query.order_by(geno_habitat_datas::ki_harvested.asc());
+                },
+                (HabitatSortField::KiHarvested, true) => {
+                    query = query.order_by(geno_habitat_datas::ki_harvested.desc());
+                },
+                (HabitatSortField::CrystalsRefined, false) => {
+                    query = query.order_by(geno_habitat_datas::crystals_refined.asc());
+                },
+                (HabitatSortField::CrystalsRefined, true) => {
+                    query = query.order_by(geno_habitat_datas::crystals_refined.desc());
+                },
+            }
+        }
+
+        (query, count)
+    };
+
+    let (query, count) = build_query(true);
+
+    let count = if count {
+        // I can't figure out any way to clone or borrow a boxed select statement.
+        let (query, _) = build_query(false);
+
+        Some(
+            query
+                .count()
+                .get_result(conn)
+                .context("Failed to count Genopets habitats")?,
+        )
+    } else {
+        None
+    };
+
+    Ok((
+        query
+            .select(geno_habitat_datas::all_columns)
+            .limit(limit)
+            .offset(offset)
+            .load(conn)
+            .context("Failed to load Genopets habitats")?,
+        count,
+    ))
 }

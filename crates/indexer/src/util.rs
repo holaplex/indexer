@@ -2,8 +2,9 @@
 #![allow(dead_code)]
 
 use indexer_core::prelude::*;
+#[cfg(feature = "mpl-token-metadata")]
 use mpl_token_metadata::state::{Key, MasterEditionV1, MasterEditionV2};
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
+use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 
 /// Borrow an account's raw as a `solana-program` account info struct.
 #[inline]
@@ -41,6 +42,7 @@ pub async fn account_data_as_info<T: Send + 'static>(
 
 /// Convenience wrapper for Metaplex's [`MasterEdition`] trait and structs
 #[derive(Debug)]
+#[cfg(feature = "mpl-token-metadata")]
 pub enum MasterEdition {
     /// A v1 master edition
     V1(MasterEditionV1),
@@ -48,6 +50,7 @@ pub enum MasterEdition {
     V2(MasterEditionV2),
 }
 
+#[cfg(feature = "mpl-token-metadata")]
 impl MasterEdition {
     /// Construct the correct master edition from an account
     ///
@@ -65,6 +68,7 @@ impl MasterEdition {
     }
 }
 
+#[cfg(feature = "mpl-token-metadata")]
 impl mpl_token_metadata::state::MasterEdition for MasterEdition {
     fn key(&self) -> Key {
         match self {
@@ -94,7 +98,7 @@ impl mpl_token_metadata::state::MasterEdition for MasterEdition {
         }
     }
 
-    fn save(&self, account: &AccountInfo) -> ProgramResult {
+    fn save(&self, account: &AccountInfo) -> solana_program::entrypoint::ProgramResult {
         match self {
             Self::V1(m) => m.save(account),
             Self::V2(m) => m.save(account),
