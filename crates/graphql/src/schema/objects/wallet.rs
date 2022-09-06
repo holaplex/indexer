@@ -124,23 +124,23 @@ impl WalletNftCount {
 
 #[derive(Debug, Clone)]
 pub struct CollectedCollection {
-    collection: PublicKey<Nft>,
+    metadata_address: PublicKey<Nft>,
     nfts_owned: i32,
     estimated_value: U64,
 }
 
-impl<'a> TryFrom<models::CollectedCollection<'a>> for CollectedCollection {
+impl TryFrom<models::CollectedCollection> for CollectedCollection {
     type Error = std::num::TryFromIntError;
 
     fn try_from(
         models::CollectedCollection {
-            collection,
+            collection_nft_address,
             nfts_owned,
             estimated_value,
         }: models::CollectedCollection,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            collection: collection.into(),
+            metadata_address: collection_nft_address.into(),
             nfts_owned: nfts_owned.try_into()?,
             estimated_value: estimated_value.try_into()?,
         })
@@ -151,7 +151,7 @@ impl<'a> TryFrom<models::CollectedCollection<'a>> for CollectedCollection {
 impl CollectedCollection {
     async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
         ctx.nft_loader
-            .load(self.collection.clone())
+            .load(self.metadata_address.clone())
             .await
             .map(|op| op.map(Into::into))
             .map_err(Into::into)
