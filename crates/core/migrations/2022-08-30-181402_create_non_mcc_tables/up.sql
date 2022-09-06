@@ -1,160 +1,148 @@
-do $$
-begin
-  	if (select not exists (select 1 from information_schema.tables  where table_schema = 'public' and table_name = 'me_collections')) then
+BEGIN WORK;
+DO $$
+BEGIN
+  	IF (SELECT NOT EXISTS (SELECT 1 FROM information_schema.tables  WHERE table_schema = 'public' AND table_name = 'me_collections')) THEN
+	CREATE TABLE TEMP_ME_COLLECTIONS AS
+	(SELECT DISTINCT M.SYMBOL,
+			MC.CREATOR_ADDRESS,
+			T.NAME,
+			T.FAMILY
+		FROM METADATAS M
+		INNER JOIN METADATA_CREATORS MC ON MC.METADATA_ADDRESS = M.ADDRESS
+		INNER JOIN PURCHASES P ON P.METADATA = M.ADDRESS
+		LEFT JOIN METADATA_COLLECTIONS T ON T.METADATA_ADDRESS = M.ADDRESS
+		WHERE P.MARKETPLACE_PROGRAM = 'M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K'
+			AND MC.VERIFIED = TRUE
+			AND MC.POSITION = 0
+		GROUP BY (M.SYMBOL, MC.CREATOR_ADDRESS, T.NAME, T.FAMILY)
+		HAVING COUNT(*) >= 100);
 
-	create table temp_me_collections as
-	(select distinct m.symbol,
-			mc.creator_address,
-			t.name,
-			t.family
-		from metadatas m
-		inner join metadata_creators mc on mc.metadata_address = m.address
-		inner join purchases p on p.metadata = m.address
-		left join metadata_collections t on t.metadata_address = m.address
-		where p.marketplace_program = 'm2mx93ekt1fmxsvktrul9xvfhkmme8htui5cyc5af7k'
-			and mc.verified = true
-			and mc.position = 0
-		group by (m.symbol, mc.creator_address, t.name, t.family)
-		having count(*) >= 100);
+	CREATE TABLE TEMP_ME_COLLECTIONS_2 AS (
+		SELECT SYMBOL, NAME, FAMILY  
+			FROM
+				(SELECT SYMBOL, NAME, FAMILY
+					FROM TEMP_ME_COLLECTIONS
+					WHERE NAME IS NOT NULL
+						AND FAMILY IS NOT NULL
+					GROUP BY (SYMBOL, NAME, FAMILY)
+					UNION ALL SELECT SYMBOL, NAME, FAMILY
+					FROM TEMP_ME_COLLECTIONS
+					WHERE NAME IS NULL
+						AND FAMILY IS NULL) AS C);
 
-	create table temp_me_collections_2 as (
-		select symbol, name, family  
-			from
-				(select symbol, name, family
-					from temp_me_collections
-					where name is not null
-						and family is not null
-					group by (symbol, name, family)
-					union all select symbol, name, family
-					from temp_me_collections
-					where name is null
-						and family is null) as c);
+	ALTER TABLE TEMP_ME_COLLECTIONS_2 ADD COLUMN ID UUID DEFAULT GEN_RANDOM_UUID() PRIMARY KEY;
 
-	alter table temp_me_collections_2 add column id uuid default gen_random_uuid() primary key;
+	ALTER TABLE TEMP_ME_COLLECTIONS ADD COLUMN ID UUID;
 
-	alter table temp_me_collections add column id uuid;
+	UPDATE TEMP_ME_COLLECTIONS
+	SET ID = V2.ID
+	FROM TEMP_ME_COLLECTIONS V1
+	INNER JOIN TEMP_ME_COLLECTIONS_2 V2 ON V1.SYMBOL = V2.SYMBOL
+	AND V1.NAME IS NOT DISTINCT
+	FROM V2.NAME
+	AND V1.FAMILY IS NOT DISTINCT
+	FROM V2.FAMILY
+	WHERE V1.FAMILY IS NOT NULL
+		AND V1.NAME IS NOT NULL
+		AND TEMP_ME_COLLECTIONS.SYMBOL = V1.SYMBOL
+		AND TEMP_ME_COLLECTIONS.NAME IS NOT DISTINCT
+		FROM V1.NAME
+		AND TEMP_ME_COLLECTIONS.FAMILY IS NOT DISTINCT
+		FROM V1.FAMILY;
 
-	update temp_me_collections
-	set id = v2.id
-	from temp_me_collections v1
-	inner join temp_me_collections_2 v2 on v1.symbol = v2.symbol
-	and v1.name is not distinct
-	from v2.name
-	and v1.family is not distinct
-	from v2.family
-	where v1.family is not null
-		and v1.name is not null
-		and temp_me_collections.symbol = v1.symbol
-		and temp_me_collections.name is not distinct
-		from v1.name
-		and temp_me_collections.family is not distinct
-		from v1.family;
+	CREATE TEMP TABLE DISTINCT_ME_IDS AS
+		(SELECT DISTINCT ON (V1.SYMBOL, V1.CREATOR_ADDRESS, V2.SYMBOL, V2.ID) V1.SYMBOL,
+				V1.CREATOR_ADDRESS,
+				V2.ID
+			FROM TEMP_ME_COLLECTIONS V1
+			INNER JOIN TEMP_ME_COLLECTIONS_2 V2 ON V1.SYMBOL = V2.SYMBOL
+			WHERE V1.FAMILY IS NULL
+				AND V1.NAME IS NULL
+				AND V2.FAMILY IS NULL
+				AND V2.NAME IS NULL );
 
-	create temp table distinct_me_ids as
-		(select distinct on (v1.symbol, v1.creator_address, v2.symbol, v2.id) v1.symbol,
-				v1.creator_address,
-				v2.id
-			from temp_me_collections v1
-			inner join temp_me_collections_2 v2 on v1.symbol = v2.symbol
-			where v1.family is null
-				and v1.name is null
-				and v2.family is null
-				and v2.name is null );
+	UPDATE TEMP_ME_COLLECTIONS
+	SET ID = V2.ID
+	FROM TEMP_ME_COLLECTIONS V1
+	INNER JOIN DISTINCT_ME_IDS V2 ON V1.SYMBOL = V2.SYMBOL
+	AND V1.CREATOR_ADDRESS = V2.CREATOR_ADDRESS
+	WHERE V1.FAMILY IS NULL
+		AND V1.NAME IS NULL
+		AND TEMP_ME_COLLECTIONS.SYMBOL = V1.SYMBOL
+		AND TEMP_ME_COLLECTIONS.NAME IS NULL
+		AND TEMP_ME_COLLECTIONS.FAMILY IS NULL
+		AND TEMP_ME_COLLECTIONS.CREATOR_ADDRESS = V1.CREATOR_ADDRESS;
 
-	update temp_me_collections
-	set id = v2.id
-	from temp_me_collections v1
-	inner join distinct_me_ids v2 on v1.symbol = v2.symbol
-	and v1.creator_address = v2.creator_address
-	where v1.family is null
-		and v1.name is null
-		and temp_me_collections.symbol = v1.symbol
-		and temp_me_collections.name is null
-		and temp_me_collections.family is null
-		and temp_me_collections.creator_address = v1.creator_address;
+	DROP TABLE DISTINCT_ME_IDS;
 
-	drop table distinct_me_ids;
+	CREATE TABLE TEMP_ME_METADATA_COLLECTIONS AS
+		(SELECT M.ADDRESS AS METADATA_ADDRESS,
+				C.ID AS COLLECTION_ID
+			FROM TEMP_ME_COLLECTIONS C
+			INNER JOIN TEMP_ME_COLLECTIONS CC ON C.ID = CC.ID
+			INNER JOIN METADATA_CREATORS MC ON MC.CREATOR_ADDRESS = C.CREATOR_ADDRESS
+			INNER JOIN METADATAS M ON M.ADDRESS = MC.METADATA_ADDRESS
+			AND M.SYMBOL = CC.SYMBOL
+			INNER JOIN METADATA_COLLECTIONS TC ON TC.METADATA_ADDRESS = M.ADDRESS
+			AND TC.NAME IS NOT DISTINCT
+			FROM CC.NAME
+			AND TC.FAMILY IS NOT DISTINCT
+			FROM CC.FAMILY);
 
-	create table temp_me_metadata_collections as
-		(select m.address as metadata_address,
-				c.id as collection_id
-			from temp_me_collections c
-			inner join temp_me_collections cc on c.id = cc.id
-			inner join metadata_creators mc on mc.creator_address = c.creator_address
-			inner join metadatas m on m.address = mc.metadata_address
-			and m.symbol = cc.symbol
-			inner join metadata_collections tc on tc.metadata_address = m.address
-			and tc.name is not distinct
-			from cc.name
-			and tc.family is not distinct
-			from cc.family);
+	DELETE
+	FROM TEMP_ME_METADATA_COLLECTIONS
+	WHERE METADATA_ADDRESS in
+			(SELECT METADATA_ADDRESS
+				FROM METADATA_COLLECTION_KEYS);
 
-	delete
-	from temp_me_metadata_collections
-	where metadata_address in
-			(select metadata_address
-				from metadata_collection_keys);
+	DELETE
+	FROM TEMP_ME_COLLECTIONS_2
+	WHERE ID in
+			(SELECT MC.ID
+				FROM TEMP_ME_COLLECTIONS_2 MC
+				LEFT JOIN TEMP_ME_METADATA_COLLECTIONS T ON MC.ID = T.COLLECTION_ID
+				WHERE T.COLLECTION_ID IS NULL);
 
-	delete
-	from temp_me_collections_2
-	where id in
-			(select mc.id
-				from temp_me_collections_2 mc
-				left join temp_me_metadata_collections t on mc.id = t.collection_id
-				where t.collection_id is null);
+	DELETE
+	FROM TEMP_ME_COLLECTIONS
+	WHERE ID in
+			(SELECT MC.ID
+				FROM TEMP_ME_COLLECTIONS MC
+				LEFT JOIN TEMP_ME_METADATA_COLLECTIONS T ON MC.ID = T.COLLECTION_ID
+				WHERE T.COLLECTION_ID IS NULL);
 
-	delete
-	from temp_me_collections
-	where id in
-			(select mc.id
-				from temp_me_collections mc
-				left join temp_me_metadata_collections t on mc.id = t.collection_id
-				where t.collection_id is null);
+	DROP TABLE IF EXISTS ME_METADATA_COLLECTIONS;
 
-	begin
+	CREATE TABLE ME_METADATA_COLLECTIONS AS
+		(SELECT DISTINCT *
+			FROM TEMP_ME_METADATA_COLLECTIONS);
 
-	lock table me_metadata_collections in access exclusive mode;
+	ALTER TABLE ME_METADATA_COLLECTIONS ADD PRIMARY KEY (METADATA_ADDRESS, COLLECTION_ID);
 
-	drop table if exists me_metadata_collections;
+	DROP TABLE TEMP_ME_COLLECTIONS;
 
-	create table me_metadata_collections as
-		(select distinct *
-			from temp_me_metadata_collections);
+	DROP TABLE IF EXISTS ME_COLLECTIONS;
 
-	alter table me_metadata_collections add primary key (metadata_address, collection_id);
+	ALTER TABLE TEMP_ME_COLLECTIONS_2 RENAME TO ME_COLLECTIONS;
 
-	end;
-
-	drop table temp_me_collections;
-
-	begin 
-
-	lock table me_metadata_collections in access exclusive mode;
-
-	drop table if exists me_collections;
-
-	alter table temp_me_collections_2 rename to me_collections;
-
-	end;
-
-	drop table temp_me_metadata_collections;
+	DROP TABLE TEMP_ME_METADATA_COLLECTIONS;
 	-- add image col to me_collections table
 
-	alter table me_collections add column image text not null default '';
+	ALTER TABLE ME_COLLECTIONS ADD COLUMN IMAGE TEXT NOT NULL DEFAULT '';
 
-	update me_collections
-	set image = m.image
-	from
-		(select c.id as collection_id,
-				mj.image as image
-			from me_collections c
-			inner join me_metadata_collections mc1 on mc1.metadata_address =
-				(select metadata_address
-					from me_metadata_collections mc2
-					where c.id = mc2.collection_id
-					limit 1)
-			inner join metadata_jsons mj on mj.metadata_address = mc1.metadata_address) m
-	where me_collections.id = m.collection_id;
+	UPDATE ME_COLLECTIONS
+	SET IMAGE = M.IMAGE
+	FROM
+		(SELECT C.ID AS COLLECTION_ID,
+				MJ.IMAGE AS IMAGE
+			FROM ME_COLLECTIONS C
+			INNER JOIN ME_METADATA_COLLECTIONS MC1 ON MC1.METADATA_ADDRESS =
+				(SELECT METADATA_ADDRESS
+					FROM ME_METADATA_COLLECTIONS MC2
+					WHERE C.ID = MC2.COLLECTION_ID
+					LIMIT 1)
+			INNER JOIN METADATA_JSONS MJ ON MJ.METADATA_ADDRESS = MC1.METADATA_ADDRESS) M
+	WHERE ME_COLLECTIONS.ID = M.COLLECTION_ID;
 
 	-- me_collection_stats
 
@@ -164,26 +152,27 @@ begin
 	  floor_price         bigint      null
 	);
 
-	insert into me_collection_stats (collection_id, nft_count, floor_price) with nft_count_table as
-	(select me_metadata_collections.collection_id as collection_id,
-			count(me_metadata_collections.metadata_address) as nft_count
-		from me_metadata_collections
-		group by me_metadata_collections.collection_id),
-	floor_price_table as
-	(select me_metadata_collections.collection_id as collection_id,
-			min(listings.price) as floor_price
-		from listings
-		inner join metadatas on (listings.metadata = metadatas.address)
-		inner join me_metadata_collections on (metadatas.address = me_metadata_collections.metadata_address)
-		where listings.marketplace_program = 'm2mx93ekt1fmxsvktrul9xvfhkmme8htui5cyc5af7k'
-			and listings.purchase_id is null
-			and listings.canceled_at is null
-		group by me_metadata_collections.collection_id)
-	select nft_count_table.collection_id,
-		nft_count_table.nft_count,
-		floor_price_table.floor_price
-	from nft_count_table,
-		floor_price_table
-	where nft_count_table.collection_id = floor_price_table.collection_id;
-	end if;
-end $$;
+	INSERT INTO ME_COLLECTION_STATS (COLLECTION_ID, NFT_COUNT, FLOOR_PRICE) WITH NFT_COUNT_TABLE AS
+	(SELECT ME_METADATA_COLLECTIONS.COLLECTION_ID AS COLLECTION_ID,
+			COUNT(ME_METADATA_COLLECTIONS.METADATA_ADDRESS) AS NFT_COUNT
+		FROM ME_METADATA_COLLECTIONS
+		GROUP BY ME_METADATA_COLLECTIONS.COLLECTION_ID),
+	FLOOR_PRICE_TABLE AS
+	(SELECT ME_METADATA_COLLECTIONS.COLLECTION_ID AS COLLECTION_ID,
+			MIN(LISTINGS.PRICE) AS FLOOR_PRICE
+		FROM LISTINGS
+		INNER JOIN METADATAS ON (LISTINGS.METADATA = METADATAS.ADDRESS)
+		INNER JOIN ME_METADATA_COLLECTIONS ON (METADATAS.ADDRESS = ME_METADATA_COLLECTIONS.METADATA_ADDRESS)
+		WHERE LISTINGS.MARKETPLACE_PROGRAM = 'M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K'
+			AND LISTINGS.PURCHASE_ID IS NULL
+			AND LISTINGS.CANCELED_AT IS NULL
+		GROUP BY ME_METADATA_COLLECTIONS.COLLECTION_ID)
+	SELECT NFT_COUNT_TABLE.COLLECTION_ID,
+		NFT_COUNT_TABLE.NFT_COUNT,
+		FLOOR_PRICE_TABLE.FLOOR_PRICE
+	FROM NFT_COUNT_TABLE,
+		FLOOR_PRICE_TABLE
+	WHERE NFT_COUNT_TABLE.COLLECTION_ID = FLOOR_PRICE_TABLE.COLLECTION_ID;
+	END IF;
+END $$;
+COMMIT WORK;
