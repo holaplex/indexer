@@ -1097,10 +1097,10 @@ pub struct TwitterHandle<'a> {
 
 /// A row in a `collected_collections` query of a wallet
 #[derive(Debug, Clone, QueryableByName)]
-pub struct CollectedCollection<'a> {
-    /// The collection for which data is collected
+pub struct CollectedCollection {
+    /// The collection nft metadadata address
     #[sql_type = "VarChar"]
-    pub collection: Cow<'a, str>,
+    pub collection_nft_address: String,
     /// The nfts from this collection owned by the wallet
     #[sql_type = "Int8"]
     pub nfts_owned: i64,

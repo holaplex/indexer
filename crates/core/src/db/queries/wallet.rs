@@ -84,8 +84,7 @@ pub fn activities(
 }
 
 const COLLECTED_COLLECTIONS_QUERY: &str = r"
-SELECT
-    metadata_collection_keys.collection_address as collection,
+SELECT collection_metadatas.address as collection_nft_address,
 	COUNT(metadatas.address) as nfts_owned,
 	COALESCE(collection_stats.floor_price * COUNT(metadatas.address), 0) as estimated_value
     FROM metadatas
@@ -97,7 +96,7 @@ SELECT
 	INNER JOIN metadata_jsons collection_metadata_jsons ON (collection_metadata_jsons.metadata_address = collection_metadatas.address)
     WHERE current_metadata_owners.owner_address = $1
     AND metadata_collection_keys.verified
-    GROUP BY metadata_collection_keys.collection_address, collection_stats.floor_price
+    GROUP BY collection_nft_address, collection_stats.floor_price
 	ORDER BY estimated_value DESC;
     -- $1: address::text";
 
