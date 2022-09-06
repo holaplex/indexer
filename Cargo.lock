@@ -1084,6 +1084,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-fs"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "279cf904654eeebfa37ac9bb1598880884924aab82e290aa65c9e77a0e142e06"
+dependencies = [
+ "async-lock",
+ "autocfg",
+ "blocking",
+ "futures-lite",
+]
+
+[[package]]
 name = "async-global-executor"
 version = "2.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1145,6 +1157,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "479db852db25d9dbf6204e6cb6253698f175c15726470f78af0d918e99d6156e"
 dependencies = [
  "event-listener",
+]
+
+[[package]]
+name = "async-net"
+version = "1.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4051e67316bc7eff608fe723df5d32ed639946adcd69e07df41fd42a7b411f1f"
+dependencies = [
+ "async-io",
+ "autocfg",
+ "blocking",
+ "futures-lite",
+]
+
+[[package]]
+name = "async-process"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02111fd8655a613c25069ea89fc8d9bb89331fa77486eb3bc059ee757cfa481c"
+dependencies = [
+ "async-io",
+ "autocfg",
+ "blocking",
+ "cfg-if 1.0.0",
+ "event-listener",
+ "futures-lite",
+ "libc",
+ "once_cell",
+ "signal-hook",
+ "winapi",
 ]
 
 [[package]]
@@ -2933,7 +2975,7 @@ dependencies = [
  "solana-program",
  "spl-token",
  "spl-token-bonding",
- "strum 0.24.0",
+ "strum",
  "thiserror",
  "tokio",
  "tokio-executor-trait",
@@ -2988,9 +3030,21 @@ dependencies = [
  "serde",
  "serde_json",
  "solana-program",
- "strum 0.24.0",
+ "strum",
  "url",
  "uuid",
+]
+
+[[package]]
+name = "holaplex-indexer-dispatcher"
+version = "0.1.0"
+dependencies = [
+ "async-reactor-trait",
+ "holaplex-indexer-core",
+ "holaplex-indexer-rabbitmq",
+ "hostname",
+ "smol",
+ "smol-executor-trait",
 ]
 
 [[package]]
@@ -3019,7 +3073,7 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-rabbitmq"
 version = "0.2.0"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.5.0#c33467ee79a68fc2140247248b3652b50c36247a"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?rev=9290227#9290227baac5ec3151a1580fbf0a11e24430e5b9"
 dependencies = [
  "clap 3.1.12",
  "futures-util",
@@ -3030,7 +3084,7 @@ dependencies = [
  "serde",
  "serde_json",
  "solana-program",
- "strum 0.23.0",
+ "strum",
  "thiserror",
 ]
 
@@ -5016,6 +5070,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "signal-hook"
+version = "0.3.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a253b5e89e2698464fc26b545c9edceb338e18a89effeeecfea192c3025be29d"
+dependencies = [
+ "libc",
+ "signal-hook-registry",
+]
+
+[[package]]
 name = "signal-hook-registry"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5080,6 +5144,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e714dff2b33f2321fdcd475b71cec79781a692d846f37f415fb395a1d2bcd48e"
 dependencies = [
  "static_assertions",
+]
+
+[[package]]
+name = "smol"
+version = "1.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85cf3b5351f3e783c1d79ab5fc604eeed8b8ae9abd36b166e8b87a089efd85e4"
+dependencies = [
+ "async-channel",
+ "async-executor",
+ "async-fs",
+ "async-io",
+ "async-lock",
+ "async-net",
+ "async-process",
+ "blocking",
+ "futures-lite",
+ "once_cell",
+]
+
+[[package]]
+name = "smol-executor-trait"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3c46b2e8fb0a9ab1c9c387dc3ee46de94453cc50b7bf7117e7b75a9c121c8ae"
+dependencies = [
+ "async-trait",
+ "blocking",
+ "executor-trait",
+ "smol",
 ]
 
 [[package]]
@@ -5819,33 +5913,11 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "strum"
-version = "0.23.0"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cae14b91c7d11c9a851d3fbc80a963198998c2a64eec840477fa92d8ce9b70bb"
+checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
 dependencies = [
- "strum_macros 0.23.1",
-]
-
-[[package]]
-name = "strum"
-version = "0.24.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e96acfc1b70604b8b2f1ffa4c57e59176c7dbb05d556c71ecd2f5498a1dee7f8"
-dependencies = [
- "strum_macros 0.24.0",
-]
-
-[[package]]
-name = "strum_macros"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5bb0dc7ee9c15cea6199cde9a127fa16a4c5819af85395457ad72d68edc85a38"
-dependencies = [
- "heck 0.3.3",
- "proc-macro2 1.0.38",
- "quote 1.0.18",
- "rustversion",
- "syn 1.0.93",
+ "strum_macros",
 ]
 
 [[package]]

@@ -1,0 +1,34 @@
+[package]
+name = "holaplex-indexer-dispatcher"
+version = "0.1.0"
+authors = [
+  "ryans <ryans@holaplex.com>",
+]
+edition = "2021"
+description = "Message dispatcher for the Holaplex indexer services"
+documentation = "https://docs.rs/holaplex-indexer-dispatcher"
+readme = "../../README.md"
+repository = "https://github.com/holaplex/indexer"
+license = "AGPL-3.0-or-later"
+keywords = ["holaplex", "web3"]
+categories = ["cryptography::cryptocurrencies", "web-programming"]
+
+[dependencies]
+async-reactor-trait = "1.1.0"
+hostname = "0.3.1"
+smol = { version = "1.2.5", default-features = false }
+smol-executor-trait = "2.1.0"
+
+[dependencies.indexer-rabbitmq]
+package = "holaplex-indexer-rabbitmq"
+git = "https://github.com/holaplex/indexer-geyser-plugin"
+# tag = "v0.5.0" # TODO: restore this
+rev = "9290227"
+default-features = false
+features = ["job-runner", "producer"]
+
+[dependencies.indexer-core]
+package = "holaplex-indexer-core"
+version = "=0.1.0"
+path = "../core"
+

@@ -1,9 +1,6 @@
-use indexer_core::{
-    db::{
-        expression::dsl::all,
-        queries::{self, feed_event::EventType},
-    },
-    meilisearch::IndirectMetadataDocument,
+use indexer_core::db::{
+    expression::dsl::all,
+    queries::{self, feed_event::EventType},
 };
 use objects::{
     ah_listing::AhListing,
@@ -15,7 +12,7 @@ use objects::{
     creator::Creator,
     denylist::Denylist,
     feed_event::FeedEvent,
-    genopets::GenoHabitat,
+    genopets::{GenoHabitat, GenoHabitatList, GenoHabitatsParams},
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
@@ -208,7 +205,7 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
-    #[graphql(arguments(creators(description = "creators of nfts"),))]
+    #[graphql(arguments(creators(description = "creators of nfts")))]
     fn nft_counts(&self, creators: Vec<PublicKey<NftCreator>>) -> FieldResult<NftCount> {
         Ok(NftCount::new(creators))
     }
@@ -767,7 +764,7 @@ impl QueryRoot {
 
     #[graphql(
         description = "Returns collection data along with collection activities",
-        arguments(address(description = "Collection address"),)
+        arguments(address(description = "Collection address"))
     )]
     async fn collection(
         &self,
@@ -1044,132 +1041,111 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
+    #[graphql(
+        description = "Query up to one Genopets habitat by the public key of its on-chain data",
+        arguments(
+            address(description = "Select a habitat by its data account address"),
+            mint(description = "Select a habitat by its by mint address"),
+        )
+    )]
     fn geno_habitat(
         &self,
         context: &AppContext,
-        address: PublicKey<GenoHabitat>,
+        address: Option<PublicKey<GenoHabitat>>,
+        mint: Option<PublicKey<TokenMint>>,
     ) -> FieldResult<Option<GenoHabitat>> {
         let conn = context.shared.db.get()?;
 
-        let row = geno_habitat_datas::table
-            .filter(geno_habitat_datas::address.eq(address))
-            .first::<models::GenoHabitatData>(&conn)
-            .optional()
-            .context("Failed to load Genopets habitat")?;
+        let row = match (address, mint) {
+            (None, None) | (Some(_), Some(_)) => {
+                return Err(FieldError::new(
+                    "Exactly one parameter must be specified",
+                    graphql_value!(["address", "mint"]),
+                ));
+            },
+            (Some(address), None) => geno_habitat_datas::table
+                .filter(geno_habitat_datas::address.eq(address))
+                .first::<models::GenoHabitatData>(&conn),
+            (None, Some(mint)) => geno_habitat_datas::table
+                .filter(geno_habitat_datas::habitat_mint.eq(mint))
+                .first::<models::GenoHabitatData>(&conn),
+        }
+        .optional()
+        .context("Failed to load Genopets habitat")?;
 
         Ok(row.map(Into::into))
     }
 
+    #[graphql(deprecated = "Use genoHabitatsCounted instead")]
     async fn geno_habitats(
         &self,
         ctx: &AppContext,
-        #[graphql(description = "Filter on habitat mint addresses")] mints: Option<
-            Vec<PublicKey<TokenMint>>,
-        >,
-        #[graphql(description = "Filter on habitat owners")] owners: Option<Vec<PublicKey<Wallet>>>,
-        #[graphql(description = "Filter on habitat renters")] renters: Option<
-            Vec<PublicKey<Wallet>>,
-        >,
-        #[graphql(description = "Filter on harvester strings")] harvesters: Option<Vec<String>>,
-        #[graphql(description = "Filter on whether the habitat has the genesis flag")]
+        mints: Option<Vec<PublicKey<TokenMint>>>,
+        owners: Option<Vec<PublicKey<Wallet>>>,
+        renters: Option<Vec<PublicKey<Wallet>>>,
+        harvesters: Option<Vec<String>>,
         genesis: Option<bool>,
-        #[graphql(description = "Filter on habitat elements")] elements: Option<Vec<i32>>,
-        #[graphql(description = "Filter on minimum habitat level")] min_level: Option<i32>,
-        #[graphql(description = "Filter on maximum habitat level")] max_level: Option<i32>,
-        #[graphql(description = "Filter on minimum habitat sequence")] min_sequence: Option<i32>,
-        #[graphql(description = "Filter on maximum habitat sequence")] max_sequence: Option<i32>,
-        #[graphql(description = "Filter on habitat guilds")] guilds: Option<Vec<i32>>,
-        #[graphql(description = "Filter on minimum habitat durability")] min_durability: Option<
-            i32,
-        >,
-        #[graphql(description = "Filter on maximum habitat durability")] max_durability: Option<
-            i32,
-        >,
-        #[graphql(description = "Filter on minimum habitat expiry timestamp")] min_expiry: Option<
-            DateTime<Utc>,
-        >,
-        #[graphql(description = "Filter on maximum habitat expiry timestamp")] max_expiry: Option<
-            DateTime<Utc>,
-        >,
-        #[graphql(description = "Filter on harvester open-market flag")]
+        elements: Option<Vec<i32>>,
+        min_level: Option<i32>,
+        max_level: Option<i32>,
+        min_sequence: Option<i32>,
+        max_sequence: Option<i32>,
+        guilds: Option<Vec<i32>>,
+        min_durability: Option<i32>,
+        max_durability: Option<i32>,
+        min_expiry: Option<DateTime<Utc>>,
+        max_expiry: Option<DateTime<Utc>>,
         harvester_open_market: Option<bool>,
-        #[graphql(description = "Filter on rental agreement open-market flag")]
         rental_open_market: Option<bool>,
-        #[graphql(description = "Search term to select habitat NFT addresses with")] term: Option<
-            String,
-        >,
-        #[graphql(description = "Number of values to return")] limit: i32,
-        #[graphql(description = "Number of values to skip for pagination")] offset: i32,
+        term: Option<String>,
+        limit: i32,
+        offset: i32,
     ) -> FieldResult<Vec<GenoHabitat>> {
-        use std::ops::Bound;
+        let conn = ctx.shared.db.get().context("Failed to connect to the DB")?;
 
-        fn make_range<T>(min: Option<T>, max: Option<T>) -> (Bound<T>, Bound<T>) {
-            (
-                min.map_or(Bound::Unbounded, Bound::Included),
-                max.map_or(Bound::Unbounded, Bound::Included),
-            )
-        }
-
-        let mints = match (mints, term) {
-            (m, None) => m,
-            (None, Some(ref t)) => Some({
-                ctx.shared
-                    .search
-                    .index("geno_habitats")
-                    .search()
-                    .with_query(t)
-                    .with_limit(ctx.shared.pre_query_search_limit)
-                    .execute::<IndirectMetadataDocument>()
-                    .await
-                    .context("Failed to load search results for Genopets habitats")?
-                    .hits
-                    .into_iter()
-                    .map(|r| r.result.mint_address.into())
-                    .collect()
-            }),
-            (Some(_), Some(_)) => {
-                return Err(FieldError::new(
-                    "The mints and term parameters cannot be combined",
-                    graphql_value!(["mints", "term"]),
-                ));
-            },
-        };
-
-        let limit = 250.min(limit);
-        let opts = queries::genopets::ListHabitatOptions {
+        let opts = GenoHabitatsParams {
             mints,
             owners,
             renters,
             harvesters,
             genesis,
-            elements: elements
-                .map(|e| e.into_iter().map(TryInto::try_into).collect())
-                .transpose()
-                .context("Failed to convert elements parameter")?,
-            levels: make_range(
-                min_level
-                    .map(TryInto::try_into)
-                    .transpose()
-                    .context("Failed to convert min level")?,
-                max_level
-                    .map(TryInto::try_into)
-                    .transpose()
-                    .context("Failed to convert max level")?,
-            ),
-            sequences: make_range(min_sequence.map(Into::into), max_sequence.map(Into::into)),
+            elements,
+            min_level,
+            max_level,
+            min_sequence,
+            max_sequence,
             guilds,
-            durabilities: make_range(min_durability, max_durability),
-            expiries: make_range(min_expiry, max_expiry),
+            min_durability,
+            max_durability,
+            min_expiry,
+            max_expiry,
             harvester_open_market,
             rental_open_market,
-            limit: limit.into(),
-            offset: offset.into(),
-        };
-
-        let conn = ctx.shared.db.get().context("Failed to connect to the DB")?;
+            term,
+            sort_field: None,
+            sort_desc: None,
+            limit,
+            offset,
+        }
+        .into_db_opts(ctx)
+        .await?;
 
         queries::genopets::list_habitats(&conn, opts)
-            .map(|v| v.into_iter().map(Into::into).collect())
+            .map(|(l, _)| l.into_iter().map(Into::into).collect())
+            .map_err(Into::into)
+    }
+
+    #[graphql(description = "Query zero or more Genopets habitats")]
+    async fn geno_habitats_counted(
+        &self,
+        ctx: &AppContext,
+        params: GenoHabitatsParams,
+    ) -> FieldResult<GenoHabitatList> {
+        let conn = ctx.shared.db.get().context("Failed to connect to the DB")?;
+        let opts = params.into_db_opts(ctx).await?;
+
+        queries::genopets::list_habitats(&conn, opts)
+            .map(Into::into)
             .map_err(Into::into)
     }
 
