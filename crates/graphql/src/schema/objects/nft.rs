@@ -594,39 +594,12 @@ impl Collection {
     #[graphql(
         description = "Count of wallets that currently hold at least one NFT from the collection."
     )]
-    pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<Option<scalars::U64>> {
-        let conn = ctx.shared.db.get()?;
-
-        let unique_holders: Option<models::Count> = sql_query(
-            "SELECT holders_count
-            FROM
-                (
-                    (
-                    SELECT DISTINCT COUNT(*) OVER () AS holders_count
-                    FROM METADATA_COLLECTION_KEYS
-                    INNER JOIN METADATAS ON METADATAS.ADDRESS = METADATA_COLLECTION_KEYS.METADATA_ADDRESS
-                    INNER JOIN CURRENT_METADATA_OWNERS ON CURRENT_METADATA_OWNERS.MINT_ADDRESS = METADATAS.MINT_ADDRESS
-                    WHERE METADATAS.BURNED_AT IS NULL
-                        AND METADATA_COLLECTION_KEYS.COLLECTION_ADDRESS = $1
-                    GROUP BY CURRENT_METADATA_OWNERS.OWNER_ADDRESS)
-            UNION
-                    (
-                    SELECT DISTINCT COUNT(*) OVER () AS holders_count
-                    FROM ME_METADATA_COLLECTIONS
-                    INNER JOIN METADATAS ON METADATAS.ADDRESS = ME_METADATA_COLLECTIONS.METADATA_ADDRESS
-                    INNER JOIN CURRENT_METADATA_OWNERS ON CURRENT_METADATA_OWNERS.MINT_ADDRESS = METADATAS.MINT_ADDRESS
-                    WHERE METADATAS.BURNED_AT IS NULL
-                        AND ME_METADATA_COLLECTIONS.COLLECTION_ID::text = $1
-                    GROUP BY CURRENT_METADATA_OWNERS.OWNER_ADDRESS)) AS A
-            LIMIT 1",
-        )
-        .bind::<Text, _>(self.0.mint_address.clone())
-        .load(&conn)
-        .context("Failed to load holders count")?
-        .first()
-        .cloned();
-
-        Ok(unique_holders.map(|models::Count { value }| value.to_u64().unwrap_or_default().into()))
+    pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<Option<scalars::I64>> {
+        Ok(ctx
+            .collection_holders_count_loader
+            .load(self.0.mint_address.clone().into())
+            .await?
+            .map(|dataloaders::collection::CollectionHoldersCount(nft_count)| nft_count))
     }
 
     #[graphql(description = "Count of active listings of NFTs in the collection.")]
@@ -669,13 +642,13 @@ impl Collection {
     pub async fn volume_total(&self, ctx: &AppContext) -> FieldResult<Option<scalars::U64>> {
         let conn = ctx.shared.db.get()?;
 
-        let total_volume: Option<models::Count> = sql_query(
+        let total_volume: Option<models::CollectionVolume> = sql_query(
             "SELECT VOLUME
                         FROM (
                             ( SELECT SUM(PURCHASES.PRICE) AS VOLUME
                             FROM PURCHASES
                             INNER JOIN METADATAS ON METADATAS.ADDRESS = PURCHASES.METADATA
-                        I   NNER JOIN METADATA_COLLECTION_KEYS ON METADATA_COLLECTION_KEYS.METADATA_ADDRESS = METADATA_ADDRESS
+                        INNER JOIN METADATA_COLLECTION_KEYS ON METADATA_COLLECTION_KEYS.METADATA_ADDRESS = METADATA_ADDRESS
                             WHERE METADATA_COLLECTION_KEYS.COLLECTION_ADDRESS = $1
                             AND METADATA_COLLECTION_KEYS.VERIFIED = TRUE)
                         UNION
@@ -692,7 +665,8 @@ impl Collection {
         .first()
         .cloned();
 
-        Ok(total_volume.map(|models::Count { value }| value.to_u64().unwrap_or_default().into()))
+        Ok(total_volume
+            .map(|models::CollectionVolume { volume }| volume.to_u64().unwrap_or_default().into()))
     }
 
     #[graphql(deprecated = "use `nft { address }`")]

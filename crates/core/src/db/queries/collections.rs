@@ -129,7 +129,7 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
             INNER JOIN metadatas ON (metadatas.address = purchases.metadata)
             INNER JOIN me_metadata_collections ON (me_metadata_collections.metadata_address = metadatas.address)
             WHERE
-            ($1 IS NULL OR me_metadata_collections.collection_address::text = ANY($1))
+            ($1 IS NULL OR me_metadata_collections.collection_id::text = ANY($1))
             AND purchases.created_at >= $2
             AND purchases.created_at <= $3
             AND purchases.marketplace_program = 'M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K'

@@ -132,6 +132,16 @@ impl From<i64> for CollectionFloorPrice {
     }
 }
 
+#[derive(Debug, Clone)]
+#[repr(transparent)]
+pub struct CollectionHoldersCount(pub I64);
+
+impl From<i64> for CollectionHoldersCount {
+    fn from(value: i64) -> Self {
+        Self(value.into())
+    }
+}
+
 #[async_trait]
 impl TryBatchFn<PublicKey<Collection>, Option<CollectionNftCount>> for Batcher {
     async fn load(
@@ -140,12 +150,12 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionNftCount>> for Batcher {
     ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionNftCount>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::CollectionNftCount> = sql_query(
-            "SELECT COLLECTION_ID::text AS COLLECTION, NFT_COUNT
+        let rows: Vec<models::CollectionCount> = sql_query(
+            "SELECT COLLECTION_ID::text AS COLLECTION, NFT_COUNT as COUNT
             FROM ME_COLLECTION_STATS
             where COLLECTION_ID::text = ANY($1)
             UNION ALL
-            SELECT COLLECTION_ADDRESS AS COLLECTION, NFT_COUNT
+            SELECT COLLECTION_ADDRESS AS COLLECTION, NFT_COUNT as COUNT
             FROM COLLECTION_STATS
             where COLLECTION_ADDRESS = ANY($1);
             -- $1: addresses::text[]",
@@ -156,12 +166,53 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionNftCount>> for Batcher {
 
         Ok(rows
             .into_iter()
-            .map(
-                |models::CollectionNftCount {
-                     collection,
-                     nft_count,
-                 }| { (collection, CollectionNftCount::from(nft_count)) },
-            )
+            .map(|models::CollectionCount { collection, count }| {
+                (collection, CollectionNftCount::from(count))
+            })
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<Collection>, Option<CollectionHoldersCount>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Collection>],
+    ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionHoldersCount>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::CollectionCount> = sql_query(
+            "SELECT COLLECTION, HOLDERS_COUNT as COUNT
+            FROM
+                (
+                    (
+                    SELECT  DISTINCT COUNT(*) OVER () AS holders_count, METADATA_COLLECTION_KEYS.COLLECTION_ADDRESS as collection
+                    FROM METADATA_COLLECTION_KEYS
+                    INNER JOIN METADATAS ON METADATAS.ADDRESS = METADATA_COLLECTION_KEYS.METADATA_ADDRESS
+                    INNER JOIN CURRENT_METADATA_OWNERS ON CURRENT_METADATA_OWNERS.MINT_ADDRESS = METADATAS.MINT_ADDRESS
+                    WHERE METADATAS.BURNED_AT IS NULL
+                        AND METADATA_COLLECTION_KEYS.COLLECTION_ADDRESS = ANY($1)
+                    GROUP BY (METADATA_COLLECTION_KEYS.COLLECTION_ADDRESS, CURRENT_METADATA_OWNERS.OWNER_ADDRESS))
+            UNION
+                    (
+                    SELECT DISTINCT COUNT(*) OVER () AS holders_count, ME_METADATA_COLLECTIONS.COLLECTION_ID::text as collection
+                    FROM ME_METADATA_COLLECTIONS
+                    INNER JOIN METADATAS ON METADATAS.ADDRESS = ME_METADATA_COLLECTIONS.METADATA_ADDRESS
+                    INNER JOIN CURRENT_METADATA_OWNERS ON CURRENT_METADATA_OWNERS.MINT_ADDRESS = METADATAS.MINT_ADDRESS
+                    WHERE METADATAS.BURNED_AT IS NULL
+                        AND ME_METADATA_COLLECTIONS.COLLECTION_ID::text = ANY($1)
+                    GROUP BY (ME_METADATA_COLLECTIONS.COLLECTION_ID::text, CURRENT_METADATA_OWNERS.OWNER_ADDRESS))) AS A;
+            -- $1: addresses::text[]",
+        )
+        .bind::<Array<Text>, _>(addresses)
+        .load(&conn)
+        .context("Failed to load holder count for collection")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|models::CollectionCount { collection, count }| {
+                (collection, CollectionHoldersCount::from(count))
+            })
             .batch(addresses))
     }
 }

@@ -329,15 +329,15 @@ pub struct NftActivity {
     pub activity_type: String,
 }
 
-/// Collection nfts count from the union of `collection_stats` and `me_collection_stats` table
+/// Collection nfts/holders count
 #[derive(Debug, Clone, Queryable, QueryableByName)]
-pub struct CollectionNftCount {
+pub struct CollectionCount {
     /// Collection address or id
     #[sql_type = "Text"]
     pub collection: String,
-    /// nfts count
+    /// nfts/holders count
     #[sql_type = "Int8"]
-    pub nft_count: i64,
+    pub count: i64,
 }
 
 /// Collection floor price from the union of `collection_stats` and `me_collection_stats` table
@@ -351,12 +351,12 @@ pub struct CollectionFloorPrice {
     pub floor_price: Option<i64>,
 }
 
-/// Count
+/// Collection Volume
 #[derive(Debug, Clone, Queryable, QueryableByName)]
-pub struct Count {
-    /// Collection floor price
+pub struct CollectionVolume {
+    /// Collection Volume
     #[sql_type = "diesel::sql_types::Numeric"]
-    pub value: BigDecimal,
+    pub volume: BigDecimal,
 }
 
 /// Union of `listings` and `purchases` for a `WalletActivity`

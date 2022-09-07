@@ -1,5 +1,5 @@
 use dataloaders::{
-    collection::{CollectionFloorPrice, CollectionNftCount},
+    collection::{CollectionFloorPrice, CollectionHoldersCount, CollectionNftCount},
     Batcher, Loader, TwitterBatcher,
 };
 use indexer_core::uuid::Uuid;
@@ -62,6 +62,8 @@ pub struct AppContext {
         Loader<PublicKey<CandyMachine>, Option<CandyMachineWhitelistMintSetting>>,
     pub collection_count_loader: Loader<PublicKey<StoreCreator>, Option<i32>>,
     pub collection_floor_price_loader: Loader<PublicKey<Collection>, Option<CollectionFloorPrice>>,
+    pub collection_holders_count_loader:
+        Loader<PublicKey<Collection>, Option<CollectionHoldersCount>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
     pub collection_nft_count_loader: Loader<PublicKey<Collection>, Option<CollectionNftCount>>,
     pub geno_habitat_loader: Loader<PublicKey<TokenMint>, Option<GenoHabitat>>,
@@ -136,6 +138,7 @@ impl AppContext {
             collection_count_loader: Loader::new(batcher.clone()),
             collection_floor_price_loader: Loader::new(batcher.clone()),
             collection_loader: Loader::new(batcher.clone()),
+            collection_holders_count_loader: Loader::new(batcher.clone()),
             collection_nft_count_loader: Loader::new(batcher.clone()),
             geno_habitat_loader: Loader::new(batcher.clone()),
             geno_rental_agreement_loader: Loader::new(batcher.clone()),
