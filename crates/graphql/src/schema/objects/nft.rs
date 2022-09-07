@@ -537,6 +537,12 @@ If no value is provided, it will return XSmall")))]
 #[derive(Debug, Clone)]
 pub struct Collection(pub Nft);
 
+impl From<Nft> for Collection {
+    fn from(nft: Nft) -> Self {
+        Self(nft)
+    }
+}
+
 #[graphql_object(Context = AppContext)]
 impl Collection {
     fn nft(&self) -> &Nft {

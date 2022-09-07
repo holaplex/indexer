@@ -65,6 +65,7 @@ pub struct AppContext {
     pub collection_holders_count_loader:
         Loader<PublicKey<Collection>, Option<CollectionHoldersCount>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
+    pub storecreator_nft_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
     pub collection_nft_count_loader: Loader<PublicKey<Collection>, Option<CollectionNftCount>>,
     pub geno_habitat_loader: Loader<PublicKey<TokenMint>, Option<GenoHabitat>>,
     pub geno_rental_agreement_loader: Loader<PublicKey<GenoHabitat>, Option<GenoRentalAgreement>>,
@@ -139,6 +140,7 @@ impl AppContext {
             collection_floor_price_loader: Loader::new(batcher.clone()),
             collection_loader: Loader::new(batcher.clone()),
             collection_holders_count_loader: Loader::new(batcher.clone()),
+            storecreator_nft_loader: Loader::new(batcher.clone()),
             collection_nft_count_loader: Loader::new(batcher.clone()),
             geno_habitat_loader: Loader::new(batcher.clone()),
             geno_rental_agreement_loader: Loader::new(batcher.clone()),

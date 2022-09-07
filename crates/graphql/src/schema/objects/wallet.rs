@@ -124,23 +124,23 @@ impl WalletNftCount {
 
 #[derive(Debug, Clone)]
 pub struct CollectedCollection {
-    collection: PublicKey<Nft>,
+    metadata_address: PublicKey<Nft>,
     nfts_owned: i32,
     estimated_value: U64,
 }
 
-impl<'a> TryFrom<models::CollectedCollection<'a>> for CollectedCollection {
+impl TryFrom<models::CollectedCollection> for CollectedCollection {
     type Error = std::num::TryFromIntError;
 
     fn try_from(
         models::CollectedCollection {
-            collection,
+            collection_nft_address,
             nfts_owned,
             estimated_value,
         }: models::CollectedCollection,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            collection: collection.into(),
+            metadata_address: collection_nft_address.into(),
             nfts_owned: nfts_owned.try_into()?,
             estimated_value: estimated_value.try_into()?,
         })
@@ -150,11 +150,10 @@ impl<'a> TryFrom<models::CollectedCollection<'a>> for CollectedCollection {
 #[graphql_object(Context = AppContext)]
 impl CollectedCollection {
     async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        let conn = ctx.shared.db.get()?;
-
-        queries::collections::get(&conn, &self.collection)?
-            .map(TryInto::try_into)
-            .transpose()
+        ctx.nft_loader
+            .load(self.metadata_address.clone())
+            .await
+            .map(|op| op.map(Into::into))
             .map_err(Into::into)
     }
 
@@ -164,6 +163,30 @@ impl CollectedCollection {
 
     fn estimated_value(&self) -> U64 {
         self.estimated_value
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CreatedCollection {
+    address: PublicKey<Nft>,
+}
+
+impl From<models::CreatedCollection> for CreatedCollection {
+    fn from(models::CreatedCollection { address }: models::CreatedCollection) -> Self {
+        Self {
+            address: address.into(),
+        }
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl CreatedCollection {
+    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
+        ctx.nft_loader
+            .load(self.address.clone())
+            .await
+            .map(|op| op.map(Into::into))
+            .map_err(Into::into)
     }
 }
 
@@ -272,6 +295,17 @@ impl Wallet {
         let conn = ctx.shared.db.get()?;
 
         let collections = queries::wallet::collected_collections(&conn, &self.address)?;
+        collections
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    pub fn created_collections(&self, ctx: &AppContext) -> FieldResult<Vec<CreatedCollection>> {
+        let conn = ctx.shared.db.get()?;
+
+        let collections = queries::wallet::created_collections(&conn, &self.address)?;
         collections
             .into_iter()
             .map(TryInto::try_into)
