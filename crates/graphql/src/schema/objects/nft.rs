@@ -442,6 +442,11 @@ If no value is provided, it will return XSmall")))]
         )
     }
 
+    #[graphql(description = r"Get the original URL of the image as stored in the NFT's metadata")]
+    pub fn image_original(&self) -> &str {
+        &self.image
+    }
+
     pub fn animation_url(&self) -> Option<&str> {
         self.animation_url.as_deref()
     }
