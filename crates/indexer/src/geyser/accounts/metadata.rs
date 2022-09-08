@@ -8,6 +8,7 @@ use indexer_core::{
             feed_event_wallets, feed_events, metadata_collection_keys, metadata_creators,
             metadatas, mint_events,
         },
+        update,
     },
     prelude::*,
     pubkeys::find_edition,
@@ -135,21 +136,29 @@ async fn insert_with_event(
         .run({
             move |db| {
                 let metadata_exists = select(exists(
-                    metadatas::table.filter(metadatas::address.eq(addr.clone())),
+                    metadatas::table.filter(
+                        metadatas::address
+                            .eq(addr.clone())
+                            .and(metadatas::burned_at.is_null())
+                            .and(metadatas::slot.lt(row.slot)),
+                    ),
                 ))
                 .get_result::<bool>(db);
 
-                insert_into(metadatas::table)
-                    .values(&row)
-                    .on_conflict(metadatas::address)
-                    .do_update()
-                    .set(&row)
-                    .execute(db)
-                    .context("Failed to insert metadata")?;
-
                 if Ok(true) == metadata_exists {
+                    update(metadatas::table.filter(metadatas::address.eq(addr.clone())))
+                        .set(&row)
+                        .execute(db)
+                        .context("couldnt update metadata")?;
+
                     return Ok(None);
                 }
+
+                insert_into(metadatas::table)
+                    .values(&row)
+                    .on_conflict_do_nothing()
+                    .execute(db)
+                    .context("Failed to insert metadata")?;
 
                 db.build_transaction().read_write().run(|| {
                     let feed_event_id = insert_into(feed_events::table)
