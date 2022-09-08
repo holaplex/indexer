@@ -108,12 +108,11 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
     format!(
         r"
         WITH collection_volumes AS (
-            (SELECT SUM(purchases.price) as total_volume,
+            (SELECT SUM(purchases.price)::numeric as total_volume,
             metadata_collection_keys.collection_address as collection_address,
             null as collection_id
             FROM purchases
-            INNER JOIN metadatas ON (metadatas.address = purchases.metadata)
-            INNER JOIN metadata_collection_keys ON (metadata_collection_keys.metadata_address = metadatas.address)
+            INNER JOIN metadata_collection_keys ON (metadata_collection_keys.metadata_address = purchases.metadata)
             WHERE
             ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
             AND purchases.created_at >= $2
@@ -122,12 +121,11 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
             GROUP BY collection_address
             LIMIT $4)
             UNION ALL
-            (SELECT SUM(purchases.price) as total_volume,
+            (SELECT SUM(purchases.price)::numeric as total_volume,
             null as collection_address,
             me_metadata_collections.collection_id::text as collection_id
             FROM purchases
-            INNER JOIN metadatas ON (metadatas.address = purchases.metadata)
-            INNER JOIN me_metadata_collections ON (me_metadata_collections.metadata_address = metadatas.address)
+            INNER JOIN me_metadata_collections ON (me_metadata_collections.metadata_address = purchases.metadata)
             WHERE
             ($1 IS NULL OR me_metadata_collections.collection_id::text = ANY($1))
             AND purchases.created_at >= $2
@@ -235,11 +233,10 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
     format!(
         r"
         WITH market_caps AS (
-            (SELECT MIN(listings.price) * collection_stats.nft_count as market_cap,
+            (SELECT MIN(listings.price)::numeric * collection_stats.nft_count::numeric as market_cap,
             collection_stats.collection_address as collection_address, null as collection_id
             FROM listings
-            INNER JOIN metadatas ON (metadatas.address = listings.metadata)
-            INNER JOIN metadata_collection_keys ON (metadata_collection_keys.metadata_address = metadatas.address)
+            INNER JOIN metadata_collection_keys ON (metadata_collection_keys.metadata_address = listings.metadata)
             INNER JOIN collection_stats ON (collection_stats.collection_address = metadata_collection_keys.collection_address)
             WHERE listings.purchase_id IS NULL
             AND ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
@@ -250,14 +247,13 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
             GROUP BY collection_stats.collection_address
             LIMIT $4)
             UNION ALL
-            (SELECT MIN(listings.price) * me_collection_stats.nft_count as market_cap,
+            (SELECT MIN(listings.price)::numeric * me_collection_stats.nft_count::numeric as market_cap,
             null as collection_address, me_collection_stats.collection_id as collection_id
             FROM listings
-            INNER JOIN metadatas ON (metadatas.address = listings.metadata)
-            INNER JOIN me_metadata_collections ON (me_metadata_collections.metadata_address = metadatas.address)
+            INNER JOIN me_metadata_collections ON (me_metadata_collections.metadata_address = listings.metadata)
             INNER JOIN me_collection_stats ON (me_collection_stats.collection_id = me_metadata_collections.collection_id)
             WHERE listings.purchase_id IS NULL
-            AND ($1 IS NULL OR me_metadata_collections.collection_id = ANY($1))
+            AND ($1 IS NULL OR me_metadata_collections.collection_id::text = ANY($1))
             AND listings.canceled_at IS NULL
             AND listings.created_at >= $2
             AND listings.created_at <= $3
@@ -271,9 +267,9 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
                 address,
                 name,
                 seller_fee_basis_points,
-                update_authority_address,
                 mint_address,
                 primary_sale_happened,
+                update_authority_address,
                 uri,
                 slot,
                 description,
@@ -301,7 +297,7 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
                             metadata_jsons.category,
                             metadata_jsons.model,
                             current_metadata_owners.token_account_address,
-                            market_caps.market_cap
+                            market_caps.market_cap::numeric
                             FROM metadatas
                             INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
                             INNER JOIN market_caps ON (market_caps.collection_address = metadatas.mint_address)
@@ -309,7 +305,7 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
                         UNION ALL
                         SELECT
                             me_collections.id::text as address,
-                            me_collections.name as name,
+                            COALESCE(me_collections.name, '') as name,
                             0 as seller_fee_basis_points,
                             '' as update_authority_address,
                             me_collections.id::text as mint_address,
@@ -323,7 +319,7 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
                             '' as category,
                             '' as model,
                             '' as token_account_address,
-                            market_caps.market_cap
+                            market_caps.market_cap::numeric
                         FROM me_collections
 				        INNER JOIN market_caps ON (market_caps.collection_id = me_collections.id)
                     ) as M
