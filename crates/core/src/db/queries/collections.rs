@@ -108,7 +108,7 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
     format!(
         r"
         WITH collection_volumes AS (
-            (SELECT SUM(purchases.price) as total_volume,
+            (SELECT SUM(purchases.price)::numeric as total_volume,
             metadata_collection_keys.collection_address as collection_address,
             null as collection_id
             FROM purchases
@@ -121,7 +121,7 @@ fn make_by_volume_query_string(order_direction: OrderDirection) -> String {
             GROUP BY collection_address
             LIMIT $4)
             UNION ALL
-            (SELECT SUM(purchases.price) as total_volume,
+            (SELECT SUM(purchases.price)::numeric as total_volume,
             null as collection_address,
             me_metadata_collections.collection_id::text as collection_id
             FROM purchases
