@@ -22,7 +22,10 @@ use serde_json::Value;
 use services;
 
 use super::prelude::*;
-
+use crate::schema::{
+    enums::{OrderDirection, Sort},
+    query_root::AttributeFilter,
+};
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
     pub metadata_address: String,
@@ -564,6 +567,37 @@ impl Collection {
                 .context("Failed to load metadata attributes")?;
 
         services::attributes::group(metadata_attributes)
+    }
+
+    pub async fn nfts(
+        &self,
+        ctx: &AppContext,
+        limit: i32,
+        offset: i32,
+        sort_by: Option<Sort>,
+        order: Option<OrderDirection>,
+        marketplace_program: Option<String>,
+        auction_house: Option<String>,
+        attributes: Option<Vec<AttributeFilter>>,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = ctx.shared.db.get()?;
+
+        let nfts = queries::metadatas::collection_nfts(
+            &conn,
+            self.0.mint_address.clone(),
+            auction_house,
+            attributes.map(|a| a.into_iter().map(Into::into).collect()),
+            marketplace_program,
+            sort_by.map(Into::into),
+            order.map(Into::into),
+            limit.try_into()?,
+            offset.try_into()?,
+        )?;
+
+        nfts.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     pub async fn activities(

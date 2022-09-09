@@ -38,7 +38,7 @@ pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
 #[graphql(description = "Filter on NFT attributes")]
-struct AttributeFilter {
+pub struct AttributeFilter {
     trait_type: String,
     values: Vec<String>,
 }

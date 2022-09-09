@@ -362,6 +362,18 @@ pub enum OrderDirection {
     Asc,
 }
 
+/// Direction for sorting SQL query results by the "SORT BY" variable(s)
+#[derive(Debug, Clone, Copy, strum::EnumString, strum::Display)]
+pub enum Sort {
+    /// sort results by Price
+    #[strum(serialize = "Price")]
+    Price,
+
+    /// sort results by ListedAt
+    #[strum(serialize = "ListedAt")]
+    ListedAt,
+}
+
 /// `ProposalV2State`
 #[derive(SqlType, Debug, Clone, Copy)]
 /// Represents database `proposalstate` enum

@@ -11,6 +11,7 @@ use sea_query::{
 
 use crate::{
     db::{
+        custom_types::Sort,
         models::{Nft, NftActivity},
         tables::{current_metadata_owners, metadata_jsons, metadatas},
         Connection,
@@ -72,6 +73,8 @@ enum Listings {
     PurchaseId,
     CanceledAt,
     Expiry,
+    MarketplaceProgram,
+    CreatedAt,
 }
 
 #[derive(Iden)]
@@ -417,6 +420,164 @@ pub fn list(
             ))
             .is_in(collections),
         );
+    }
+
+    let query = query.to_string(PostgresQueryBuilder);
+
+    diesel::sql_query(query)
+        .load(conn)
+        .context("Failed to load nft(s)")
+}
+
+/// Handles queries for a Collection Nfts
+///
+/// # Errors
+/// returns an error when the underlying queries throw an error
+#[allow(clippy::too_many_lines)]
+pub fn collection_nfts(
+    conn: &Connection,
+    collection: String,
+    auction_house: Option<String>,
+    attributes: Option<Vec<AttributeFilter>>,
+    marketplace_program: Option<String>,
+    sort_by: Option<Sort>,
+    order: Option<Order>,
+    limit: u64,
+    offset: u64,
+) -> Result<Vec<Nft>> {
+    let current_time = Utc::now().naive_utc();
+
+    let sort = match sort_by.unwrap() {
+        Sort::Price => Listings::Price,
+        Sort::ListedAt => Listings::CreatedAt,
+        _ => Listings::Price,
+    };
+
+    let mut listings_query = Query::select()
+        .columns(vec![
+            (Listings::Table, Listings::Metadata),
+            (Listings::Table, Listings::Price),
+            (Listings::Table, Listings::Seller),
+        ])
+        .from(Listings::Table)
+        .order_by((Listings::Table, sort), order.unwrap())
+        .cond_where(
+            Condition::all()
+                .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
+                .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
+                .add(
+                    Expr::tbl(Listings::Table, Listings::Expiry)
+                        .is_null()
+                        .or(Expr::tbl(Listings::Table, Listings::Expiry).gt(current_time)),
+                ),
+        )
+        .take();
+
+    if let Some(auction_house) = auction_house.clone() {
+        listings_query
+            .and_where(Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house));
+    }
+
+    if let Some(marketplace_program) = marketplace_program.clone() {
+        listings_query.and_where(
+            Expr::col((Listings::Table, Listings::MarketplaceProgram)).eq(marketplace_program),
+        );
+    }
+
+    let mut query = Query::select()
+        .columns(vec![
+            (Metadatas::Table, Metadatas::Address),
+            (Metadatas::Table, Metadatas::Name),
+            (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+            (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
+            (Metadatas::Table, Metadatas::MintAddress),
+            (Metadatas::Table, Metadatas::PrimarySaleHappened),
+            (Metadatas::Table, Metadatas::Uri),
+            (Metadatas::Table, Metadatas::Slot),
+        ])
+        .columns(vec![
+            (MetadataJsons::Table, MetadataJsons::Description),
+            (MetadataJsons::Table, MetadataJsons::Image),
+            (MetadataJsons::Table, MetadataJsons::AnimationUrl),
+            (MetadataJsons::Table, MetadataJsons::ExternalUrl),
+            (MetadataJsons::Table, MetadataJsons::Category),
+            (MetadataJsons::Table, MetadataJsons::Model),
+        ])
+        .columns(vec![(
+            CurrentMetadataOwners::Table,
+            CurrentMetadataOwners::TokenAccountAddress,
+        )])
+        .from(MetadataJsons::Table)
+        .inner_join(
+            Metadatas::Table,
+            Expr::tbl(MetadataJsons::Table, MetadataJsons::MetadataAddress)
+                .equals(Metadatas::Table, Metadatas::Address),
+        )
+        .inner_join(
+            CurrentMetadataOwners::Table,
+            Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
+                CurrentMetadataOwners::Table,
+                CurrentMetadataOwners::MintAddress,
+            ),
+        )
+        .join_lateral(
+            JoinType::LeftJoin,
+            listings_query.take(),
+            Listings::Table,
+            Condition::all()
+                .add(
+                    Expr::tbl(Listings::Table, Listings::Metadata)
+                        .equals(Metadatas::Table, Metadatas::Address),
+                )
+                .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
+                    CurrentMetadataOwners::Table,
+                    CurrentMetadataOwners::OwnerAddress,
+                )),
+        )
+        .and_where(Expr::col(Metadatas::BurnedAt).is_null())
+        .limit(limit)
+        .offset(offset)
+        .order_by((Listings::Table, Listings::Price), Order::Asc)
+        .take();
+
+    query.inner_join(
+        MetadataCollectionKeys::Table,
+        Expr::tbl(
+            MetadataCollectionKeys::Table,
+            MetadataCollectionKeys::MetadataAddress,
+        )
+        .equals(Metadatas::Table, Metadatas::Address),
+    );
+
+    query.and_where(
+        Expr::col((
+            MetadataCollectionKeys::Table,
+            MetadataCollectionKeys::CollectionAddress,
+        ))
+        .eq(collection),
+    );
+
+    if let Some(attributes) = attributes {
+        for AttributeFilter { trait_type, values } in attributes {
+            let alias = format!("attributes_{}", trait_type);
+            let alias: DynIden = SeaRc::new(Alias::new(&alias));
+
+            query.join_lateral(
+                JoinType::InnerJoin,
+                Query::select()
+                    .from(Attributes::Table)
+                    .column((Attributes::Table, Attributes::MetadataAddress))
+                    .cond_where(
+                        Condition::all()
+                            .add(Expr::col(Attributes::TraitType).eq(trait_type))
+                            .add(Expr::col(Attributes::Value).is_in(values)),
+                    )
+                    .take(),
+                alias.clone(),
+                Expr::tbl(alias, Attributes::MetadataAddress)
+                    .equals(Metadatas::Table, Metadatas::Address),
+            );
+        }
     }
 
     let query = query.to_string(PostgresQueryBuilder);
