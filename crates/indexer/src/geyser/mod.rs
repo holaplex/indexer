@@ -121,7 +121,7 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         Message::AccountUpdate(update) if update.owner == pubkeys::TOKEN_BONDING => {
             programs::token_bonding::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::SPL_GOVERNANCE => {
+        Message::AccountUpdate(update) if pubkeys::SPL_GOVERNANCE.contains(&update.owner) => {
             programs::spl_governance::process(client, update).await
         },
         Message::AccountUpdate(update) if update.owner == genostub::ID => {
