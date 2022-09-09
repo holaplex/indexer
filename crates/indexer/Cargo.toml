@@ -36,6 +36,7 @@ geyser = [
   "mpl-candy-machine",
   "mpl-metaplex",
   "mpl-token-metadata",
+  "mpl-listing-rewards",
   "namespaces",
   "reqwest",
   "search-dispatch",
@@ -97,7 +98,7 @@ crossbeam = { version = "0.8.1", optional = true }
 futures-util = "0.3.21"
 hostname = "0.3.1"
 serde = { version = "1.0.133", features = ["derive"] }
-solana-program = "~1.9.5"
+solana-program = "~1.9.28"
 strum = { version = "0.24.1", features = ["derive"] }
 thiserror = "1.0.30"
 tokio = { version = "1.13.0", features = ["macros", "rt", "rt-multi-thread", "signal", "sync"] }
@@ -120,6 +121,7 @@ metaplex-auction = { version = "0.0.1", features = ["no-entrypoint"], optional =
 metaplex-token-metadata = { version = "0.0.1", features = ["no-entrypoint"], optional = true }
 metaplex-token-vault = { version = "0.0.1", features = ["no-entrypoint"], optional = true }
 mpl-auction-house = { version = "1.1.0", features = ["no-entrypoint"], optional = true }
+mpl-listing-rewards = { version = "0.1.1", features = ["no-entrypoint"], optional = true } 
 mpl-candy-machine = { version = "~3.1.1", features = ["no-entrypoint"], optional = true }
 mpl-token-metadata = { version = "1.2.4", features = ["no-entrypoint"], optional = true }
 namespaces = { version = "0.1.0", features = ["no-entrypoint"], optional = true }
