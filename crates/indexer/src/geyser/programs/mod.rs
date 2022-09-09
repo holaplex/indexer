@@ -8,6 +8,7 @@ pub mod cardinal_use_invalidator;
 pub mod genopets;
 pub mod goki_smart_wallet;
 pub mod graph;
+pub mod listing_rewards;
 pub mod magic_eden_haus;
 pub mod metadata;
 pub mod metaplex;

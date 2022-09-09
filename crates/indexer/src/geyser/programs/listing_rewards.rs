@@ -1,22 +1,37 @@
 use anchor_lang_v0_24::AccountDeserialize;
+use mpl_listing_rewards::{Listing, Offer, RewardCenter};
 
-use super::{
-    AccountUpdate, Client,
-};
+use super::{accounts::reward_center, AccountUpdate, Client};
 use crate::prelude::*;
 
-async fn process_reward_center(client: &Client, update: AccountUpdate) -> Result<()> {
-    let house: AuctionHouse = AuctionHouse::try_deserialize(&mut update.data.as_slice())
-        .context("Failed to deserialize auction house data")?;
+pub const REWARD_CENTER_SIZE: usize = RewardCenter::size();
+pub const LISTING_SIZE: usize = Listing::size();
+pub const OFFER_SIZE: usize = Offer::size();
 
-    auction_house::process(client, update.key, house).await
+async fn process_reward_center(client: &Client, update: AccountUpdate) -> Result<()> {
+    let reward_center: RewardCenter = RewardCenter::try_deserialize(&mut update.data.as_slice())
+        .context("Failed to deserialize reward center data")?;
+
+    listing_rewards::reward_center::process(client, update.key, reward_center).await
+}
+
+async fn process_listing(client: &Client, update: AccountUpdate) -> Result<()> {
+    let listing: Listing = Listing::try_deserialize(&mut update.data.as_slice())
+        .context("Failed to deserialize listing data")?;
+
+    // listing_rewards::listing::process(client, update.key, listing).await
+}
+
+async fn process_offer(client: &Client, update: AccountUpdate) -> Result<()> {
+    let offer: Offer = Offer::try_deserialize(&mut update.data.as_slice())
+        .context("Failed to deserialize offer data")?;
+
+    // listing_rewards::offer::process(client, update.key, offer).await
 }
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
-    let account_discriminator = &update.data[..8];
-
-    match account_discriminator {
-         => process_auction_house(client, update).await,
+    match update.data.len() {
+        REWARD_CENTER_SIZE => process_reward_center(client, update).await,
         _ => Ok(()),
     }
 }

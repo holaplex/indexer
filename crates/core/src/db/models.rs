@@ -20,6 +20,33 @@ use crate::db::custom_types::{
     VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum, WhitelistMintMode,
 };
 
+/// A row in the `reward_center` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
+pub struct RewardCenter<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// the mint of the token used as rewards
+    pub token_mint: Cow<'a, str>,
+    /// the auction house associated to the reward center
+    pub auction_house: Cow<'a, str>,
+    /// the bump of the pda
+    pub bump: u8,
+}
+
+/// A row in the `listing rewards` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
+#[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
+pub struct ListingRewardRules<'a> {
+    // The reward_center being created
+    pub reward_center_address: Cow<'a, str>,
+    // Basis Points to determine reward ratio for seller
+    pub seller_reward_payout_basis_points: u16,
+    // Payout Divider for determining reward distribution to seller/buyer
+    pub payout_divider: u16,
+}
+
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
