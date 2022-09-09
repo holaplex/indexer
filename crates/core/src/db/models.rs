@@ -20,6 +20,7 @@ use crate::db::custom_types::{
     VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum, WhitelistMintMode,
 };
 
+/* MPL LISTING REWARDS */
 /// A row in the `reward_center` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
@@ -31,10 +32,10 @@ pub struct RewardCenter<'a> {
     /// the auction house associated to the reward center
     pub auction_house: Cow<'a, str>,
     /// the bump of the pda
-    pub bump: u8,
+    pub bump: i16,
 }
 
-/// A row in the `listing rewards` table
+/// A row in the `listing rewards rules` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
@@ -42,11 +43,31 @@ pub struct ListingRewardRules<'a> {
     // The reward_center being created
     pub reward_center_address: Cow<'a, str>,
     // Basis Points to determine reward ratio for seller
-    pub seller_reward_payout_basis_points: u16,
+    pub seller_reward_payout_basis_points: i16,
     // Payout Divider for determining reward distribution to seller/buyer
-    pub payout_divider: u16,
+    pub payout_divider: i16,
 }
 
+/// A row in the `rewards listings` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
+#[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
+pub struct RewardsListing<'a> {
+    pub address: Cow<'a, str>,
+    pub is_initialized: bool,
+    pub reward_center_address: Cow<'a, str>,
+    pub seller: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub price: i64,
+    pub token_size: i64,
+    pub bump: i16,
+    pub created_at: i64,
+    pub canceled_at: Option<i64>,
+    pub purchased_at: Option<i64>,
+    pub reward_redeemed_at: Option<i64>,
+}
+
+/** MPL AUCTION HOUSE */
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]

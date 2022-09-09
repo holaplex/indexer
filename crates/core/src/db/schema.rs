@@ -1021,7 +1021,7 @@ diesel::table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    listing_reward_rules (reward_center_address) {
+    listing_reward_ruless (reward_center_address) {
         reward_center_address -> Bytea,
         seller_reward_payout_basis_points -> Int2,
         payout_divider -> Int2,
@@ -1667,6 +1667,27 @@ diesel::table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    rewards_listings (address) {
+        address -> Bytea,
+        is_initialized -> Bool,
+        reward_center_address -> Bytea,
+        seller -> Bytea,
+        metadata -> Bytea,
+        price -> Int8,
+        token_size -> Int8,
+        bump -> Int2,
+        created_at -> Int8,
+        canceled_at -> Nullable<Int8>,
+        purchased_at -> Nullable<Int8>,
+        reward_redeemed_at -> Nullable<Int8>,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     sell_instructions (id) {
         id -> Uuid,
         wallet -> Varchar,
@@ -2080,7 +2101,7 @@ diesel::joinable!(follow_events -> graph_connections (graph_connection_address))
 diesel::joinable!(geno_rental_agreements -> geno_habitat_datas (habitat_address));
 diesel::joinable!(governance_configs -> governances (governance_address));
 diesel::joinable!(listing_events -> feed_events (feed_event_id));
-diesel::joinable!(listing_reward_rules -> reward_centers (reward_center_address));
+diesel::joinable!(listing_reward_ruless -> reward_centers (reward_center_address));
 diesel::joinable!(mint_events -> feed_events (feed_event_id));
 diesel::joinable!(offer_events -> feed_events (feed_event_id));
 diesel::joinable!(purchase_events -> feed_events (feed_event_id));
@@ -2141,7 +2162,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     listing_events,
     listing_metadatas,
     listing_receipts,
-    listing_reward_rules,
+    listing_reward_ruless,
     listings,
     locker_params,
     locker_whitelist_entries,
@@ -2177,6 +2198,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     realm_configs,
     realms,
     reward_centers,
+    rewards_listings,
     sell_instructions,
     signatory_records,
     smart_wallet_owners,
