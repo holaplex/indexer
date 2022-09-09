@@ -22,6 +22,8 @@ pub static METAPLEX: Pubkey = pubkey!("p1exdMJcjVao65QdewkaZRUnU6VPSXhus9n2GzWfh
 pub static TOKEN: Pubkey = pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 /// MPL auction house program key
 pub static AUCTION_HOUSE: Pubkey = pubkey!("hausS13jsjafwWwGqZTUQRmWyvyxn9EQpqMwV1PBBmk");
+/// MPL listing rewards program key
+pub static LISTING_REWARDS: Pubkey = pubkey!("rwdLstiU8aJU1DPdoPtocaNKApMhCFdCg283hz8dd3u");
 /// Metaplex candy machine program key
 pub static CANDY_MACHINE: Pubkey = pubkey!("cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ");
 /// HPL graph program key
