@@ -5,7 +5,7 @@ create table reward_centers (
   bump                smallint  not null
 );
 
-create table listing_reward_rules (
+create table listing_reward_ruless (
   reward_center_address               bytea    not null,
   seller_reward_payout_basis_points   smallint not null,
   payout_divider                      smallint not null,
@@ -14,4 +14,4 @@ create table listing_reward_rules (
   foreign key (reward_center_address) references reward_centers (address)
 );
 
-create index on listing_reward_rules (reward_center_address);
+create index on listing_reward_ruless (reward_center_address);
