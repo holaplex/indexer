@@ -473,17 +473,6 @@ pub fn collection_nfts(
         )
         .take();
 
-    if let Some(auction_house) = auction_house.clone() {
-        listings_query
-            .and_where(Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house));
-    }
-
-    if let Some(marketplace_program) = marketplace_program.clone() {
-        listings_query.and_where(
-            Expr::col((Listings::Table, Listings::MarketplaceProgram)).eq(marketplace_program),
-        );
-    }
-
     let mut query = Query::select()
         .columns(vec![
             (Metadatas::Table, Metadatas::Address),
@@ -520,9 +509,7 @@ pub fn collection_nfts(
                 CurrentMetadataOwners::MintAddress,
             ),
         )
-        .join_lateral(
-            JoinType::LeftJoin,
-            listings_query.take(),
+        .left_join(
             Listings::Table,
             Condition::all()
                 .add(
@@ -563,7 +550,7 @@ pub fn collection_nfts(
             let alias: DynIden = SeaRc::new(Alias::new(&alias));
 
             query.join_lateral(
-                JoinType::InnerJoin,
+                JoinType::LeftJoin,
                 Query::select()
                     .from(Attributes::Table)
                     .column((Attributes::Table, Attributes::MetadataAddress))
@@ -578,6 +565,17 @@ pub fn collection_nfts(
                     .equals(Metadatas::Table, Metadatas::Address),
             );
         }
+    }
+
+    if let Some(auction_house) = auction_house.clone() {
+        listings_query
+            .and_where(Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house));
+    }
+
+    if let Some(marketplace_program) = marketplace_program.clone() {
+        listings_query.and_where(
+            Expr::col((Listings::Table, Listings::MarketplaceProgram)).eq(marketplace_program),
+        );
     }
 
     let query = query.to_string(PostgresQueryBuilder);
