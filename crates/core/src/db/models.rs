@@ -67,6 +67,25 @@ pub struct RewardsListing<'a> {
     pub reward_redeemed_at: Option<i64>,
 }
 
+/// A row in the `rewards offers` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
+#[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
+pub struct RewardsOffer<'a> {
+    pub address: Cow<'a, str>,
+    pub is_initialized: bool,
+    pub reward_center_address: Cow<'a, str>,
+    pub buyer: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub price: i64,
+    pub token_size: i64,
+    pub bump: i16,
+    pub created_at: i64,
+    pub canceled_at: Option<i64>,
+    pub purchased_at: Option<i64>,
+    pub reward_redeemed_at: Option<i64>,
+}
+
 /** MPL AUCTION HOUSE */
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]

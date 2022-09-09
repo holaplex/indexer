@@ -26,7 +26,7 @@ async fn process_offer(client: &Client, update: AccountUpdate) -> Result<()> {
     let offer: Offer = Offer::try_deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize offer data")?;
 
-    // listing_rewards::offer::process(client, update.key, offer).await
+    listing_rewards::offer::process(client, update.key, offer).await
 }
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {

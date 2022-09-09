@@ -1,18 +1,18 @@
 use indexer_core::{
-    db::{insert_into, models::RewardsListings as DbRewardsListings, tables::rewards_listings},
+    db::{insert_into, models::RewardsOffers as DbRewardsOffers, tables::rewards_offers},
     prelude::*,
 };
-use mpl_listing_rewards::Listing;
+use mpl_listing_rewards::Offer;
 
 use super::Client;
 use crate::prelude::*;
 
 pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Listing) -> Result<()> {
-    let row = DbRewardsListings {
+    let row = DbRewardsOffers {
         address: Owned(bs58::encode(key).into_string()),
         is_initialized: account_data.is_initialized,
         reward_center_address: Owned(bs58::encode(account_data.reward_center).into_string()),
-        seller: Owned(bs58::encode(account_data.seller).into_string()),
+        buyer: Owned(bs58::encode(account_data.buyer).into_string()),
         metadata: Owned(bs58::encode(account_data.metadata).into_string()),
         price: account_data
             .price
@@ -34,13 +34,13 @@ pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Listing)
     client
         .db()
         .run(move |db| {
-            insert_into(rewards_listings::table)
+            insert_into(rewards_offers::table)
                 .values(&row)
-                .on_conflict(rewards_listings::address)
+                .on_conflict(rewards_offers::address)
                 .do_update()
                 .set(&row)
                 .execute(db)
         })
         .await
-        .context("Failed to insert rewards listing")?;
+        .context("Failed to insert rewards offer")?;
 }
