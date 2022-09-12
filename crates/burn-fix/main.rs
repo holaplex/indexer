@@ -24,6 +24,9 @@ struct Opts {
 
     #[clap(flatten)]
     db: db::ConnectArgs,
+
+    #[clap(env)]
+    batch_size: i64,
 }
 
 fn main() {
@@ -34,6 +37,7 @@ fn main() {
         let Opts {
             solana_endpoint,
             db,
+            batch_size,
         } = opts;
 
         let client = RpcClient::new(&solana_endpoint);
@@ -58,9 +62,7 @@ fn main() {
 
         debug!("Total unburned count: {}", total_count);
 
-        const LIMIT: i64 = 10000;
-
-        for i in (0..total_count).step_by(LIMIT as usize) {
+        for i in (0..total_count).step_by(batch_size as usize) {
             let addresses = metadatas::table
                 .inner_join(
                     current_metadata_owners::table
@@ -68,7 +70,7 @@ fn main() {
                 )
                 .filter(metadatas::burned_at.is_null())
                 .offset(i)
-                .limit(LIMIT)
+                .limit(batch_size)
                 .order_by(metadatas::slot.asc())
                 .select((
                     current_metadata_owners::token_account_address,
