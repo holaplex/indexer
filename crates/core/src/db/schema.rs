@@ -512,12 +512,12 @@ table! {
 
     collections_volume (collection) {
         collection -> Text,
-        _1d_volume -> Numeric,
-        _7d_volume -> Numeric,
-        _30d_volume -> Numeric,
-        _prev_1d_volume -> Numeric,
-        _prev_7d_volume -> Numeric,
-        _prev_30d_volume -> Numeric,
+        _1d_volume -> Nullable<Numeric>,
+        _7d_volume -> Nullable<Numeric>,
+        _30d_volume -> Nullable<Numeric>,
+        _prev_1d_volume -> Nullable<Numeric>,
+        _prev_7d_volume -> Nullable<Numeric>,
+        _prev_30d_volume -> Nullable<Numeric>,
     }
 }
 

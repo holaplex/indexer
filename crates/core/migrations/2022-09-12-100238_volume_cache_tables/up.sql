@@ -1,12 +1,12 @@
 CREATE TABLE IF NOT EXISTS collections_volume
 (
     collection text NOT NULL,
-    _1d_volume numeric NOT NULL DEFAULT 0,
-    _7d_volume numeric NOT NULL DEFAULT 0,
-    _30d_volume numeric NOT NULL DEFAULT 0,
-    _prev_1d_volume numeric NOT NULL DEFAULT 0,
-    _prev_7d_volume numeric NOT NULL DEFAULT 0,
-    _prev_30d_volume numeric NOT NULL DEFAULT 0,
+    _1d_volume numeric,
+    _7d_volume numeric,
+    _30d_volume numeric,
+    _prev_1d_volume numeric,
+    _prev_7d_volume numeric,
+    _prev_30d_volume numeric,
     CONSTRAINT collections_volume_pkey PRIMARY KEY (collection)
 );
 
