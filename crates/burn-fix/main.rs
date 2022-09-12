@@ -71,7 +71,7 @@ fn main() {
                 .filter(metadatas::burned_at.is_null())
                 .offset(i)
                 .limit(batch_size)
-                .order_by(metadatas::slot.asc())
+                .order_by(metadatas::slot.desc())
                 .select((
                     current_metadata_owners::token_account_address,
                     metadatas::address,
