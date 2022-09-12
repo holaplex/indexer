@@ -429,28 +429,48 @@ pub fn list(
         .context("Failed to load nft(s)")
 }
 
+/// Input parameters for the [`collection_nfts`] query.
+#[derive(Debug)]
+pub struct CollectionNftOptions {
+    /// Collection address
+    pub collection: String,
+    /// Auction house of the collection
+    pub auction_house: Option<String>,
+    /// Filter by collection attributes
+    pub attributes: Option<Vec<AttributeFilter>>,
+    /// Marketplace program in which the collection is listed
+    pub marketplace_program: Option<String>,
+    /// Sort by Price or Listed at
+    pub sort_by: Option<Sort>,
+    /// Order the resulting rows by 'Asc' or 'Desc'
+    pub order: Option<Order>,
+    /// Limit the number of returned rows
+    pub limit: u64,
+    /// Skip the first `n` resulting rows
+    pub offset: u64,
+}
+
 /// Handles queries for a Collection Nfts
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
 #[allow(clippy::too_many_lines)]
-pub fn collection_nfts(
-    conn: &Connection,
-    collection: String,
-    auction_house: Option<String>,
-    attributes: Option<Vec<AttributeFilter>>,
-    marketplace_program: Option<String>,
-    sort_by: Option<Sort>,
-    order: Option<Order>,
-    limit: u64,
-    offset: u64,
-) -> Result<Vec<Nft>> {
+pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Result<Vec<Nft>> {
+    let CollectionNftOptions {
+        collection,
+        auction_house,
+        attributes,
+        marketplace_program,
+        sort_by,
+        order,
+        limit,
+        offset,
+    } = options;
     let current_time = Utc::now().naive_utc();
 
     let sort = match sort_by.unwrap() {
         Sort::Price => Listings::Price,
         Sort::ListedAt => Listings::CreatedAt,
-        _ => Listings::Price,
     };
 
     let mut listings_query = Query::select()
@@ -567,18 +587,20 @@ pub fn collection_nfts(
         }
     }
 
-    if let Some(auction_house) = auction_house.clone() {
+    if let Some(auction_house) = auction_house {
         listings_query
             .and_where(Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house));
     }
 
-    if let Some(marketplace_program) = marketplace_program.clone() {
+    if let Some(marketplace_program) = marketplace_program {
         listings_query.and_where(
             Expr::col((Listings::Table, Listings::MarketplaceProgram)).eq(marketplace_program),
         );
     }
 
     let query = query.to_string(PostgresQueryBuilder);
+
+    println!("Collection Query Result: {:?}", query.replace('\"', ""));
 
     diesel::sql_query(query)
         .load(conn)

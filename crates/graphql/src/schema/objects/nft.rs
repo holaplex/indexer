@@ -3,7 +3,7 @@ use indexer_core::{
     bigdecimal::BigDecimal,
     db::{
         expression::dsl::sum,
-        queries,
+        queries::{self, metadatas::CollectionNftOptions},
         tables::{
             attributes, auction_houses, bid_receipts, current_metadata_owners, listing_receipts,
             listings, metadata_collection_keys, metadata_jsons, metadatas, purchases,
@@ -582,17 +582,16 @@ impl Collection {
     ) -> FieldResult<Vec<Nft>> {
         let conn = ctx.shared.db.get()?;
 
-        let nfts = queries::metadatas::collection_nfts(
-            &conn,
-            self.0.mint_address.clone(),
+        let nfts = queries::metadatas::collection_nfts(&conn, CollectionNftOptions {
+            collection: self.0.mint_address.clone(),
             auction_house,
-            attributes.map(|a| a.into_iter().map(Into::into).collect()),
+            attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
             marketplace_program,
-            sort_by.map(Into::into),
-            order.map(Into::into),
-            limit.try_into()?,
-            offset.try_into()?,
-        )?;
+            sort_by: sort_by.map(Into::into),
+            order: order.map(Into::into),
+            limit: limit.try_into()?,
+            offset: offset.try_into()?,
+        })?;
 
         nfts.into_iter()
             .map(TryInto::try_into)
