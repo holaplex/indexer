@@ -6,7 +6,7 @@ use diesel::{
     sql_types::{Array, Text},
 };
 use sea_query::{
-    Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc,
+    Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc, UnionType
 };
 
 use crate::{
@@ -41,6 +41,16 @@ enum Metadatas {
     Uri,
     Slot,
     BurnedAt,
+}
+
+#[derive(Iden)]
+enum MeCollections {
+    Table,
+    Symbol,
+    Name,
+    Family,
+    Id,
+    Image,
 }
 
 #[derive(Iden)]
@@ -541,6 +551,26 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
                     CurrentMetadataOwners::OwnerAddress,
                 )),
         )
+        .union(UnionType::All, Query::select()
+            .from(MeCollections::Table)
+            .expr_as(Expr::col(MeCollections::Id), Alias::new("address"))
+            .expr_as(Expr::col(MeCollections::Name), Alias::new("name"))
+            .expr_as(Expr::cust("0"), Alias::new("seller_fee_basis_points"))
+            .expr_as(Expr::cust(""), Alias::new("update_authority_address"))
+            .expr_as(Expr::cust("false"), Alias::new("primary_sale_happened"))
+            .expr_as(Expr::cust(""), Alias::new("uri"))
+            .expr_as(Expr::cust("0"), Alias::new("slot"))
+            .expr_as(Expr::cust(""), Alias::new("description"))
+            .expr_as(Expr::cust(""), Alias::new("description"))
+            .expr_as(Expr::col(MeCollections::Image), Alias::new("image"))
+            .expr_as(Expr::cust(""), Alias::new("animation_url"))
+            .expr_as(Expr::cust(""), Alias::new("external_url"))
+            .expr_as(Expr::cust(""), Alias::new("category"))
+            .expr_as(Expr::cust(""), Alias::new("model"))
+            .expr_as(Expr::cust(""), Alias::new("token_account_address"))          
+            .and_where(Expr::col(MeCollections::Id).eq(collection.clone()))
+            .to_owned()
+        )
         .and_where(Expr::col(Metadatas::BurnedAt).is_null())
         .limit(limit)
         .offset(offset)
@@ -599,8 +629,6 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
     }
 
     let query = query.to_string(PostgresQueryBuilder);
-
-    println!("Collection Query Result: {:?}", query.replace('\"', ""));
 
     diesel::sql_query(query)
         .load(conn)
