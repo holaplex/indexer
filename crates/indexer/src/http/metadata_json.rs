@@ -3,11 +3,12 @@ use std::fmt::{self, Debug, Display};
 use indexer_core::{
     assets::{proxy_url, proxy_url_hinted, AssetIdentifier},
     db::{
-        insert_into,
+        delete, insert_into,
         models::{
             File as DbFile, MetadataAttributeWrite, MetadataCollection,
             MetadataJson as DbMetadataJson,
         },
+        select,
         tables::{
             attributes, files, metadata_collection_keys, metadata_collections, metadata_jsons,
             metadatas,
@@ -18,6 +19,7 @@ use indexer_core::{
     meilisearch::errors::{
         Error::Meilisearch, ErrorCode as MeiliSearchErrorCode, MeilisearchError,
     },
+    prelude::*,
     url::Url,
 };
 use serde::{Deserialize, Serialize};
@@ -457,8 +459,21 @@ fn process_attributes(
     attributes: Option<Vec<Attribute>>,
     slot_info: SlotInfo,
 ) -> Result<()> {
+    let (slot, write_version) = slot_info;
+    let attributes_exists = select(exists(
+        attributes::table.filter(
+            attributes::metadata_address
+                .eq(addr)
+                .and(attributes::slot.lt(slot)),
+        ),
+    ))
+    .get_result::<bool>(db);
+
+    if let Ok(true) = attributes_exists {
+        delete(attributes::table.filter(attributes::metadata_address.eq(addr))).execute(db)?;
+    }
+
     for Attribute { trait_type, value } in attributes.unwrap_or_else(Vec::new) {
-        let (slot, write_version) = slot_info;
         let row = MetadataAttributeWrite {
             metadata_address: Borrowed(addr),
             trait_type: trait_type.map(Owned),
