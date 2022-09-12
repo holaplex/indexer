@@ -23,7 +23,7 @@ use services;
 
 use super::prelude::*;
 use crate::schema::{
-    enums::{OrderDirection, Sort},
+    enums::{OrderDirection, CollectionNFTSort},
     query_root::AttributeFilter,
 };
 #[derive(Debug, Clone)]
@@ -574,7 +574,7 @@ impl Collection {
         ctx: &AppContext,
         limit: i32,
         offset: i32,
-        sort_by: Option<Sort>,
+        sort_by: Option<CollectionNFTSort>,
         order: Option<OrderDirection>,
         marketplace_program: Option<String>,
         auction_house: Option<String>,

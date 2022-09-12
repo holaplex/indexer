@@ -29,18 +29,18 @@ impl From<OrderDirection> for db::Order {
 
 #[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]
 #[graphql(description = "Sorts results by price or listed at")]
-pub enum Sort {
+pub enum CollectionNFTSort {
     #[graphql(name = "PRICE")]
     Price,
     #[graphql(name = "LISTED_AT")]
     ListedAt,
 }
 
-impl From<Sort> for db::custom_types::Sort {
-    fn from(other: Sort) -> Self {
+impl From<CollectionNFTSort> for db::custom_types::Sort {
+    fn from(other: CollectionNFTSort) -> Self {
         match other {
-            Sort::Price => Self::Price,
-            Sort::ListedAt => Self::ListedAt,
+            CollectionNFTSort::Price => Self::Price,
+            CollectionNFTSort::ListedAt => Self::ListedAt,
         }
     }
 }
