@@ -52,6 +52,8 @@ pub static TOKEN_BONDING: Pubkey = pubkey!("TBondmkCYxaPCKG4CHYfVTcwQ8on31xnJrPz
 /// Cardinal .twitter namespace pubkey
 pub static CARDINAL_TWITTER_NAMESPACE: Pubkey =
     pubkey!("2zwXjjGEUrFMyE2CF2Ju4CJwMzwdbBMYnF2boEzgPhGu");
+/// `OpenSea` Auction house program pubkey
+pub static OPENSEA_AUCTION_HOUSE: Pubkey = pubkey!("3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y");
 /// Spl Governance programs pubkey
 pub const SPL_GOVERNANCE: [Pubkey; 21] = [
     pubkey!("gUAedF544JeE6NYbQakQvribHykUNgaPJqcgf3UQVnY"),

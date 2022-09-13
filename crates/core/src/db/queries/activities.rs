@@ -24,7 +24,7 @@ SELECT listings.id as id, metadata, auction_house, marketplace_program, price, c
         on listings.metadata = md.address
         INNER JOIN metadata_creators mc
         on md.address = mc.metadata_address
-        WHERE auction_house = ANY($1) and ($2 is null OR mc.creator_address = ANY($2))
+        WHERE auction_house = ANY($1) and ($2 is null OR mc.creator_address = ANY($2)) and auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
     UNION
     SELECT purchases.id as id, metadata, auction_house, marketplace_program, price, created_at,
     array[seller, buyer] as wallets,
