@@ -6,8 +6,9 @@ use diesel::{
     sql_types::{Array, Text},
 };
 use sea_query::{
-    Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc, UnionType
+    Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc
 };
+use uuid::Uuid;
 
 use crate::{
     db::{
@@ -46,11 +47,16 @@ enum Metadatas {
 #[derive(Iden)]
 enum MeCollections {
     Table,
-    Symbol,
     Name,
-    Family,
     Id,
     Image,
+}
+
+#[derive(Iden)]
+enum MeMetadataCollections {
+    Table,
+    CollectionId,
+    MetadataAddress,
 }
 
 #[derive(Iden)]
@@ -503,79 +509,124 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
         )
         .take();
 
-    let mut query = Query::select()
-        .columns(vec![
-            (Metadatas::Table, Metadatas::Address),
-            (Metadatas::Table, Metadatas::Name),
-            (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
-            (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
-            (Metadatas::Table, Metadatas::MintAddress),
-            (Metadatas::Table, Metadatas::PrimarySaleHappened),
-            (Metadatas::Table, Metadatas::Uri),
-            (Metadatas::Table, Metadatas::Slot),
-        ])
-        .columns(vec![
-            (MetadataJsons::Table, MetadataJsons::Description),
-            (MetadataJsons::Table, MetadataJsons::Image),
-            (MetadataJsons::Table, MetadataJsons::AnimationUrl),
-            (MetadataJsons::Table, MetadataJsons::ExternalUrl),
-            (MetadataJsons::Table, MetadataJsons::Category),
-            (MetadataJsons::Table, MetadataJsons::Model),
-        ])
-        .columns(vec![(
-            CurrentMetadataOwners::Table,
-            CurrentMetadataOwners::TokenAccountAddress,
-        )])
-        .from(MetadataJsons::Table)
-        .inner_join(
-            Metadatas::Table,
-            Expr::tbl(MetadataJsons::Table, MetadataJsons::MetadataAddress)
-                .equals(Metadatas::Table, Metadatas::Address),
-        )
-        .inner_join(
-            CurrentMetadataOwners::Table,
-            Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
+    let uuid = Uuid::parse_str(&collection);
+    let mut query = match uuid {
+        Err(_error) => Query::select()
+            .columns(vec![
+                (Metadatas::Table, Metadatas::Address),
+                (Metadatas::Table, Metadatas::Name),
+                (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+                (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
+                (Metadatas::Table, Metadatas::MintAddress),
+                (Metadatas::Table, Metadatas::PrimarySaleHappened),
+                (Metadatas::Table, Metadatas::Uri),
+                (Metadatas::Table, Metadatas::Slot),
+            ])
+            .columns(vec![
+                (MetadataJsons::Table, MetadataJsons::Description),
+                (MetadataJsons::Table, MetadataJsons::Image),
+                (MetadataJsons::Table, MetadataJsons::AnimationUrl),
+                (MetadataJsons::Table, MetadataJsons::ExternalUrl),
+                (MetadataJsons::Table, MetadataJsons::Category),
+                (MetadataJsons::Table, MetadataJsons::Model),
+            ])
+            .columns(vec![(
                 CurrentMetadataOwners::Table,
-                CurrentMetadataOwners::MintAddress,
-            ),
-        )
-        .left_join(
-            Listings::Table,
-            Condition::all()
-                .add(
-                    Expr::tbl(Listings::Table, Listings::Metadata)
-                        .equals(Metadatas::Table, Metadatas::Address),
-                )
-                .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
+                CurrentMetadataOwners::TokenAccountAddress,
+            )])
+            .from(MetadataJsons::Table)
+            .inner_join(
+                Metadatas::Table,
+                Expr::tbl(MetadataJsons::Table, MetadataJsons::MetadataAddress)
+                    .equals(Metadatas::Table, Metadatas::Address),
+            )
+            .inner_join(
+                CurrentMetadataOwners::Table,
+                Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
                     CurrentMetadataOwners::Table,
-                    CurrentMetadataOwners::OwnerAddress,
-                )),
-        )
-        .union(UnionType::All, Query::select()
-            .from(MeCollections::Table)
-            .expr_as(Expr::col(MeCollections::Id), Alias::new("address"))
-            .expr_as(Expr::col(MeCollections::Name), Alias::new("name"))
+                    CurrentMetadataOwners::MintAddress,
+                ),
+            )
+            .left_join(
+                Listings::Table,
+                Condition::all()
+                    .add(
+                        Expr::tbl(Listings::Table, Listings::Metadata)
+                            .equals(Metadatas::Table, Metadatas::Address),
+                    )
+                    .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
+                        CurrentMetadataOwners::Table,
+                        CurrentMetadataOwners::OwnerAddress,
+                    )),
+            )
+            .and_where(Expr::col(Metadatas::BurnedAt).is_null())
+            .limit(limit)
+            .offset(offset)
+            .order_by((Listings::Table, Listings::Price), Order::Asc)
+            .take(),
+        Ok(_result) => Query::select()
+            .expr_as(
+                Expr::col((MeCollections::Table, MeCollections::Id)),
+                Alias::new("address"),
+            )
+            .expr_as(
+                Expr::col((MeCollections::Table, MeCollections::Name)),
+                Alias::new("name"),
+            )
             .expr_as(Expr::cust("0"), Alias::new("seller_fee_basis_points"))
-            .expr_as(Expr::cust(""), Alias::new("update_authority_address"))
+            .expr_as(Expr::cust("''"), Alias::new("update_authority_address"))
             .expr_as(Expr::cust("false"), Alias::new("primary_sale_happened"))
-            .expr_as(Expr::cust(""), Alias::new("uri"))
+            .expr_as(Expr::cust("''"), Alias::new("uri"))
             .expr_as(Expr::cust("0"), Alias::new("slot"))
-            .expr_as(Expr::cust(""), Alias::new("description"))
-            .expr_as(Expr::cust(""), Alias::new("description"))
-            .expr_as(Expr::col(MeCollections::Image), Alias::new("image"))
-            .expr_as(Expr::cust(""), Alias::new("animation_url"))
-            .expr_as(Expr::cust(""), Alias::new("external_url"))
-            .expr_as(Expr::cust(""), Alias::new("category"))
-            .expr_as(Expr::cust(""), Alias::new("model"))
-            .expr_as(Expr::cust(""), Alias::new("token_account_address"))          
-            .and_where(Expr::col(MeCollections::Id).eq(collection.clone()))
-            .to_owned()
-        )
-        .and_where(Expr::col(Metadatas::BurnedAt).is_null())
-        .limit(limit)
-        .offset(offset)
-        .order_by((Listings::Table, Listings::Price), Order::Asc)
-        .take();
+            .expr_as(Expr::cust("''"), Alias::new("description"))
+            .expr_as(
+                Expr::col((MeCollections::Table, MeCollections::Image)),
+                Alias::new("image"),
+            )
+            .expr_as(Expr::cust("''"), Alias::new("animation_url"))
+            .expr_as(Expr::cust("''"), Alias::new("external_url"))
+            .expr_as(Expr::cust("''"), Alias::new("category"))
+            .expr_as(Expr::cust("''"), Alias::new("model"))
+            .expr_as(Expr::cust("''"), Alias::new("token_account_address"))
+            .and_where(Expr::col((MeCollections::Table, MeCollections::Id)).eq(collection.clone()))
+            .from(MeCollections::Table)
+            .inner_join(
+                MeMetadataCollections::Table,
+                Expr::tbl(
+                    MeMetadataCollections::Table,
+                    MeMetadataCollections::CollectionId,
+                )
+                .equals(MeCollections::Table, MeCollections::Id),
+            )
+            .inner_join(
+                Metadatas::Table,
+                Expr::tbl(
+                    MeMetadataCollections::Table,
+                    MeMetadataCollections::MetadataAddress,
+                )
+                .equals(Metadatas::Table, Metadatas::Address),
+            )
+            .inner_join(
+                CurrentMetadataOwners::Table,
+                Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
+                    CurrentMetadataOwners::Table,
+                    CurrentMetadataOwners::MintAddress,
+                ),
+            )
+            .left_join(
+                Listings::Table,
+                Condition::all()
+                    .add(
+                        Expr::tbl(Listings::Table, Listings::Metadata)
+                            .equals(Metadatas::Table, Metadatas::Address),
+                    )
+                    .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
+                        CurrentMetadataOwners::Table,
+                        CurrentMetadataOwners::OwnerAddress,
+                    )),
+            )
+            .to_owned(),
+    };
 
     query.inner_join(
         MetadataCollectionKeys::Table,
