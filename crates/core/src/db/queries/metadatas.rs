@@ -6,7 +6,7 @@ use diesel::{
     sql_types::{Array, Text},
 };
 use sea_query::{
-    Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc
+    Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc,
 };
 use uuid::Uuid;
 
@@ -484,33 +484,15 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
     } = options;
     let current_time = Utc::now().naive_utc();
 
-    let sort = match sort_by.unwrap() {
+    let sort_unwrap = match sort_by.unwrap() {
         Sort::Price => Listings::Price,
         Sort::ListedAt => Listings::CreatedAt,
     };
 
-    let mut listings_query = Query::select()
-        .columns(vec![
-            (Listings::Table, Listings::Metadata),
-            (Listings::Table, Listings::Price),
-            (Listings::Table, Listings::Seller),
-        ])
-        .from(Listings::Table)
-        .order_by((Listings::Table, sort), order.unwrap())
-        .cond_where(
-            Condition::all()
-                .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
-                .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
-                .add(
-                    Expr::tbl(Listings::Table, Listings::Expiry)
-                        .is_null()
-                        .or(Expr::tbl(Listings::Table, Listings::Expiry).gt(current_time)),
-                ),
-        )
-        .take();
+    let order_unwrap = order.unwrap();
 
     let uuid = Uuid::parse_str(&collection);
-    let mut query = match uuid {
+    let mut base_query = match uuid {
         Err(_error) => Query::select()
             .columns(vec![
                 (Metadatas::Table, Metadatas::Address),
@@ -560,34 +542,30 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
                     )),
             )
             .and_where(Expr::col(Metadatas::BurnedAt).is_null())
-            .limit(limit)
-            .offset(offset)
-            .order_by((Listings::Table, Listings::Price), Order::Asc)
             .take(),
         Ok(_result) => Query::select()
-            .expr_as(
-                Expr::col((MeCollections::Table, MeCollections::Id)),
-                Alias::new("address"),
-            )
-            .expr_as(
-                Expr::col((MeCollections::Table, MeCollections::Name)),
-                Alias::new("name"),
-            )
-            .expr_as(Expr::cust("0"), Alias::new("seller_fee_basis_points"))
-            .expr_as(Expr::cust("''"), Alias::new("update_authority_address"))
-            .expr_as(Expr::cust("false"), Alias::new("primary_sale_happened"))
-            .expr_as(Expr::cust("''"), Alias::new("uri"))
-            .expr_as(Expr::cust("0"), Alias::new("slot"))
-            .expr_as(Expr::cust("''"), Alias::new("description"))
-            .expr_as(
-                Expr::col((MeCollections::Table, MeCollections::Image)),
-                Alias::new("image"),
-            )
-            .expr_as(Expr::cust("''"), Alias::new("animation_url"))
-            .expr_as(Expr::cust("''"), Alias::new("external_url"))
-            .expr_as(Expr::cust("''"), Alias::new("category"))
-            .expr_as(Expr::cust("''"), Alias::new("model"))
-            .expr_as(Expr::cust("''"), Alias::new("token_account_address"))
+            .columns(vec![
+                (Metadatas::Table, Metadatas::Address),
+                (Metadatas::Table, Metadatas::Name),
+                (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+                (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
+                (Metadatas::Table, Metadatas::MintAddress),
+                (Metadatas::Table, Metadatas::PrimarySaleHappened),
+                (Metadatas::Table, Metadatas::Uri),
+                (Metadatas::Table, Metadatas::Slot),
+            ])
+            .columns(vec![
+                (MetadataJsons::Table, MetadataJsons::Description),
+                (MetadataJsons::Table, MetadataJsons::Image),
+                (MetadataJsons::Table, MetadataJsons::AnimationUrl),
+                (MetadataJsons::Table, MetadataJsons::ExternalUrl),
+                (MetadataJsons::Table, MetadataJsons::Category),
+                (MetadataJsons::Table, MetadataJsons::Model),
+            ])
+            .columns(vec![(
+                CurrentMetadataOwners::Table,
+                CurrentMetadataOwners::TokenAccountAddress,
+            )])
             .and_where(Expr::col((MeCollections::Table, MeCollections::Id)).eq(collection.clone()))
             .from(MeCollections::Table)
             .inner_join(
@@ -625,8 +603,14 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
                         CurrentMetadataOwners::OwnerAddress,
                     )),
             )
-            .to_owned(),
+            .take(),
     };
+
+    let mut query = base_query
+        .limit(limit)
+        .offset(offset)
+        .order_by((Listings::Table, sort_unwrap), order_unwrap)
+        .take();
 
     query.inner_join(
         MetadataCollectionKeys::Table,
@@ -669,12 +653,11 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
     }
 
     if let Some(auction_house) = auction_house {
-        listings_query
-            .and_where(Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house));
+        query.and_where(Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house));
     }
 
     if let Some(marketplace_program) = marketplace_program {
-        listings_query.and_where(
+        query.and_where(
             Expr::col((Listings::Table, Listings::MarketplaceProgram)).eq(marketplace_program),
         );
     }

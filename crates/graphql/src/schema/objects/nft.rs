@@ -24,7 +24,7 @@ use services;
 
 use super::prelude::*;
 use crate::schema::{
-    enums::{OrderDirection, CollectionNFTSort},
+    enums::{CollectionNFTSort, OrderDirection},
     query_root::AttributeFilter,
 };
 #[derive(Debug, Clone)]
