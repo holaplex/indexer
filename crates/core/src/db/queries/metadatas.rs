@@ -17,6 +17,7 @@ use crate::{
     },
     error::prelude::*,
     prelude::Utc,
+    pubkeys,
 };
 
 /// Format for incoming filters on attributes
@@ -216,6 +217,10 @@ pub fn list(
                 .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
                 .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
                 .add(
+                    Expr::tbl(Listings::Table, Listings::AuctionHouse)
+                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
+                )
+                .add(
                     Expr::tbl(Listings::Table, Listings::Expiry)
                         .is_null()
                         .or(Expr::tbl(Listings::Table, Listings::Expiry).gt(current_time)),
@@ -338,6 +343,10 @@ pub fn list(
                 .add(Expr::tbl(Offers::Table, Offers::PurchaseId).is_null())
                 .add(Expr::tbl(Offers::Table, Offers::CanceledAt).is_null())
                 .add(
+                    Expr::tbl(Offers::Table, Offers::AuctionHouse)
+                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
+                )
+                .add(
                     Expr::tbl(Offers::Table, Offers::Expiry)
                         .is_null()
                         .or(Expr::tbl(Offers::Table, Offers::Expiry).gt(current_time)),
@@ -433,7 +442,7 @@ SELECT listings.id as id, metadata, auction_house, price, auction_house, created
     'listing' as activity_type
         FROM listings
         LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
-        WHERE metadata = ANY($1)
+        WHERE metadata = ANY($1) and auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
     UNION
     SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[seller, buyer] as wallets,
@@ -450,7 +459,7 @@ SELECT listings.id as id, metadata, auction_house, price, auction_house, created
     'offer' as activity_type
         FROM offers
         LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = offers.buyer)
-        WHERE metadata = ANY($1)
+        WHERE metadata = ANY($1) and auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
         AND offers.purchase_id IS NULL
     ORDER BY created_at DESC;
  -- $1: addresses::text[]";

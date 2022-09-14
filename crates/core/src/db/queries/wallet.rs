@@ -23,6 +23,7 @@ array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
     LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
     WHERE seller = $1
     AND canceled_at IS NULL
+    AND listings.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
     AND ('LISTINGS' = ANY($2) OR $2 IS NULL)
 UNION
 SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
@@ -53,6 +54,7 @@ array[bth.twitter_handle] as wallet_twitter_handles,
     LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = offers.buyer)
     WHERE buyer = $1
     AND offers.purchase_id IS NULL
+    AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
     AND ('OFFERS' = ANY($2) OR $2 IS NULL)
 ORDER BY created_at DESC
 LIMIT $3

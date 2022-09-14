@@ -342,6 +342,7 @@ SELECT listings.id as id, metadata, auction_house, price, created_at, marketplac
         LEFT JOIN twitter_handle_name_services ON(twitter_handle_name_services.wallet_address = listings.seller)
         INNER JOIN metadata_collection_keys ON(metadata_collection_keys.metadata_address = listings.metadata)
         WHERE metadata_collection_keys.collection_address = $1
+        AND listings.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
         AND ('LISTINGS' = ANY($2) OR $2 IS NULL)
 	UNION
 	SELECT listings.id as id, metadata, auction_house, price, created_at, marketplace_program,
@@ -385,6 +386,7 @@ SELECT listings.id as id, metadata, auction_house, price, created_at, marketplac
         INNER JOIN metadata_collection_keys ON(metadata_collection_keys.metadata_address = offers.metadata)
         WHERE metadata_collection_keys.collection_address = $1
         AND offers.purchase_id IS NULL
+        AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
         AND ('OFFERS' = ANY($2) OR $2 IS NULL)
 	UNION
     SELECT offers.id as id, metadata, auction_house, price, created_at, marketplace_program,
