@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS collections_volume
 );
 
 INSERT INTO COLLECTIONS_VOLUME (COLLECTION)
-    select distinct collection_address as collection from metadata_collection_keys;
+    select distinct collection_address as collection from metadata_collection_keys on conflict do nothing;
 
 INSERT INTO COLLECTIONS_VOLUME (COLLECTION)
-    select distinct id::text as collection from me_collections;
+    select distinct id::text as collection from me_collections on conflict do nothing;
