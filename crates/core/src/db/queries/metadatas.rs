@@ -47,9 +47,7 @@ enum Metadatas {
 #[derive(Iden)]
 enum MeCollections {
     Table,
-    Name,
     Id,
-    Image,
 }
 
 #[derive(Iden)]
@@ -466,6 +464,15 @@ pub struct CollectionNftOptions {
     pub offset: u64,
 }
 
+impl From<Sort> for Listings {
+    fn from(sort: Sort) -> Self {
+        match sort {
+            Sort::Price => Listings::Price,
+            Sort::ListedAt => Listings::CreatedAt,
+        }
+    }
+}
+
 /// Handles queries for a Collection Nfts
 ///
 /// # Errors
@@ -482,14 +489,10 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
         limit,
         offset,
     } = options;
-    let current_time = Utc::now().naive_utc();
 
-    let sort_unwrap = match sort_by.unwrap() {
-        Sort::Price => Listings::Price,
-        Sort::ListedAt => Listings::CreatedAt,
-    };
+    let sort_unwrap = sort_by.map_or(Listings::Price, Into::into);
 
-    let order_unwrap = order.unwrap();
+    let order_unwrap = order.unwrap_or(Order::Desc);
 
     let uuid = Uuid::parse_str(&collection);
     let mut base_query = match uuid {
