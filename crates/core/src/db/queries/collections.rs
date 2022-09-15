@@ -333,6 +333,134 @@ fn make_by_market_cap_query_string(order_direction: OrderDirection) -> String {
     )
 }
 
+/// Query collections ordered by floor price
+///
+/// # Errors
+/// returns an error when the underlying queries throw an error
+pub fn by_floor(
+    conn: &Connection,
+    addresses: impl ToSql<Nullable<Array<Text>>, Pg>,
+    order_direction: OrderDirection,
+    start_date: DateTime<Utc>,
+    end_date: DateTime<Utc>,
+    limit: impl ToSql<Integer, Pg>,
+    offset: impl ToSql<Integer, Pg>,
+) -> Result<Vec<Nft>> {
+    diesel::sql_query(make_by_floor_query_string(order_direction))
+        .bind(addresses)
+        .bind::<Timestamp, _>(start_date.naive_utc())
+        .bind::<Timestamp, _>(end_date.naive_utc())
+        .bind(limit)
+        .bind(offset)
+        .load(conn)
+        .context("Failed to load collections by floor")
+}
+
+#[allow(clippy::too_many_lines)]
+fn make_by_floor_query_string(order_direction: OrderDirection) -> String {
+    format!(
+        r"
+        WITH floors AS (
+            (SELECT MIN(collection_stats.floor_price)::numeric as floor,
+            collection_stats.collection_address as collection_address, null as collection_id
+            FROM listings
+            INNER JOIN metadata_collection_keys ON (metadata_collection_keys.metadata_address = listings.metadata)
+            INNER JOIN collection_stats ON (collection_stats.collection_address = metadata_collection_keys.collection_address)
+            WHERE listings.purchase_id IS NULL
+            AND ($1 IS NULL OR metadata_collection_keys.collection_address = ANY($1))
+            AND listings.canceled_at IS NULL
+            AND listings.created_at >= $2
+            AND listings.created_at <= $3
+            AND listings.marketplace_program = 'M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K'
+            GROUP BY collection_stats.collection_address
+            LIMIT $4)
+            UNION ALL
+            (SELECT MIN(me_collection_stats.floor_price)::numeric as floor,
+            null as collection_address, me_collection_stats.collection_id as collection_id
+            FROM listings
+            INNER JOIN me_metadata_collections ON (me_metadata_collections.metadata_address = listings.metadata)
+            INNER JOIN me_collection_stats ON (me_collection_stats.collection_id = me_metadata_collections.collection_id)
+            WHERE listings.purchase_id IS NULL
+            AND ($1 IS NULL OR me_metadata_collections.collection_id::text = ANY($1))
+            AND listings.canceled_at IS NULL
+            AND listings.created_at >= $2
+            AND listings.created_at <= $3
+            AND listings.marketplace_program = 'M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K'
+            GROUP BY me_collection_stats.collection_id
+            LIMIT $4)
+            ORDER BY market_cap {order_direction}
+            LIMIT $4
+            OFFSET $5
+        )   SELECT
+                address,
+                name,
+                seller_fee_basis_points,
+                mint_address,
+                primary_sale_happened,
+                update_authority_address,
+                uri,
+                slot,
+                description,
+                image,
+                animation_url,
+                external_url,
+                category,
+                model,
+                token_account_address
+                from
+                    (
+                        SELECT
+                            metadatas.address,
+                            metadatas.name,
+                            metadatas.seller_fee_basis_points,
+                            metadatas.update_authority_address,
+                            metadatas.mint_address,
+                            metadatas.primary_sale_happened,
+                            metadatas.uri,
+                            metadatas.slot,
+                            metadata_jsons.description,
+                            metadata_jsons.image,
+                            metadata_jsons.animation_url,
+                            metadata_jsons.external_url,
+                            metadata_jsons.category,
+                            metadata_jsons.model,
+                            current_metadata_owners.token_account_address,
+                            floors.floor::numeric
+                            FROM metadatas
+                            INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
+                            INNER JOIN floors ON (floors.collection_address = metadatas.mint_address)
+                            INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address)
+                        UNION ALL
+                        SELECT
+                            me_collections.id::text as address,
+                            COALESCE(me_collections.name, '') as name,
+                            0 as seller_fee_basis_points,
+                            '' as update_authority_address,
+                            me_collections.id::text as mint_address,
+                            false as primary_sale_happened,
+                            '' as uri,
+                            0 as slot,
+                            '' as description,
+                            me_collections.image as image,
+                            '' as animation_url,
+                            '' as external_url,
+                            '' as category,
+                            '' as model,
+                            '' as token_account_address,
+                            floors.floor::numeric
+                        FROM me_collections
+				        INNER JOIN floors ON (floors.collection_id = me_collections.id)
+                    ) as M
+                    ORDER BY market_cap {order_direction};
+    -- $1: addresses::text[]
+    -- $2: start date::timestamp
+    -- $3: end date::timestamp
+    -- $4: limit::integer
+    -- $5: offset::integer",
+        order_direction = order_direction
+    )
+}
+
 const COLLECTION_ACTIVITES_QUERY: &str = r"
 SELECT listings.id as id, metadata, auction_house, price, created_at, marketplace_program,
     array[seller] as wallets,
