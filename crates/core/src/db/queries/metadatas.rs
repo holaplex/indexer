@@ -447,6 +447,8 @@ pub struct WalletNftOptions {
     pub auction_house: Option<String>,
     /// Marketplace program in which the collection is listed
     pub marketplace_program: Option<String>,
+    /// nft in one or more specific collections
+    pub collections: Option<Vec<String>>,
     /// Sort by Price or Listed at
     pub sort_by: Option<Sort>,
     /// Order the resulting rows by 'Asc' or 'Desc'
@@ -476,6 +478,7 @@ pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<N
         wallet,
         auction_house,
         marketplace_program,
+        collections,
         sort_by,
         order,
         limit,
@@ -580,6 +583,25 @@ pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<N
         .take();
 
     query.and_where(Expr::col(CurrentMetadataOwners::OwnerAddress).eq(wallet));
+
+    if let Some(collections) = collections {
+        query.inner_join(
+            MetadataCollectionKeys::Table,
+            Expr::tbl(
+                MetadataCollectionKeys::Table,
+                MetadataCollectionKeys::MetadataAddress,
+            )
+            .equals(Metadatas::Table, Metadatas::Address),
+        );
+
+        query.and_where(
+            Expr::col((
+                MetadataCollectionKeys::Table,
+                MetadataCollectionKeys::CollectionAddress,
+            ))
+            .is_in(collections),
+        );
+    }
 
     let query = query.to_string(PostgresQueryBuilder);
 

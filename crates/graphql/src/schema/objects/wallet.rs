@@ -298,12 +298,14 @@ impl Wallet {
     pub async fn nfts(
         &self,
         ctx: &AppContext,
-        limit: i32,
-        offset: i32,
+        auction_house: Option<String>,
+        marketplace_program: Option<String>,
+        collections: Option<Vec<String>>,
         sort_by: Option<WalletNftSort>,
         order_by: Option<OrderDirection>,
-        marketplace_program: Option<String>,
-        auction_house: Option<String>,
+        limit: i32,
+        offset: i32,
+        
     ) -> FieldResult<Vec<Nft>> {
         let conn = ctx.shared.db.get()?;
 
@@ -311,6 +313,7 @@ impl Wallet {
             wallet: self.address.clone().into(),
             auction_house,
             marketplace_program,
+            collections: collections.map(|c| c.into_iter().map(Into::into).collect()),
             sort_by: sort_by.map(Into::into),
             order: order_by.map(Into::into),
             limit: limit.try_into()?,
