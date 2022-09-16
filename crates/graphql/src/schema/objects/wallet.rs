@@ -1,4 +1,7 @@
-use indexer_core::{db::queries, uuid::Uuid};
+use indexer_core::{
+    db::queries::{self, metadatas::WalletNftOptions},
+    uuid::Uuid,
+};
 use objects::{
     auction_house::AuctionHouse,
     listing::Bid,
@@ -9,6 +12,7 @@ use scalars::{PublicKey, U64};
 use tables::{bids, graph_connections};
 
 use super::prelude::*;
+use crate::schema::enums::{OrderDirection, WalletNftSort};
 
 #[derive(Debug, Clone)]
 pub struct Wallet {
@@ -289,6 +293,34 @@ impl Wallet {
 
     pub fn twitter_handle(&self) -> Option<&str> {
         self.twitter_handle.as_deref()
+    }
+
+    pub async fn nfts(
+        &self,
+        ctx: &AppContext,
+        limit: i32,
+        offset: i32,
+        sort_by: Option<WalletNftSort>,
+        order_by: Option<OrderDirection>,
+        marketplace_program: Option<String>,
+        auction_house: Option<String>,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = ctx.shared.db.get()?;
+
+        let nfts = queries::metadatas::wallet_nfts(&conn, WalletNftOptions {
+            wallet: self.address.clone().into(),
+            auction_house,
+            marketplace_program,
+            sort_by: sort_by.map(Into::into),
+            order: order_by.map(Into::into),
+            limit: limit.try_into()?,
+            offset: offset.try_into()?,
+        })?;
+
+        nfts.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     pub fn collected_collections(&self, ctx: &AppContext) -> FieldResult<Vec<CollectedCollection>> {

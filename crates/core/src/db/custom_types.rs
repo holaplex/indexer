@@ -539,3 +539,15 @@ impl FromSql<VoteWeightV1, Pg> for VoteWeightV1Enum {
         from_bytes(bytes)
     }
 }
+
+/// Direction for sorting SQL query results by the "SORT BY" variable(s)
+#[derive(Debug, Clone, Copy, strum::EnumString, strum::Display)]
+pub enum Sort {
+    /// sort results by Price
+    #[strum(serialize = "Price")]
+    Price,
+
+    /// sort results by ListedAt
+    #[strum(serialize = "ListedAt")]
+    ListedAt,
+}
