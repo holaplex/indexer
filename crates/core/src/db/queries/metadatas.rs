@@ -518,7 +518,7 @@ pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<N
         )
         .take();
 
-    if let Some(auction_house) = auction_house.clone() {
+    if let Some(auction_house) = auction_house {
         listings_query
             .and_where(Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house));
     }
@@ -598,7 +598,7 @@ pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<N
             },
         );
     }
-    
+
     if let Some(collections) = collections {
         query.inner_join(
             MetadataCollectionKeys::Table,

@@ -306,7 +306,6 @@ impl Wallet {
         order_by: Option<OrderDirection>,
         limit: i32,
         offset: i32,
-        
     ) -> FieldResult<Vec<Nft>> {
         let conn = ctx.shared.db.get()?;
 
