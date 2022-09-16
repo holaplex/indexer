@@ -6,13 +6,13 @@ CREATE TABLE IF NOT EXISTS LAST_SOLD_METADATAS AS
 				FROM PURCHASES) p
 		WHERE P.TOPROW = 1 );
 
-alter table last_sold_metadata add primary key (metadata);
-alter table last_sold_metadata add unique  (purchase_id);
+alter table last_sold_metadatas add primary key (metadata);
+alter table last_sold_metadatas add unique  (purchase_id);
 
 CREATE OR REPLACE FUNCTION INSERT_LAST_SOLD_METADATA() RETURNS TRIGGER AS $BODY$
 BEGIN
     INSERT INTO
-        last_sold_metadata(metadata, purchase_id, price, created_at)
+        last_sold_metadatas(metadata, purchase_id, price, created_at)
         VALUES(new.metadata,new.id, new.price, new.created_at)
 		on conflict (metadata) do update set metadata = new.metadata, purchase_id = new.id, price = new.price, created_at = new.created_at;
            RETURN new;
@@ -30,7 +30,7 @@ end
 $EOF$;
 
 CREATE OR REPLACE TRIGGER UPDATE_OLDER_PURCHASE_ONLY_TRIGGER BEFORE
-UPDATE ON last_sold_metadata
+UPDATE ON last_sold_metadatas
 FOR ROW EXECUTE PROCEDURE UPDATE_OLDER_PURCHASE_ONLY();
 
 CREATE OR REPLACE TRIGGER INSERT_LAST_SOLD_METADATA_TRIGGER AFTER
