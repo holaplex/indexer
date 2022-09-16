@@ -55,7 +55,7 @@ async fn process_rent(
             ))
             .get_result::<bool>(db);
 
-            if let Ok(true) = geno_rental {
+            if geno_rental == Ok(true) {
                 delete(
                     geno_rental_agreements::table
                         .filter(geno_rental_agreements::habitat_address.eq(addr)),
@@ -65,9 +65,7 @@ async fn process_rent(
 
             insert_into(geno_rental_agreements::table)
                 .values(&row)
-                .on_conflict(geno_rental_agreements::habitat_address)
-                .do_update()
-                .set(&row)
+                .on_conflict_do_nothing()
                 .execute(db)
         })
         .await
@@ -76,6 +74,7 @@ async fn process_rent(
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
@@ -165,7 +164,7 @@ pub(crate) async fn process(
             ))
             .get_result::<bool>(db);
 
-            if let Ok(true) = geno_exists {
+            if geno_exists == Ok(true) {
                 delete(
                     geno_habitat_datas::table
                         .filter(geno_habitat_datas::address.eq(key.to_string())),
@@ -175,9 +174,7 @@ pub(crate) async fn process(
 
             insert_into(geno_habitat_datas::table)
                 .values(&row)
-                .on_conflict(geno_habitat_datas::address)
-                .do_update()
-                .set(&row)
+                .on_conflict_do_nothing()
                 .execute(db)
         })
         .await
