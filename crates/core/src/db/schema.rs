@@ -1656,6 +1656,7 @@ diesel::table! {
     reward_center_purchase_tickets (address) {
         address -> Bytea,
         reward_center_address -> Bytea,
+        buyer -> Bytea,
         seller -> Bytea,
         metadata -> Bytea,
         price -> Int8,

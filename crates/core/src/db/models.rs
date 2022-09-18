@@ -20,8 +20,8 @@ use crate::db::custom_types::{
     VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum, WhitelistMintMode,
 };
 
-/* MPL LISTING REWARDS */
-/// A row in the `reward_center` table
+/* MPL REWARD CENTER */
+/// A row in the `reward_centers` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
 pub struct RewardCenter<'a> {
@@ -35,11 +35,11 @@ pub struct RewardCenter<'a> {
     pub bump: i16,
 }
 
-/// A row in the `listing rewards rules` table
+/// A row in the `rewards_ruless` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
-pub struct ListingRewardRules<'a> {
+pub struct RewardRules<'a> {
     // The reward_center being created
     pub reward_center_address: Cow<'a, str>,
     // Basis Points to determine reward ratio for seller
@@ -48,11 +48,30 @@ pub struct ListingRewardRules<'a> {
     pub payout_divider: i16,
 }
 
-/// A row in the `rewards listings` table
+/// A row in the `reward_center_purchase_tickets` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
-pub struct RewardsListing<'a> {
+pub struct RewardCenterPurchaseTicket<'a> {
+    pub address: Cow<'a, str>,
+    pub reward_center_address: Cow<'a, str>,
+    pub buyer: Cow<'a, str>,
+    pub seller: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub price: i64,
+    pub token_size: i64,
+    pub created_at: i64,
+}
+
+/// A row in the `reward_center_listings` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
+#[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
+#[belongs_to(
+    parent = "RewardCenterPurchaseTicket<'_>",
+    foreign_key = "purchase_ticket_address"
+)]
+pub struct RewardCenterListing<'a> {
     pub address: Cow<'a, str>,
     pub is_initialized: bool,
     pub reward_center_address: Cow<'a, str>,
@@ -63,15 +82,18 @@ pub struct RewardsListing<'a> {
     pub bump: i16,
     pub created_at: i64,
     pub canceled_at: Option<i64>,
-    pub purchased_at: Option<i64>,
-    pub reward_redeemed_at: Option<i64>,
+    pub purchase_ticket_address: Option<Cow<'a, str>>,
 }
 
-/// A row in the `rewards offers` table
+/// A row in the `reward_center_offers` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
-pub struct RewardsOffer<'a> {
+#[belongs_to(
+    parent = "RewardCenterPurchaseTicket<'_>",
+    foreign_key = "purchase_ticket_address"
+)]
+pub struct RewardCenterOffer<'a> {
     pub address: Cow<'a, str>,
     pub is_initialized: bool,
     pub reward_center_address: Cow<'a, str>,
@@ -82,8 +104,7 @@ pub struct RewardsOffer<'a> {
     pub bump: i16,
     pub created_at: i64,
     pub canceled_at: Option<i64>,
-    pub purchased_at: Option<i64>,
-    pub reward_redeemed_at: Option<i64>,
+    pub purchase_ticket_address: Option<Cow<'a, str>>,
 }
 
 /** MPL AUCTION HOUSE */
