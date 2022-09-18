@@ -2644,7 +2644,7 @@ pub struct Governance<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
-    pub program_id:  Option<Cow<'a, str>>,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
