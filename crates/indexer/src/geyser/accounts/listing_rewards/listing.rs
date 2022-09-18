@@ -2,7 +2,7 @@ use indexer_core::{
     db::{insert_into, models::RewardsListings as DbRewardsListings, tables::rewards_listings},
     prelude::*,
 };
-use mpl_listing_rewards::Listing;
+use mpl_reward_center::Listing;
 
 use super::Client;
 use crate::prelude::*;
@@ -28,7 +28,6 @@ pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Listing)
             .context("Created at is too big to store"),
         canceled_at: account_data.canceled_at,
         purchased_at: account.data.purchased_at,
-        reward_redeemed_at: account.data.reward_redeemed_at,
     };
 
     client

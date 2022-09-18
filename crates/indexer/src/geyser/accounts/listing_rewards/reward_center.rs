@@ -2,7 +2,7 @@ use indexer_core::{
     db::{insert_into, models::RewardCenter as DbRewardCenter, tables::reward_centers},
     prelude::*,
 };
-use mpl_listing_rewards::RewardCenter;
+use mpl_reward_center::RewardCenter;
 
 use super::Client;
 use crate::prelude::*;
