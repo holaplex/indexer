@@ -780,6 +780,7 @@ table! {
         voting_proposal_count -> Int2,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1292,6 +1293,7 @@ table! {
         execution_status -> Transactionexecutionstatus,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1367,6 +1369,7 @@ table! {
         description_link -> Text,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1405,6 +1408,7 @@ table! {
         description_link -> Text,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1502,6 +1506,7 @@ table! {
         council_max_vote_weight_addin -> Nullable<Varchar>,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1539,6 +1544,7 @@ table! {
         name -> Text,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1581,6 +1587,7 @@ table! {
         signed_off -> Bool,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1737,6 +1744,7 @@ table! {
         governance_delegate -> Nullable<Varchar>,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1830,6 +1838,7 @@ table! {
         vote_weight -> Int8,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1848,6 +1857,7 @@ table! {
         vote -> Vote_record_v2_vote,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 

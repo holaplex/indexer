@@ -2644,6 +2644,7 @@ pub struct Governance<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id:  Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2680,6 +2681,7 @@ pub struct Realm<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2715,6 +2717,7 @@ pub struct RealmConfigAccount<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2733,6 +2736,7 @@ pub struct VoteRecordV1<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2751,6 +2755,7 @@ pub struct VoteRecordV2<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[allow(missing_docs)]
@@ -2810,6 +2815,7 @@ pub struct TokenOwnerRecord<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2826,6 +2832,7 @@ pub struct SignatoryRecord<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[allow(missing_docs)]
@@ -2933,6 +2940,7 @@ pub struct ProposalV1<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2971,6 +2979,7 @@ pub struct ProposalV2<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -3021,6 +3030,7 @@ pub struct ProposalTransaction<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
