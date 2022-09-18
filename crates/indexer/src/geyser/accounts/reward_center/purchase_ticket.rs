@@ -1,18 +1,26 @@
 use indexer_core::{
-    db::{insert_into, models::RewardsOffers as DbRewardsOffers, tables::rewards_offers},
+    db::{
+        insert_into,
+        models::RewardCenterPurchaseTicket as DbRewardCenterPurchaseTicketPurchaseTicket,
+        tables::reward_center_purchase_tickets,
+    },
     prelude::*,
 };
-use mpl_reward_center::Offer;
+use mpl_reward_center::PurchaseTicket;
 
 use super::Client;
 use crate::prelude::*;
 
-pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Listing) -> Result<()> {
-    let row = DbRewardsOffers {
+pub(crate) async fn process(
+    client: &Client,
+    key: Pubkey,
+    account_data: PurchaseTicket,
+) -> Result<()> {
+    let row = DbRewardCenterPurchaseTicket {
         address: Owned(bs58::encode(key).into_string()),
-        is_initialized: account_data.is_initialized,
         reward_center_address: Owned(bs58::encode(account_data.reward_center).into_string()),
         buyer: Owned(bs58::encode(account_data.buyer).into_string()),
+        seller: Owned(bs58::encode(account_data.seller).into_string()),
         metadata: Owned(bs58::encode(account_data.metadata).into_string()),
         price: account_data
             .price
@@ -26,20 +34,18 @@ pub(crate) async fn process(client: &Client, key: Pubkey, account_data: Listing)
             .created_at
             .try_into()
             .context("Created at is too big to store"),
-        canceled_at: account_data.canceled_at,
-        purchased_at: account.data.purchased_at,
     };
 
     client
         .db()
         .run(move |db| {
-            insert_into(rewards_offers::table)
+            insert_into(reward_center_purchase_tickets::table)
                 .values(&row)
-                .on_conflict(rewards_offers::address)
+                .on_conflict(reward_center_purchase_tickets::address)
                 .do_update()
                 .set(&row)
-                .execute(db)
+                .execute(db);
         })
         .await
-        .context("Failed to insert rewards offer")?;
+        .context("Failed to insert purchase ticket")?;
 }
