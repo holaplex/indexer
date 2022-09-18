@@ -16,6 +16,7 @@ pub mod spl_governance;
 pub mod stats;
 pub mod store_denylist;
 pub mod twitter_handle_name_service;
+pub mod reward_centers;
 pub mod wallet;
 
 pub use util::*;

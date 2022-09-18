@@ -33,18 +33,22 @@ pub struct RewardCenter<'a> {
     pub auction_house: Cow<'a, str>,
     /// the bump of the pda
     pub bump: i16,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `listing rewards rules` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
-pub struct ListingRewardRules<'a> {
-    // The reward_center being created
+pub struct ListingRewardRule<'a> {
+    /// The reward_center being created
     pub reward_center_address: Cow<'a, str>,
-    // Basis Points to determine reward ratio for seller
+    /// Basis Points to determine reward ratio for seller
     pub seller_reward_payout_basis_points: i16,
-    // Payout Divider for determining reward distribution to seller/buyer
+    /// Payout Divider for determining reward distribution to seller/buyer
     pub payout_divider: i16,
 }
 
@@ -53,18 +57,32 @@ pub struct ListingRewardRules<'a> {
 #[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
 pub struct RewardsListing<'a> {
+    /// addres of listing account
     pub address: Cow<'a, str>,
+    /// track initilization status of account
     pub is_initialized: bool,
+    /// reward center of the listing
     pub reward_center_address: Cow<'a, str>,
+    /// wallet selling the nft
     pub seller: Cow<'a, str>,
+    /// nft being sold
     pub metadata: Cow<'a, str>,
+    /// price of the nft
     pub price: i64,
+    /// number of tokens sold by the listing
     pub token_size: i64,
+    ///  the bump of the listing account
     pub bump: i16,
-    pub created_at: i64,
-    pub canceled_at: Option<i64>,
-    pub purchased_at: Option<i64>,
-    pub reward_redeemed_at: Option<i64>,
+    /// date the listing was created
+    pub created_at: NaiveDateTime,
+    /// potentially when the listing was canceled
+    pub canceled_at: Option<NaiveDateTime>,
+    /// potentially purchase associated to the listing
+    pub purchase_ticket: Option<Cow<'a, str>>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `rewards offers` table
@@ -72,18 +90,32 @@ pub struct RewardsListing<'a> {
 #[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
 pub struct RewardsOffer<'a> {
+    /// address of the offer
     pub address: Cow<'a, str>,
+    /// track initilization status of the offer
     pub is_initialized: bool,
+    /// reward center offer made under
     pub reward_center_address: Cow<'a, str>,
+    /// the wallet making the offer
     pub buyer: Cow<'a, str>,
+    /// the nft the offer is placed on
     pub metadata: Cow<'a, str>,
+    /// the offer amount
     pub price: i64,
+    /// number of tokens offer made on
     pub token_size: i64,
+    /// address bump of the pda
     pub bump: i16,
-    pub created_at: i64,
-    pub canceled_at: Option<i64>,
-    pub purchased_at: Option<i64>,
-    pub reward_redeemed_at: Option<i64>,
+    /// when the offer was submitted
+    pub created_at: NaiveDateTime,
+    /// when the offer was canceled
+    pub canceled_at: Option<NaiveDateTime>,
+    /// the purchase associated to the offer in case of a sale
+    pub purchase_ticket: Option<Cow<'a, str>>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /** MPL AUCTION HOUSE */

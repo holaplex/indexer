@@ -12,7 +12,7 @@ pub mod edition;
 pub mod geno_habitat_data;
 pub mod govern;
 pub mod graph;
-pub mod listing_rewards;
+pub mod reward_center;
 pub mod locked_voter;
 pub mod metadata;
 pub mod mpl_store;

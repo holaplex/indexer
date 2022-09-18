@@ -68,8 +68,8 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         {
             programs::metadata::process(client, update).await
         },
-        Message::AccountUpdate(update) if update.owner == pubkeys::LISTING_REWARDS => {
-            programs::listing_rewards::process(client, update).await
+        Message::AccountUpdate(update) if update.owner == pubkeys::REWARD_CENTER => {
+            programs::reward_center::process(client, update).await
         },
         Message::AccountUpdate(update) if update.owner == pubkeys::AUCTION => {
             programs::auction::process(client, update).await

@@ -36,7 +36,7 @@ geyser = [
   "mpl-candy-machine",
   "mpl-metaplex",
   "mpl-token-metadata",
-  "mpl-listing-rewards",
+  "mpl-reward-center",
   "namespaces",
   "reqwest",
   "search-dispatch",
@@ -121,7 +121,7 @@ metaplex-auction = { version = "0.0.1", features = ["no-entrypoint"], optional =
 metaplex-token-metadata = { version = "0.0.1", features = ["no-entrypoint"], optional = true }
 metaplex-token-vault = { version = "0.0.1", features = ["no-entrypoint"], optional = true }
 mpl-auction-house = { version = "1.1.0", features = ["no-entrypoint"], optional = true }
-mpl-listing-rewards = { version = "0.1.1", features = ["no-entrypoint"], optional = true } 
+mpl-reward-center = { version = "0.1.0", features = ["no-entrypoint"], optional = true } 
 mpl-candy-machine = { version = "~3.1.1", features = ["no-entrypoint"], optional = true }
 mpl-token-metadata = { version = "1.2.4", features = ["no-entrypoint"], optional = true }
 namespaces = { version = "0.1.0", features = ["no-entrypoint"], optional = true }
