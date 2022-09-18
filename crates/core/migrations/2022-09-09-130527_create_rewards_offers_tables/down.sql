@@ -1,1 +1,0 @@
-rewards_offers

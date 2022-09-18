@@ -1,0 +1,1 @@
+drop table reward_center_purchase_tickets;
