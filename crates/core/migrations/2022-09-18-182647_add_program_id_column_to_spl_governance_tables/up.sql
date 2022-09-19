@@ -1,0 +1,10 @@
+alter table governances add column program_id varchar(48);
+alter table realms add column program_id varchar(48);
+alter table vote_records_v1 add column program_id varchar(48);
+alter table vote_records_v2 add column program_id varchar(48);
+alter table proposals_v1 add column program_id varchar(48);
+alter table proposals_v2 add column program_id varchar(48);
+alter table token_owner_records add column program_id varchar(48);
+alter table signatory_records add column program_id varchar(48);
+alter table realm_config_accounts add column program_id varchar(48);
+alter table proposal_transactions add column program_id varchar(48);
