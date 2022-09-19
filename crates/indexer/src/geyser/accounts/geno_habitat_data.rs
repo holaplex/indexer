@@ -150,6 +150,9 @@ pub(crate) async fn process(
                 .trim_end_matches('\0')
                 .to_owned(),
         ),
+        daily_ki_harvesting_cap: 0.into(),
+        ki_available_to_harvest: None,
+        has_max_ki: None,
     };
 
     client

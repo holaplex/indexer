@@ -1,0 +1,1 @@
+alter table geno_habitat_datas drop column daily_ki_harvesting_cap;
