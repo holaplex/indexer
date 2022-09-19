@@ -449,8 +449,6 @@ pub struct WalletNftOptions {
     pub marketplace_program: Option<String>,
     /// nft in one or more specific collections
     pub collections: Option<Vec<String>>,
-    /// nfts listed for sale
-    pub listed: Option<bool>,
     /// Sort by Price or Listed at
     pub sort_by: Option<Sort>,
     /// Order the resulting rows by 'Asc' or 'Desc'
@@ -481,7 +479,6 @@ pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<N
         auction_house,
         marketplace_program,
         collections,
-        listed,
         sort_by,
         order,
         limit,
@@ -493,41 +490,6 @@ pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<N
     let order_unwrap = order.unwrap_or(Order::Desc);
 
     let current_time = Utc::now().naive_utc();
-
-    let mut listings_query = Query::select()
-        .columns(vec![
-            (Listings::Table, Listings::Metadata),
-            (Listings::Table, Listings::Price),
-            (Listings::Table, Listings::Seller),
-        ])
-        .from(Listings::Table)
-        .order_by((Listings::Table, sort_unwrap), order_unwrap)
-        .cond_where(
-            Condition::all()
-                .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
-                .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
-                .add(
-                    Expr::tbl(Listings::Table, Listings::AuctionHouse)
-                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
-                )
-                .add(
-                    Expr::tbl(Listings::Table, Listings::Expiry)
-                        .is_null()
-                        .or(Expr::tbl(Listings::Table, Listings::Expiry).gt(current_time)),
-                ),
-        )
-        .take();
-
-    if let Some(auction_house) = auction_house {
-        listings_query
-            .and_where(Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house));
-    }
-
-    if let Some(marketplace_program) = marketplace_program {
-        listings_query.and_where(
-            Expr::col((Listings::Table, Listings::MarketplaceProgram)).eq(marketplace_program),
-        );
-    }
 
     let mut query = Query::select()
         .columns(vec![
@@ -552,6 +514,11 @@ pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<N
             CurrentMetadataOwners::Table,
             CurrentMetadataOwners::TokenAccountAddress,
         )])
+        .columns(vec![
+            (Listings::Table, Listings::Metadata),
+            (Listings::Table, Listings::Price),
+            (Listings::Table, Listings::Seller),
+        ])
         .from(MetadataJsons::Table)
         .inner_join(
             Metadatas::Table,
@@ -565,9 +532,7 @@ pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<N
                 CurrentMetadataOwners::MintAddress,
             ),
         )
-        .join_lateral(
-            JoinType::LeftJoin,
-            listings_query.take(),
+        .left_join(
             Listings::Table,
             Condition::all()
                 .add(
@@ -579,23 +544,34 @@ pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<N
                     CurrentMetadataOwners::OwnerAddress,
                 )),
         )
-        .and_where(Expr::col(Metadatas::BurnedAt).is_null())
+        .cond_where(
+            Condition::all()
+                .add(Expr::col(CurrentMetadataOwners::OwnerAddress).eq(wallet))
+                .add(Expr::col(Metadatas::BurnedAt).is_null())
+                .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
+                .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
+                .add(
+                    Expr::tbl(Listings::Table, Listings::AuctionHouse)
+                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
+                )
+                .add(
+                    Expr::tbl(Listings::Table, Listings::Expiry)
+                        .is_null()
+                        .or(Expr::tbl(Listings::Table, Listings::Expiry).gt(current_time)),
+                ),
+        )
         .limit(limit)
         .offset(offset)
-        .order_by((Listings::Table, Listings::Price), Order::Asc)
+        .order_by((Listings::Table, sort_unwrap), order_unwrap)
         .take();
 
-    query.and_where(Expr::col(CurrentMetadataOwners::OwnerAddress).eq(wallet));
+    if let Some(auction_house) = auction_house {
+        query.and_where(Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house));
+    }
 
-    if let Some(listed) = listed {
-        query.conditions(
-            listed,
-            |q| {
-                q.and_where(Expr::col((Listings::Table, Listings::Price)).is_not_null());
-            },
-            |q| {
-                q.and_where(Expr::col((Listings::Table, Listings::Price)).is_null());
-            },
+    if let Some(marketplace_program) = marketplace_program {
+        query.and_where(
+            Expr::col((Listings::Table, Listings::MarketplaceProgram)).eq(marketplace_program),
         );
     }
 
