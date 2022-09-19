@@ -2,7 +2,7 @@
 
 use std::ops::Bound;
 
-use chrono::{naive::NaiveDateTime, prelude::*};
+use chrono::prelude::*;
 use diesel::{
     dsl::any,
     pg::Pg,
@@ -19,6 +19,7 @@ use crate::{
         Connection,
     },
     error::prelude::*,
+    util::unix_timestamp,
 };
 
 /// A habitat field by which to sort query results
@@ -130,6 +131,7 @@ pub fn list_habitats<
         offset,
     } = opts;
 
+    let minimum_unix_timestamp = unix_timestamp(0)?;
     let build_query = |sort| {
         let mut query = geno_habitat_datas::table.into_boxed();
         let mut count = true;
@@ -175,7 +177,11 @@ pub fn list_habitats<
         }
 
         if is_activated == Some(false) {
-            query = query.filter(geno_habitat_datas::expiry_timestamp.eq(NaiveDateTime::MIN));
+            query = query.filter(geno_habitat_datas::expiry_timestamp.eq(minimum_unix_timestamp));
+        }
+
+        if is_activated == Some(true) {
+            query = query.filter(geno_habitat_datas::expiry_timestamp.ne(minimum_unix_timestamp));
         }
 
         if let Some(has_max_ki) = has_max_ki {
@@ -294,7 +300,7 @@ pub fn list_habitats<
         Some(
             query
                 .count()
-                .get_result(conn)
+                .get_result::<i64>(conn)
                 .context("Failed to count Genopets habitats")?,
         )
     } else {
