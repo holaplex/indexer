@@ -21,7 +21,32 @@ use crate::db::custom_types::{
 };
 
 /* MPL LISTING REWARDS */
-/// A row in the `reward_center` table
+
+/// A row in the `rewards_purchase_tickets` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
+pub struct RewardsPurchaseTicket<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// reward center associated of the purchase ticket
+    pub reward_center_address: Cow<'a, str>,
+    /// the buyer of the nft
+    pub buyer: Cow<'a, str>,
+    /// the seller of the nft
+    pub seller: Cow<'a, str>,
+    /// the metadata of the nft purchased
+    pub metadata: Cow<'a, str>,
+    /// number of tokens sold
+    pub token_size: i64,
+    /// the date and time of the purchase
+    pub created_at: NaiveDateTime,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
+}
+
+/// A row in the `reward_centers` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
 pub struct RewardCenter<'a> {
@@ -39,7 +64,7 @@ pub struct RewardCenter<'a> {
     pub write_version: i64,
 }
 
-/// A row in the `listing rewards rules` table
+/// A row in the `rewards` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]

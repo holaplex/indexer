@@ -1,14 +1,18 @@
 use indexer_core::{
     db::{
         insert_into,
-        models::{AuctionHouse, CurrentMetadataOwner, RewardsPurchaseTicket as DbRewardsPurchaseTicket, Listing as DbListing},
+        models::{
+            AuctionHouse, CurrentMetadataOwner, Purchase as DbPurchase,
+            RewardsPurchaseTicket as DbRewardsPurchaseTicket,
+        },
         mutations,
-        tables::{current_metadata_owners, metadatas, reward_centers, rewards_listings},
+        tables::{
+            current_metadata_owners, listings, metadatas, offers, reward_centers, rewards_listings,
+        },
     },
     prelude::*,
     pubkeys, util,
 };
-use mpl_auction_house::pda::find_auctioneer_trade_state_address;
 use mpl_reward_center::state::PurchaseTicket;
 use solana_program::pubkey;
 
@@ -24,9 +28,9 @@ pub(crate) async fn process(
 ) -> Result<()> {
     let row = DbRewardsPurchaseTicket {
         address: Owned(bs58::encode(key).into_string()),
-        is_initialized: account_data.is_initialized,
         reward_center_address: Owned(bs58::encode(account_data.reward_center).into_string()),
         seller: Owned(bs58::encode(account_data.seller).into_string()),
+        buyer: Owned(bs58::encode(account_data.buyer).into_string()),
         metadata: Owned(bs58::encode(account_data.metadata).into_string()),
         price: account_data
             .price
@@ -37,14 +41,8 @@ pub(crate) async fn process(
             .try_into()
             .context("Token size is too big to store"),
         created_at: util::unix_timestamp(account_data.created_at)?,
-        canceled_at: account_data
-            .canceled_at
-            .map(util::unix_timestamp)
-            .transpose()?,
-        purchase_ticket: None,
-        bump: account_data.bump,
-        slot,
-        write_version,
+        slot: slot.try_into()?,
+        write_version: write_version.try_into()?,
     };
 
     client
@@ -60,31 +58,18 @@ pub(crate) async fn process(
                 .filter(metadata::meta.eq(row.address))
                 .first::<CurrentMetadataOwner>(db)?;
 
-            let (trade_state, trade_state_bump) = find_auctioneer_trade_state_address(
-                account_data.seller,
-                pubkey!(auction_house.address),
-                pubkey!(current_metadata_owner.token_account),
-                pubkey!(auction_house.treasury_mint),
-                pubkey!(current_metadata_owner.mint_address),
-                account_data.token_size,
-            );
-
-            let listing = DbListing {
+            let row = Purchase {
                 id: None,
-                trade_state: Owned(bs58::encode(trade_state).into_string()),
-                trade_state_bump,
-                auction_house: Owned(auction_house.address),
+                buyer: row.buyer.clone(),
+                seller: row.seller.clone(),
+                auction_house: row.auction_house.clone(),
+                marketplace_program: Owned(pubkeys::REWARD_CENTER.to_string()),
                 metadata: row.metadata,
                 token_size: row.token_size,
-                marketplace_program: pubkeys::AUCTION_HOUSE,
-                purchase_id: None,
-                seller: row.seller,
                 price: row.price,
                 created_at: row.created_at,
-                expiry: None,
-                canceled_at: row.canceled_at,
-                write_version,
-                slot,
+                slot: row.slot,
+                write_version: Some(row.write_version),
             };
 
             let listing_exists = select(exists(
@@ -97,20 +82,41 @@ pub(crate) async fn process(
             .get_result::<bool>(db)?;
 
             db.build_transaction().read_write().run(|| {
-                insert_into(rewards_listings::table)
+                let purchase_id = insert_into(purchases::table)
                     .values(&row)
-                    .on_conflict(rewards_listings::address)
+                    .on_conflict(on_constraint("purchases_unique_fields"))
                     .do_update()
                     .set(&row)
-                    .execute(db);
+                    .returning(purchases::id)
+                    .get_result::<Uuid>(db)?;
 
-                let listing_id = mutations::listing::insert(db, &listing)?;
+                update(
+                    offers::table.filter(
+                        offers::auction_house
+                            .eq(row.auction_house.clone())
+                            .and(offers::buyer.eq(row.buyer.clone()))
+                            .and(offers::metadata.eq(row.metadata.clone()))
+                            .and(offers::purchase_id.is_null())
+                            .and(offers::canceled_at.is_null()),
+                    ),
+                )
+                .set(offers::purchase_id.eq(Some(purchase_id)))
+                .execute(db)?;
 
-                if listing_exists || || row.purchase_ticket.is_some() {
-                    return Ok(());
-                }
-
-                mutations::feed_event::insert_listing_event(db, listing_id, row.seller)?;
+                update(
+                    listings::table.filter(
+                        listings::auction_house
+                            .eq(row.auction_house.clone())
+                            .and(listings::seller.eq(row.seller.clone()))
+                            .and(listings::metadata.eq(row.metadata.clone()))
+                            .and(listings::price.eq(row.price))
+                            .and(listings::token_size.eq(row.token_size))
+                            .and(listings::purchase_id.is_null())
+                            .and(listings::canceled_at.is_null()),
+                    ),
+                )
+                .set(listings::purchase_id.eq(Some(purchase_id)))
+                .execute(db)?;
 
                 Result::Ok(())
             });

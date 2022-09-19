@@ -3891,9 +3891,9 @@ dependencies = [
 
 [[package]]
 name = "mpl-reward-center"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98f5521ab54fadb8056ce4e5f84f4ea03bde00f3406dd3dabc174dc6139ae067"
+checksum = "af4b0cbe631cc6c72521c602ec749d58860ff41bc3819798b11cf62c815845e8"
 dependencies = [
  "anchor-lang 0.24.2",
  "anchor-spl 0.24.2",
