@@ -2605,6 +2605,9 @@ pub struct GenoHabitatData<'a> {
     /// The write version of this account's last known update
     pub write_version: i64,
     pub harvester: Cow<'a, str>,
+    pub daily_ki_harvesting_cap: BigDecimal,
+    pub ki_available_to_harvest: Option<BigDecimal>,
+    pub has_max_ki: Option<bool>,
 }
 
 /// A row in the `geno_rental_agreements` table

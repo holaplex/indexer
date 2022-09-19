@@ -707,6 +707,9 @@ table! {
         slot -> Int8,
         write_version -> Int8,
         harvester -> Varchar,
+        daily_ki_harvesting_cap -> Numeric,
+        ki_available_to_harvest -> Nullable<Numeric>,
+        has_max_ki -> Nullable<Bool>,
     }
 }
 
