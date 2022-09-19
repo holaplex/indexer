@@ -1953,7 +1953,6 @@ joinable!(cardinal_token_manager_invalidators -> cardinal_token_managers (token_
 joinable!(feed_event_wallets -> feed_events (feed_event_id));
 joinable!(follow_events -> feed_events (feed_event_id));
 joinable!(follow_events -> graph_connections (graph_connection_address));
-joinable!(geno_rental_agreements -> geno_habitat_datas (habitat_address));
 joinable!(governance_configs -> governances (governance_address));
 joinable!(listing_events -> feed_events (feed_event_id));
 joinable!(mint_events -> feed_events (feed_event_id));
