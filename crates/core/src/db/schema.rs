@@ -530,6 +530,15 @@ table! {
         prev_30d_floor_price -> Nullable<Numeric>,
         _30d_sales_count -> Nullable<Numeric>,
         prev_30d_sales_count -> Nullable<Numeric>,
+        _1d_volume_change -> Nullable<Int8>,
+        _7d_volume_change -> Nullable<Int8>,
+        _30d_volume_change -> Nullable<Int8>,
+        _1d_floor_price_change -> Nullable<Int8>,
+        _7d_floor_price_change -> Nullable<Int8>,
+        _30d_floor_price_change -> Nullable<Int8>,
+        _1d_sales_count_change -> Nullable<Int8>,
+        _7d_sales_count_change -> Nullable<Int8>,
+        _30d_sales_count_change -> Nullable<Int8>,
     }
 }
 

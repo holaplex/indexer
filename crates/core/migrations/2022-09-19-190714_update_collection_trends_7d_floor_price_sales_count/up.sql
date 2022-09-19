@@ -1,4 +1,4 @@
--- update _1d_floor_price for mcc
+-- update _7d_floor_price for mcc
 WITH floor_price_table AS (
     SELECT
         metadata_collection_keys.collection_address AS collection,
@@ -23,7 +23,7 @@ FROM
 WHERE
     COLLECTION_TRENDS.collection = CV.collection;
 
---update prev_1d_floor_price for mcc
+--update prev_7d_floor_price for mcc
 WITH floor_price_table AS (
     SELECT
         metadata_collection_keys.collection_address AS collection,
@@ -50,7 +50,7 @@ FROM
 WHERE
     COLLECTION_TRENDS.collection = CV.collection;
 
--- update _1d_floor_price for non mcc
+-- update _7d_floor_price for non mcc
 WITH floor_price_table AS (
     SELECT
         me_metadata_collections.collection_id::text AS collection,
@@ -74,7 +74,7 @@ FROM
 WHERE
     COLLECTION_TRENDS.collection = CV.collection;
 
--- update _prev_1d_floor_price for non mcc
+-- update _prev_7d_floor_price for non mcc
 WITH floor_price_table AS (
     SELECT
         me_metadata_collections.collection_id::text AS collection,
@@ -100,7 +100,7 @@ FROM
 WHERE
     COLLECTION_TRENDS.collection = CV.collection;
 
--- update _1d_sales_count for mcc
+-- update _7d_sales_count for mcc
 WITH sales_count AS (
     SELECT
         metadata_collection_keys.collection_address AS collection,
@@ -124,7 +124,7 @@ FROM
 WHERE
     COLLECTION_TRENDS.collection = CV.collection;
 
--- update prev_1d_sales_count for mcc
+-- update prev_7d_sales_count for mcc
 WITH sales_count AS (
     SELECT
         metadata_collection_keys.collection_address AS collection,
@@ -149,7 +149,7 @@ FROM
 WHERE
     COLLECTION_TRENDS.collection = CV.collection;
 
--- update _1d_sales_count for non_mcc
+-- update _7d_sales_count for non_mcc
 WITH sales_count AS (
     SELECT
         me_metadata_collections.collection_id::text AS collection,
@@ -172,7 +172,7 @@ FROM
 WHERE
     COLLECTION_TRENDS.collection = CV.collection;
 
--- update prev_1d_sales_count for non_mcc
+-- update prev_7d_sales_count for non_mcc
 WITH sales_count AS (
     SELECT
         me_metadata_collections.collection_id::text AS collection,
