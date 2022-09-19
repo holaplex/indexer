@@ -303,6 +303,7 @@ pub fn list_habitats<
 
     Ok((
         query
+            .select(geno_habitat_datas::all_columns)
             .limit(limit)
             .offset(offset)
             .load(conn)

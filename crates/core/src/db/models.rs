@@ -2566,15 +2566,6 @@ pub struct CardinalNamespace<'a> {
     pub write_version: i64,
 }
 
-#[allow(missing_docs)]
-#[derive(Debug, Clone, Queryable, QueryableByName)]
-pub struct HabitatHarvestingCap {
-    #[sql_type = "Text"]
-    pub habitat: String,
-    #[sql_type = "diesel::sql_types::Numeric"]
-    pub cap: BigDecimal,
-}
-
 /// A row in the `geno_habitat_datas` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
