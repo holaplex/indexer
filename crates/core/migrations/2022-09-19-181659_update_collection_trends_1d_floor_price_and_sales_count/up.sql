@@ -1,4 +1,4 @@
--- update _1d_floor_price for mcc
+-- update floor price for mcc
 WITH floor_price_table AS (
     SELECT
         metadata_collection_keys.collection_address AS collection,
@@ -10,13 +10,12 @@ WITH floor_price_table AS (
             AND listings.canceled_at IS NULL
             AND metadata_collection_keys.verified = TRUE
             AND listings.marketplace_program = 'M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K'
-            AND listings.CREATED_AT >= (NOW() - INTERVAL '1 days')
     GROUP BY
         metadata_collection_keys.collection_address)
 UPDATE
     COLLECTION_TRENDS
 SET
-    _1D_FLOOR_PRICE = f.floor_price
+    FLOOR_PRICE = f.floor_price
 FROM
     floor_price_table f
     INNER JOIN COLLECTION_TRENDS CV ON f.COLLECTION = CV.COLLECTION
@@ -36,8 +35,7 @@ WITH floor_price_table AS (
             AND metadata_collection_keys.verified = TRUE
             AND listings.marketplace_program = 'M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K'
     WHERE
-        listings.CREATED_AT >= (NOW() - INTERVAL '2 days')
-        AND listings.CREATED_AT <= (NOW() - INTERVAL '1 days')
+         listings.CREATED_AT <= (NOW() - INTERVAL '1 days')
     GROUP BY
         metadata_collection_keys.collection_address)
 UPDATE
@@ -50,7 +48,7 @@ FROM
 WHERE
     COLLECTION_TRENDS.collection = CV.collection;
 
--- update _1d_floor_price for non mcc
+-- update floor_price for non mcc
 WITH floor_price_table AS (
     SELECT
         me_metadata_collections.collection_id::text AS collection,
@@ -61,13 +59,12 @@ WITH floor_price_table AS (
             AND listings.purchase_id IS NULL
             AND listings.canceled_at IS NULL
             AND listings.marketplace_program = 'M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K'
-            AND listings.CREATED_AT >= (NOW() - INTERVAL '1 days')
     GROUP BY
         me_metadata_collections.collection_id)
 UPDATE
     COLLECTION_TRENDS
 SET
-    _1D_FLOOR_PRICE = f.floor_price
+    floor_price = f.floor_price
 FROM
     floor_price_table f
     INNER JOIN COLLECTION_TRENDS CV ON f.COLLECTION = CV.COLLECTION
@@ -86,8 +83,7 @@ WITH floor_price_table AS (
             AND listings.canceled_at IS NULL
             AND listings.marketplace_program = 'M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K'
     WHERE
-        listings.CREATED_AT >= (NOW() - INTERVAL '2 days')
-        AND listings.CREATED_AT <= (NOW() - INTERVAL '1 days')
+        listings.CREATED_AT <= (NOW() - INTERVAL '1 days')
     GROUP BY
         me_metadata_collections.collection_id)
 UPDATE
