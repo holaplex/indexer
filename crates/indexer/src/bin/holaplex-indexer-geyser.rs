@@ -15,7 +15,7 @@ struct Args {
     network: geyser::Network,
 
     /// The startup type of events to listen for
-    #[clap(long, env, default_value_t = geyser::StartupType::Normal)]
+    #[clap(long, env, default_value_t = geyser::StartupType::All)]
     startup: geyser::StartupType,
 
     /// List of topics or programs to ignore on startup
