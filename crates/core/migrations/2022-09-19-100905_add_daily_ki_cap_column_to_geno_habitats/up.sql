@@ -120,7 +120,7 @@ BEGIN
         UPDATE
             geno_habitat_datas
         SET
-            daily_ki_harvesting_cap = daily_ki_harvesting_cap.cap
+            daily_ki_harvesting_cap = n.daily_ki_harvesting_cap
         FROM (
             SELECT
                 CASE WHEN COUNT(HABITAT) > 1 THEN
