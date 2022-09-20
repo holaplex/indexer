@@ -54,9 +54,8 @@ pub(crate) async fn process(
     };
 
     let values = row.clone();
-    let purchase_id;
 
-    let purchase_ids = client
+    let purchase_id = client
         .db()
         .run({
             let row = row.clone();
@@ -75,17 +74,12 @@ pub(crate) async fn process(
                             ),
                     )
                     .select(purchases::id)
-                    .load::<Uuid>(db)
+                    .first::<Uuid>(db)
+                    .optional()
                     .context("failed to get purchase ids")
             }
         })
         .await?;
-
-    if purchase_ids.len() > 1 {
-        purchase_id = None;
-    } else {
-        purchase_id = purchase_ids.first().copied();
-    }
 
     upsert_into_listings_table(client, Listing {
         id: None,

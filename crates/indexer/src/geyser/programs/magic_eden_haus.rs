@@ -85,9 +85,8 @@ async fn process_sale(
     let price = i64::try_from(params.buyer_price)?;
     let token_size = i64::try_from(params.token_size)?;
     let slot = i64::try_from(slot)?;
-    let purchase_id;
 
-    let purchase_ids = client
+    let purchase_id = client
         .db()
         .run({
             move |db| {
@@ -105,17 +104,12 @@ async fn process_sale(
                             ),
                     )
                     .select(purchases::id)
-                    .load::<Uuid>(db)
+                    .first::<Uuid>(db)
+                    .optional()
                     .context("failed to get purchase ids")
             }
         })
         .await?;
-
-    if purchase_ids.len() > 1 {
-        purchase_id = None;
-    } else {
-        purchase_id = purchase_ids.first().copied();
-    }
 
     upsert_into_listings_table(client, Listing {
         id: None,
@@ -164,9 +158,8 @@ async fn process_buy(
     let price = i64::try_from(params.buyer_price)?;
     let token_size = i64::try_from(params.token_size)?;
     let slot = i64::try_from(slot)?;
-    let purchase_id;
 
-    let purchase_ids = client
+    let purchase_id: Option<Uuid> = client
         .db()
         .run({
             move |db| {
@@ -184,17 +177,12 @@ async fn process_buy(
                             ),
                     )
                     .select(purchases::id)
-                    .load::<Uuid>(db)
+                    .first::<Uuid>(db)
+                    .optional()
                     .context("failed to get purchase ids")
             }
         })
         .await?;
-
-    if purchase_ids.len() > 1 {
-        purchase_id = None;
-    } else {
-        purchase_id = purchase_ids.first().copied();
-    }
 
     let offer = Offer {
         id: None,
