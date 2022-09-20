@@ -67,7 +67,11 @@ pub(crate) async fn process(
                             .and(purchases::auction_house.eq(row.auction_house))
                             .and(purchases::metadata.eq(row.metadata))
                             .and(purchases::price.eq(row.buyer_price))
-                            .and(purchases::token_size.eq(row.token_size)),
+                            .and(
+                                purchases::token_size
+                                    .eq(row.token_size)
+                                    .and(purchases::slot.eq(row.slot)),
+                            ),
                     )
                     .select(purchases::id)
                     .first::<Uuid>(db)
