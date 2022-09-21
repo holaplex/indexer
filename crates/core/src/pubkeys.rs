@@ -77,6 +77,7 @@ pub const SPL_GOVERNANCE: [Pubkey; 21] = [
     pubkey!("GRNPT8MPw3LYY6RdjsgKeFji5kMiG1fSxnxDjDBu4s73"),
     pubkey!("ALLGnZikNaJQeN4KCAbDjZRSzvSefUdeTpk18yfizZvT"),
     pubkey!("A7kmu2kUcnQwAVn8B4znQmGJeUrsJ1WEhYVMtmiBLkEr"),
+    pubkey!("AEauWRrpn9Cs6GXujzdp1YhMmv2288kBt3SdEcPYEerr"),
 ];
 
 /// Find the address of a store given its owner's address
