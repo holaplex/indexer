@@ -1,5 +1,5 @@
 # `holaplex-indexer`
-_A Solana indexer providing fast, accurate account information_
+*A Solana indexer providing fast, accurate account information*
 
 ## Architecture
 
@@ -23,6 +23,7 @@ blockchain before it is saved in any off chain storage.
   proper processor
 - PostgreSQL database, saves the deserialized data
 - GraphQL Crate - serves the PostgreSQL data
+
 
 ### Data Indexed
 
@@ -54,7 +55,8 @@ installed with the `postgres` feature, which can be done like so:
 $ cargo install diesel_cli --no-default-features --features postgres
 ```
 
-Installing diesel will require `libpq` to be on your system (`brew install postgresql` on Mac).
+Installing diesel will require `libpq` to be on your system (`brew install
+postgresql` on Mac).
 
 ### Migrating
 
@@ -71,16 +73,16 @@ $ ./start-developing.sh
 All indexer crates attempt to connect to the database by reading a Postgres URI
 from one of three environment variables:
 
-- `DATABASE_READ_URL` is used by the GraphQL server to identify a read-only
-  database.
-- `DATABASE_WRITE_URL` is used by all indexer services to identify a writable
-  database.
-- `DATABASE_URL` is used as a fallback by all crates, and is assumed (but not
-  guaranteed) to be writeable.
+ - `DATABASE_READ_URL` is used by the GraphQL server to identify a read-only
+   database.
+ - `DATABASE_WRITE_URL` is used by all indexer services to identify a writable
+   database.
+ - `DATABASE_URL` is used as a fallback by all crates, and is assumed (but not
+   guaranteed) to be writeable.
 
 For debug builds the `.env*` files provided in the repository will provide a
 default connection string pointed at the database defined in
-`docker-compose.yml`. For production builds the database must be manually
+`docker-compose.yml`.  For production builds the database must be manually
 configured according to the environment variables above.
 
 ## Running the Indexer Cluster
@@ -98,14 +100,14 @@ $ cargo build -pholaplex-indexer-rabbitmq-geyser
 
 This will produce a build artifact named `libholaplex-indexer-rabbitmq-geyser`
 with the appropriate file extension for a dynamic library for the host system
-(i.e. `.dll`, `.dylib`, or `.so`). This plugin can then be used with a Solana
-validator. A sample Geyser JSON configuration for the plugin can be found in
+(i.e. `.dll`, `.dylib`, or `.so`).  This plugin can then be used with a Solana
+validator.  A sample Geyser JSON configuration for the plugin can be found in
 `crates/geyser-rabbitmq/sample_config.json`.
 
 ### Launching the services
 
 Once the plugin is up and running, the three indexer consumer services can be
-launched to process messages from the validator. The consumers can be launched
+launched to process messages from the validator.  The consumers can be launched
 as follows:
 
 ```sh
@@ -118,15 +120,15 @@ All services will need to be configured to run with the same settings that the
 Geyser plugin was configured with, otherwise they will receive no messages or
 simply fail to start.
 
-i.e if your geyser plugin config has `"network": "mainnet"` and `"startup": null`, then the exchange name will be `mainnet.startup-all`.accounts and to connect to it you'll need to pass `--network mainnet` `--startup all` to the geyser-consumer binary (or put `NETWORK=mainnet` and `STARTUP=all` in `.env.local`)
+i.e :  if your  geyser config json has `"network": "mainnet"` and `"startup": null`, then the exchange name will be `mainnet.startup-all.accounts` and to connect to it you'll need to pass `--network mainnet` `--startup all` to the geyser-consumer binary (or put `NETWORK=mainnet` and `STARTUP=all` in `.env.local`)
 
 ## Running the GraphQL Server
 
 ### Configuration
 
-The server binds to the address `[::]:3000` by default. To change this, set the
+The server binds to the address `[::]:3000` by default.  To change this, set the
 `-p` argument/`PORT` environment variable or the `--addr` argument/`ADDRESS`
-environment variable.
+environment variable.  
 
 To see more options for the server, run the following:
 
