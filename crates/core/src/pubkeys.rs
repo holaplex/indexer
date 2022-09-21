@@ -55,7 +55,7 @@ pub static CARDINAL_TWITTER_NAMESPACE: Pubkey =
 /// `OpenSea` Auction house program pubkey
 pub static OPENSEA_AUCTION_HOUSE: Pubkey = pubkey!("3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y");
 /// Spl Governance programs pubkey
-pub const SPL_GOVERNANCE: [Pubkey; 21] = [
+pub const SPL_GOVERNANCE: [Pubkey; 22] = [
     pubkey!("gUAedF544JeE6NYbQakQvribHykUNgaPJqcgf3UQVnY"),
     pubkey!("GqTPL6qRf5aUuqscLh8Rg2HTxPUXfhhAXDptTLhp1t2J"),
     pubkey!("GovHgfDPyQ1GwazJTDY2avSVY8GGcpmCapmmCsymRaGe"),
