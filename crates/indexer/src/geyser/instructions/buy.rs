@@ -7,7 +7,7 @@ use indexer_core::{
         on_constraint, select,
         tables::{
             buy_instructions, current_metadata_owners, feed_event_wallets, feed_events, metadatas,
-            offer_events, offers,
+            offer_events, offers, purchases,
         },
     },
     pubkeys,
@@ -55,6 +55,32 @@ pub(crate) async fn process(
 
     let values = row.clone();
 
+    let purchase_id = client
+        .db()
+        .run({
+            let row = row.clone();
+            move |db| {
+                purchases::table
+                    .filter(
+                        purchases::buyer
+                            .eq(row.wallet.clone())
+                            .and(purchases::auction_house.eq(row.auction_house))
+                            .and(purchases::metadata.eq(row.metadata))
+                            .and(purchases::price.eq(row.buyer_price))
+                            .and(
+                                purchases::token_size
+                                    .eq(row.token_size)
+                                    .and(purchases::slot.eq(row.slot)),
+                            ),
+                    )
+                    .select(purchases::id)
+                    .first::<Uuid>(db)
+                    .optional()
+                    .context("failed to get purchase ids")
+            }
+        })
+        .await?;
+
     upsert_into_offers_table(client, Offer {
         id: None,
         trade_state: row.buyer_trade_state,
@@ -63,7 +89,7 @@ pub(crate) async fn process(
         buyer: row.wallet,
         metadata: row.metadata,
         token_account: Some(row.token_account),
-        purchase_id: None,
+        purchase_id,
         price: row.buyer_price,
         token_size: row.token_size,
         trade_state_bump: row.trade_state_bump,
