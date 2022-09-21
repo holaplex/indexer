@@ -1,3 +1,5 @@
+use std::ops::Sub;
+
 use indexer_core::bigdecimal::{BigDecimal, ParseBigDecimalError, ToPrimitive};
 
 use super::prelude::*;
@@ -34,7 +36,7 @@ impl TryFrom<u64> for I64 {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct U64(u64);
 
 #[graphql_scalar(description = "U64")]
@@ -76,5 +78,13 @@ impl TryFrom<BigDecimal> for U64 {
                 ParseBigDecimalError::Other(String::from("Integer is too large to store."))
             })
             .map(Self)
+    }
+}
+
+impl Sub for U64 {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self(self.0 - other.0)
     }
 }

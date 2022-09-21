@@ -484,6 +484,7 @@ pub(crate) async fn process_governance(
     data: GovernanceV1,
     slot: u64,
     write_version: u64,
+    program_id: Pubkey,
 ) -> Result<()> {
     let row = Governance {
         address: Owned(key.to_string()),
@@ -495,6 +496,7 @@ pub(crate) async fn process_governance(
         voting_proposal_count: data.voting_proposal_count.try_into()?,
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
+        program_id: Some(Owned(program_id.to_string())),
     };
 
     client
@@ -556,6 +558,7 @@ pub(crate) async fn process_realmv2(
     data: RealmV1,
     slot: u64,
     write_version: u64,
+    program_id: Pubkey,
 ) -> Result<()> {
     let row = Realm {
         address: Owned(key.to_string()),
@@ -567,6 +570,7 @@ pub(crate) async fn process_realmv2(
         name: Owned(data.name.to_string()),
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
+        program_id: Some(Owned(program_id.to_string())),
     };
 
     client
@@ -625,6 +629,7 @@ pub(crate) async fn process_realm_config(
     data: RealmConfigAccount,
     slot: u64,
     write_version: u64,
+    program_id: Pubkey,
 ) -> Result<()> {
     let row = DbRealmConfigAccount {
         address: Owned(key.to_string()),
@@ -644,6 +649,7 @@ pub(crate) async fn process_realm_config(
             .map(|d| Owned(d.to_string())),
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
+        program_id: Some(Owned(program_id.to_string())),
     };
 
     client
@@ -668,6 +674,7 @@ pub(crate) async fn process_vote_record_v1(
     data: VoteRecordV1,
     slot: u64,
     write_version: u64,
+    program_id: Pubkey,
 ) -> Result<()> {
     let (vote_type, vote_weight) = match data.vote_weight {
         VoteWeightV1::Yes(w) => (VoteWeightV1Enum::Yes, i64::try_from(w)?),
@@ -684,6 +691,7 @@ pub(crate) async fn process_vote_record_v1(
         vote_weight,
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
+        program_id: Some(Owned(program_id.to_string())),
     };
 
     client
@@ -708,6 +716,7 @@ pub(crate) async fn process_vote_record_v2(
     data: VoteRecordV2,
     slot: u64,
     write_version: u64,
+    program_id: Pubkey,
 ) -> Result<()> {
     let row = DbVoteRecordV2 {
         address: Owned(key.to_string()),
@@ -719,6 +728,7 @@ pub(crate) async fn process_vote_record_v2(
         vote: data.vote.clone().into(),
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
+        program_id: Some(Owned(program_id.to_string())),
     };
 
     client
@@ -772,6 +782,7 @@ pub(crate) async fn process_token_owner_record(
     data: TokenOwnerRecordV1,
     slot: u64,
     write_version: u64,
+    program_id: Pubkey,
 ) -> Result<()> {
     let row = DbTokenOwnerRecord {
         address: Owned(key.to_string()),
@@ -787,6 +798,7 @@ pub(crate) async fn process_token_owner_record(
         governance_delegate: data.governance_delegate.map(|d| Owned(d.to_string())),
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
+        program_id: Some(Owned(program_id.to_string())),
     };
 
     client
@@ -811,6 +823,7 @@ pub(crate) async fn process_signatory_record(
     data: SignatoryRecordV1,
     slot: u64,
     write_version: u64,
+    program_id: Pubkey,
 ) -> Result<()> {
     let row = DbSignatoryRecord {
         address: Owned(key.to_string()),
@@ -820,6 +833,7 @@ pub(crate) async fn process_signatory_record(
         signed_off: data.signed_off,
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
+        program_id: Some(Owned(program_id.to_string())),
     };
 
     client
@@ -845,6 +859,7 @@ pub(crate) async fn process_proposal_v1(
     data: ProposalV1,
     slot: u64,
     write_version: u64,
+    program_id: Pubkey,
 ) -> Result<()> {
     let (vote_threshold_type, vote_threshold_percentage) = match data.vote_threshold_percentage {
         Some(VoteThresholdPercentage::YesVote(p)) => {
@@ -885,6 +900,7 @@ pub(crate) async fn process_proposal_v1(
         description_link: Owned(data.description_link.to_string()),
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
+        program_id: Some(Owned(program_id.to_string())),
     };
 
     client
@@ -910,6 +926,7 @@ pub(crate) async fn process_proposal_v2(
     data: ProposalV2,
     slot: u64,
     write_version: u64,
+    program_id: Pubkey,
 ) -> Result<()> {
     let (vote_threshold_type, vote_threshold_percentage) = match data.vote_threshold_percentage {
         Some(VoteThresholdPercentage::YesVote(p)) => {
@@ -958,6 +975,7 @@ pub(crate) async fn process_proposal_v2(
         description_link: Owned(data.description_link.to_string()),
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
+        program_id: Some(Owned(program_id.to_string())),
     };
 
     client
@@ -1036,6 +1054,7 @@ pub(crate) async fn process_proposal_transaction(
     data: ProposalTransactionV2,
     slot: u64,
     write_version: u64,
+    program_id: Pubkey,
 ) -> Result<()> {
     let row = ProposalTransaction {
         address: Owned(key.to_string()),
@@ -1048,6 +1067,7 @@ pub(crate) async fn process_proposal_transaction(
         execution_status: data.execution_status.into(),
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
+        program_id: Some(Owned(program_id.to_string())),
     };
 
     client

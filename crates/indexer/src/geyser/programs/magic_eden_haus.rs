@@ -2,10 +2,11 @@ use borsh::BorshDeserialize;
 use indexer_core::{
     db::{
         models::{Listing, Offer, Purchase},
-        tables::{listings, offers},
+        tables::{listings, offers, purchases},
         update,
     },
     pubkeys, util,
+    uuid::Uuid,
 };
 
 use super::{
@@ -78,6 +79,38 @@ async fn process_sale(
 
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
+    let seller = accts[0].clone();
+    let auction_house = accts[7].clone();
+    let metadata = accts[5].clone();
+    let price = i64::try_from(params.buyer_price)?;
+    let token_size = i64::try_from(params.token_size)?;
+    let slot = i64::try_from(slot)?;
+
+    let purchase_id = client
+        .db()
+        .run({
+            move |db| {
+                purchases::table
+                    .filter(
+                        purchases::seller
+                            .eq(seller)
+                            .and(purchases::auction_house.eq(auction_house))
+                            .and(purchases::metadata.eq(metadata))
+                            .and(purchases::price.eq(price))
+                            .and(
+                                purchases::token_size
+                                    .eq(token_size)
+                                    .and(purchases::slot.eq(slot)),
+                            ),
+                    )
+                    .select(purchases::id)
+                    .first::<Uuid>(db)
+                    .optional()
+                    .context("failed to get purchase ids")
+            }
+        })
+        .await?;
+
     upsert_into_listings_table(client, Listing {
         id: None,
         trade_state: Owned(accts[8].clone()),
@@ -85,13 +118,13 @@ async fn process_sale(
         marketplace_program: Owned(pubkeys::ME_HAUS.to_string()),
         seller: Owned(accts[0].clone()),
         metadata: Owned(accts[5].clone()),
-        purchase_id: None,
+        purchase_id,
         price: params.buyer_price.try_into()?,
         token_size: params.token_size.try_into()?,
         trade_state_bump: params.trade_state_bump.try_into()?,
         created_at: Utc::now().naive_utc(),
         canceled_at: None,
-        slot: slot.try_into()?,
+        slot,
         write_version: None,
         expiry: match params.expiry {
             e if e <= 0 => None,
@@ -119,8 +152,39 @@ async fn process_buy(
     }
 
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
+    let buyer = accts[0].clone();
+    let auction_house = accts[6].clone();
+    let metadata = accts[3].clone();
+    let price = i64::try_from(params.buyer_price)?;
+    let token_size = i64::try_from(params.token_size)?;
+    let slot = i64::try_from(slot)?;
 
-    upsert_into_offers_table(client, Offer {
+    let purchase_id: Option<Uuid> = client
+        .db()
+        .run({
+            move |db| {
+                purchases::table
+                    .filter(
+                        purchases::buyer
+                            .eq(buyer)
+                            .and(purchases::auction_house.eq(auction_house))
+                            .and(purchases::metadata.eq(metadata))
+                            .and(purchases::price.eq(price))
+                            .and(
+                                purchases::token_size
+                                    .eq(token_size)
+                                    .and(purchases::slot.eq(slot)),
+                            ),
+                    )
+                    .select(purchases::id)
+                    .first::<Uuid>(db)
+                    .optional()
+                    .context("failed to get purchase ids")
+            }
+        })
+        .await?;
+
+    let offer = Offer {
         id: None,
         trade_state: Owned(accts[7].clone()),
         auction_house: Owned(accts[6].clone()),
@@ -128,21 +192,23 @@ async fn process_buy(
         buyer: Owned(accts[0].clone()),
         metadata: Owned(accts[3].clone()),
         token_account: None,
-        purchase_id: None,
-        price: params.buyer_price.try_into()?,
+        purchase_id,
+        price,
         token_size: params.token_size.try_into()?,
         trade_state_bump: params.trade_state_bump.try_into()?,
         created_at: Utc::now().naive_utc(),
         canceled_at: None,
-        slot: slot.try_into()?,
+        slot,
         write_version: None,
         expiry: match params.expiry {
             e if e <= 0 => None,
             _ => Some(util::unix_timestamp(params.expiry)?),
         },
-    })
-    .await
-    .context("failed to insert offer")?;
+    };
+
+    upsert_into_offers_table(client, offer)
+        .await
+        .context("failed to insert offer")?;
 
     Ok(())
 }

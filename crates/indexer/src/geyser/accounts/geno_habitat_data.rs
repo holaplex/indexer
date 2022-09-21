@@ -1,7 +1,7 @@
 use genostub::state::{HabitatData, RentalAgreement};
 use indexer_core::{
     db::{
-        insert_into, models,
+        delete, insert_into, models, select,
         tables::{geno_habitat_datas, geno_rental_agreements},
     },
     util,
@@ -18,7 +18,7 @@ async fn process_rent(
     write_version: i64,
 ) -> Result<()> {
     let row = models::GenoRentalAgreement {
-        habitat_address: Owned(addr),
+        habitat_address: Owned(addr.clone()),
         alchemist: rent.alchemist.map(|a| Owned(a.to_string())),
         rental_period: rent
             .rental_period
@@ -46,11 +46,26 @@ async fn process_rent(
     client
         .db()
         .run(move |db| {
+            let geno_rental = select(exists(
+                geno_rental_agreements::table.filter(
+                    geno_rental_agreements::habitat_address
+                        .eq(addr.clone())
+                        .and(geno_rental_agreements::slot.lt(slot)),
+                ),
+            ))
+            .get_result::<bool>(db);
+
+            if geno_rental == Ok(true) {
+                delete(
+                    geno_rental_agreements::table
+                        .filter(geno_rental_agreements::habitat_address.eq(addr)),
+                )
+                .execute(db)?;
+            }
+
             insert_into(geno_rental_agreements::table)
                 .values(&row)
-                .on_conflict(geno_rental_agreements::habitat_address)
-                .do_update()
-                .set(&row)
+                .on_conflict_do_nothing()
                 .execute(db)
         })
         .await
@@ -59,6 +74,7 @@ async fn process_rent(
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
@@ -134,16 +150,34 @@ pub(crate) async fn process(
                 .trim_end_matches('\0')
                 .to_owned(),
         ),
+        daily_ki_harvesting_cap: 0.into(),
+        ki_available_to_harvest: None,
+        has_max_ki: None,
     };
 
     client
         .db()
         .run(move |db| {
+            let geno_exists = select(exists(
+                geno_habitat_datas::table.filter(
+                    geno_habitat_datas::address
+                        .eq(key.to_string())
+                        .and(geno_habitat_datas::slot.lt(slot)),
+                ),
+            ))
+            .get_result::<bool>(db);
+
+            if geno_exists == Ok(true) {
+                delete(
+                    geno_habitat_datas::table
+                        .filter(geno_habitat_datas::address.eq(key.to_string())),
+                )
+                .execute(db)?;
+            }
+
             insert_into(geno_habitat_datas::table)
                 .values(&row)
-                .on_conflict(geno_habitat_datas::address)
-                .do_update()
-                .set(&row)
+                .on_conflict_do_nothing()
                 .execute(db)
         })
         .await

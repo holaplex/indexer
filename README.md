@@ -92,7 +92,7 @@ All services are connected via a common RabbitMQ node.
 
 ### Geyser plugin setup
 
-To build the Geyser plugin, use the following build command:
+To build the Geyser plugin,clone this repo https://github.com/holaplex/indexer-geyser-plugin.git and use the following build command:
 
 ```sh
 $ cargo build -pholaplex-indexer-rabbitmq-geyser

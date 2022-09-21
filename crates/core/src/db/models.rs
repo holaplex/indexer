@@ -329,6 +329,36 @@ pub struct NftActivity {
     pub activity_type: String,
 }
 
+/// Collection nfts/holders count
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct CollectionCount {
+    /// Collection address or id
+    #[sql_type = "Text"]
+    pub collection: String,
+    /// nfts/holders count
+    #[sql_type = "Int8"]
+    pub count: i64,
+}
+
+/// Collection floor price from the union of `collection_stats` and `me_collection_stats` table
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct CollectionFloorPrice {
+    /// Collection address or id
+    #[sql_type = "Text"]
+    pub collection: String,
+    /// Collection floor price
+    #[sql_type = "Nullable<Int8>"]
+    pub floor_price: Option<i64>,
+}
+
+/// Collection Volume
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct CollectionVolume {
+    /// Collection Volume
+    #[sql_type = "diesel::sql_types::Numeric"]
+    pub volume: BigDecimal,
+}
+
 /// Union of `listings` and `purchases` for a `WalletActivity`
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct WalletActivity {
@@ -2575,6 +2605,9 @@ pub struct GenoHabitatData<'a> {
     /// The write version of this account's last known update
     pub write_version: i64,
     pub harvester: Cow<'a, str>,
+    pub daily_ki_harvesting_cap: BigDecimal,
+    pub ki_available_to_harvest: Option<BigDecimal>,
+    pub has_max_ki: Option<bool>,
 }
 
 /// A row in the `geno_rental_agreements` table
@@ -2614,6 +2647,7 @@ pub struct Governance<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2650,6 +2684,7 @@ pub struct Realm<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2685,6 +2720,7 @@ pub struct RealmConfigAccount<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2703,6 +2739,7 @@ pub struct VoteRecordV1<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2721,6 +2758,7 @@ pub struct VoteRecordV2<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[allow(missing_docs)]
@@ -2780,6 +2818,7 @@ pub struct TokenOwnerRecord<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2796,6 +2835,7 @@ pub struct SignatoryRecord<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[allow(missing_docs)]
@@ -2903,6 +2943,7 @@ pub struct ProposalV1<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2941,6 +2982,7 @@ pub struct ProposalV2<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
@@ -2991,6 +3033,7 @@ pub struct ProposalTransaction<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+    pub program_id: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]

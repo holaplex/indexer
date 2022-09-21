@@ -510,6 +510,41 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    collection_trends (collection) {
+        collection -> Text,
+        _1d_volume -> Nullable<Numeric>,
+        _7d_volume -> Nullable<Numeric>,
+        _30d_volume -> Nullable<Numeric>,
+        _prev_1d_volume -> Nullable<Numeric>,
+        _prev_7d_volume -> Nullable<Numeric>,
+        _prev_30d_volume -> Nullable<Numeric>,
+        _1d_sales_count -> Nullable<Numeric>,
+        prev_1d_sales_count -> Nullable<Numeric>,
+        _7d_sales_count -> Nullable<Numeric>,
+        prev_7d_sales_count -> Nullable<Numeric>,
+        _30d_sales_count -> Nullable<Numeric>,
+        prev_30d_sales_count -> Nullable<Numeric>,
+        floor_price -> Nullable<Numeric>,
+        prev_1d_floor_price -> Nullable<Numeric>,
+        prev_7d_floor_price -> Nullable<Numeric>,
+        prev_30d_floor_price -> Nullable<Numeric>,
+        _1d_volume_change -> Nullable<Int8>,
+        _7d_volume_change -> Nullable<Int8>,
+        _30d_volume_change -> Nullable<Int8>,
+        _1d_floor_price_change -> Nullable<Int8>,
+        _7d_floor_price_change -> Nullable<Int8>,
+        _30d_floor_price_change -> Nullable<Int8>,
+        _1d_sales_count_change -> Nullable<Int8>,
+        _7d_sales_count_change -> Nullable<Int8>,
+        _30d_sales_count_change -> Nullable<Int8>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     current_metadata_owners (mint_address) {
         mint_address -> Varchar,
         owner_address -> Varchar,
@@ -691,6 +726,9 @@ table! {
         slot -> Int8,
         write_version -> Int8,
         harvester -> Varchar,
+        daily_ki_harvesting_cap -> Numeric,
+        ki_available_to_harvest -> Nullable<Numeric>,
+        has_max_ki -> Nullable<Bool>,
     }
 }
 
@@ -764,6 +802,7 @@ table! {
         voting_proposal_count -> Int2,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -847,6 +886,19 @@ table! {
         authority -> Varchar,
         executor -> Varchar,
         smart_wallet -> Varchar,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    last_sold_metadatas (metadata) {
+        metadata -> Varchar,
+        purchase_id -> Nullable<Uuid>,
+        price -> Nullable<Int8>,
+        created_at -> Nullable<Timestamp>,
     }
 }
 
@@ -995,6 +1047,43 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
+    me_collection_stats (collection_id) {
+        collection_id -> Uuid,
+        nft_count -> Int8,
+        floor_price -> Nullable<Int8>,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    me_collections (id) {
+        symbol -> Nullable<Text>,
+        name -> Nullable<Text>,
+        family -> Nullable<Text>,
+        id -> Uuid,
+        image -> Text,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
+    me_metadata_collections (metadata_address, collection_id) {
+        metadata_address -> Varchar,
+        collection_id -> Uuid,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
+
     metadata_collection_keys (metadata_address, collection_address) {
         metadata_address -> Varchar,
         collection_address -> Varchar,
@@ -1007,11 +1096,10 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, };
 
-    metadata_collections (id) {
+    metadata_collections (metadata_address) {
         metadata_address -> Varchar,
         name -> Nullable<Text>,
         family -> Nullable<Text>,
-        id -> Uuid,
         slot -> Int8,
         write_version -> Int8,
     }
@@ -1227,6 +1315,7 @@ table! {
         execution_status -> Transactionexecutionstatus,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1302,6 +1391,7 @@ table! {
         description_link -> Text,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1340,6 +1430,7 @@ table! {
         description_link -> Text,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1437,6 +1528,7 @@ table! {
         council_max_vote_weight_addin -> Nullable<Varchar>,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1474,6 +1566,7 @@ table! {
         name -> Text,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1516,6 +1609,7 @@ table! {
         signed_off -> Bool,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1672,6 +1766,7 @@ table! {
         governance_delegate -> Nullable<Varchar>,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1765,6 +1860,7 @@ table! {
         vote_weight -> Int8,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1783,6 +1879,7 @@ table! {
         vote -> Vote_record_v2_vote,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1885,7 +1982,6 @@ joinable!(cardinal_token_manager_invalidators -> cardinal_token_managers (token_
 joinable!(feed_event_wallets -> feed_events (feed_event_id));
 joinable!(follow_events -> feed_events (feed_event_id));
 joinable!(follow_events -> graph_connections (graph_connection_address));
-joinable!(geno_rental_agreements -> geno_habitat_datas (habitat_address));
 joinable!(governance_configs -> governances (governance_address));
 joinable!(listing_events -> feed_events (feed_event_id));
 joinable!(mint_events -> feed_events (feed_event_id));
@@ -1922,6 +2018,7 @@ allow_tables_to_appear_in_same_query!(
     cardinal_token_managers,
     cardinal_use_invalidators,
     collection_stats,
+    collection_trends,
     current_metadata_owners,
     deposit_instructions,
     editions,
@@ -1942,6 +2039,7 @@ allow_tables_to_appear_in_same_query!(
     ins_buffer_bundle_instructions,
     ins_buffer_bundles,
     instruction_buffers,
+    last_sold_metadatas,
     listing_denylist,
     listing_events,
     listing_metadatas,
@@ -1951,6 +2049,9 @@ allow_tables_to_appear_in_same_query!(
     locker_whitelist_entries,
     lockers,
     master_editions,
+    me_collection_stats,
+    me_collections,
+    me_metadata_collections,
     metadata_collection_keys,
     metadata_collections,
     metadata_creators,

@@ -1,14 +1,15 @@
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
-    bigdecimal::BigDecimal,
+    bigdecimal::ToPrimitive,
     db::{
-        expression::dsl::sum,
-        queries,
+        queries, sql_query,
+        sql_types::Text,
         tables::{
-            attributes, auction_houses, bid_receipts, current_metadata_owners, listing_receipts,
-            listings, metadata_collection_keys, metadata_jsons, metadatas, purchases,
+            attributes, auction_houses, bid_receipts, listing_receipts, listings,
+            metadata_collection_keys, metadata_jsons, metadatas,
         },
     },
+    pubkeys,
     url::Url,
     util::unix_timestamp,
     uuid::Uuid,
@@ -442,6 +443,11 @@ If no value is provided, it will return XSmall")))]
         )
     }
 
+    #[graphql(description = r"Get the original URL of the image as stored in the NFT's metadata")]
+    pub fn image_original(&self) -> &str {
+        &self.image
+    }
+
     pub fn animation_url(&self) -> Option<&str> {
         self.animation_url.as_deref()
     }
@@ -600,28 +606,12 @@ impl Collection {
     #[graphql(
         description = "Count of wallets that currently hold at least one NFT from the collection."
     )]
-    pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<scalars::U64> {
-        let conn = ctx.shared.db.get()?;
-        let unique_holders = metadata_collection_keys::table
-            .inner_join(
-                metadatas::table
-                    .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
-            )
-            .inner_join(
-                current_metadata_owners::table
-                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
-            )
-            .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address.clone()))
-            .filter(metadatas::burned_at.is_null())
-            .select(current_metadata_owners::owner_address)
-            .distinct_on(current_metadata_owners::owner_address)
-            .load::<String>(&conn)
-            .context("Failed to load collection holder count")?;
-
-        u64::try_from(unique_holders.len())
-            .context("Collection holder count was too big to convert to U64")
-            .map(Into::into)
-            .map_err(Into::into)
+    pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<Option<scalars::I64>> {
+        Ok(ctx
+            .collection_holders_count_loader
+            .load(self.0.mint_address.clone().into())
+            .await?
+            .map(|dataloaders::collection::CollectionHoldersCount(nft_count)| nft_count))
     }
 
     #[graphql(description = "Count of active listings of NFTs in the collection.")]
@@ -637,6 +627,7 @@ impl Collection {
                 auction_houses::table.on(listings::auction_house.eq(auction_houses::address)),
             )
             .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address.clone()))
+            .filter(listings::auction_house.ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()))
             .filter(auction_houses::treasury_mint.eq("So11111111111111111111111111111111111111112"))
             .filter(metadata_collection_keys::verified.eq(true))
             .filter(listings::purchase_id.is_null())
@@ -661,27 +652,32 @@ impl Collection {
     #[graphql(
         description = "Total of all sales of all NFTs in the collection over all time, in lamports."
     )]
-    pub async fn volume_total(&self, ctx: &AppContext) -> FieldResult<scalars::U64> {
+    pub async fn volume_total(&self, ctx: &AppContext) -> FieldResult<Option<scalars::U64>> {
         let conn = ctx.shared.db.get()?;
-        purchases::table
-            .inner_join(metadatas::table.on(metadatas::address.eq(purchases::metadata)))
-            .inner_join(
-                metadata_collection_keys::table
-                    .on(metadatas::address.eq(metadata_collection_keys::metadata_address)),
-            )
-            .inner_join(
-                auction_houses::table.on(purchases::auction_house.eq(auction_houses::address)),
-            )
-            .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address.clone()))
-            .filter(auction_houses::treasury_mint.eq("So11111111111111111111111111111111111111112"))
-            .filter(metadata_collection_keys::verified.eq(true))
-            .select(sum(purchases::price))
-            .first::<Option<BigDecimal>>(&conn)
-            .context("Failed to load collection volume total")?
-            .unwrap_or_default()
-            .try_into()
-            .context("Collection volume was too big to convert to U64")
-            .map_err(Into::into)
+
+        let total_volume: Option<models::CollectionVolume> = sql_query(
+            "SELECT VOLUME
+                        FROM (
+                            ( SELECT SUM(PURCHASES.PRICE) AS VOLUME
+                            FROM PURCHASES
+                        INNER JOIN METADATA_COLLECTION_KEYS ON METADATA_COLLECTION_KEYS.METADATA_ADDRESS = PURCHASES.METADATA
+                            WHERE METADATA_COLLECTION_KEYS.COLLECTION_ADDRESS = $1
+                            AND METADATA_COLLECTION_KEYS.VERIFIED = TRUE)
+                        UNION
+                            ( SELECT SUM(PURCHASES.PRICE) AS VOLUME
+                            FROM PURCHASES
+                            INNER JOIN ME_METADATA_COLLECTIONS ON ME_METADATA_COLLECTIONS.METADATA_ADDRESS = PURCHASES.METADATA
+                            WHERE ME_METADATA_COLLECTIONS.COLLECTION_ID::text = $1)) AS VOLUME_TABLE
+            LIMIT 1;",
+        )
+        .bind::<Text, _>(self.0.mint_address.clone())
+        .load(&conn)
+        .context("Failed to load collection volume total")?
+        .first()
+        .cloned();
+
+        Ok(total_volume
+            .map(|models::CollectionVolume { volume }| volume.to_u64().unwrap_or_default().into()))
     }
 
     #[graphql(deprecated = "use `nft { address }`")]

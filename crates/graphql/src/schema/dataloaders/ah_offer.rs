@@ -1,4 +1,4 @@
-use indexer_core::uuid::Uuid;
+use indexer_core::{pubkeys, uuid::Uuid};
 use objects::{ah_offer::Offer, nft::Nft};
 use scalars::PublicKey;
 use tables::{metadatas, offers};
@@ -13,6 +13,7 @@ impl TryBatchFn<Uuid, Option<Offer>> for Batcher {
         let rows: Vec<models::Offer> = offers::table
             .select(offers::all_columns)
             .filter(offers::id.eq(any(ids)))
+            .filter(offers::auction_house.ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()))
             .load(&conn)
             .context("Failed to load bid receipts")?;
 
@@ -36,6 +37,7 @@ impl TryBatchFn<PublicKey<Nft>, Vec<Offer>> for Batcher {
             .select(offers::all_columns)
             .filter(offers::canceled_at.is_null())
             .filter(offers::purchase_id.is_null())
+            .filter(offers::auction_house.ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()))
             .filter(
                 offers::expiry
                     .is_null()
