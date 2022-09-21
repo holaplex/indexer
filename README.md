@@ -1,5 +1,4 @@
 # `holaplex-indexer`
-
 _A Solana indexer providing fast, accurate account information_
 
 ## Architecture
