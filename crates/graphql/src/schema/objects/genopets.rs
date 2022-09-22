@@ -205,6 +205,10 @@ pub enum GenoHabitatSortField {
     KiHarvested,
     /// Sort by the `crystalsRefined` field
     CrystalsRefined,
+    /// Sort by the `totalKiHarvested` field
+    TotalKiHarvested,
+    /// Sort by the `kiAvailableToHarvest` field
+    KiAvailableToHarvest,
 }
 
 impl From<GenoHabitatSortField> for genopets::HabitatSortField {
@@ -215,6 +219,8 @@ impl From<GenoHabitatSortField> for genopets::HabitatSortField {
             GenoHabitatSortField::Lifespan => Self::Lifespan,
             GenoHabitatSortField::KiHarvested => Self::KiHarvested,
             GenoHabitatSortField::CrystalsRefined => Self::CrystalsRefined,
+            GenoHabitatSortField::TotalKiHarvested => Self::TotalKiHarvested,
+            GenoHabitatSortField::KiAvailableToHarvest => Self::KiAvailableToHarvest,
         }
     }
 }
