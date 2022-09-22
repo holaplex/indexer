@@ -252,7 +252,7 @@ async fn calculate_harvesting_cap(
             }
         }
 
-        daily_cap += BigDecimal::from(0.10 * f64::from(bonus));
+        daily_cap += BigDecimal::from(0.10 * f64::from(bonus)) * daily_cap.clone();
         return Ok(Some(daily_cap));
     }
 
