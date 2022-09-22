@@ -1,8 +1,10 @@
 use genostub::state::{HabitatData, RentalAgreement};
 use indexer_core::{
+    bigdecimal::BigDecimal,
     db::{
         delete, insert_into, models, select,
         tables::{geno_habitat_datas, geno_rental_agreements},
+        update,
     },
     util,
 };
@@ -89,6 +91,31 @@ pub(crate) async fn process(
 
     let _: [_; 2] = habitat.sub_habitats; // Sanity check
 
+    let daily_ki_harvesting_cap = calculate_harvesting_cap(client, habitat.clone())
+        .await
+        .context("failed to get primary habitat daily cap")?
+        .unwrap_or_default();
+
+    debug!("{:?}", daily_ki_harvesting_cap);
+
+    if let Some(parent) = habitat.parent_habitat {
+        client
+            .db()
+            .run({
+                let daily_cap = daily_ki_harvesting_cap.clone();
+                move |db| {
+                    update(
+                        geno_habitat_datas::table
+                            .filter(geno_habitat_datas::habitat_mint.eq(parent.to_string())),
+                    )
+                    .set(geno_habitat_datas::daily_ki_harvesting_cap.eq(daily_cap))
+                    .execute(db)
+                }
+            })
+            .await
+            .context("failed to update daily ki harvesting cap of parent habitat ")?;
+    }
+
     let row = models::GenoHabitatData {
         address: Owned(addr.clone()),
         habitat_mint: Owned(habitat.habitat_mint.to_string()),
@@ -150,7 +177,7 @@ pub(crate) async fn process(
                 .trim_end_matches('\0')
                 .to_owned(),
         ),
-        daily_ki_harvesting_cap: 0.into(),
+        daily_ki_harvesting_cap,
         ki_available_to_harvest: None,
         has_max_ki: None,
     };
@@ -193,4 +220,85 @@ pub(crate) async fn process(
         .await?;
 
     Ok(())
+}
+
+async fn calculate_harvesting_cap(
+    client: &Client,
+    habitat: genostub::state::HabitatData,
+) -> Result<Option<BigDecimal>> {
+    fn find_cap(l: i16, g: bool) -> BigDecimal {
+        (30_000_000_000 + 20_000_000_000 * (i64::from(l) - 1) + 1_000_000_000 * (i64::from(g)))
+            .into()
+    }
+
+    let mut daily_cap = find_cap(habitat.level.into(), habitat.genesis);
+
+    if !habitat.is_sub_habitat {
+        let mut bonus = 0;
+
+        for sub_habitat in habitat.sub_habitats.into_iter().flatten() {
+            bonus = 1;
+            let habitat_data: Option<(i16, bool)> = client
+                .db()
+                .run(move |db| {
+                    geno_habitat_datas::table
+                        .select((geno_habitat_datas::level, geno_habitat_datas::genesis))
+                        .filter(geno_habitat_datas::habitat_mint.eq(sub_habitat.to_string()))
+                        .first(db)
+                        .optional()
+                })
+                .await
+                .context("Failed to get sub habitat ")?;
+            if let Some((level, genesis)) = habitat_data {
+                daily_cap += find_cap(level, genesis);
+            }
+        }
+
+        daily_cap += BigDecimal::from(0.10 * f64::from(bonus));
+        return Ok(Some(daily_cap));
+    }
+
+    if let Some(parent) = habitat.parent_habitat {
+        let habitat_data: Option<(i16, bool)> = client
+            .db()
+            .run(move |db| {
+                geno_habitat_datas::table
+                    .select((geno_habitat_datas::level, geno_habitat_datas::genesis))
+                    .filter(geno_habitat_datas::habitat_mint.eq(parent.to_string()))
+                    .first(db)
+                    .optional()
+            })
+            .await
+            .context("Failed to get parent habitat ")?;
+
+        if let Some((level, genesis)) = habitat_data {
+            daily_cap += find_cap(level, genesis);
+            let sub_habitat: Option<(i16, bool)> = client
+                .db()
+                .run(move |db| {
+                    geno_habitat_datas::table
+                        .select((geno_habitat_datas::level, geno_habitat_datas::genesis))
+                        .filter(
+                            geno_habitat_datas::parent_habitat
+                                .eq(parent.to_string())
+                                .and(
+                                    geno_habitat_datas::habitat_mint
+                                        .ne(habitat.habitat_mint.to_string()),
+                                ),
+                        )
+                        .first(db)
+                        .optional()
+                })
+                .await
+                .context("Failed to get sub habitat  ")?;
+
+            if let Some((level, genesis)) = sub_habitat {
+                daily_cap += find_cap(level, genesis);
+            }
+
+            return Ok(Some(BigDecimal::from(1.1) * daily_cap));
+        }
+    }
+
+    Ok(None)
 }

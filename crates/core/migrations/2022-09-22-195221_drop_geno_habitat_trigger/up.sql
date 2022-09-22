@@ -1,0 +1,2 @@
+drop trigger if exists update_daily_ki_harvesting_cap_trigger on geno_habitat_datas;
+drop function if exists update_daily_ki_harvesting_cap;
