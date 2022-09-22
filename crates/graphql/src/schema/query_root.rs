@@ -1,6 +1,6 @@
 use indexer_core::db::{
     expression::dsl::all,
-    queries::{self, feed_event::EventType},
+    queries::{self, collections::TrendingQueryOptions, feed_event::EventType},
 };
 use objects::{
     ah_listing::AhListing,
@@ -33,7 +33,10 @@ use tables::{
     storefronts, token_owner_records, twitter_handle_name_services, wallet_totals,
 };
 
-use super::{enums::OrderDirection, prelude::*};
+use super::{
+    enums::{CollectionSort, OrderDirection},
+    prelude::*,
+};
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
@@ -776,6 +779,41 @@ impl QueryRoot {
         queries::collections::get(&conn, &address)?
             .map(TryInto::try_into)
             .transpose()
+            .map_err(Into::into)
+    }
+
+    #[graphql(
+        description = "Returns featured collection NFTs ordered by market cap (floor price * number of NFTs in collection)",
+        arguments(
+            sort_by(description = "Choose sort for trending collections"),
+            order_direction(
+                description = "Arrange result in ascending or descending order by selected sort_by"
+            ),
+            limit(description = "Return at most this many results"),
+            offset(description = "Return results starting from this index"),
+        )
+    )]
+    async fn trending_collections(
+        &self,
+        context: &AppContext,
+        sort_by: Option<CollectionSort>,
+        order_direction: Option<OrderDirection>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<Collection>> {
+        let conn = context.shared.db.get().context("failed to connect to db")?;
+
+        let collections = queries::collections::trending(&conn, TrendingQueryOptions {
+            sort_by: sort_by.map(Into::into),
+            order: order_direction.map(Into::into),
+            limit: limit.try_into()?,
+            offset: offset.try_into()?,
+        })?;
+
+        collections
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
 

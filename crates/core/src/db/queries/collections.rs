@@ -11,10 +11,11 @@ use diesel::{
     serialize::ToSql,
     sql_types::{Array, Integer, Nullable, Text, Timestamp},
 };
+use sea_query::{Expr, Iden, Order, PostgresQueryBuilder, Query};
 
 use crate::{
     db::{
-        custom_types::OrderDirection,
+        custom_types::{CollectionSort, OrderDirection},
         models::{Nft, NftActivity},
         queries::metadatas::NFT_COLUMNS,
         tables::{current_metadata_owners, metadata_collection_keys, metadata_jsons, metadatas},
@@ -22,6 +23,51 @@ use crate::{
     },
     error::Result,
 };
+
+#[derive(Iden)]
+enum Metadatas {
+    Table,
+    Address,
+    Name,
+    MintAddress,
+    PrimarySaleHappened,
+    SellerFeeBasisPoints,
+    UpdateAuthorityAddress,
+    Uri,
+    Slot,
+}
+
+#[derive(Iden)]
+enum MetadataJsons {
+    Table,
+    MetadataAddress,
+    Description,
+    Image,
+    AnimationUrl,
+    ExternalUrl,
+    Category,
+    Model,
+}
+
+#[derive(Iden)]
+enum CurrentMetadataOwners {
+    Table,
+    MintAddress,
+    TokenAccountAddress,
+}
+
+#[derive(Iden)]
+enum CollectionTrends {
+    Table,
+    Collection,
+    FloorPrice,
+    _1dVolume,
+    _7dVolume,
+    _30dVolume,
+    _1dSalesCount,
+    _7dSalesCount,
+    _30dSalesCount,
+}
 
 /// Query collection by address
 ///
@@ -426,4 +472,115 @@ pub fn collection_activities(
         .bind(offset)
         .load(conn)
         .context("Failed to load collection activities")
+}
+
+/// Input parameters for the [`trending`] query.
+#[derive(Debug)]
+pub struct TrendingQueryOptions {
+    /// Sort by Price or Listed at
+    pub sort_by: Option<CollectionSort>,
+    /// Order the resulting rows by 'Asc' or 'Desc'
+    pub order: Option<Order>,
+    /// Limit the number of returned rows
+    pub limit: u64,
+    /// Skip the first `n` resulting rows
+    pub offset: u64,
+}
+
+impl From<CollectionSort> for CollectionTrends {
+    fn from(sort: CollectionSort) -> Self {
+        match sort {
+            CollectionSort::FloorPrice => CollectionTrends::FloorPrice,
+            CollectionSort::_1dVolume => CollectionTrends::_1dVolume,
+            CollectionSort::_7dVolume => CollectionTrends::_7dVolume,
+            CollectionSort::_30dVolume => CollectionTrends::_30dVolume,
+            CollectionSort::_1dSalesCount => CollectionTrends::_1dSalesCount,
+            CollectionSort::_7dSalesCount => CollectionTrends::_7dSalesCount,
+            CollectionSort::_30dSalesCount => CollectionTrends::_30dSalesCount,
+        }
+    }
+}
+
+/// Handles queries for trending collections
+///
+/// # Errors
+/// returns an error when the underlying queries throw an error
+#[allow(clippy::too_many_lines)]
+pub fn trending(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Nft>> {
+    let TrendingQueryOptions {
+        sort_by,
+        order,
+        limit,
+        offset,
+    } = options;
+
+    let sort_unwrap = sort_by.map_or(CollectionTrends::_7dVolume, Into::into);
+
+    let order_unwrap = order.unwrap_or(Order::Desc);
+
+    let query = Query::select()
+        .columns(vec![
+            (Metadatas::Table, Metadatas::Address),
+            (Metadatas::Table, Metadatas::Name),
+            (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+            (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
+            (Metadatas::Table, Metadatas::MintAddress),
+            (Metadatas::Table, Metadatas::PrimarySaleHappened),
+            (Metadatas::Table, Metadatas::Uri),
+            (Metadatas::Table, Metadatas::Slot),
+        ])
+        .columns(vec![
+            (MetadataJsons::Table, MetadataJsons::Description),
+            (MetadataJsons::Table, MetadataJsons::Image),
+            (MetadataJsons::Table, MetadataJsons::AnimationUrl),
+            (MetadataJsons::Table, MetadataJsons::ExternalUrl),
+            (MetadataJsons::Table, MetadataJsons::Category),
+            (MetadataJsons::Table, MetadataJsons::Model),
+        ])
+        .columns(vec![(
+            CurrentMetadataOwners::Table,
+            CurrentMetadataOwners::TokenAccountAddress,
+        )])
+        .columns(vec![
+            (CollectionTrends::Table, CollectionTrends::Collection),
+            (CollectionTrends::Table, CollectionTrends::FloorPrice),
+            (CollectionTrends::Table, CollectionTrends::_1dVolume),
+            (CollectionTrends::Table, CollectionTrends::_7dVolume),
+            (CollectionTrends::Table, CollectionTrends::_30dVolume),
+            (CollectionTrends::Table, CollectionTrends::_1dSalesCount),
+            (CollectionTrends::Table, CollectionTrends::_7dSalesCount),
+            (CollectionTrends::Table, CollectionTrends::_30dSalesCount),
+        ])
+        .from(MetadataJsons::Table)
+        .inner_join(
+            Metadatas::Table,
+            Expr::tbl(MetadataJsons::Table, MetadataJsons::MetadataAddress)
+                .equals(Metadatas::Table, Metadatas::Address),
+        )
+        .inner_join(
+            CurrentMetadataOwners::Table,
+            Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
+                CurrentMetadataOwners::Table,
+                CurrentMetadataOwners::MintAddress,
+            ),
+        )
+        .inner_join(
+            CollectionTrends::Table,
+            Expr::tbl(Metadatas::Table, Metadatas::MintAddress)
+                .equals(CollectionTrends::Table, CollectionTrends::Collection),
+        )
+        .limit(limit)
+        .offset(offset)
+        .order_by((CollectionTrends::Table, sort_unwrap), order_unwrap)
+        .take();
+
+    let query = query.to_string(PostgresQueryBuilder);
+    println!("Print Query: {:?}", query.replace('\"', ""));
+
+    let result = diesel::sql_query(query)
+        .load(conn)
+        .context("Failed to load trending collection(s)");
+
+    println!("Query Result: {:?}", result);
+    result
 }

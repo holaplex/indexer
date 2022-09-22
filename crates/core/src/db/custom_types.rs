@@ -551,3 +551,35 @@ pub enum Sort {
     #[strum(serialize = "ListedAt")]
     ListedAt,
 }
+
+/// Direction for sorting Collections query results by the "SORT BY" variable(s)
+#[derive(Debug, Clone, Copy, strum::EnumString, strum::Display)]
+pub enum CollectionSort {
+    /// sort results by floor price
+    #[strum(serialize = "FloorPrice")]
+    FloorPrice,
+
+    /// sort results by 1 day volume
+    #[strum(serialize = "_1dVolume")]
+    _1dVolume,
+
+    /// sort results by 7 days volume
+    #[strum(serialize = "_7dVolume")]
+    _7dVolume,
+
+    /// sort results by 30 days volume
+    #[strum(serialize = "_30dVolume")]
+    _30dVolume,
+
+    /// sort results by 1 day sales count
+    #[strum(serialize = "_1dSalesCount")]
+    _1dSalesCount,
+
+    /// sort results by 7 days sales count
+    #[strum(serialize = "_7dSalesCount")]
+    _7dSalesCount,
+
+    /// sort results by 30 days sales count
+    #[strum(serialize = "_30dSalesCount")]
+    _30dSalesCount,
+}
