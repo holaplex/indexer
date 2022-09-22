@@ -1,3 +1,3 @@
 alter table geno_habitat_datas drop column daily_ki_harvesting_cap cascade;
-drop function update_daily_ki_harvesting_cap;
 drop trigger update_daily_ki_harvesting_cap_trigger on geno_habitat_datas;
+drop function update_daily_ki_harvesting_cap;
