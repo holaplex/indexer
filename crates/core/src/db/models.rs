@@ -329,6 +329,42 @@ pub struct NftActivity {
     pub activity_type: String,
 }
 
+/// A row in the `collection_trends` table
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct CollectionTrend {
+    /// Collection address or id
+    #[sql_type = "Text"]
+    pub collection: String,
+
+    /// Collection floor price
+    #[sql_type = "Int8"]
+    pub floor_price: i64,
+
+    /// Collection 1 day volume
+    #[sql_type = "Int8"]
+    pub _1d_volume: i64,
+
+    /// Collection 7 days volume
+    #[sql_type = "Int8"]
+    pub _7d_volume: i64,
+
+    /// Collection 30 days volume
+    #[sql_type = "Int8"]
+    pub _30d_volume: i64,
+
+    /// Collection 1 day sales count
+    #[sql_type = "Int8"]
+    pub _1d_sales_count: i64,
+
+    /// Collection 7 days sales count
+    #[sql_type = "Int8"]
+    pub _7d_sales_count: i64,
+
+    /// Collection 30 days sales count
+    #[sql_type = "Int8"]
+    pub _30d_sales_count: i64,
+}
+
 /// Collection nfts/holders count
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct CollectionCount {

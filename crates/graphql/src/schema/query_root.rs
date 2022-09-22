@@ -35,6 +35,7 @@ use tables::{
 
 use super::{
     enums::{CollectionSort, OrderDirection},
+    objects::nft::CollectionTrend,
     prelude::*,
 };
 pub struct QueryRoot;
@@ -793,17 +794,17 @@ impl QueryRoot {
             offset(description = "Return results starting from this index"),
         )
     )]
-    async fn trending_collections(
+    async fn collection_trends(
         &self,
         context: &AppContext,
         sort_by: Option<CollectionSort>,
         order_direction: Option<OrderDirection>,
         limit: i32,
         offset: i32,
-    ) -> FieldResult<Vec<Collection>> {
+    ) -> FieldResult<Vec<CollectionTrend>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
-        let collections = queries::collections::trending(&conn, TrendingQueryOptions {
+        let collections = queries::collections::trends(&conn, TrendingQueryOptions {
             sort_by: sort_by.map(Into::into),
             order: order_direction.map(Into::into),
             limit: limit.try_into()?,

@@ -11,50 +11,18 @@ use diesel::{
     serialize::ToSql,
     sql_types::{Array, Integer, Nullable, Text, Timestamp},
 };
-use sea_query::{Expr, Iden, Order, PostgresQueryBuilder, Query};
+use sea_query::{Iden, Order, PostgresQueryBuilder, Query};
 
 use crate::{
     db::{
         custom_types::{CollectionSort, OrderDirection},
-        models::{Nft, NftActivity},
+        models::{CollectionTrend, Nft, NftActivity},
         queries::metadatas::NFT_COLUMNS,
         tables::{current_metadata_owners, metadata_collection_keys, metadata_jsons, metadatas},
         Connection,
     },
     error::Result,
 };
-
-#[derive(Iden)]
-enum Metadatas {
-    Table,
-    Address,
-    Name,
-    MintAddress,
-    PrimarySaleHappened,
-    SellerFeeBasisPoints,
-    UpdateAuthorityAddress,
-    Uri,
-    Slot,
-}
-
-#[derive(Iden)]
-enum MetadataJsons {
-    Table,
-    MetadataAddress,
-    Description,
-    Image,
-    AnimationUrl,
-    ExternalUrl,
-    Category,
-    Model,
-}
-
-#[derive(Iden)]
-enum CurrentMetadataOwners {
-    Table,
-    MintAddress,
-    TokenAccountAddress,
-}
 
 #[derive(Iden)]
 enum CollectionTrends {
@@ -506,7 +474,7 @@ impl From<CollectionSort> for CollectionTrends {
 /// # Errors
 /// returns an error when the underlying queries throw an error
 #[allow(clippy::too_many_lines)]
-pub fn trending(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Nft>> {
+pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<CollectionTrend>> {
     let TrendingQueryOptions {
         sort_by,
         order,
@@ -520,28 +488,6 @@ pub fn trending(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<
 
     let query = Query::select()
         .columns(vec![
-            (Metadatas::Table, Metadatas::Address),
-            (Metadatas::Table, Metadatas::Name),
-            (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
-            (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
-            (Metadatas::Table, Metadatas::MintAddress),
-            (Metadatas::Table, Metadatas::PrimarySaleHappened),
-            (Metadatas::Table, Metadatas::Uri),
-            (Metadatas::Table, Metadatas::Slot),
-        ])
-        .columns(vec![
-            (MetadataJsons::Table, MetadataJsons::Description),
-            (MetadataJsons::Table, MetadataJsons::Image),
-            (MetadataJsons::Table, MetadataJsons::AnimationUrl),
-            (MetadataJsons::Table, MetadataJsons::ExternalUrl),
-            (MetadataJsons::Table, MetadataJsons::Category),
-            (MetadataJsons::Table, MetadataJsons::Model),
-        ])
-        .columns(vec![(
-            CurrentMetadataOwners::Table,
-            CurrentMetadataOwners::TokenAccountAddress,
-        )])
-        .columns(vec![
             (CollectionTrends::Table, CollectionTrends::Collection),
             (CollectionTrends::Table, CollectionTrends::FloorPrice),
             (CollectionTrends::Table, CollectionTrends::_1dVolume),
@@ -551,24 +497,7 @@ pub fn trending(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<
             (CollectionTrends::Table, CollectionTrends::_7dSalesCount),
             (CollectionTrends::Table, CollectionTrends::_30dSalesCount),
         ])
-        .from(MetadataJsons::Table)
-        .inner_join(
-            Metadatas::Table,
-            Expr::tbl(MetadataJsons::Table, MetadataJsons::MetadataAddress)
-                .equals(Metadatas::Table, Metadatas::Address),
-        )
-        .inner_join(
-            CurrentMetadataOwners::Table,
-            Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
-                CurrentMetadataOwners::Table,
-                CurrentMetadataOwners::MintAddress,
-            ),
-        )
-        .inner_join(
-            CollectionTrends::Table,
-            Expr::tbl(Metadatas::Table, Metadatas::MintAddress)
-                .equals(CollectionTrends::Table, CollectionTrends::Collection),
-        )
+        .from(CollectionTrends::Table)
         .limit(limit)
         .offset(offset)
         .order_by((CollectionTrends::Table, sort_unwrap), order_unwrap)

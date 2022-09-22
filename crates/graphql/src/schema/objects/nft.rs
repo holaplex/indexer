@@ -853,6 +853,84 @@ impl TryFrom<models::Nft> for Collection {
 }
 
 #[derive(Debug, Clone)]
+pub struct CollectionTrend {
+    pub collection: String,
+    pub floor_price: U64,
+    pub _1d_volume: U64,
+    pub _7d_volume: U64,
+    pub _30d_volume: U64,
+    pub _1d_sales_count: U64,
+    pub _7d_sales_count: U64,
+    pub _30d_sales_count: U64,
+}
+
+impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::CollectionTrend {
+            collection,
+            floor_price,
+            _1d_volume,
+            _7d_volume,
+            _30d_volume,
+            _1d_sales_count,
+            _7d_sales_count,
+            _30d_sales_count,
+        }: models::CollectionTrend,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            collection,
+            floor_price: floor_price.try_into()?,
+            _1d_volume: _1d_volume.try_into()?,
+            _7d_volume: _7d_volume.try_into()?,
+            _30d_volume: _30d_volume.try_into()?,
+            _1d_sales_count: _1d_sales_count.try_into()?,
+            _7d_sales_count: _7d_sales_count.try_into()?,
+            _30d_sales_count: _30d_sales_count.try_into()?,
+        })
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl CollectionTrend {
+    pub fn floor_price(&self) -> U64 {
+        self.floor_price
+    }
+
+    pub fn _1d_volume(&self) -> U64 {
+        self._1d_volume
+    }
+
+    pub fn _7d_volume(&self) -> U64 {
+        self._7d_volume
+    }
+
+    pub fn _30d_volume(&self) -> U64 {
+        self._30d_volume
+    }
+
+    pub fn _1d_sales_count(&self) -> U64 {
+        self._1d_sales_count
+    }
+
+    pub fn _7d_sales_count(&self) -> U64 {
+        self._7d_sales_count
+    }
+
+    pub fn _30d_sales_count(&self) -> U64 {
+        self._30d_sales_count
+    }
+
+    pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
+        ctx.nft_collection_loader
+            .load(self.collection.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct NftCount {
     creators: Vec<PublicKey<NftCreator>>,
 }
