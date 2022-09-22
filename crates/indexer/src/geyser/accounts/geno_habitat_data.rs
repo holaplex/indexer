@@ -91,7 +91,7 @@ pub(crate) async fn process(
 
     let _: [_; 2] = habitat.sub_habitats; // Sanity check
 
-    let daily_ki_harvesting_cap = calculate_harvesting_cap(client, habitat.clone())
+    let mut daily_ki_harvesting_cap = calculate_harvesting_cap(client, habitat.clone())
         .await
         .context("failed to get primary habitat daily cap")?
         .unwrap_or_default();
@@ -112,6 +112,8 @@ pub(crate) async fn process(
             })
             .await
             .context("failed to update daily ki harvesting cap of parent habitat ")?;
+
+        daily_ki_harvesting_cap = 0.into();
     }
 
     let row = models::GenoHabitatData {
