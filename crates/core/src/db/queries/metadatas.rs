@@ -542,12 +542,7 @@ pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<N
                 .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
                     CurrentMetadataOwners::Table,
                     CurrentMetadataOwners::OwnerAddress,
-                )),
-        )
-        .cond_where(
-            Condition::all()
-                .add(Expr::col(CurrentMetadataOwners::OwnerAddress).eq(wallet))
-                .add(Expr::col(Metadatas::BurnedAt).is_null())
+                ))
                 .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
                 .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
                 .add(
@@ -558,22 +553,24 @@ pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<N
                     Expr::tbl(Listings::Table, Listings::Expiry)
                         .is_null()
                         .or(Expr::tbl(Listings::Table, Listings::Expiry).gt(current_time)),
-                ),
+                )
+                .add_option(auction_house.map(|auction_house| {
+                    Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house)
+                }))
+                .add_option(marketplace_program.map(|marketplace_program| {
+                    Expr::col((Listings::Table, Listings::MarketplaceProgram))
+                        .eq(marketplace_program)
+                })),
+        )
+        .cond_where(
+            Condition::all()
+                .add(Expr::col(CurrentMetadataOwners::OwnerAddress).eq(wallet))
+                .add(Expr::col(Metadatas::BurnedAt).is_null()),
         )
         .limit(limit)
         .offset(offset)
         .order_by((Listings::Table, sort_unwrap), order_unwrap)
         .take();
-
-    if let Some(auction_house) = auction_house {
-        query.and_where(Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house));
-    }
-
-    if let Some(marketplace_program) = marketplace_program {
-        query.and_where(
-            Expr::col((Listings::Table, Listings::MarketplaceProgram)).eq(marketplace_program),
-        );
-    }
 
     if let Some(collections) = collections {
         query.inner_join(
