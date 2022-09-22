@@ -96,8 +96,6 @@ pub(crate) async fn process(
         .context("failed to get primary habitat daily cap")?
         .unwrap_or_default();
 
-    debug!("{:?}", daily_ki_harvesting_cap);
-
     if let Some(parent) = habitat.parent_habitat {
         client
             .db()
