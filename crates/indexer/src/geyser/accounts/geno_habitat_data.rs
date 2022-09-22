@@ -225,7 +225,7 @@ async fn calculate_harvesting_cap(
     habitat: genostub::state::HabitatData,
 ) -> Result<Option<BigDecimal>> {
     fn find_cap(l: i16, g: bool) -> BigDecimal {
-        (30_000_000_000 + 20_000_000_000 * (i64::from(l) - 1) + 1_000_000_000 * (i64::from(g)))
+        (30_000_000_000 + 20_000_000_000 * (i64::from(l) - 1) + 10_000_000_000 * (i64::from(g)))
             .into()
     }
 
