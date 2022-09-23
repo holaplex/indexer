@@ -446,7 +446,7 @@ pub fn collection_activities(
 #[derive(Debug)]
 pub struct TrendingQueryOptions {
     /// Sort by Price or Listed at
-    pub sort_by: Option<CollectionSort>,
+    pub sort_by: CollectionSort,
     /// Order the resulting rows by 'Asc' or 'Desc'
     pub order: Option<Order>,
     /// Limit the number of returned rows
@@ -482,7 +482,7 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Co
         offset,
     } = options;
 
-    let sort_unwrap = sort_by.map_or(CollectionTrends::_7dVolume, Into::into);
+    let sort_unwrap: CollectionTrends = sort_by.into();
 
     let order_unwrap = order.unwrap_or(Order::Desc);
 

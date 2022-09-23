@@ -48,32 +48,21 @@ impl From<WalletNftSort> for db::custom_types::Sort {
 #[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]
 #[graphql(description = "Sorts collection results")]
 pub enum CollectionSort {
-    #[graphql(name = "FLOOR_PRICE")]
-    FloorPrice,
-    #[graphql(name = "_1D_VOLUME")]
-    _1dVolume,
-    #[graphql(name = "_7D_VOLUME")]
-    _7dVolume,
-    #[graphql(name = "_30D_VOLUME")]
-    _30dVolume,
-    #[graphql(name = "_1D_SALES_COUNT")]
-    _1dSalesCount,
-    #[graphql(name = "_7D_SALES_COUNT")]
-    _7dSalesCount,
-    #[graphql(name = "_30D_SALES_COUNT")]
-    _30dSalesCount,
+    #[graphql(name = "VOLUME")]
+    Volume,
+    #[graphql(name = "FLOOR")]
+    Floor,
+    #[graphql(name = "NUMBER_SALES")]
+    NumberSales,
 }
 
-impl From<CollectionSort> for db::custom_types::CollectionSort {
-    fn from(other: CollectionSort) -> Self {
-        match other {
-            CollectionSort::FloorPrice => Self::FloorPrice,
-            CollectionSort::_1dVolume => Self::_1dVolume,
-            CollectionSort::_7dVolume => Self::_7dVolume,
-            CollectionSort::_30dVolume => Self::_30dVolume,
-            CollectionSort::_1dSalesCount => Self::_1dSalesCount,
-            CollectionSort::_7dSalesCount => Self::_7dSalesCount,
-            CollectionSort::_30dSalesCount => Self::_30dSalesCount,
-        }
-    }
+#[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]
+#[graphql(description = "Collection intervals")]
+pub enum CollectionInterval {
+    #[graphql(name = "_1d")]
+    _1d,
+    #[graphql(name = "_7d")]
+    _7d,
+    #[graphql(name = "_30d")]
+    _30d,
 }

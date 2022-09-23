@@ -1,4 +1,5 @@
 use indexer_core::db::{
+    self,
     expression::dsl::all,
     queries::{self, collections::TrendingQueryOptions, feed_event::EventType},
 };
@@ -34,7 +35,7 @@ use tables::{
 };
 
 use super::{
-    enums::{CollectionSort, OrderDirection},
+    enums::{CollectionInterval, CollectionSort, OrderDirection},
     objects::nft::CollectionTrend,
     prelude::*,
 };
@@ -797,15 +798,46 @@ impl QueryRoot {
     async fn collection_trends(
         &self,
         context: &AppContext,
-        sort_by: Option<CollectionSort>,
+        sort_by: CollectionSort,
+        interval: CollectionInterval,
         order_direction: Option<OrderDirection>,
         limit: i32,
         offset: i32,
     ) -> FieldResult<Vec<CollectionTrend>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
+        let sort = match (interval, sort_by) {
+            (CollectionInterval::_1d, CollectionSort::Volume) => {
+                db::custom_types::CollectionSort::_1dVolume
+            },
+            (CollectionInterval::_7d, CollectionSort::Volume) => {
+                db::custom_types::CollectionSort::_7dVolume
+            },
+            (CollectionInterval::_30d, CollectionSort::Volume) => {
+                db::custom_types::CollectionSort::_7dVolume
+            },
+            (CollectionInterval::_1d, CollectionSort::NumberSales) => {
+                db::custom_types::CollectionSort::_1dSalesCount
+            },
+            (CollectionInterval::_7d, CollectionSort::NumberSales) => {
+                db::custom_types::CollectionSort::_7dSalesCount
+            },
+            (CollectionInterval::_30d, CollectionSort::NumberSales) => {
+                db::custom_types::CollectionSort::_30dSalesCount
+            },
+            (CollectionInterval::_1d, CollectionSort::Floor) => {
+                db::custom_types::CollectionSort::FloorPrice
+            },
+            (CollectionInterval::_7d, CollectionSort::Floor) => {
+                db::custom_types::CollectionSort::FloorPrice
+            },
+            (CollectionInterval::_30d, CollectionSort::Floor) => {
+                db::custom_types::CollectionSort::FloorPrice
+            },
+        };
+
         let collections = queries::collections::trends(&conn, TrendingQueryOptions {
-            sort_by: sort_by.map(Into::into),
+            sort_by: sort,
             order: order_direction.map(Into::into),
             limit: limit.try_into()?,
             offset: offset.try_into()?,
