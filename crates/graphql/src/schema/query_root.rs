@@ -788,6 +788,7 @@ impl QueryRoot {
         description = "Returns featured collection NFTs ordered by market cap (floor price * number of NFTs in collection)",
         arguments(
             sort_by(description = "Choose sort for trending collections"),
+            time_frame(description = "The desired timeframe to evaluate the trending collection"),
             order_direction(
                 description = "Arrange result in ascending or descending order by selected sort_by"
             ),
@@ -799,39 +800,39 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         sort_by: CollectionSort,
-        interval: CollectionInterval,
+        time_frame: CollectionInterval,
         order_direction: Option<OrderDirection>,
         limit: i32,
         offset: i32,
     ) -> FieldResult<Vec<CollectionTrend>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
-        let sort = match (interval, sort_by) {
-            (CollectionInterval::_1d, CollectionSort::Volume) => {
-                db::custom_types::CollectionSort::_1dVolume
+        let sort = match (time_frame, sort_by) {
+            (CollectionInterval::OneDay, CollectionSort::Volume) => {
+                db::custom_types::CollectionSort::OneDayVolume
             },
-            (CollectionInterval::_7d, CollectionSort::Volume) => {
-                db::custom_types::CollectionSort::_7dVolume
+            (CollectionInterval::SevenDay, CollectionSort::Volume) => {
+                db::custom_types::CollectionSort::SevenDayVolume
             },
-            (CollectionInterval::_30d, CollectionSort::Volume) => {
-                db::custom_types::CollectionSort::_7dVolume
+            (CollectionInterval::ThirtyDay, CollectionSort::Volume) => {
+                db::custom_types::CollectionSort::SevenDayVolume
             },
-            (CollectionInterval::_1d, CollectionSort::NumberSales) => {
-                db::custom_types::CollectionSort::_1dSalesCount
+            (CollectionInterval::OneDay, CollectionSort::NumberSales) => {
+                db::custom_types::CollectionSort::OneDaySalesCount
             },
-            (CollectionInterval::_7d, CollectionSort::NumberSales) => {
-                db::custom_types::CollectionSort::_7dSalesCount
+            (CollectionInterval::SevenDay, CollectionSort::NumberSales) => {
+                db::custom_types::CollectionSort::SevenDaySalesCount
             },
-            (CollectionInterval::_30d, CollectionSort::NumberSales) => {
-                db::custom_types::CollectionSort::_30dSalesCount
+            (CollectionInterval::ThirtyDay, CollectionSort::NumberSales) => {
+                db::custom_types::CollectionSort::ThirtyDaySalesCount
             },
-            (CollectionInterval::_1d, CollectionSort::Floor) => {
+            (CollectionInterval::OneDay, CollectionSort::Floor) => {
                 db::custom_types::CollectionSort::FloorPrice
             },
-            (CollectionInterval::_7d, CollectionSort::Floor) => {
+            (CollectionInterval::SevenDay, CollectionSort::Floor) => {
                 db::custom_types::CollectionSort::FloorPrice
             },
-            (CollectionInterval::_30d, CollectionSort::Floor) => {
+            (CollectionInterval::ThirtyDay, CollectionSort::Floor) => {
                 db::custom_types::CollectionSort::FloorPrice
             },
         };

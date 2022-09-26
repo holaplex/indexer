@@ -556,30 +556,23 @@ pub enum Sort {
 #[derive(Debug, Clone, Copy, strum::EnumString, strum::Display)]
 pub enum CollectionSort {
     /// sort results by floor price
-    #[strum(serialize = "FloorPrice")]
     FloorPrice,
 
     /// sort results by 1 day volume
-    #[strum(serialize = "_1dVolume")]
-    _1dVolume,
+    OneDayVolume,
 
     /// sort results by 7 days volume
-    #[strum(serialize = "_7dVolume")]
-    _7dVolume,
+    SevenDayVolume,
 
-    /// sort results by 30 days volume
-    #[strum(serialize = "_30dVolume")]
-    _30dVolume,
+    /// sort results by 30 days volume]
+    ThirtyDayVolume,
 
     /// sort results by 1 day sales count
-    #[strum(serialize = "_1dSalesCount")]
-    _1dSalesCount,
+    OneDaySalesCount,
 
     /// sort results by 7 days sales count
-    #[strum(serialize = "_7dSalesCount")]
-    _7dSalesCount,
+    SevenDaySalesCount,
 
     /// sort results by 30 days sales count
-    #[strum(serialize = "_30dSalesCount")]
-    _30dSalesCount,
+    ThirtyDaySalesCount,
 }

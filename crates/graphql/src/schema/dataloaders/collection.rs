@@ -3,7 +3,7 @@ use indexer_core::db::{
     sql_types::{Array, Text},
 };
 use objects::{
-    nft::{Collection, Nft},
+    nft::{Collection, CollectionIdentifier, Nft},
     store_creator::StoreCreator,
 };
 use scalars::{PublicKey, I64};
@@ -248,5 +248,67 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionFloorPrice>> for Batcher
             )
             .map(|(collection, f)| (collection, CollectionFloorPrice::from(f)))
             .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<String, Option<Collection>> for Batcher {
+    async fn load(&mut self, identifiers: &[String]) -> TryBatchMap<String, Option<Collection>> {
+        let conn = self.db()?;
+
+        debug!("The identifiers: {:?}", identifiers);
+
+        let rows: Vec<models::Nft> = sql_query("
+        SELECT
+            metadatas.address,
+            metadatas.name,
+            metadatas.seller_fee_basis_points,
+            metadatas.update_authority_address,
+            metadatas.mint_address,
+            metadatas.primary_sale_happened,
+            metadatas.uri,
+            metadatas.slot,
+            metadata_jsons.description,
+            metadata_jsons.image,
+            metadata_jsons.animation_url,
+            metadata_jsons.external_url,
+            metadata_jsons.category,
+            metadata_jsons.model,
+            current_metadata_owners.token_account_address
+            FROM metadatas
+            INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
+            INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address)
+            WHERE metadatas.mint_address = ANY($1)
+        UNION ALL
+        SELECT
+            me_collections.id::text as address,
+            COALESCE(me_collections.name, '') as name,
+            0 as seller_fee_basis_points,
+            '' as update_authority_address,
+            me_collections.id::text as mint_address,
+            false as primary_sale_happened,
+            '' as uri,
+            0 as slot,
+            '' as description,
+            me_collections.image as image,
+            '' as animation_url,
+            '' as external_url,
+            '' as category,
+            '' as model,
+            '' as token_account_address
+            FROM me_collections
+            WHERE id::text = ANY($1);
+    -- $1: identifiers::text[]
+    ")
+        .bind::<Array<Text>, _>(identifiers)
+        .load(&conn)
+        .context("Failed to load floor price for collection")?;
+
+        debug!("rows: {:?}", rows);
+
+        Ok(rows
+            .into_iter()
+            .map(|a| (a.mint_address.clone(), a.try_into()))
+            .batch(identifiers))
     }
 }

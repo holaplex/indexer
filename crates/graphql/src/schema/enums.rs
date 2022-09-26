@@ -59,10 +59,10 @@ pub enum CollectionSort {
 #[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]
 #[graphql(description = "Collection intervals")]
 pub enum CollectionInterval {
-    #[graphql(name = "_1d")]
-    _1d,
-    #[graphql(name = "_7d")]
-    _7d,
-    #[graphql(name = "_30d")]
-    _30d,
+    #[graphql(name = "ONE_DAY")]
+    OneDay,
+    #[graphql(name = "SEVEN_DAY")]
+    SevenDay,
+    #[graphql(name = "THIRTY_DAY")]
+    ThirtyDay,
 }

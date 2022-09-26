@@ -852,16 +852,20 @@ impl TryFrom<models::Nft> for Collection {
     }
 }
 
+// TODO: use collection identifier for the data loader instead of string
+#[derive(Debug, Clone)]
+pub struct CollectionIdentifier(pub String);
+
 #[derive(Debug, Clone)]
 pub struct CollectionTrend {
     pub collection: String,
     pub floor_price: U64,
-    pub _1d_volume: U64,
-    pub _7d_volume: U64,
-    pub _30d_volume: U64,
-    pub _1d_sales_count: U64,
-    pub _7d_sales_count: U64,
-    pub _30d_sales_count: U64,
+    pub one_day_volume: U64,
+    pub seven_day_volume: U64,
+    pub thirty_day_volume: U64,
+    pub one_day_sales_count: U64,
+    pub seven_day_sales_count: U64,
+    pub thirty_day_sales_count: U64,
 }
 
 impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
@@ -871,23 +875,23 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
         models::CollectionTrend {
             collection,
             floor_price,
-            _1d_volume,
-            _7d_volume,
-            _30d_volume,
-            _1d_sales_count,
-            _7d_sales_count,
-            _30d_sales_count,
+            one_day_volume,
+            seven_day_volume,
+            thirty_day_volume,
+            one_day_sales_count,
+            seven_day_sales_count,
+            thirty_day_sales_count,
         }: models::CollectionTrend,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             collection,
-            floor_price: floor_price.try_into()?,
-            _1d_volume: _1d_volume.try_into()?,
-            _7d_volume: _7d_volume.try_into()?,
-            _30d_volume: _30d_volume.try_into()?,
-            _1d_sales_count: _1d_sales_count.try_into()?,
-            _7d_sales_count: _7d_sales_count.try_into()?,
-            _30d_sales_count: _30d_sales_count.try_into()?,
+            floor_price: floor_price.to_u64().unwrap_or_default().into(),
+            one_day_volume: one_day_volume.to_u64().unwrap_or_default().into(),
+            seven_day_volume: seven_day_volume.to_u64().unwrap_or_default().into(),
+            thirty_day_volume: thirty_day_volume.to_u64().unwrap_or_default().into(),
+            one_day_sales_count: one_day_sales_count.to_u64().unwrap_or_default().into(),
+            seven_day_sales_count: seven_day_sales_count.to_u64().unwrap_or_default().into(),
+            thirty_day_sales_count: thirty_day_sales_count.to_u64().unwrap_or_default().into(),
         })
     }
 }
@@ -898,33 +902,33 @@ impl CollectionTrend {
         self.floor_price
     }
 
-    pub fn _1d_volume(&self) -> U64 {
-        self._1d_volume
+    pub fn one_day_volume(&self) -> U64 {
+        self.one_day_volume
     }
 
-    pub fn _7d_volume(&self) -> U64 {
-        self._7d_volume
+    pub fn seven_day_volume(&self) -> U64 {
+        self.seven_day_volume
     }
 
-    pub fn _30d_volume(&self) -> U64 {
-        self._30d_volume
+    pub fn thirty_day_volume(&self) -> U64 {
+        self.thirty_day_volume
     }
 
-    pub fn _1d_sales_count(&self) -> U64 {
-        self._1d_sales_count
+    pub fn one_day_sales_count(&self) -> U64 {
+        self.one_day_sales_count
     }
 
-    pub fn _7d_sales_count(&self) -> U64 {
-        self._7d_sales_count
+    pub fn seven_day_sales_count(&self) -> U64 {
+        self.seven_day_sales_count
     }
 
-    pub fn _30d_sales_count(&self) -> U64 {
-        self._30d_sales_count
+    pub fn thirty_day_sales_count(&self) -> U64 {
+        self.thirty_day_sales_count
     }
 
     pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        ctx.nft_collection_loader
-            .load(self.collection.clone().into())
+        ctx.generic_collection_loader
+            .load(self.collection.clone())
             .await
             .map_err(Into::into)
     }

@@ -6,7 +6,9 @@ use std::borrow::Cow;
 
 use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
-use diesel::sql_types::{Array, Bool, Int4, Int8, Nullable, Text, Timestamp, Timestamptz, VarChar};
+use diesel::sql_types::{
+    Array, Bool, Int4, Int8, Nullable, Numeric, Text, Timestamp, Timestamptz, VarChar,
+};
 use uuid::Uuid;
 
 #[allow(clippy::wildcard_imports)]
@@ -337,32 +339,38 @@ pub struct CollectionTrend {
     pub collection: String,
 
     /// Collection floor price
-    #[sql_type = "Int8"]
-    pub floor_price: i64,
+    #[sql_type = "Numeric"]
+    pub floor_price: BigDecimal,
 
     /// Collection 1 day volume
-    #[sql_type = "Int8"]
-    pub _1d_volume: i64,
+    #[sql_type = "Numeric"]
+    #[column_name = "_1d_volume"]
+    pub one_day_volume: BigDecimal,
 
     /// Collection 7 days volume
-    #[sql_type = "Int8"]
-    pub _7d_volume: i64,
+    #[sql_type = "Numeric"]
+    #[column_name = "_7d_volume"]
+    pub seven_day_volume: BigDecimal,
 
     /// Collection 30 days volume
-    #[sql_type = "Int8"]
-    pub _30d_volume: i64,
+    #[sql_type = "Numeric"]
+    #[column_name = "_30d_volume"]
+    pub thirty_day_volume: BigDecimal,
 
     /// Collection 1 day sales count
-    #[sql_type = "Int8"]
-    pub _1d_sales_count: i64,
+    #[sql_type = "Numeric"]
+    #[column_name = "_1d_sales_count"]
+    pub one_day_sales_count: BigDecimal,
 
     /// Collection 7 days sales count
-    #[sql_type = "Int8"]
-    pub _7d_sales_count: i64,
+    #[sql_type = "Numeric"]
+    #[column_name = "_7d_sales_count"]
+    pub seven_day_sales_count: BigDecimal,
 
     /// Collection 30 days sales count
-    #[sql_type = "Int8"]
-    pub _30d_sales_count: i64,
+    #[sql_type = "Numeric"]
+    #[column_name = "_30d_sales_count"]
+    pub thirty_day_sales_count: BigDecimal,
 }
 
 /// Collection nfts/holders count
@@ -391,7 +399,7 @@ pub struct CollectionFloorPrice {
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct CollectionVolume {
     /// Collection Volume
-    #[sql_type = "diesel::sql_types::Numeric"]
+    #[sql_type = "Numeric"]
     pub volume: BigDecimal,
 }
 

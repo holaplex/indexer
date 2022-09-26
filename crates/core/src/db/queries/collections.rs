@@ -29,12 +29,18 @@ enum CollectionTrends {
     Table,
     Collection,
     FloorPrice,
-    _1dVolume,
-    _7dVolume,
-    _30dVolume,
-    _1dSalesCount,
-    _7dSalesCount,
-    _30dSalesCount,
+    #[iden(rename = "_1d_volume")]
+    OneDayVolume,
+    #[iden(rename = "_7d_volume")]
+    SevenDayVolume,
+    #[iden(rename = "_30d_volume")]
+    ThirtyDayVolume,
+    #[iden(rename = "_1d_sales_count")]
+    OneDaySalesCount,
+    #[iden(rename = "_7d_sales_count")]
+    SevenDaySalesCount,
+    #[iden(rename = "_30d_sales_count")]
+    ThirtyDaySalesCount,
 }
 
 /// Query collection by address
@@ -459,12 +465,12 @@ impl From<CollectionSort> for CollectionTrends {
     fn from(sort: CollectionSort) -> Self {
         match sort {
             CollectionSort::FloorPrice => CollectionTrends::FloorPrice,
-            CollectionSort::_1dVolume => CollectionTrends::_1dVolume,
-            CollectionSort::_7dVolume => CollectionTrends::_7dVolume,
-            CollectionSort::_30dVolume => CollectionTrends::_30dVolume,
-            CollectionSort::_1dSalesCount => CollectionTrends::_1dSalesCount,
-            CollectionSort::_7dSalesCount => CollectionTrends::_7dSalesCount,
-            CollectionSort::_30dSalesCount => CollectionTrends::_30dSalesCount,
+            CollectionSort::OneDayVolume => CollectionTrends::OneDayVolume,
+            CollectionSort::SevenDayVolume => CollectionTrends::SevenDayVolume,
+            CollectionSort::ThirtyDayVolume => CollectionTrends::ThirtyDayVolume,
+            CollectionSort::OneDaySalesCount => CollectionTrends::OneDaySalesCount,
+            CollectionSort::SevenDaySalesCount => CollectionTrends::SevenDaySalesCount,
+            CollectionSort::ThirtyDaySalesCount => CollectionTrends::ThirtyDaySalesCount,
         }
     }
 }
@@ -482,25 +488,31 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Co
         offset,
     } = options;
 
-    let sort_unwrap: CollectionTrends = sort_by.into();
+    let sort_by: CollectionTrends = sort_by.into();
 
-    let order_unwrap = order.unwrap_or(Order::Desc);
+    let order = order.unwrap_or(Order::Desc);
 
     let query = Query::select()
         .columns(vec![
             (CollectionTrends::Table, CollectionTrends::Collection),
             (CollectionTrends::Table, CollectionTrends::FloorPrice),
-            (CollectionTrends::Table, CollectionTrends::_1dVolume),
-            (CollectionTrends::Table, CollectionTrends::_7dVolume),
-            (CollectionTrends::Table, CollectionTrends::_30dVolume),
-            (CollectionTrends::Table, CollectionTrends::_1dSalesCount),
-            (CollectionTrends::Table, CollectionTrends::_7dSalesCount),
-            (CollectionTrends::Table, CollectionTrends::_30dSalesCount),
+            (CollectionTrends::Table, CollectionTrends::OneDayVolume),
+            (CollectionTrends::Table, CollectionTrends::SevenDayVolume),
+            (CollectionTrends::Table, CollectionTrends::ThirtyDayVolume),
+            (CollectionTrends::Table, CollectionTrends::OneDaySalesCount),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::SevenDaySalesCount,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::ThirtyDaySalesCount,
+            ),
         ])
         .from(CollectionTrends::Table)
         .limit(limit)
         .offset(offset)
-        .order_by((CollectionTrends::Table, sort_unwrap), order_unwrap)
+        .order_by((CollectionTrends::Table, sort_by), order)
         .take();
 
     let query = query.to_string(PostgresQueryBuilder);
