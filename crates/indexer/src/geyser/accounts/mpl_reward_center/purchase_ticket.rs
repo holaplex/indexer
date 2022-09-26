@@ -2,19 +2,17 @@ use indexer_core::{
     db::{
         insert_into,
         models::{
-            AuctionHouse, CurrentMetadataOwner, Purchase as DbPurchase,
-            RewardsPurchaseTicket as DbRewardsPurchaseTicket,
+            AuctionHouse, Purchase as DbPurchase, RewardsPurchaseTicket as DbRewardsPurchaseTicket,
         },
-        mutations,
-        tables::{
-            current_metadata_owners, listings, metadatas, offers, reward_centers, rewards_listings,
-        },
+        on_constraint,
+        tables::{auction_houses, listings, offers, purchases, reward_centers},
+        update,
     },
     prelude::*,
     pubkeys, util,
+    uuid::Uuid,
 };
 use mpl_reward_center::state::PurchaseTicket;
-use solana_program::pubkey;
 
 use super::super::Client;
 use crate::prelude::*;
@@ -35,11 +33,11 @@ pub(crate) async fn process(
         price: account_data
             .price
             .try_into()
-            .context("Price is too big to store"),
+            .context("Price is too big to store")?,
         token_size: account_data
             .token_size
             .try_into()
-            .context("Token size is too big to store"),
+            .context("Token size is too big to store")?,
         created_at: util::unix_timestamp(account_data.created_at)?,
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
@@ -48,21 +46,29 @@ pub(crate) async fn process(
     client
         .db()
         .run(move |db| {
-            let auction_house = reward_centers::table
-                .select(reward_center::all_columns)
-                .filter(reward_centers::address.eq(row.address))
+            let auction_house = auction_houses::table
+                .select(auction_houses::all_columns)
+                .inner_join(
+                    reward_centers::table
+                        .on(auction_houses::address.eq(reward_centers::auction_house)),
+                )
+                .filter(reward_centers::address.eq(row.reward_center_address))
                 .first::<AuctionHouse>(db)?;
-            let current_metadata_owner = current_metadata_owners::table
-                .select(current_metadata_owner::token_account)
-                .inner_join(metadatas::table.on(metadatas::metadata_address.eq(row.metadata)))
-                .filter(metadata::meta.eq(row.address))
-                .first::<CurrentMetadataOwner>(db)?;
 
-            let row = Purchase {
+            // let current_metadata_owner = current_metadata_owners::table
+            //     .select(current_metadata_owners::token_account_address)
+            //     .inner_join(
+            //         metadatas::table
+            //             .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
+            //     )
+            //     .filter(metadatas::address.eq(row.metadata))
+            //     .first::<CurrentMetadataOwner>(db)?;
+
+            let row = DbPurchase {
                 id: None,
                 buyer: row.buyer.clone(),
                 seller: row.seller.clone(),
-                auction_house: row.auction_house.clone(),
+                auction_house: auction_house.address,
                 marketplace_program: Owned(pubkeys::REWARD_CENTER.to_string()),
                 metadata: row.metadata,
                 token_size: row.token_size,
@@ -72,14 +78,14 @@ pub(crate) async fn process(
                 write_version: Some(row.write_version),
             };
 
-            let listing_exists = select(exists(
-                listings::table.filter(
-                    listings::trade_state
-                        .eq(listing.trade_state.clone())
-                        .and(listings::metadata.eq(listing.metadata.clone())),
-                ),
-            ))
-            .get_result::<bool>(db)?;
+            // let listing_exists = select(exists(
+            //     listings::table.filter(
+            //         listings::trade_state
+            //             .eq(listing.trade_state.clone())
+            //             .and(listings::metadata.eq(listing.metadata.clone())),
+            //     ),
+            // ))
+            // .get_result::<bool>(db)?;
 
             db.build_transaction().read_write().run(|| {
                 let purchase_id = insert_into(purchases::table)
@@ -115,12 +121,18 @@ pub(crate) async fn process(
                             .and(listings::canceled_at.is_null()),
                     ),
                 )
-                .set(listings::purchase_id.eq(Some(purchase_id)))
+                .set((
+                    listings::purchase_id.eq(Some(purchase_id)),
+                    listings::slot.eq(row.slot),
+                ))
                 .execute(db)?;
+                Result::<_>::Ok(())
+            })?;
 
-                Result::Ok(())
-            });
+            Result::<_>::Ok(())
         })
         .await
         .context("Failed to insert rewards listing")?;
+
+    Ok(())
 }

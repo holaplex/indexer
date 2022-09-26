@@ -2,7 +2,7 @@ use indexer_core::{
     db::{insert_into, models::RewardCenter as DbRewardCenter, tables::reward_centers},
     prelude::*,
 };
-use mpl_reward_center::RewardCenter;
+use mpl_reward_center::state::RewardCenter;
 
 use super::super::Client;
 use crate::prelude::*;
@@ -19,8 +19,8 @@ pub(crate) async fn process(
         token_mint: Owned(bs58::encode(account_data.token_mint).into_string()),
         auction_house: Owned(bs58::encode(account_data.auction_house).into_string()),
         bump: account_data.bump.into(),
-        slot,
-        write_version,
+        slot: slot.try_into()?,
+        write_version: write_version.try_into()?,
     };
 
     client
@@ -35,4 +35,6 @@ pub(crate) async fn process(
         })
         .await
         .context("Failed to insert reward center")?;
+
+    Ok(())
 }
