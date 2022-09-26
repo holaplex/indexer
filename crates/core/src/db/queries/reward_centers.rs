@@ -20,7 +20,8 @@ use crate::{
 /// This function fails if the underlying query fails to execute.
 pub fn get<A: AsExpression<Text>>(conn: &Connection, address: A) -> Result<RewardCenter>
 where
-    A::Expression: NonAggregate + QueryId + QueryFragment<Pg> + AppearsOnTable<reward_centers::table>,
+    A::Expression:
+        NonAggregate + QueryId + QueryFragment<Pg> + AppearsOnTable<reward_centers::table>,
 {
     reward_centers::table
         .select(reward_centers::all_columns)

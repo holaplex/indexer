@@ -9,7 +9,6 @@ pub enum OrderDirection {
     Asc,
 }
 
-
 impl From<OrderDirection> for db::custom_types::OrderDirection {
     fn from(other: OrderDirection) -> Self {
         match other {

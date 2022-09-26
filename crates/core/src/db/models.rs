@@ -36,6 +36,8 @@ pub struct RewardsPurchaseTicket<'a> {
     pub seller: Cow<'a, str>,
     /// the metadata of the nft purchased
     pub metadata: Cow<'a, str>,
+    /// price of the nft
+    pub price: i64,
     /// number of tokens sold
     pub token_size: i64,
     /// the date and time of the purchase

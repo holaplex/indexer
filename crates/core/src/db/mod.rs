@@ -2,8 +2,8 @@
 
 pub mod custom_types;
 pub mod models;
-pub mod queries;
 pub mod mutations;
+pub mod queries;
 
 #[allow(missing_docs, unused_imports)]
 mod schema;

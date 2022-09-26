@@ -1,10 +1,11 @@
-use anchor_lang_v0_20::AccountDeserialize;
+use anchor_lang_v0_24::AccountDeserialize;
 use mpl_auction_house::{
+    constants::AUCTION_HOUSE_SIZE,
     receipt::{
         BidReceipt, ListingReceipt, PurchaseReceipt, BID_RECEIPT_SIZE, LISTING_RECEIPT_SIZE,
         PURCHASE_RECEIPT_SIZE,
     },
-    AuctionHouse, AUCTION_HOUSE_SIZE,
+    AuctionHouse,
 };
 
 use super::{
