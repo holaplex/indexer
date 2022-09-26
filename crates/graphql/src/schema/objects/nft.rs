@@ -866,6 +866,24 @@ pub struct CollectionTrend {
     pub one_day_sales_count: U64,
     pub seven_day_sales_count: U64,
     pub thirty_day_sales_count: U64,
+    pub prev_one_day_volume: U64,
+    pub prev_seven_day_volume: U64,
+    pub prev_thirty_day_volume: U64,
+    pub prev_one_day_sales_count: U64,
+    pub prev_seven_day_sales_count: U64,
+    pub prev_thirty_day_sales_count: U64,
+    pub prev_one_day_floor_price: U64,
+    pub prev_seven_day_floor_price: U64,
+    pub prev_thirty_day_floor_price: U64,
+    pub one_day_volume_change: U64,
+    pub seven_day_volume_change: U64,
+    pub thirty_day_volume_change: U64,
+    pub one_day_floor_price_change: U64,
+    pub seven_day_floor_price_change: U64,
+    pub thirty_day_floor_price_change: U64,
+    pub one_day_sales_count_change: U64,
+    pub seven_day_sales_count_change: U64,
+    pub thirty_day_sales_count_change: U64,
 }
 
 impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
@@ -881,6 +899,24 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
             one_day_sales_count,
             seven_day_sales_count,
             thirty_day_sales_count,
+            prev_one_day_volume,
+            prev_seven_day_volume,
+            prev_thirty_day_volume,
+            prev_one_day_sales_count,
+            prev_seven_day_sales_count,
+            prev_thirty_day_sales_count,
+            prev_one_day_floor_price,
+            prev_seven_day_floor_price,
+            prev_thirty_day_floor_price,
+            one_day_volume_change,
+            seven_day_volume_change,
+            thirty_day_volume_change,
+            one_day_floor_price_change,
+            seven_day_floor_price_change,
+            thirty_day_floor_price_change,
+            one_day_sales_count_change,
+            seven_day_sales_count_change,
+            thirty_day_sales_count_change,
         }: models::CollectionTrend,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -892,6 +928,54 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
             one_day_sales_count: one_day_sales_count.to_u64().unwrap_or_default().into(),
             seven_day_sales_count: seven_day_sales_count.to_u64().unwrap_or_default().into(),
             thirty_day_sales_count: thirty_day_sales_count.to_u64().unwrap_or_default().into(),
+            prev_one_day_volume: prev_one_day_volume.to_u64().unwrap_or_default().into(),
+            prev_seven_day_volume: prev_seven_day_volume.to_u64().unwrap_or_default().into(),
+            prev_thirty_day_volume: prev_thirty_day_volume.to_u64().unwrap_or_default().into(),
+            prev_one_day_sales_count: prev_one_day_sales_count.to_u64().unwrap_or_default().into(),
+            prev_seven_day_sales_count: prev_seven_day_sales_count
+                .to_u64()
+                .unwrap_or_default()
+                .into(),
+            prev_thirty_day_sales_count: prev_thirty_day_sales_count
+                .to_u64()
+                .unwrap_or_default()
+                .into(),
+            prev_one_day_floor_price: prev_one_day_floor_price.to_u64().unwrap_or_default().into(),
+            prev_seven_day_floor_price: prev_seven_day_floor_price
+                .to_u64()
+                .unwrap_or_default()
+                .into(),
+            prev_thirty_day_floor_price: prev_thirty_day_floor_price
+                .to_u64()
+                .unwrap_or_default()
+                .into(),
+            one_day_volume_change: one_day_volume_change.to_u64().unwrap_or_default().into(),
+            seven_day_volume_change: seven_day_volume_change.to_u64().unwrap_or_default().into(),
+            thirty_day_volume_change: thirty_day_volume_change.to_u64().unwrap_or_default().into(),
+            one_day_floor_price_change: one_day_floor_price_change
+                .to_u64()
+                .unwrap_or_default()
+                .into(),
+            seven_day_floor_price_change: seven_day_floor_price_change
+                .to_u64()
+                .unwrap_or_default()
+                .into(),
+            thirty_day_floor_price_change: thirty_day_floor_price_change
+                .to_u64()
+                .unwrap_or_default()
+                .into(),
+            one_day_sales_count_change: one_day_sales_count_change
+                .to_u64()
+                .unwrap_or_default()
+                .into(),
+            seven_day_sales_count_change: seven_day_sales_count_change
+                .to_u64()
+                .unwrap_or_default()
+                .into(),
+            thirty_day_sales_count_change: thirty_day_sales_count_change
+                .to_u64()
+                .unwrap_or_default()
+                .into(),
         })
     }
 }
@@ -924,6 +1008,78 @@ impl CollectionTrend {
 
     pub fn thirty_day_sales_count(&self) -> U64 {
         self.thirty_day_sales_count
+    }
+
+    pub fn prev_one_day_volume(&self) -> U64 {
+        self.prev_one_day_volume
+    }
+
+    pub fn prev_seven_day_volume(&self) -> U64 {
+        self.prev_seven_day_volume
+    }
+
+    pub fn prev_thirty_day_volume(&self) -> U64 {
+        self.prev_thirty_day_volume
+    }
+
+    pub fn prev_one_day_sales_count(&self) -> U64 {
+        self.prev_one_day_sales_count
+    }
+
+    pub fn prev_seven_day_sales_count(&self) -> U64 {
+        self.prev_seven_day_sales_count
+    }
+
+    pub fn prev_thirty_day_sales_count(&self) -> U64 {
+        self.prev_thirty_day_sales_count
+    }
+
+    pub fn prev_one_day_floor_price(&self) -> U64 {
+        self.prev_one_day_floor_price
+    }
+
+    pub fn prev_seven_day_floor_price(&self) -> U64 {
+        self.prev_seven_day_floor_price
+    }
+
+    pub fn prev_thirty_day_floor_price(&self) -> U64 {
+        self.prev_thirty_day_floor_price
+    }
+
+    pub fn one_day_volume_change(&self) -> U64 {
+        self.one_day_volume_change
+    }
+
+    pub fn seven_day_volume_change(&self) -> U64 {
+        self.seven_day_volume_change
+    }
+
+    pub fn thirty_day_volume_change(&self) -> U64 {
+        self.thirty_day_volume_change
+    }
+
+    pub fn one_day_floor_price_change(&self) -> U64 {
+        self.one_day_floor_price_change
+    }
+
+    pub fn seven_day_floor_price_change(&self) -> U64 {
+        self.seven_day_floor_price_change
+    }
+
+    pub fn thirty_day_floor_price_change(&self) -> U64 {
+        self.thirty_day_floor_price_change
+    }
+
+    pub fn one_day_sales_count_change(&self) -> U64 {
+        self.one_day_sales_count_change
+    }
+
+    pub fn seven_day_sales_count_change(&self) -> U64 {
+        self.seven_day_sales_count_change
+    }
+
+    pub fn thirty_day_sales_count_change(&self) -> U64 {
+        self.thirty_day_sales_count_change
     }
 
     pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {

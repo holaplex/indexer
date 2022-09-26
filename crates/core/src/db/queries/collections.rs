@@ -41,6 +41,42 @@ enum CollectionTrends {
     SevenDaySalesCount,
     #[iden(rename = "_30d_sales_count")]
     ThirtyDaySalesCount,
+    #[iden(rename = "_prev_1d_volume")]
+    PrevOneDayVolume,
+    #[iden(rename = "_prev_7d_volume")]
+    PrevSevenDayVolume,
+    #[iden(rename = "_prev_30d_volume")]
+    PrevThirtyDayVolume,
+    #[iden(rename = "prev_1d_sales_count")]
+    PrevOneDaySalesCount,
+    #[iden(rename = "prev_7d_sales_count")]
+    PrevSevenDaySalesCount,
+    #[iden(rename = "prev_30d_sales_count")]
+    PrevThirtyDaySalesCount,
+    #[iden(rename = "prev_1d_floor_price")]
+    PrevOneDayFloorPrice,
+    #[iden(rename = "prev_7d_floor_price")]
+    PrevSevenDayFloorPrice,
+    #[iden(rename = "prev_30d_floor_price")]
+    PrevThirtyDayFloorPrice,
+    #[iden(rename = "_1d_volume_change")]
+    OneDayVolumeChange,
+    #[iden(rename = "_7d_volume_change")]
+    SevenDayVolumeChange,
+    #[iden(rename = "_30d_volume_change")]
+    ThirtyDayVolumeChange,
+    #[iden(rename = "_1d_floor_price_change")]
+    OneDayFloorPriceChange,
+    #[iden(rename = "_7d_floor_price_change")]
+    SevenDayFloorPriceChange,
+    #[iden(rename = "_30d_floor_price_change")]
+    ThirtyDayFloorPriceChange,
+    #[iden(rename = "_1d_sales_count_change")]
+    OneDaySalesCountChange,
+    #[iden(rename = "_7d_sales_count_change")]
+    SevenDaySalesCountChange,
+    #[iden(rename = "_30d_sales_count_change")]
+    ThirtyDaySalesCountChange,
 }
 
 /// Query collection by address
@@ -508,6 +544,75 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Co
                 CollectionTrends::Table,
                 CollectionTrends::ThirtyDaySalesCount,
             ),
+            (CollectionTrends::Table, CollectionTrends::PrevOneDayVolume),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevSevenDayVolume,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevThirtyDayVolume,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevOneDaySalesCount,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevSevenDaySalesCount,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevThirtyDaySalesCount,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevOneDayFloorPrice,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevSevenDayFloorPrice,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevThirtyDayFloorPrice,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::OneDayVolumeChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::SevenDayVolumeChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::ThirtyDayVolumeChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::OneDayFloorPriceChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::SevenDayFloorPriceChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::ThirtyDayFloorPriceChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::OneDaySalesCountChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::SevenDaySalesCountChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::ThirtyDaySalesCountChange,
+            ),
         ])
         .from(CollectionTrends::Table)
         .limit(limit)
@@ -516,8 +621,13 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Co
         .take();
 
     let query = query.to_string(PostgresQueryBuilder);
+    println!("Print Query: {:?}", query.replace('\"', ""));
 
-    diesel::sql_query(query)
+    let result = diesel::sql_query(query)
         .load(conn)
-        .context("Failed to load trending collection(s)")
+        .context("Failed to load trending collection(s)");
+
+    println!("Query Result: {:?}", result);
+
+    result
 }

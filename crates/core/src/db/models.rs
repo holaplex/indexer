@@ -371,6 +371,96 @@ pub struct CollectionTrend {
     #[sql_type = "Numeric"]
     #[column_name = "_30d_sales_count"]
     pub thirty_day_sales_count: BigDecimal,
+
+    /// Collection previous 1 day volume
+    #[sql_type = "Numeric"]
+    #[column_name = "_prev_1d_volume"]
+    pub prev_one_day_volume: BigDecimal,
+
+    /// Collection previous 7 days volume
+    #[sql_type = "Numeric"]
+    #[column_name = "_prev_7d_volume"]
+    pub prev_seven_day_volume: BigDecimal,
+
+    /// Collection previous 30 days volume
+    #[sql_type = "Numeric"]
+    #[column_name = "_prev_30d_volume"]
+    pub prev_thirty_day_volume: BigDecimal,
+
+    /// Collection previous 1 day sales count
+    #[sql_type = "Numeric"]
+    #[column_name = "prev_1d_sales_count"]
+    pub prev_one_day_sales_count: BigDecimal,
+
+    /// Collection previous 7 days sales count
+    #[sql_type = "Numeric"]
+    #[column_name = "prev_7d_sales_count"]
+    pub prev_seven_day_sales_count: BigDecimal,
+
+    /// Collection previous 30 days sales count
+    #[sql_type = "Numeric"]
+    #[column_name = "prev_30d_sales_count"]
+    pub prev_thirty_day_sales_count: BigDecimal,
+
+    /// Collection previous 1 day floor price
+    #[sql_type = "Numeric"]
+    #[column_name = "prev_1d_floor_price"]
+    pub prev_one_day_floor_price: BigDecimal,
+
+    /// Collection previous 7 days floor price
+    #[sql_type = "Numeric"]
+    #[column_name = "prev_7d_floor_price"]
+    pub prev_seven_day_floor_price: BigDecimal,
+
+    /// Collection previous 30 day floor price
+    #[sql_type = "Numeric"]
+    #[column_name = "prev_30d_floor_price"]
+    pub prev_thirty_day_floor_price: BigDecimal,
+
+    /// Collection 1 day volume change
+    #[sql_type = "Numeric"]
+    #[column_name = "_1d_volume_change"]
+    pub one_day_volume_change: BigDecimal,
+
+    /// Collection 7 days volume change
+    #[sql_type = "Numeric"]
+    #[column_name = "_7d_volume_change"]
+    pub seven_day_volume_change: BigDecimal,
+
+    /// Collection 30 days volume change
+    #[sql_type = "Numeric"]
+    #[column_name = "_30d_volume_change"]
+    pub thirty_day_volume_change: BigDecimal,
+
+    /// Collection 1 day floor price change
+    #[sql_type = "Numeric"]
+    #[column_name = "_1d_floor_price_change"]
+    pub one_day_floor_price_change: BigDecimal,
+
+    /// Collection 7 days floor price change
+    #[sql_type = "Numeric"]
+    #[column_name = "_7d_floor_price_change"]
+    pub seven_day_floor_price_change: BigDecimal,
+
+    /// Collection 30 day floor price change
+    #[sql_type = "Numeric"]
+    #[column_name = "_30d_floor_price_change"]
+    pub thirty_day_floor_price_change: BigDecimal,
+
+    /// Collection 1 day sales count change
+    #[sql_type = "Numeric"]
+    #[column_name = "_1d_sales_count_change"]
+    pub one_day_sales_count_change: BigDecimal,
+
+    /// Collection 7 days sales count change
+    #[sql_type = "Numeric"]
+    #[column_name = "_7d_sales_count_change"]
+    pub seven_day_sales_count_change: BigDecimal,
+
+    /// Collection 30 days sales count change
+    #[sql_type = "Numeric"]
+    #[column_name = "_30d_sales_count_change"]
+    pub thirty_day_sales_count_change: BigDecimal,
 }
 
 /// Collection nfts/holders count
