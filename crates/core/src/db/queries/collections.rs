@@ -516,12 +516,8 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Co
         .take();
 
     let query = query.to_string(PostgresQueryBuilder);
-    println!("Print Query: {:?}", query.replace('\"', ""));
 
-    let result = diesel::sql_query(query)
+    diesel::sql_query(query)
         .load(conn)
-        .context("Failed to load trending collection(s)");
-
-    println!("Query Result: {:?}", result);
-    result
+        .context("Failed to load trending collection(s)")
 }

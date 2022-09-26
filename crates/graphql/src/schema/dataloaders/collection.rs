@@ -3,7 +3,7 @@ use indexer_core::db::{
     sql_types::{Array, Text},
 };
 use objects::{
-    nft::{Collection, CollectionIdentifier, Nft},
+    nft::{Collection, Nft},
     store_creator::StoreCreator,
 };
 use scalars::{PublicKey, I64};
@@ -256,8 +256,6 @@ impl TryBatchFn<String, Option<Collection>> for Batcher {
     async fn load(&mut self, identifiers: &[String]) -> TryBatchMap<String, Option<Collection>> {
         let conn = self.db()?;
 
-        debug!("The identifiers: {:?}", identifiers);
-
         let rows: Vec<models::Nft> = sql_query("
         SELECT
             metadatas.address,
@@ -303,8 +301,6 @@ impl TryBatchFn<String, Option<Collection>> for Batcher {
         .bind::<Array<Text>, _>(identifiers)
         .load(&conn)
         .context("Failed to load floor price for collection")?;
-
-        debug!("rows: {:?}", rows);
 
         Ok(rows
             .into_iter()
