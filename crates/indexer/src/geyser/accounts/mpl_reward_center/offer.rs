@@ -8,11 +8,13 @@ use indexer_core::{
         },
         mutations,
         tables::{
-            auction_houses, current_metadata_owners, metadatas, reward_centers, rewards_offers,
+            auction_houses, current_metadata_owners, metadatas, purchases, reward_centers,
+            rewards_offers,
         },
     },
     prelude::*,
     pubkeys, util,
+    uuid::Uuid,
 };
 use mpl_auction_house::pda::find_auctioneer_trade_state_address;
 use mpl_reward_center::state::Offer;
@@ -21,6 +23,7 @@ use solana_program::pubkey::Pubkey;
 use super::super::Client;
 use crate::prelude::*;
 
+#[allow(clippy::too_many_lines)]
 pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
@@ -91,6 +94,23 @@ pub(crate) async fn process(
                     account_data.token_size,
                 );
 
+                let purchase_id = purchases::table
+                    .filter(
+                        purchases::buyer
+                            .eq(row.buyer.clone())
+                            .and(purchases::auction_house.eq(auction_houses.address.clone()))
+                            .and(purchases::metadata.eq(row.metadata.clone()))
+                            .and(purchases::price.eq(row.price))
+                            .and(
+                                purchases::token_size
+                                    .eq(row.token_size)
+                                    .and(purchases::slot.eq(row.slot)),
+                            ),
+                    )
+                    .select(purchases::id)
+                    .first::<Uuid>(db)
+                    .optional()?;
+
                 let offer = Dboffer {
                     id: None,
                     trade_state: Owned(bs58::encode(trade_state).into_string()),
@@ -99,7 +119,7 @@ pub(crate) async fn process(
                     buyer: row.buyer,
                     metadata: row.metadata,
                     token_account: Some(current_metadata_owner.token_account_address),
-                    purchase_id: None,
+                    purchase_id,
                     price: row.price,
                     token_size: row.token_size,
                     trade_state_bump: trade_state_bump.try_into()?,

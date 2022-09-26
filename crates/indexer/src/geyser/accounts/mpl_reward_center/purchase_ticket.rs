@@ -5,7 +5,9 @@ use indexer_core::{
             AuctionHouse, Purchase as DbPurchase, RewardsPurchaseTicket as DbRewardsPurchaseTicket,
         },
         on_constraint,
-        tables::{auction_houses, listings, offers, purchases, reward_centers},
+        tables::{
+            auction_houses, listings, offers, purchases, reward_centers, rewards_purchase_tickets,
+        },
         update,
     },
     prelude::*,
@@ -17,6 +19,7 @@ use mpl_reward_center::state::PurchaseTicket;
 use super::super::Client;
 use crate::prelude::*;
 
+#[allow(clippy::too_many_lines)]
 pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
@@ -43,6 +46,21 @@ pub(crate) async fn process(
         write_version: write_version.try_into()?,
     };
 
+    let values = row.clone();
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(rewards_purchase_tickets::table)
+                .values(&values)
+                .on_conflict(rewards_purchase_tickets::address)
+                .do_update()
+                .set(&values)
+                .execute(db)
+        })
+        .await
+        .context("Failed to insert rewards purchase ticket")?;
+
     client
         .db()
         .run(move |db| {
@@ -54,15 +72,6 @@ pub(crate) async fn process(
                 )
                 .filter(reward_centers::address.eq(row.reward_center_address))
                 .first::<AuctionHouse>(db)?;
-
-            // let current_metadata_owner = current_metadata_owners::table
-            //     .select(current_metadata_owners::token_account_address)
-            //     .inner_join(
-            //         metadatas::table
-            //             .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
-            //     )
-            //     .filter(metadatas::address.eq(row.metadata))
-            //     .first::<CurrentMetadataOwner>(db)?;
 
             let row = DbPurchase {
                 id: None,
@@ -77,15 +86,6 @@ pub(crate) async fn process(
                 slot: row.slot,
                 write_version: Some(row.write_version),
             };
-
-            // let listing_exists = select(exists(
-            //     listings::table.filter(
-            //         listings::trade_state
-            //             .eq(listing.trade_state.clone())
-            //             .and(listings::metadata.eq(listing.metadata.clone())),
-            //     ),
-            // ))
-            // .get_result::<bool>(db)?;
 
             db.build_transaction().read_write().run(|| {
                 let purchase_id = insert_into(purchases::table)
@@ -106,7 +106,10 @@ pub(crate) async fn process(
                             .and(offers::canceled_at.is_null()),
                     ),
                 )
-                .set(offers::purchase_id.eq(Some(purchase_id)))
+                .set((
+                    offers::purchase_id.eq(Some(purchase_id)),
+                    offers::slot.eq(row.slot),
+                ))
                 .execute(db)?;
 
                 update(

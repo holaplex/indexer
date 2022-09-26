@@ -5,7 +5,10 @@ use crate::{
     uuid::Uuid,
 };
 
-/// adds a generice offer row to the database
+/// Insert generic offer to offers table
+///
+/// # Errors
+/// This function fails if the offer row upsert fails
 pub fn insert<'a>(db: &PooledConnection, offer: &Offer<'a>) -> Result<Uuid> {
     insert_into(offers::table)
         .values(offer)

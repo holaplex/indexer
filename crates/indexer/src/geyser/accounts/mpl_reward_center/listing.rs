@@ -9,11 +9,13 @@ use indexer_core::{
         },
         mutations,
         tables::{
-            auction_houses, current_metadata_owners, metadatas, reward_centers, rewards_listings,
+            auction_houses, current_metadata_owners, metadatas, purchases, reward_centers,
+            rewards_listings,
         },
     },
     prelude::*,
     pubkeys, util,
+    uuid::Uuid,
 };
 use mpl_auction_house::pda::find_auctioneer_trade_state_address;
 use mpl_reward_center::state::Listing;
@@ -22,6 +24,7 @@ use solana_program::pubkey::Pubkey;
 use super::super::Client;
 use crate::prelude::*;
 
+#[allow(clippy::too_many_lines)]
 pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
@@ -57,7 +60,6 @@ pub(crate) async fn process(
     client
         .db()
         .run({
-            let rewards_listing = row.clone();
             let values = row.clone();
             move |db| {
                 let auction_houses = auction_houses::table
@@ -66,7 +68,7 @@ pub(crate) async fn process(
                         reward_centers::table
                             .on(auction_houses::address.eq(reward_centers::auction_house)),
                     )
-                    .filter(reward_centers::address.eq(row.reward_center_address))
+                    .filter(reward_centers::address.eq(row.reward_center_address.clone()))
                     .first::<AuctionHouse>(db)?;
 
                 let current_metadata_owner = current_metadata_owners::table
@@ -80,7 +82,7 @@ pub(crate) async fn process(
                         metadatas::table
                             .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
                     )
-                    .filter(metadatas::address.eq(row.metadata))
+                    .filter(metadatas::address.eq(row.metadata.clone()))
                     .first::<CurrentMetadataOwner>(db)?;
 
                 let (trade_state, trade_state_bump) = find_auctioneer_trade_state_address(
@@ -92,31 +94,48 @@ pub(crate) async fn process(
                     account_data.token_size,
                 );
 
+                let purchase_id = purchases::table
+                    .filter(
+                        purchases::seller
+                            .eq(row.seller.clone())
+                            .and(purchases::auction_house.eq(auction_houses.address.clone()))
+                            .and(purchases::metadata.eq(row.metadata.clone()))
+                            .and(purchases::price.eq(row.price))
+                            .and(
+                                purchases::token_size
+                                    .eq(row.token_size)
+                                    .and(purchases::slot.eq(row.slot)),
+                            ),
+                    )
+                    .select(purchases::id)
+                    .first::<Uuid>(db)
+                    .optional()?;
+
                 let listing = DbListing {
                     id: None,
                     trade_state: Owned(bs58::encode(trade_state).into_string()),
                     trade_state_bump: trade_state_bump.into(),
                     auction_house: auction_houses.address,
-                    metadata: values.metadata,
-                    token_size: values.token_size,
+                    metadata: row.metadata,
+                    token_size: row.token_size,
                     marketplace_program: Owned(pubkeys::REWARD_CENTER.to_string()),
-                    purchase_id: None,
-                    seller: values.seller,
-                    price: values.price,
-                    created_at: values.created_at,
+                    purchase_id,
+                    seller: row.seller,
+                    price: row.price,
+                    created_at: row.created_at,
                     expiry: None,
-                    canceled_at: values.canceled_at,
-                    write_version: Some(values.write_version),
-                    slot: values.slot,
+                    canceled_at: row.canceled_at,
+                    write_version: Some(row.write_version),
+                    slot: row.slot,
                 };
 
                 db.build_transaction().read_write().run(|| {
                     {
                         insert_into(rewards_listings::table)
-                            .values(&rewards_listing)
+                            .values(&values)
                             .on_conflict(rewards_listings::address)
                             .do_update()
-                            .set(&rewards_listing)
+                            .set(&values)
                             .execute(db)?;
 
                         mutations::listing::insert(db, &listing)?;

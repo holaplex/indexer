@@ -5,7 +5,11 @@ use crate::{
     uuid::Uuid,
 };
 
-/// adds a generice listing row to the database
+/// Insert generic listing to listings table
+///
+/// # Errors
+/// This function fails if the listing row upsert fails
+
 pub fn insert<'a>(db: &PooledConnection, listing: &Listing<'a>) -> Result<Uuid> {
     insert_into(listings::table)
         .values(listing)
