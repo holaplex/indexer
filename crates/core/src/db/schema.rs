@@ -543,6 +543,7 @@ table! {
         prev_7d_marketcap -> Numeric,
         _30d_marketcap -> Numeric,
         prev_30d_marketcap -> Numeric,
+        nft_count -> Int8,
         _1d_marketcap_change -> Nullable<Int8>,
         _7d_marketcap_change -> Nullable<Int8>,
         _30d_marketcap_change -> Nullable<Int8>,
