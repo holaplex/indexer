@@ -418,49 +418,49 @@ pub struct CollectionTrend {
     pub prev_thirty_day_floor_price: BigDecimal,
 
     /// Collection 1 day volume change
-    #[sql_type = "Numeric"]
+    #[sql_type = "diesel::sql_types::BigInt"]
     #[column_name = "_1d_volume_change"]
-    pub one_day_volume_change: BigDecimal,
+    pub one_day_volume_change: i64,
 
     /// Collection 7 days volume change
-    #[sql_type = "Numeric"]
+    #[sql_type = "diesel::sql_types::BigInt"]
     #[column_name = "_7d_volume_change"]
-    pub seven_day_volume_change: BigDecimal,
+    pub seven_day_volume_change: i64,
 
     /// Collection 30 days volume change
-    #[sql_type = "Numeric"]
+    #[sql_type = "diesel::sql_types::BigInt"]
     #[column_name = "_30d_volume_change"]
-    pub thirty_day_volume_change: BigDecimal,
+    pub thirty_day_volume_change: i64,
 
     /// Collection 1 day floor price change
-    #[sql_type = "Numeric"]
+    #[sql_type = "diesel::sql_types::BigInt"]
     #[column_name = "_1d_floor_price_change"]
-    pub one_day_floor_price_change: BigDecimal,
+    pub one_day_floor_price_change: i64,
 
     /// Collection 7 days floor price change
-    #[sql_type = "Numeric"]
+    #[sql_type = "diesel::sql_types::BigInt"]
     #[column_name = "_7d_floor_price_change"]
-    pub seven_day_floor_price_change: BigDecimal,
+    pub seven_day_floor_price_change: i64,
 
     /// Collection 30 day floor price change
-    #[sql_type = "Numeric"]
+    #[sql_type = "diesel::sql_types::BigInt"]
     #[column_name = "_30d_floor_price_change"]
-    pub thirty_day_floor_price_change: BigDecimal,
+    pub thirty_day_floor_price_change: i64,
 
     /// Collection 1 day sales count change
-    #[sql_type = "Numeric"]
+    #[sql_type = "diesel::sql_types::BigInt"]
     #[column_name = "_1d_sales_count_change"]
-    pub one_day_sales_count_change: BigDecimal,
+    pub one_day_sales_count_change: i64,
 
     /// Collection 7 days sales count change
-    #[sql_type = "Numeric"]
+    #[sql_type = "diesel::sql_types::BigInt"]
     #[column_name = "_7d_sales_count_change"]
-    pub seven_day_sales_count_change: BigDecimal,
+    pub seven_day_sales_count_change: i64,
 
     /// Collection 30 days sales count change
-    #[sql_type = "Numeric"]
+    #[sql_type = "diesel::sql_types::BigInt"]
     #[column_name = "_30d_sales_count_change"]
-    pub thirty_day_sales_count_change: BigDecimal,
+    pub thirty_day_sales_count_change: i64,
 }
 
 /// Collection nfts/holders count

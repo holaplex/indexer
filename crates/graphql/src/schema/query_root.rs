@@ -826,13 +826,9 @@ impl QueryRoot {
             (CollectionInterval::ThirtyDay, CollectionSort::NumberSales) => {
                 db::custom_types::CollectionSort::ThirtyDaySalesCount
             },
-            (CollectionInterval::OneDay, CollectionSort::Floor) => {
-                db::custom_types::CollectionSort::FloorPrice
-            },
-            (CollectionInterval::SevenDay, CollectionSort::Floor) => {
-                db::custom_types::CollectionSort::FloorPrice
-            },
-            (CollectionInterval::ThirtyDay, CollectionSort::Floor) => {
+            (CollectionInterval::OneDay, CollectionSort::Floor)
+            | (CollectionInterval::SevenDay, CollectionSort::Floor)
+            | (CollectionInterval::ThirtyDay, CollectionSort::Floor) => {
                 db::custom_types::CollectionSort::FloorPrice
             },
         };
