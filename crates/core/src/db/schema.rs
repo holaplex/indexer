@@ -537,6 +537,15 @@ table! {
         _1d_sales_count_change -> Nullable<Int8>,
         _7d_sales_count_change -> Nullable<Int8>,
         _30d_sales_count_change -> Nullable<Int8>,
+        _1d_marketcap -> Numeric,
+        prev_1d_marketcap -> Numeric,
+        _7d_marketcap -> Numeric,
+        prev_7d_marketcap -> Numeric,
+        _30d_marketcap -> Numeric,
+        prev_30d_marketcap -> Numeric,
+        _1d_marketcap_change -> Nullable<Int8>,
+        _7d_marketcap_change -> Nullable<Int8>,
+        _30d_marketcap_change -> Nullable<Int8>,
     }
 }
 
