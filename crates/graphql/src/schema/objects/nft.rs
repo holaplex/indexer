@@ -10,6 +10,7 @@ use indexer_core::{
             metadata_collection_keys, metadata_jsons, metadatas,
         },
     },
+    pubkeys,
     url::Url,
     util::unix_timestamp,
     uuid::Uuid,
@@ -24,7 +25,7 @@ use services;
 
 use super::prelude::*;
 use crate::schema::{
-    enums::{CollectionNFTSort, OrderDirection},
+    enums::{NftSort, OrderDirection},
     query_root::AttributeFilter,
 };
 #[derive(Debug, Clone)]
@@ -580,7 +581,7 @@ impl Collection {
         ctx: &AppContext,
         limit: i32,
         offset: i32,
-        sort_by: Option<CollectionNFTSort>,
+        sort_by: Option<NftSort>,
         order: Option<OrderDirection>,
         marketplace_program: Option<String>,
         auction_house: Option<String>,
@@ -660,6 +661,7 @@ impl Collection {
                 auction_houses::table.on(listings::auction_house.eq(auction_houses::address)),
             )
             .filter(metadata_collection_keys::collection_address.eq(self.0.mint_address.clone()))
+            .filter(listings::auction_house.ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()))
             .filter(auction_houses::treasury_mint.eq("So11111111111111111111111111111111111111112"))
             .filter(metadata_collection_keys::verified.eq(true))
             .filter(listings::purchase_id.is_null())

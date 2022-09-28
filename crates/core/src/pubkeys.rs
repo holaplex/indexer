@@ -52,8 +52,10 @@ pub static TOKEN_BONDING: Pubkey = pubkey!("TBondmkCYxaPCKG4CHYfVTcwQ8on31xnJrPz
 /// Cardinal .twitter namespace pubkey
 pub static CARDINAL_TWITTER_NAMESPACE: Pubkey =
     pubkey!("2zwXjjGEUrFMyE2CF2Ju4CJwMzwdbBMYnF2boEzgPhGu");
+/// `OpenSea` Auction house program pubkey
+pub static OPENSEA_AUCTION_HOUSE: Pubkey = pubkey!("3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y");
 /// Spl Governance programs pubkey
-pub const SPL_GOVERNANCE: [Pubkey; 21] = [
+pub const SPL_GOVERNANCE: [Pubkey; 22] = [
     pubkey!("gUAedF544JeE6NYbQakQvribHykUNgaPJqcgf3UQVnY"),
     pubkey!("GqTPL6qRf5aUuqscLh8Rg2HTxPUXfhhAXDptTLhp1t2J"),
     pubkey!("GovHgfDPyQ1GwazJTDY2avSVY8GGcpmCapmmCsymRaGe"),
@@ -75,6 +77,7 @@ pub const SPL_GOVERNANCE: [Pubkey; 21] = [
     pubkey!("GRNPT8MPw3LYY6RdjsgKeFji5kMiG1fSxnxDjDBu4s73"),
     pubkey!("ALLGnZikNaJQeN4KCAbDjZRSzvSefUdeTpk18yfizZvT"),
     pubkey!("A7kmu2kUcnQwAVn8B4znQmGJeUrsJ1WEhYVMtmiBLkEr"),
+    pubkey!("AEauWRrpn9Cs6GXujzdp1YhMmv2288kBt3SdEcPYEerr"),
 ];
 
 /// Find the address of a store given its owner's address

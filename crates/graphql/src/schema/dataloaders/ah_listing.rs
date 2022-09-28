@@ -1,4 +1,4 @@
-use indexer_core::uuid::Uuid;
+use indexer_core::{pubkeys, uuid::Uuid};
 use objects::{ah_listing::AhListing, nft::Nft};
 use scalars::PublicKey;
 use tables::{current_metadata_owners, listings, metadatas};
@@ -13,6 +13,7 @@ impl TryBatchFn<Uuid, Option<AhListing>> for Batcher {
         let rows: Vec<models::Listing> = listings::table
             .select(listings::all_columns)
             .filter(listings::id.eq(any(addresses)))
+            .filter(listings::auction_house.ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()))
             .load(&conn)
             .context("Failed to load listings")?;
 
@@ -40,6 +41,7 @@ impl TryBatchFn<PublicKey<Nft>, Vec<AhListing>> for Batcher {
             .select(listings::all_columns)
             .filter(listings::canceled_at.is_null())
             .filter(listings::purchase_id.is_null())
+            .filter(listings::auction_house.ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()))
             .filter(
                 listings::expiry
                     .is_null()

@@ -148,7 +148,7 @@ optional = true
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
 # tag = "v0.5.0" # TODO: restore this
-rev = "9290227"
+rev = "af2848e"
 
 # Workspace dependencies
 [dependencies.genostub]

@@ -19,6 +19,7 @@ use crate::{
         Connection,
     },
     error::prelude::*,
+    pubkeys,
 };
 
 /// Handles queries for total nfts count
@@ -66,6 +67,7 @@ pub fn listed<C: ToSql<Text, Pg>, L: ToSql<Text, Pg>>(
         .filter(metadata_creators::verified.eq(true))
         .filter(listings::purchase_id.is_null())
         .filter(listings::canceled_at.is_null())
+        .filter(listings::auction_house.ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()))
         .filter(listings::seller.eq(current_metadata_owners::owner_address))
         .count()
         .get_result(conn)
@@ -196,6 +198,7 @@ where
         .filter(offers::buyer.eq(wallet))
         .filter(offers::purchase_id.is_null())
         .filter(offers::canceled_at.is_null())
+        .filter(offers::auction_house.ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()))
         .count()
         .get_result(conn)
         .context("failed to load nfts count of open offers for a wallet")

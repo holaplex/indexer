@@ -1,0 +1,10 @@
+alter table governances drop column program_id;
+alter table realms drop column program_id;
+alter table vote_records_v1 drop column program_id;
+alter table vote_records_v2 drop column program_id;
+alter table proposals_v1 drop column program_id;
+alter table proposals_v2 drop column program_id;
+alter table token_owner_records drop column program_id;
+alter table signatory_records drop column program_id;
+alter table realm_config_accounts drop column program_id;
+alter table proposal_transactions drop column program_id;

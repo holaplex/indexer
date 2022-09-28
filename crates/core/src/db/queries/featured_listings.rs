@@ -49,6 +49,7 @@ FROM (
         AND listings.purchase_id IS NULL
         AND listings.canceled_at IS NULL
         AND listings.auction_house = ANY($1)
+        AND listings.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
         AND listings.created_at > current_date - interval '3 day'
         AND (($2 IS NULL) OR NOT(listings.seller = ANY($2)))
 
