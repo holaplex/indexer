@@ -776,11 +776,9 @@ impl QueryRoot {
         context: &AppContext,
         address: String,
     ) -> FieldResult<Option<Collection>> {
-        let conn = context.shared.db.get()?;
-
-        queries::collections::get(&conn, &address)?
-            .map(TryInto::try_into)
-            .transpose()
+        context.generic_collection_loader
+            .load(address)
+            .await
             .map_err(Into::into)
     }
 
