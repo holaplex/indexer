@@ -36,7 +36,7 @@ pub enum NftSort {
     ListedAt,
 }
 
-impl From<NftSort> for db::custom_types::Sort {
+impl From<NftSort> for db::custom_types::NftSort {
     fn from(other: NftSort) -> Self {
         match other {
             NftSort::Price => Self::Price,

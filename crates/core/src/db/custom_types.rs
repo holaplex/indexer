@@ -364,7 +364,7 @@ pub enum OrderDirection {
 
 /// Direction for sorting SQL query results by the "SORT BY" variable(s)
 #[derive(Debug, Clone, Copy, strum::EnumString, strum::Display)]
-pub enum Sort {
+pub enum NftSort {
     /// sort results by Price
     #[strum(serialize = "Price")]
     Price,

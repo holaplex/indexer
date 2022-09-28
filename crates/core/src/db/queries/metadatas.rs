@@ -7,13 +7,12 @@ use diesel::{
 };
 use sea_query::{
     Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc,
-    UnionType,
 };
 use uuid::Uuid;
 
 use crate::{
     db::{
-        custom_types::Sort,
+        custom_types::NftSort,
         models::{Nft, NftActivity},
         tables::{current_metadata_owners, metadata_jsons, metadatas},
         Connection,
@@ -44,12 +43,6 @@ enum Metadatas {
     Uri,
     Slot,
     BurnedAt,
-}
-
-#[derive(Iden)]
-enum MeCollections {
-    Table,
-    Id,
 }
 
 #[derive(Iden)]
@@ -465,7 +458,7 @@ pub struct CollectionNftOptions {
     /// Marketplace program in which the collection is listed
     pub marketplace_program: Option<String>,
     /// Sort by Price or Listed at
-    pub sort_by: Option<Sort>,
+    pub sort_by: Option<NftSort>,
     /// Order the resulting rows by 'Asc' or 'Desc'
     pub order: Option<Order>,
     /// Limit the number of returned rows
@@ -486,7 +479,7 @@ pub struct WalletNftOptions {
     /// nft in one or more specific collections
     pub collections: Option<Vec<String>>,
     /// Sort by Price or Listed at
-    pub sort_by: Option<Sort>,
+    pub sort_by: Option<NftSort>,
     /// Order the resulting rows by 'Asc' or 'Desc'
     pub order: Option<Order>,
     /// Limit the number of returned rows
@@ -495,11 +488,11 @@ pub struct WalletNftOptions {
     pub offset: u64,
 }
 
-impl From<Sort> for Listings {
-    fn from(sort: Sort) -> Self {
+impl From<NftSort> for Listings {
+    fn from(sort: NftSort) -> Self {
         match sort {
-            Sort::Price => Listings::Price,
-            Sort::ListedAt => Listings::CreatedAt,
+            NftSort::Price => Listings::Price,
+            NftSort::ListedAt => Listings::CreatedAt,
         }
     }
 }
@@ -612,10 +605,10 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
                         .is_null()
                         .or(Expr::tbl(Listings::Table, Listings::Expiry).gt(current_time)),
                 )
-                .add_option(auction_house.clone().map(|auction_house| {
+                .add_option(auction_house.map(|auction_house| {
                     Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house)
                 }))
-                .add_option(marketplace_program.clone().map(|marketplace_program| {
+                .add_option(marketplace_program.map(|marketplace_program| {
                     Expr::col((Listings::Table, Listings::MarketplaceProgram))
                         .eq(marketplace_program)
                 })),
@@ -645,7 +638,6 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
         .limit(limit)
         .offset(offset)
         .order_by((Listings::Table, sort_by), order)
-        .to_owned()
         .take();
 
     if let Some(attributes) = attributes {
@@ -672,13 +664,10 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
     }
 
     let query = query.to_string(PostgresQueryBuilder);
-    println!("Print Query: {:?}", query.replace('\"', ""));
 
-    let result = diesel::sql_query(query)
+    diesel::sql_query(query)
         .load(conn)
-        .context("Failed to load nft(s)");
-    println!("Query Result: {:?}", result);
-    result
+        .context("Failed to load nft(s)")
 }
 
 /// Handles queries for a wallet Nfts

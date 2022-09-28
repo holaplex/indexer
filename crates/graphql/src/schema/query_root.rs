@@ -776,7 +776,8 @@ impl QueryRoot {
         context: &AppContext,
         address: String,
     ) -> FieldResult<Option<Collection>> {
-        context.generic_collection_loader
+        context
+            .generic_collection_loader
             .load(address)
             .await
             .map_err(Into::into)
