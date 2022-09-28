@@ -7,6 +7,7 @@ use diesel::{
 };
 use sea_query::{
     Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc,
+    UnionType,
 };
 use uuid::Uuid;
 
@@ -520,147 +521,157 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
         offset,
     } = options;
 
-    let sort_unwrap = sort_by.map_or(Listings::Price, Into::into);
+    let sort_by = sort_by.map_or(Listings::Price, Into::into);
 
-    let order_unwrap = order.unwrap_or(Order::Desc);
-
+    let order = order.unwrap_or(Order::Desc);
     let uuid = Uuid::parse_str(&collection);
-    let mut base_query = match uuid {
-        Err(_error) => Query::select()
-            .columns(vec![
-                (Metadatas::Table, Metadatas::Address),
-                (Metadatas::Table, Metadatas::Name),
-                (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
-                (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
-                (Metadatas::Table, Metadatas::MintAddress),
-                (Metadatas::Table, Metadatas::PrimarySaleHappened),
-                (Metadatas::Table, Metadatas::Uri),
-                (Metadatas::Table, Metadatas::Slot),
-            ])
-            .columns(vec![
-                (MetadataJsons::Table, MetadataJsons::Description),
-                (MetadataJsons::Table, MetadataJsons::Image),
-                (MetadataJsons::Table, MetadataJsons::AnimationUrl),
-                (MetadataJsons::Table, MetadataJsons::ExternalUrl),
-                (MetadataJsons::Table, MetadataJsons::Category),
-                (MetadataJsons::Table, MetadataJsons::Model),
-            ])
-            .columns(vec![(
-                CurrentMetadataOwners::Table,
-                CurrentMetadataOwners::TokenAccountAddress,
-            )])
-            .from(MetadataJsons::Table)
-            .inner_join(
-                Metadatas::Table,
-                Expr::tbl(MetadataJsons::Table, MetadataJsons::MetadataAddress)
-                    .equals(Metadatas::Table, Metadatas::Address),
-            )
-            .inner_join(
-                CurrentMetadataOwners::Table,
-                Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
-                    CurrentMetadataOwners::Table,
-                    CurrentMetadataOwners::MintAddress,
-                ),
-            )
-            .left_join(
-                Listings::Table,
-                Condition::all()
-                    .add(
-                        Expr::tbl(Listings::Table, Listings::Metadata)
-                            .equals(Metadatas::Table, Metadatas::Address),
-                    )
-                    .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
-                        CurrentMetadataOwners::Table,
-                        CurrentMetadataOwners::OwnerAddress,
-                    )),
-            )
-            .and_where(Expr::col(Metadatas::BurnedAt).is_null())
-            .take(),
-        Ok(_result) => Query::select()
-            .columns(vec![
-                (Metadatas::Table, Metadatas::Address),
-                (Metadatas::Table, Metadatas::Name),
-                (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
-                (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
-                (Metadatas::Table, Metadatas::MintAddress),
-                (Metadatas::Table, Metadatas::PrimarySaleHappened),
-                (Metadatas::Table, Metadatas::Uri),
-                (Metadatas::Table, Metadatas::Slot),
-            ])
-            .columns(vec![
-                (MetadataJsons::Table, MetadataJsons::Description),
-                (MetadataJsons::Table, MetadataJsons::Image),
-                (MetadataJsons::Table, MetadataJsons::AnimationUrl),
-                (MetadataJsons::Table, MetadataJsons::ExternalUrl),
-                (MetadataJsons::Table, MetadataJsons::Category),
-                (MetadataJsons::Table, MetadataJsons::Model),
-            ])
-            .columns(vec![(
-                CurrentMetadataOwners::Table,
-                CurrentMetadataOwners::TokenAccountAddress,
-            )])
-            .and_where(Expr::col((MeCollections::Table, MeCollections::Id)).eq(collection.clone()))
-            .from(MeCollections::Table)
-            .inner_join(
-                MeMetadataCollections::Table,
-                Expr::tbl(
-                    MeMetadataCollections::Table,
-                    MeMetadataCollections::CollectionId,
-                )
-                .equals(MeCollections::Table, MeCollections::Id),
-            )
-            .inner_join(
-                Metadatas::Table,
-                Expr::tbl(
-                    MeMetadataCollections::Table,
-                    MeMetadataCollections::MetadataAddress,
-                )
-                .equals(Metadatas::Table, Metadatas::Address),
-            )
-            .inner_join(
-                CurrentMetadataOwners::Table,
-                Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
-                    CurrentMetadataOwners::Table,
-                    CurrentMetadataOwners::MintAddress,
-                ),
-            )
-            .left_join(
-                Listings::Table,
-                Condition::all()
-                    .add(
-                        Expr::tbl(Listings::Table, Listings::Metadata)
-                            .equals(Metadatas::Table, Metadatas::Address),
-                    )
-                    .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
-                        CurrentMetadataOwners::Table,
-                        CurrentMetadataOwners::OwnerAddress,
-                    )),
-            )
-            .take(),
+    let uuid = match uuid {
+        Err(_error) => Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
+        Ok(result) => result,
     };
-
-    let mut query = base_query
+    let mut query = Query::select()
+        .columns(vec![
+            (Metadatas::Table, Metadatas::Address),
+            (Metadatas::Table, Metadatas::Name),
+            (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+            (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
+            (Metadatas::Table, Metadatas::MintAddress),
+            (Metadatas::Table, Metadatas::PrimarySaleHappened),
+            (Metadatas::Table, Metadatas::Uri),
+            (Metadatas::Table, Metadatas::Slot),
+        ])
+        .columns(vec![
+            (MetadataJsons::Table, MetadataJsons::Description),
+            (MetadataJsons::Table, MetadataJsons::Image),
+            (MetadataJsons::Table, MetadataJsons::AnimationUrl),
+            (MetadataJsons::Table, MetadataJsons::ExternalUrl),
+            (MetadataJsons::Table, MetadataJsons::Category),
+            (MetadataJsons::Table, MetadataJsons::Model),
+        ])
+        .columns(vec![(
+            CurrentMetadataOwners::Table,
+            CurrentMetadataOwners::TokenAccountAddress,
+        )])
+        .from(MetadataJsons::Table)
+        .inner_join(
+            Metadatas::Table,
+            Expr::tbl(MetadataJsons::Table, MetadataJsons::MetadataAddress)
+                .equals(Metadatas::Table, Metadatas::Address),
+        )
+        .inner_join(
+            CurrentMetadataOwners::Table,
+            Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
+                CurrentMetadataOwners::Table,
+                CurrentMetadataOwners::MintAddress,
+            ),
+        )
+        .inner_join(
+            MetadataCollectionKeys::Table,
+            Expr::tbl(
+                MetadataCollectionKeys::Table,
+                MetadataCollectionKeys::MetadataAddress,
+            )
+            .equals(Metadatas::Table, Metadatas::Address),
+        )
+        .left_join(
+            Listings::Table,
+            Condition::all()
+                .add(
+                    Expr::tbl(Listings::Table, Listings::Metadata)
+                        .equals(Metadatas::Table, Metadatas::Address),
+                )
+                .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
+                    CurrentMetadataOwners::Table,
+                    CurrentMetadataOwners::OwnerAddress,
+                )),
+        )
+        .and_where(Expr::col(Metadatas::BurnedAt).is_null())
+        .and_where(
+            Expr::col((
+                MetadataCollectionKeys::Table,
+                MetadataCollectionKeys::CollectionAddress,
+            ))
+            .eq(collection.clone()),
+        )
+        .union(
+            UnionType::All,
+            Query::select()
+                .columns(vec![
+                    (Metadatas::Table, Metadatas::Address),
+                    (Metadatas::Table, Metadatas::Name),
+                    (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+                    (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
+                    (Metadatas::Table, Metadatas::MintAddress),
+                    (Metadatas::Table, Metadatas::PrimarySaleHappened),
+                    (Metadatas::Table, Metadatas::Uri),
+                    (Metadatas::Table, Metadatas::Slot),
+                ])
+                .columns(vec![
+                    (MetadataJsons::Table, MetadataJsons::Description),
+                    (MetadataJsons::Table, MetadataJsons::Image),
+                    (MetadataJsons::Table, MetadataJsons::AnimationUrl),
+                    (MetadataJsons::Table, MetadataJsons::ExternalUrl),
+                    (MetadataJsons::Table, MetadataJsons::Category),
+                    (MetadataJsons::Table, MetadataJsons::Model),
+                ])
+                .columns(vec![(
+                    CurrentMetadataOwners::Table,
+                    CurrentMetadataOwners::TokenAccountAddress,
+                )])
+                .and_where(
+                    Expr::col((MeCollections::Table, MeCollections::Id)).eq(uuid.to_string()),
+                )
+                .from(MeCollections::Table)
+                .inner_join(
+                    MeMetadataCollections::Table,
+                    Expr::tbl(
+                        MeMetadataCollections::Table,
+                        MeMetadataCollections::CollectionId,
+                    )
+                    .equals(MeCollections::Table, MeCollections::Id),
+                )
+                .inner_join(
+                    MetadataJsons::Table,
+                    Expr::tbl(
+                        MeMetadataCollections::Table,
+                        MeMetadataCollections::MetadataAddress,
+                    )
+                    .equals(MetadataJsons::Table, MetadataJsons::MetadataAddress),
+                )
+                .inner_join(
+                    Metadatas::Table,
+                    Expr::tbl(
+                        MeMetadataCollections::Table,
+                        MeMetadataCollections::MetadataAddress,
+                    )
+                    .equals(Metadatas::Table, Metadatas::Address),
+                )
+                .inner_join(
+                    CurrentMetadataOwners::Table,
+                    Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
+                        CurrentMetadataOwners::Table,
+                        CurrentMetadataOwners::MintAddress,
+                    ),
+                )
+                .left_join(
+                    Listings::Table,
+                    Condition::all()
+                        .add(
+                            Expr::tbl(Listings::Table, Listings::Metadata)
+                                .equals(Metadatas::Table, Metadatas::Address),
+                        )
+                        .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
+                            CurrentMetadataOwners::Table,
+                            CurrentMetadataOwners::OwnerAddress,
+                        )),
+                )
+                .to_owned(),
+        )
         .limit(limit)
         .offset(offset)
-        .order_by((Listings::Table, sort_unwrap), order_unwrap)
+        .order_by((Listings::Table, sort_by), order)
+        .to_owned()
         .take();
-
-    query.inner_join(
-        MetadataCollectionKeys::Table,
-        Expr::tbl(
-            MetadataCollectionKeys::Table,
-            MetadataCollectionKeys::MetadataAddress,
-        )
-        .equals(Metadatas::Table, Metadatas::Address),
-    );
-
-    query.and_where(
-        Expr::col((
-            MetadataCollectionKeys::Table,
-            MetadataCollectionKeys::CollectionAddress,
-        ))
-        .eq(collection),
-    );
 
     if let Some(attributes) = attributes {
         for AttributeFilter { trait_type, values } in attributes {
@@ -696,10 +707,13 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
     }
 
     let query = query.to_string(PostgresQueryBuilder);
+    println!("Print Query: {:?}", query.replace('\"', ""));
 
-    diesel::sql_query(query)
+    let result = diesel::sql_query(query)
         .load(conn)
-        .context("Failed to load nft(s)")
+        .context("Failed to load nft(s)");
+    println!("Query Result: {:?}", result);
+    result
 }
 
 /// Handles queries for a wallet Nfts
