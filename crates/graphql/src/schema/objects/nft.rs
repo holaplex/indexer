@@ -935,18 +935,18 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             collection,
-            floor_price: floor_price.to_u64().unwrap_or_default().into(),
+            floor_price: floor_price.try_into().unwrap_or_default(),
             nft_count: nft_count.try_into()?,
-            one_day_volume: one_day_volume.to_u64().unwrap_or_default().into(),
-            seven_day_volume: seven_day_volume.to_u64().unwrap_or_default().into(),
-            thirty_day_volume: thirty_day_volume.to_u64().unwrap_or_default().into(),
-            one_day_sales_count: one_day_sales_count.to_u64().unwrap_or_default().into(),
-            seven_day_sales_count: seven_day_sales_count.to_u64().unwrap_or_default().into(),
-            thirty_day_sales_count: thirty_day_sales_count.to_u64().unwrap_or_default().into(),
-            prev_one_day_volume: prev_one_day_volume.to_u64().unwrap_or_default().into(),
-            prev_seven_day_volume: prev_seven_day_volume.to_u64().unwrap_or_default().into(),
-            prev_thirty_day_volume: prev_thirty_day_volume.to_u64().unwrap_or_default().into(),
-            prev_one_day_sales_count: prev_one_day_sales_count.to_u64().unwrap_or_default().into(),
+            one_day_volume: one_day_volume.try_into().unwrap_or_default(),
+            seven_day_volume: seven_day_volume.try_into().unwrap_or_default(),
+            thirty_day_volume: thirty_day_volume.try_into().unwrap_or_default(),
+            one_day_sales_count: one_day_sales_count.try_into().unwrap_or_default(),
+            seven_day_sales_count: seven_day_sales_count.try_into().unwrap_or_default(),
+            thirty_day_sales_count: thirty_day_sales_count.try_into().unwrap_or_default(),
+            prev_one_day_volume: prev_one_day_volume.try_into().unwrap_or_default(),
+            prev_seven_day_volume: prev_seven_day_volume.try_into().unwrap_or_default(),
+            prev_thirty_day_volume: prev_thirty_day_volume.try_into().unwrap_or_default(),
+            prev_one_day_sales_count: prev_one_day_sales_count.try_into().unwrap_or_default(),
             prev_seven_day_sales_count: prev_seven_day_sales_count
                 .to_u64()
                 .unwrap_or_default()
@@ -955,7 +955,7 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
                 .to_u64()
                 .unwrap_or_default()
                 .into(),
-            prev_one_day_floor_price: prev_one_day_floor_price.to_u64().unwrap_or_default().into(),
+            prev_one_day_floor_price: prev_one_day_floor_price.try_into().unwrap_or_default(),
             prev_seven_day_floor_price: prev_seven_day_floor_price
                 .to_u64()
                 .unwrap_or_default()
@@ -973,9 +973,9 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
             one_day_sales_count_change: one_day_sales_count_change.try_into()?,
             seven_day_sales_count_change: seven_day_sales_count_change.try_into()?,
             thirty_day_sales_count_change: thirty_day_sales_count_change.try_into()?,
-            one_day_marketcap: one_day_marketcap.to_u64().unwrap_or_default().into(),
-            seven_day_marketcap: seven_day_marketcap.to_u64().unwrap_or_default().into(),
-            thirty_day_marketcap: thirty_day_marketcap.to_u64().unwrap_or_default().into(),
+            one_day_marketcap: one_day_marketcap.try_into().unwrap_or_default(),
+            seven_day_marketcap: seven_day_marketcap.try_into().unwrap_or_default(),
+            thirty_day_marketcap: thirty_day_marketcap.try_into().unwrap_or_default(),
             one_day_marketcap_change: one_day_marketcap_change.try_into()?,
             seven_day_marketcap_change: seven_day_marketcap_change.try_into()?,
             thirty_day_marketcap_change: thirty_day_marketcap_change.try_into()?,
