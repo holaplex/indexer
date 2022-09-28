@@ -29,6 +29,7 @@ enum CollectionTrends {
     Table,
     Collection,
     FloorPrice,
+    NftCount,
     #[iden(rename = "_1d_volume")]
     OneDayVolume,
     #[iden(rename = "_7d_volume")]
@@ -77,6 +78,18 @@ enum CollectionTrends {
     SevenDaySalesCountChange,
     #[iden(rename = "_30d_sales_count_change")]
     ThirtyDaySalesCountChange,
+    #[iden(rename = "_1d_marketcap")]
+    OneDayMarketcap,
+    #[iden(rename = "_7d_marketcap")]
+    SevenDayMarketcap,
+    #[iden(rename = "_30d_marketcap")]
+    ThirtyDayMarketcap,
+    #[iden(rename = "_1d_marketcap_change")]
+    OneDayMarketcapChange,
+    #[iden(rename = "_7d_marketcap_change")]
+    SevenDayMarketcapChange,
+    #[iden(rename = "_30d_marketcap_change")]
+    ThirtyDayMarketcapChange,
 }
 
 /// Query collection by address
@@ -507,6 +520,9 @@ impl From<CollectionSort> for CollectionTrends {
             CollectionSort::OneDaySalesCount => CollectionTrends::OneDaySalesCount,
             CollectionSort::SevenDaySalesCount => CollectionTrends::SevenDaySalesCount,
             CollectionSort::ThirtyDaySalesCount => CollectionTrends::ThirtyDaySalesCount,
+            CollectionSort::OneDayMarketcap => CollectionTrends::OneDayMarketcap,
+            CollectionSort::SevenDayMarketcap => CollectionTrends::SevenDayMarketcap,
+            CollectionSort::ThirtyDayMarketcap => CollectionTrends::ThirtyDayMarketcap,
         }
     }
 }
@@ -532,10 +548,29 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Co
         .columns(vec![
             (CollectionTrends::Table, CollectionTrends::Collection),
             (CollectionTrends::Table, CollectionTrends::FloorPrice),
+            (CollectionTrends::Table, CollectionTrends::NftCount),
             (CollectionTrends::Table, CollectionTrends::OneDayVolume),
             (CollectionTrends::Table, CollectionTrends::SevenDayVolume),
             (CollectionTrends::Table, CollectionTrends::ThirtyDayVolume),
             (CollectionTrends::Table, CollectionTrends::OneDaySalesCount),
+            (CollectionTrends::Table, CollectionTrends::OneDayMarketcap),
+            (CollectionTrends::Table, CollectionTrends::SevenDayMarketcap),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::ThirtyDayMarketcap,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::OneDayMarketcapChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::SevenDayMarketcapChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::ThirtyDayMarketcapChange,
+            ),
             (
                 CollectionTrends::Table,
                 CollectionTrends::SevenDaySalesCount,
@@ -621,13 +656,8 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Co
         .take();
 
     let query = query.to_string(PostgresQueryBuilder);
-    println!("Print Query: {:?}", query.replace('\"', ""));
 
-    let result = diesel::sql_query(query)
+    diesel::sql_query(query)
         .load(conn)
-        .context("Failed to load trending collection(s)");
-
-    println!("Query Result: {:?}", result);
-
-    result
+        .context("Failed to load trending collection(s)")
 }

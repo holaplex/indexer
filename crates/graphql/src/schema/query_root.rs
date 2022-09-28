@@ -808,29 +808,37 @@ impl QueryRoot {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let sort = match (time_frame, sort_by) {
-            (CollectionInterval::OneDay, CollectionSort::Volume) => {
+            (CollectionInterval::One, CollectionSort::Volume) => {
                 db::custom_types::CollectionSort::OneDayVolume
             },
-            (CollectionInterval::SevenDay, CollectionSort::Volume) => {
+            (CollectionInterval::Seven, CollectionSort::Volume) => {
                 db::custom_types::CollectionSort::SevenDayVolume
             },
-            (CollectionInterval::ThirtyDay, CollectionSort::Volume) => {
-                db::custom_types::CollectionSort::SevenDayVolume
+            (CollectionInterval::Thirty, CollectionSort::Volume) => {
+                db::custom_types::CollectionSort::ThirtyDayVolume
             },
-            (CollectionInterval::OneDay, CollectionSort::NumberSales) => {
+            (CollectionInterval::One, CollectionSort::NumberSales) => {
                 db::custom_types::CollectionSort::OneDaySalesCount
             },
-            (CollectionInterval::SevenDay, CollectionSort::NumberSales) => {
+            (CollectionInterval::Seven, CollectionSort::NumberSales) => {
                 db::custom_types::CollectionSort::SevenDaySalesCount
             },
-            (CollectionInterval::ThirtyDay, CollectionSort::NumberSales) => {
+            (CollectionInterval::Thirty, CollectionSort::NumberSales) => {
                 db::custom_types::CollectionSort::ThirtyDaySalesCount
             },
-            (CollectionInterval::OneDay, CollectionSort::Floor)
-            | (CollectionInterval::SevenDay, CollectionSort::Floor)
-            | (CollectionInterval::ThirtyDay, CollectionSort::Floor) => {
-                db::custom_types::CollectionSort::FloorPrice
+            (CollectionInterval::One, CollectionSort::Marketcap) => {
+                db::custom_types::CollectionSort::OneDayMarketcap
             },
+            (CollectionInterval::Seven, CollectionSort::Marketcap) => {
+                db::custom_types::CollectionSort::SevenDayMarketcap
+            },
+            (CollectionInterval::Thirty, CollectionSort::Marketcap) => {
+                db::custom_types::CollectionSort::ThirtyDayMarketcap
+            },
+            (
+                CollectionInterval::One | CollectionInterval::Seven | CollectionInterval::Thirty,
+                CollectionSort::Floor,
+            ) => db::custom_types::CollectionSort::FloorPrice,
         };
 
         let collections = queries::collections::trends(&conn, TrendingQueryOptions {

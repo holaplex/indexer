@@ -860,6 +860,7 @@ pub struct CollectionIdentifier(pub String);
 pub struct CollectionTrend {
     pub collection: String,
     pub floor_price: U64,
+    pub nft_count: i32,
     pub one_day_volume: U64,
     pub seven_day_volume: U64,
     pub thirty_day_volume: U64,
@@ -875,15 +876,21 @@ pub struct CollectionTrend {
     pub prev_one_day_floor_price: U64,
     pub prev_seven_day_floor_price: U64,
     pub prev_thirty_day_floor_price: U64,
-    pub one_day_volume_change: U64,
-    pub seven_day_volume_change: U64,
-    pub thirty_day_volume_change: U64,
-    pub one_day_floor_price_change: U64,
-    pub seven_day_floor_price_change: U64,
-    pub thirty_day_floor_price_change: U64,
-    pub one_day_sales_count_change: U64,
-    pub seven_day_sales_count_change: U64,
-    pub thirty_day_sales_count_change: U64,
+    pub one_day_volume_change: i32,
+    pub seven_day_volume_change: i32,
+    pub thirty_day_volume_change: i32,
+    pub one_day_floor_price_change: i32,
+    pub seven_day_floor_price_change: i32,
+    pub thirty_day_floor_price_change: i32,
+    pub one_day_sales_count_change: i32,
+    pub seven_day_sales_count_change: i32,
+    pub thirty_day_sales_count_change: i32,
+    pub one_day_marketcap: U64,
+    pub seven_day_marketcap: U64,
+    pub thirty_day_marketcap: U64,
+    pub one_day_marketcap_change: i32,
+    pub seven_day_marketcap_change: i32,
+    pub thirty_day_marketcap_change: i32,
 }
 
 impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
@@ -893,6 +900,7 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
         models::CollectionTrend {
             collection,
             floor_price,
+            nft_count,
             one_day_volume,
             seven_day_volume,
             thirty_day_volume,
@@ -917,11 +925,18 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
             one_day_sales_count_change,
             seven_day_sales_count_change,
             thirty_day_sales_count_change,
+            one_day_marketcap,
+            one_day_marketcap_change,
+            seven_day_marketcap,
+            seven_day_marketcap_change,
+            thirty_day_marketcap,
+            thirty_day_marketcap_change,
         }: models::CollectionTrend,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             collection,
             floor_price: floor_price.to_u64().unwrap_or_default().into(),
+            nft_count: nft_count.try_into()?,
             one_day_volume: one_day_volume.to_u64().unwrap_or_default().into(),
             seven_day_volume: seven_day_volume.to_u64().unwrap_or_default().into(),
             thirty_day_volume: thirty_day_volume.to_u64().unwrap_or_default().into(),
@@ -949,33 +964,21 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
                 .to_u64()
                 .unwrap_or_default()
                 .into(),
-            one_day_volume_change: one_day_volume_change.to_u64().unwrap_or_default().into(),
-            seven_day_volume_change: seven_day_volume_change.to_u64().unwrap_or_default().into(),
-            thirty_day_volume_change: thirty_day_volume_change.to_u64().unwrap_or_default().into(),
-            one_day_floor_price_change: one_day_floor_price_change
-                .to_u64()
-                .unwrap_or_default()
-                .into(),
-            seven_day_floor_price_change: seven_day_floor_price_change
-                .to_u64()
-                .unwrap_or_default()
-                .into(),
-            thirty_day_floor_price_change: thirty_day_floor_price_change
-                .to_u64()
-                .unwrap_or_default()
-                .into(),
-            one_day_sales_count_change: one_day_sales_count_change
-                .to_u64()
-                .unwrap_or_default()
-                .into(),
-            seven_day_sales_count_change: seven_day_sales_count_change
-                .to_u64()
-                .unwrap_or_default()
-                .into(),
-            thirty_day_sales_count_change: thirty_day_sales_count_change
-                .to_u64()
-                .unwrap_or_default()
-                .into(),
+            one_day_volume_change: one_day_volume_change.try_into()?,
+            seven_day_volume_change: seven_day_volume_change.try_into()?,
+            thirty_day_volume_change: thirty_day_volume_change.try_into()?,
+            one_day_floor_price_change: one_day_floor_price_change.try_into()?,
+            seven_day_floor_price_change: seven_day_floor_price_change.try_into()?,
+            thirty_day_floor_price_change: thirty_day_floor_price_change.try_into()?,
+            one_day_sales_count_change: one_day_sales_count_change.try_into()?,
+            seven_day_sales_count_change: seven_day_sales_count_change.try_into()?,
+            thirty_day_sales_count_change: thirty_day_sales_count_change.try_into()?,
+            one_day_marketcap: one_day_marketcap.to_u64().unwrap_or_default().into(),
+            seven_day_marketcap: seven_day_marketcap.to_u64().unwrap_or_default().into(),
+            thirty_day_marketcap: thirty_day_marketcap.to_u64().unwrap_or_default().into(),
+            one_day_marketcap_change: one_day_marketcap_change.try_into()?,
+            seven_day_marketcap_change: seven_day_marketcap_change.try_into()?,
+            thirty_day_marketcap_change: thirty_day_marketcap_change.try_into()?,
         })
     }
 }
@@ -984,6 +987,10 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
 impl CollectionTrend {
     pub fn floor_price(&self) -> U64 {
         self.floor_price
+    }
+
+    pub fn nft_count(&self) -> i32 {
+        self.nft_count
     }
 
     pub fn one_day_volume(&self) -> U64 {
@@ -1046,40 +1053,64 @@ impl CollectionTrend {
         self.prev_thirty_day_floor_price
     }
 
-    pub fn one_day_volume_change(&self) -> U64 {
+    pub fn one_day_volume_change(&self) -> i32 {
         self.one_day_volume_change
     }
 
-    pub fn seven_day_volume_change(&self) -> U64 {
+    pub fn seven_day_volume_change(&self) -> i32 {
         self.seven_day_volume_change
     }
 
-    pub fn thirty_day_volume_change(&self) -> U64 {
+    pub fn thirty_day_volume_change(&self) -> i32 {
         self.thirty_day_volume_change
     }
 
-    pub fn one_day_floor_price_change(&self) -> U64 {
+    pub fn one_day_floor_price_change(&self) -> i32 {
         self.one_day_floor_price_change
     }
 
-    pub fn seven_day_floor_price_change(&self) -> U64 {
+    pub fn seven_day_floor_price_change(&self) -> i32 {
         self.seven_day_floor_price_change
     }
 
-    pub fn thirty_day_floor_price_change(&self) -> U64 {
+    pub fn thirty_day_floor_price_change(&self) -> i32 {
         self.thirty_day_floor_price_change
     }
 
-    pub fn one_day_sales_count_change(&self) -> U64 {
+    pub fn one_day_sales_count_change(&self) -> i32 {
         self.one_day_sales_count_change
     }
 
-    pub fn seven_day_sales_count_change(&self) -> U64 {
+    pub fn seven_day_sales_count_change(&self) -> i32 {
         self.seven_day_sales_count_change
     }
 
-    pub fn thirty_day_sales_count_change(&self) -> U64 {
+    pub fn thirty_day_sales_count_change(&self) -> i32 {
         self.thirty_day_sales_count_change
+    }
+
+    pub fn one_day_marketcap(&self) -> U64 {
+        self.one_day_marketcap
+    }
+
+    pub fn seven_day_marketcap(&self) -> U64 {
+        self.one_day_marketcap
+    }
+
+    pub fn thirty_day_marketcap(&self) -> U64 {
+        self.one_day_marketcap
+    }
+
+    pub fn one_day_marketcap_change(&self) -> i32 {
+        self.one_day_marketcap_change
+    }
+
+    pub fn seven_day_marketcap_change(&self) -> i32 {
+        self.one_day_marketcap_change
+    }
+
+    pub fn thirty_day_marketcap_change(&self) -> i32 {
+        self.one_day_marketcap_change
     }
 
     pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {

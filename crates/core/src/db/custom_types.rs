@@ -575,4 +575,13 @@ pub enum CollectionSort {
 
     /// sort results by 30 days sales count
     ThirtyDaySalesCount,
+
+    /// sort results by 1 day marketcap
+    OneDayMarketcap,
+
+    /// sort results by 7 day marketcap
+    SevenDayMarketcap,
+
+    /// sort results by 30 day marketcap
+    ThirtyDayMarketcap,
 }

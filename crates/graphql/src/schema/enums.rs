@@ -54,15 +54,17 @@ pub enum CollectionSort {
     Floor,
     #[graphql(name = "NUMBER_SALES")]
     NumberSales,
+    #[graphql(name = "MARKETCAP")]
+    Marketcap,
 }
 
 #[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]
 #[graphql(description = "Collection intervals")]
 pub enum CollectionInterval {
     #[graphql(name = "ONE_DAY")]
-    OneDay,
+    One,
     #[graphql(name = "SEVEN_DAY")]
-    SevenDay,
+    Seven,
     #[graphql(name = "THIRTY_DAY")]
-    ThirtyDay,
+    Thirty,
 }
