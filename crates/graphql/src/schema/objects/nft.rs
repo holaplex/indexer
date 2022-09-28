@@ -2,7 +2,8 @@ use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     bigdecimal::ToPrimitive,
     db::{
-        queries, sql_query,
+        queries::{self, metadatas::CollectionNftOptions},
+        sql_query,
         sql_types::Text,
         tables::{
             attributes, auction_houses, bid_receipts, listing_receipts, listings,
@@ -23,7 +24,10 @@ use serde_json::Value;
 use services;
 
 use super::prelude::*;
-
+use crate::schema::{
+    enums::{NftSort, OrderDirection},
+    query_root::AttributeFilter,
+};
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
     pub metadata_address: String,
@@ -570,6 +574,36 @@ impl Collection {
                 .context("Failed to load metadata attributes")?;
 
         services::attributes::group(metadata_attributes)
+    }
+
+    pub async fn nfts(
+        &self,
+        ctx: &AppContext,
+        limit: i32,
+        offset: i32,
+        sort_by: Option<NftSort>,
+        order: Option<OrderDirection>,
+        marketplace_program: Option<String>,
+        auction_house: Option<String>,
+        attributes: Option<Vec<AttributeFilter>>,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = ctx.shared.db.get()?;
+
+        let nfts = queries::metadatas::collection_nfts(&conn, CollectionNftOptions {
+            collection: self.0.mint_address.clone(),
+            auction_house,
+            attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
+            marketplace_program,
+            sort_by: sort_by.map(Into::into),
+            order: order.map(Into::into),
+            limit: limit.try_into()?,
+            offset: offset.try_into()?,
+        })?;
+
+        nfts.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     pub async fn activities(

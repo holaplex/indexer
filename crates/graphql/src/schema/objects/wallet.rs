@@ -12,7 +12,7 @@ use scalars::{PublicKey, U64};
 use tables::{bids, graph_connections};
 
 use super::prelude::*;
-use crate::schema::enums::{OrderDirection, WalletNftSort};
+use crate::schema::enums::{NftSort, OrderDirection};
 
 #[derive(Debug, Clone)]
 pub struct Wallet {
@@ -301,7 +301,7 @@ impl Wallet {
         auction_house: Option<String>,
         marketplace_program: Option<String>,
         collections: Option<Vec<String>>,
-        sort_by: Option<WalletNftSort>,
+        sort_by: Option<NftSort>,
         order_by: Option<OrderDirection>,
         limit: i32,
         offset: i32,

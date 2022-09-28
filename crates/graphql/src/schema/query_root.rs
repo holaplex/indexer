@@ -43,7 +43,7 @@ pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
 #[graphql(description = "Filter on NFT attributes")]
-struct AttributeFilter {
+pub struct AttributeFilter {
     trait_type: String,
     values: Vec<String>,
 }
@@ -776,11 +776,10 @@ impl QueryRoot {
         context: &AppContext,
         address: String,
     ) -> FieldResult<Option<Collection>> {
-        let conn = context.shared.db.get()?;
-
-        queries::collections::get(&conn, &address)?
-            .map(TryInto::try_into)
-            .transpose()
+        context
+            .generic_collection_loader
+            .load(address)
+            .await
             .map_err(Into::into)
     }
 

@@ -8,10 +8,11 @@ use diesel::{
 use sea_query::{
     Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc,
 };
+use uuid::Uuid;
 
 use crate::{
     db::{
-        custom_types::Sort,
+        custom_types::NftSort,
         models::{Nft, NftActivity},
         tables::{current_metadata_owners, metadata_jsons, metadatas},
         Connection,
@@ -42,6 +43,13 @@ enum Metadatas {
     Uri,
     Slot,
     BurnedAt,
+}
+
+#[derive(Iden)]
+enum MeMetadataCollections {
+    Table,
+    CollectionId,
+    MetadataAddress,
 }
 
 #[derive(Iden)]
@@ -438,6 +446,27 @@ pub fn list(
         .context("Failed to load nft(s)")
 }
 
+/// Input parameters for the [`collection_nfts`] query.
+#[derive(Debug)]
+pub struct CollectionNftOptions {
+    /// Collection address
+    pub collection: String,
+    /// Auction house of the collection
+    pub auction_house: Option<String>,
+    /// Filter by collection attributes
+    pub attributes: Option<Vec<AttributeFilter>>,
+    /// Marketplace program in which the collection is listed
+    pub marketplace_program: Option<String>,
+    /// Sort by Price or Listed at
+    pub sort_by: Option<NftSort>,
+    /// Order the resulting rows by 'Asc' or 'Desc'
+    pub order: Option<Order>,
+    /// Limit the number of returned rows
+    pub limit: u64,
+    /// Skip the first `n` resulting rows
+    pub offset: u64,
+}
+
 /// Input parameters for the [`wallet_nfts`] query.
 #[derive(Debug)]
 pub struct WalletNftOptions {
@@ -450,7 +479,7 @@ pub struct WalletNftOptions {
     /// nft in one or more specific collections
     pub collections: Option<Vec<String>>,
     /// Sort by Price or Listed at
-    pub sort_by: Option<Sort>,
+    pub sort_by: Option<NftSort>,
     /// Order the resulting rows by 'Asc' or 'Desc'
     pub order: Option<Order>,
     /// Limit the number of returned rows
@@ -459,13 +488,186 @@ pub struct WalletNftOptions {
     pub offset: u64,
 }
 
-impl From<Sort> for Listings {
-    fn from(sort: Sort) -> Self {
+impl From<NftSort> for Listings {
+    fn from(sort: NftSort) -> Self {
         match sort {
-            Sort::Price => Listings::Price,
-            Sort::ListedAt => Listings::CreatedAt,
+            NftSort::Price => Listings::Price,
+            NftSort::ListedAt => Listings::CreatedAt,
         }
     }
+}
+
+/// Handles queries for a Collection Nfts
+///
+/// # Errors
+/// returns an error when the underlying queries throw an error
+#[allow(clippy::too_many_lines)]
+pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Result<Vec<Nft>> {
+    let CollectionNftOptions {
+        collection,
+        auction_house,
+        attributes,
+        marketplace_program,
+        sort_by,
+        order,
+        limit,
+        offset,
+    } = options;
+
+    let sort_by = sort_by.map_or(Listings::Price, Into::into);
+
+    let current_time = Utc::now().naive_utc();
+
+    let order = order.unwrap_or(Order::Desc);
+    let uuid = Uuid::parse_str(&collection);
+    let is_me_collection = match uuid {
+        Err(_error) => false,
+        Ok(_result) => true,
+    };
+    let mut query = Query::select()
+        .columns(vec![
+            (Metadatas::Table, Metadatas::Address),
+            (Metadatas::Table, Metadatas::Name),
+            (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+            (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
+            (Metadatas::Table, Metadatas::MintAddress),
+            (Metadatas::Table, Metadatas::PrimarySaleHappened),
+            (Metadatas::Table, Metadatas::Uri),
+            (Metadatas::Table, Metadatas::Slot),
+        ])
+        .columns(vec![
+            (MetadataJsons::Table, MetadataJsons::Description),
+            (MetadataJsons::Table, MetadataJsons::Image),
+            (MetadataJsons::Table, MetadataJsons::AnimationUrl),
+            (MetadataJsons::Table, MetadataJsons::ExternalUrl),
+            (MetadataJsons::Table, MetadataJsons::Category),
+            (MetadataJsons::Table, MetadataJsons::Model),
+        ])
+        .columns(vec![(
+            CurrentMetadataOwners::Table,
+            CurrentMetadataOwners::TokenAccountAddress,
+        )])
+        .from(MetadataJsons::Table)
+        .inner_join(
+            Metadatas::Table,
+            Expr::tbl(MetadataJsons::Table, MetadataJsons::MetadataAddress)
+                .equals(Metadatas::Table, Metadatas::Address),
+        )
+        .inner_join(
+            CurrentMetadataOwners::Table,
+            Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
+                CurrentMetadataOwners::Table,
+                CurrentMetadataOwners::MintAddress,
+            ),
+        )
+        .conditions(
+            is_me_collection,
+            |query| {
+                query.inner_join(
+                    MeMetadataCollections::Table,
+                    Expr::tbl(
+                        MeMetadataCollections::Table,
+                        MeMetadataCollections::MetadataAddress,
+                    )
+                    .equals(Metadatas::Table, Metadatas::Address),
+                );
+            },
+            |query| {
+                query.inner_join(
+                    MetadataCollectionKeys::Table,
+                    Expr::tbl(
+                        MetadataCollectionKeys::Table,
+                        MetadataCollectionKeys::MetadataAddress,
+                    )
+                    .equals(Metadatas::Table, Metadatas::Address),
+                );
+            },
+        )
+        .left_join(
+            Listings::Table,
+            Condition::all()
+                .add(
+                    Expr::tbl(Listings::Table, Listings::Metadata)
+                        .equals(Metadatas::Table, Metadatas::Address),
+                )
+                .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
+                    CurrentMetadataOwners::Table,
+                    CurrentMetadataOwners::OwnerAddress,
+                ))
+                .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
+                .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
+                .add(
+                    Expr::tbl(Listings::Table, Listings::AuctionHouse)
+                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
+                )
+                .add(
+                    Expr::tbl(Listings::Table, Listings::Expiry)
+                        .is_null()
+                        .or(Expr::tbl(Listings::Table, Listings::Expiry).gt(current_time)),
+                )
+                .add_option(auction_house.map(|auction_house| {
+                    Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house)
+                }))
+                .add_option(marketplace_program.map(|marketplace_program| {
+                    Expr::col((Listings::Table, Listings::MarketplaceProgram))
+                        .eq(marketplace_program)
+                })),
+        )
+        .and_where(Expr::col(Metadatas::BurnedAt).is_null())
+        .conditions(
+            is_me_collection,
+            |query| {
+                query.and_where(
+                    Expr::col((
+                        MeMetadataCollections::Table,
+                        MeMetadataCollections::CollectionId,
+                    ))
+                    .eq(collection.clone()),
+                );
+            },
+            |query| {
+                query.and_where(
+                    Expr::col((
+                        MetadataCollectionKeys::Table,
+                        MetadataCollectionKeys::CollectionAddress,
+                    ))
+                    .eq(collection.clone()),
+                );
+            },
+        )
+        .limit(limit)
+        .offset(offset)
+        .order_by((Listings::Table, sort_by), order)
+        .take();
+
+    if let Some(attributes) = attributes {
+        for AttributeFilter { trait_type, values } in attributes {
+            let alias = format!("attributes_{}", trait_type);
+            let alias: DynIden = SeaRc::new(Alias::new(&alias));
+
+            query.join_lateral(
+                JoinType::LeftJoin,
+                Query::select()
+                    .from(Attributes::Table)
+                    .column((Attributes::Table, Attributes::MetadataAddress))
+                    .cond_where(
+                        Condition::all()
+                            .add(Expr::col(Attributes::TraitType).eq(trait_type))
+                            .add(Expr::col(Attributes::Value).is_in(values)),
+                    )
+                    .take(),
+                alias.clone(),
+                Expr::tbl(alias, Attributes::MetadataAddress)
+                    .equals(Metadatas::Table, Metadatas::Address),
+            );
+        }
+    }
+
+    let query = query.to_string(PostgresQueryBuilder);
+
+    diesel::sql_query(query)
+        .load(conn)
+        .context("Failed to load nft(s)")
 }
 
 /// Handles queries for a wallet Nfts
