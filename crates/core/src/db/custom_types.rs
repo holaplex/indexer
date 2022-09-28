@@ -551,3 +551,37 @@ impl FromSql<VoteWeightV1, Pg> for VoteWeightV1Enum {
         from_bytes(bytes)
     }
 }
+
+/// Direction for sorting Collections query results by the "SORT BY" variable(s)
+#[derive(Debug, Clone, Copy, strum::EnumString, strum::Display)]
+pub enum CollectionSort {
+    /// sort results by floor price
+    FloorPrice,
+
+    /// sort results by 1 day volume
+    OneDayVolume,
+
+    /// sort results by 7 days volume
+    SevenDayVolume,
+
+    /// sort results by 30 days volume]
+    ThirtyDayVolume,
+
+    /// sort results by 1 day sales count
+    OneDaySalesCount,
+
+    /// sort results by 7 days sales count
+    SevenDaySalesCount,
+
+    /// sort results by 30 days sales count
+    ThirtyDaySalesCount,
+
+    /// sort results by 1 day marketcap
+    OneDayMarketcap,
+
+    /// sort results by 7 day marketcap
+    SevenDayMarketcap,
+
+    /// sort results by 30 day marketcap
+    ThirtyDayMarketcap,
+}

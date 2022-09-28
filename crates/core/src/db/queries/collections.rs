@@ -11,17 +11,86 @@ use diesel::{
     serialize::ToSql,
     sql_types::{Array, Integer, Nullable, Text, Timestamp},
 };
+use sea_query::{Iden, Order, PostgresQueryBuilder, Query};
 
 use crate::{
     db::{
-        custom_types::OrderDirection,
-        models::{Nft, NftActivity},
+        custom_types::{CollectionSort, OrderDirection},
+        models::{CollectionTrend, Nft, NftActivity},
         queries::metadatas::NFT_COLUMNS,
         tables::{current_metadata_owners, metadata_collection_keys, metadata_jsons, metadatas},
         Connection,
     },
     error::Result,
 };
+
+#[derive(Iden)]
+enum CollectionTrends {
+    Table,
+    Collection,
+    FloorPrice,
+    NftCount,
+    #[iden(rename = "_1d_volume")]
+    OneDayVolume,
+    #[iden(rename = "_7d_volume")]
+    SevenDayVolume,
+    #[iden(rename = "_30d_volume")]
+    ThirtyDayVolume,
+    #[iden(rename = "_1d_sales_count")]
+    OneDaySalesCount,
+    #[iden(rename = "_7d_sales_count")]
+    SevenDaySalesCount,
+    #[iden(rename = "_30d_sales_count")]
+    ThirtyDaySalesCount,
+    #[iden(rename = "_prev_1d_volume")]
+    PrevOneDayVolume,
+    #[iden(rename = "_prev_7d_volume")]
+    PrevSevenDayVolume,
+    #[iden(rename = "_prev_30d_volume")]
+    PrevThirtyDayVolume,
+    #[iden(rename = "prev_1d_sales_count")]
+    PrevOneDaySalesCount,
+    #[iden(rename = "prev_7d_sales_count")]
+    PrevSevenDaySalesCount,
+    #[iden(rename = "prev_30d_sales_count")]
+    PrevThirtyDaySalesCount,
+    #[iden(rename = "prev_1d_floor_price")]
+    PrevOneDayFloorPrice,
+    #[iden(rename = "prev_7d_floor_price")]
+    PrevSevenDayFloorPrice,
+    #[iden(rename = "prev_30d_floor_price")]
+    PrevThirtyDayFloorPrice,
+    #[iden(rename = "_1d_volume_change")]
+    OneDayVolumeChange,
+    #[iden(rename = "_7d_volume_change")]
+    SevenDayVolumeChange,
+    #[iden(rename = "_30d_volume_change")]
+    ThirtyDayVolumeChange,
+    #[iden(rename = "_1d_floor_price_change")]
+    OneDayFloorPriceChange,
+    #[iden(rename = "_7d_floor_price_change")]
+    SevenDayFloorPriceChange,
+    #[iden(rename = "_30d_floor_price_change")]
+    ThirtyDayFloorPriceChange,
+    #[iden(rename = "_1d_sales_count_change")]
+    OneDaySalesCountChange,
+    #[iden(rename = "_7d_sales_count_change")]
+    SevenDaySalesCountChange,
+    #[iden(rename = "_30d_sales_count_change")]
+    ThirtyDaySalesCountChange,
+    #[iden(rename = "_1d_marketcap")]
+    OneDayMarketcap,
+    #[iden(rename = "_7d_marketcap")]
+    SevenDayMarketcap,
+    #[iden(rename = "_30d_marketcap")]
+    ThirtyDayMarketcap,
+    #[iden(rename = "_1d_marketcap_change")]
+    OneDayMarketcapChange,
+    #[iden(rename = "_7d_marketcap_change")]
+    SevenDayMarketcapChange,
+    #[iden(rename = "_30d_marketcap_change")]
+    ThirtyDayMarketcapChange,
+}
 
 /// Query collection by address
 ///
@@ -426,4 +495,169 @@ pub fn collection_activities(
         .bind(offset)
         .load(conn)
         .context("Failed to load collection activities")
+}
+
+/// Input parameters for the [`trending`] query.
+#[derive(Debug)]
+pub struct TrendingQueryOptions {
+    /// Sort by Price or Listed at
+    pub sort_by: CollectionSort,
+    /// Order the resulting rows by 'Asc' or 'Desc'
+    pub order: Option<Order>,
+    /// Limit the number of returned rows
+    pub limit: u64,
+    /// Skip the first `n` resulting rows
+    pub offset: u64,
+}
+
+impl From<CollectionSort> for CollectionTrends {
+    fn from(sort: CollectionSort) -> Self {
+        match sort {
+            CollectionSort::FloorPrice => CollectionTrends::FloorPrice,
+            CollectionSort::OneDayVolume => CollectionTrends::OneDayVolume,
+            CollectionSort::SevenDayVolume => CollectionTrends::SevenDayVolume,
+            CollectionSort::ThirtyDayVolume => CollectionTrends::ThirtyDayVolume,
+            CollectionSort::OneDaySalesCount => CollectionTrends::OneDaySalesCount,
+            CollectionSort::SevenDaySalesCount => CollectionTrends::SevenDaySalesCount,
+            CollectionSort::ThirtyDaySalesCount => CollectionTrends::ThirtyDaySalesCount,
+            CollectionSort::OneDayMarketcap => CollectionTrends::OneDayMarketcap,
+            CollectionSort::SevenDayMarketcap => CollectionTrends::SevenDayMarketcap,
+            CollectionSort::ThirtyDayMarketcap => CollectionTrends::ThirtyDayMarketcap,
+        }
+    }
+}
+
+/// Handles queries for trending collections
+///
+/// # Errors
+/// returns an error when the underlying queries throw an error
+#[allow(clippy::too_many_lines)]
+pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<CollectionTrend>> {
+    let TrendingQueryOptions {
+        sort_by,
+        order,
+        limit,
+        offset,
+    } = options;
+
+    let sort_by: CollectionTrends = sort_by.into();
+
+    let order = order.unwrap_or(Order::Desc);
+
+    let query = Query::select()
+        .columns(vec![
+            (CollectionTrends::Table, CollectionTrends::Collection),
+            (CollectionTrends::Table, CollectionTrends::FloorPrice),
+            (CollectionTrends::Table, CollectionTrends::NftCount),
+            (CollectionTrends::Table, CollectionTrends::OneDayVolume),
+            (CollectionTrends::Table, CollectionTrends::SevenDayVolume),
+            (CollectionTrends::Table, CollectionTrends::ThirtyDayVolume),
+            (CollectionTrends::Table, CollectionTrends::OneDaySalesCount),
+            (CollectionTrends::Table, CollectionTrends::OneDayMarketcap),
+            (CollectionTrends::Table, CollectionTrends::SevenDayMarketcap),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::ThirtyDayMarketcap,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::OneDayMarketcapChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::SevenDayMarketcapChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::ThirtyDayMarketcapChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::SevenDaySalesCount,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::ThirtyDaySalesCount,
+            ),
+            (CollectionTrends::Table, CollectionTrends::PrevOneDayVolume),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevSevenDayVolume,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevThirtyDayVolume,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevOneDaySalesCount,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevSevenDaySalesCount,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevThirtyDaySalesCount,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevOneDayFloorPrice,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevSevenDayFloorPrice,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::PrevThirtyDayFloorPrice,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::OneDayVolumeChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::SevenDayVolumeChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::ThirtyDayVolumeChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::OneDayFloorPriceChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::SevenDayFloorPriceChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::ThirtyDayFloorPriceChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::OneDaySalesCountChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::SevenDaySalesCountChange,
+            ),
+            (
+                CollectionTrends::Table,
+                CollectionTrends::ThirtyDaySalesCountChange,
+            ),
+        ])
+        .from(CollectionTrends::Table)
+        .limit(limit)
+        .offset(offset)
+        .order_by((CollectionTrends::Table, sort_by), order)
+        .take();
+
+    let query = query.to_string(PostgresQueryBuilder);
+
+    diesel::sql_query(query)
+        .load(conn)
+        .context("Failed to load trending collection(s)")
 }

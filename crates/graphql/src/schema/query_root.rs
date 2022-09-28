@@ -1,6 +1,7 @@
 use indexer_core::db::{
+    self,
     expression::dsl::all,
-    queries::{self, feed_event::EventType},
+    queries::{self, collections::TrendingQueryOptions, feed_event::EventType},
 };
 use objects::{
     ah_listing::AhListing,
@@ -33,7 +34,11 @@ use tables::{
     storefronts, token_owner_records, twitter_handle_name_services, wallet_totals,
 };
 
-use super::{enums::OrderDirection, prelude::*};
+use super::{
+    enums::{CollectionInterval, CollectionSort, OrderDirection},
+    objects::nft::CollectionTrend,
+    prelude::*,
+};
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
@@ -776,6 +781,77 @@ impl QueryRoot {
         queries::collections::get(&conn, &address)?
             .map(TryInto::try_into)
             .transpose()
+            .map_err(Into::into)
+    }
+
+    #[graphql(
+        description = "Returns featured collection NFTs ordered by market cap (floor price * number of NFTs in collection)",
+        arguments(
+            sort_by(description = "Choose sort for trending collections"),
+            time_frame(description = "The desired timeframe to evaluate the trending collection"),
+            order_direction(
+                description = "Arrange result in ascending or descending order by selected sort_by"
+            ),
+            limit(description = "Return at most this many results"),
+            offset(description = "Return results starting from this index"),
+        )
+    )]
+    async fn collection_trends(
+        &self,
+        context: &AppContext,
+        sort_by: CollectionSort,
+        time_frame: CollectionInterval,
+        order_direction: Option<OrderDirection>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<CollectionTrend>> {
+        let conn = context.shared.db.get().context("failed to connect to db")?;
+
+        let sort = match (time_frame, sort_by) {
+            (CollectionInterval::One, CollectionSort::Volume) => {
+                db::custom_types::CollectionSort::OneDayVolume
+            },
+            (CollectionInterval::Seven, CollectionSort::Volume) => {
+                db::custom_types::CollectionSort::SevenDayVolume
+            },
+            (CollectionInterval::Thirty, CollectionSort::Volume) => {
+                db::custom_types::CollectionSort::ThirtyDayVolume
+            },
+            (CollectionInterval::One, CollectionSort::NumberSales) => {
+                db::custom_types::CollectionSort::OneDaySalesCount
+            },
+            (CollectionInterval::Seven, CollectionSort::NumberSales) => {
+                db::custom_types::CollectionSort::SevenDaySalesCount
+            },
+            (CollectionInterval::Thirty, CollectionSort::NumberSales) => {
+                db::custom_types::CollectionSort::ThirtyDaySalesCount
+            },
+            (CollectionInterval::One, CollectionSort::Marketcap) => {
+                db::custom_types::CollectionSort::OneDayMarketcap
+            },
+            (CollectionInterval::Seven, CollectionSort::Marketcap) => {
+                db::custom_types::CollectionSort::SevenDayMarketcap
+            },
+            (CollectionInterval::Thirty, CollectionSort::Marketcap) => {
+                db::custom_types::CollectionSort::ThirtyDayMarketcap
+            },
+            (
+                CollectionInterval::One | CollectionInterval::Seven | CollectionInterval::Thirty,
+                CollectionSort::Floor,
+            ) => db::custom_types::CollectionSort::FloorPrice,
+        };
+
+        let collections = queries::collections::trends(&conn, TrendingQueryOptions {
+            sort_by: sort,
+            order: order_direction.map(Into::into),
+            limit: limit.try_into()?,
+            offset: offset.try_into()?,
+        })?;
+
+        collections
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
 

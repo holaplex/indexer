@@ -44,3 +44,27 @@ impl From<NftSort> for db::custom_types::Sort {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]
+#[graphql(description = "Sorts collection results")]
+pub enum CollectionSort {
+    #[graphql(name = "VOLUME")]
+    Volume,
+    #[graphql(name = "FLOOR")]
+    Floor,
+    #[graphql(name = "NUMBER_SALES")]
+    NumberSales,
+    #[graphql(name = "MARKETCAP")]
+    Marketcap,
+}
+
+#[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]
+#[graphql(description = "Collection intervals")]
+pub enum CollectionInterval {
+    #[graphql(name = "ONE_DAY")]
+    One,
+    #[graphql(name = "SEVEN_DAY")]
+    Seven,
+    #[graphql(name = "THIRTY_DAY")]
+    Thirty,
+}
