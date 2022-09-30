@@ -1,6 +1,6 @@
 use objects::stats::MintStats;
 
-use super::prelude::*;
+use super::{prelude::*, reward_center::RewardCenter};
 
 #[derive(Debug, Clone)]
 /// A Metaplex auction house
@@ -125,5 +125,13 @@ impl AuctionHouse {
 
     pub fn auction_house_fee_account(&self) -> &str {
         &self.auction_house_fee_account
+    }
+
+    pub async fn reward_center(&self, context: &AppContext) -> FieldResult<Option<RewardCenter>> {
+        context
+            .reward_center_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
     }
 }
