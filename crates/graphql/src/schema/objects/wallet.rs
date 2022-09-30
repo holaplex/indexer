@@ -8,8 +8,8 @@ use objects::{
     nft::{Collection, Nft, NftCreator},
     profile::TwitterProfile,
 };
-use scalars::{PublicKey, U64};
-use tables::{bids, graph_connections};
+use scalars::{markers::TokenMint, PublicKey, U64};
+use tables::{associated_token_accounts, bids, graph_connections};
 
 use super::prelude::*;
 use crate::schema::enums::{NftSort, OrderDirection};
@@ -325,6 +325,30 @@ impl Wallet {
             .map_err(Into::into)
     }
 
+    pub fn associated_token_accounts(
+        &self,
+        ctx: &AppContext,
+        mint_address: Option<PublicKey<TokenMint>>,
+    ) -> FieldResult<Vec<AssociatedTokenAccount>> {
+        let conn = ctx.shared.db.get()?;
+
+        let mut query = associated_token_accounts::table.into_boxed();
+        if let Some(mint_address) = mint_address {
+            query = query.filter(associated_token_accounts::mint.eq(mint_address));
+        }
+        let accts: Vec<models::AssociatedTokenAccount> = query
+            .select(associated_token_accounts::all_columns)
+            .filter(associated_token_accounts::owner.eq(&self.address))
+            .load(&conn)
+            .context("Failed to load token accounts")?;
+
+        accts
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
     pub fn collected_collections(&self, ctx: &AppContext) -> FieldResult<Vec<CollectedCollection>> {
         let conn = ctx.shared.db.get()?;
 
@@ -438,5 +462,33 @@ impl ConnectionCounts {
             .context("Failed to count to_connections")?;
 
         Ok(count.try_into()?)
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct AssociatedTokenAccount {
+    pub address: PublicKey<AssociatedTokenAccount>,
+    pub mint: PublicKey<TokenMint>,
+    pub owner: PublicKey<Wallet>,
+    pub amount: U64,
+}
+
+impl<'a> TryFrom<models::AssociatedTokenAccount<'a>> for AssociatedTokenAccount {
+    type Error = std::num::TryFromIntError;
+    fn try_from(
+        models::AssociatedTokenAccount {
+            address,
+            mint,
+            owner,
+            amount,
+            ..
+        }: models::AssociatedTokenAccount,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            address: address.into(),
+            mint: mint.into(),
+            owner: owner.into(),
+            amount: amount.try_into().unwrap_or_default(),
+        })
     }
 }

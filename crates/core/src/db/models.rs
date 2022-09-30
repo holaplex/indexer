@@ -2105,6 +2105,24 @@ pub struct EnrichedBondingChange<'a> {
     pub supply_change: i64,
 }
 
+/// A row in the `associated_token_accounts` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct AssociatedTokenAccount<'a> {
+    /// Token account address
+    pub address: Cow<'a, str>,
+    /// The mint associated with this account
+    pub mint: Cow<'a, str>,
+    ///The owner of this account.
+    pub owner: Cow<'a, str>,
+    ///The amount of tokens this account holds.
+    pub amount: i64,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
 /// A row in the `metadata_owners` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
