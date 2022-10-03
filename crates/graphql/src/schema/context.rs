@@ -21,6 +21,7 @@ use objects::{
     nft::{Collection, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
     profile::TwitterProfile,
     purchase_receipt::PurchaseReceipt,
+    reward_center::RewardCenter,
     spl_governance::{
         Governance, GovernanceConfig, MultiChoice, Proposal, ProposalOption, ProposalV1,
         ProposalV2, Realm, RealmConfig, TokenOwnerRecord, VoteChoice, VoteRecordV2,
@@ -35,7 +36,7 @@ use scalars::{
     PublicKey,
 };
 
-use super::{objects::reward_center::RewardCenter, prelude::*};
+use super::prelude::*;
 
 #[derive(Clone)]
 pub struct AppContext {
