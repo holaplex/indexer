@@ -7,10 +7,14 @@ create table reward_centers (
   write_version bigint not null
 );
 
-create table listing_reward_rules (
+create type payout_operation 
+as enum ('Multiple', 'Divide');
+
+create table reward_rules (
   reward_center_address varchar(48) primary key,
   seller_reward_payout_basis_points smallint not null,
-  payout_divider smallint not null,
+  mathematical_operand payout_operation not null,
+  payout_numeral smallint not null,
   foreign key (reward_center_address) references reward_centers (address)
 );
 

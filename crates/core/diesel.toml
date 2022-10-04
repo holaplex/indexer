@@ -23,5 +23,6 @@ import_types = [
     OfferEventLifecycle as Offereventlifecycle, \
     SettingType as Settingtype, \
     TokenStandard as Token_standard, \
+    PayoutOperation as Payout_operation, \
   }""",
 ]

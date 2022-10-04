@@ -15,9 +15,10 @@ use crate::db::custom_types::{
     EndSettingType, GovernanceAccountType, GovernanceAccountTypeEnum, InstructionExecutionFlags,
     InstructionExecutionFlagsEnum, ListingEventLifecycle, ListingEventLifecycleEnum,
     MintMaxVoteEnum, OfferEventLifecycle, OfferEventLifecycleEnum, OptionVoteResultEnum,
-    ProposalState, ProposalStateEnum, ProposalVoteType, ProposalVoteTypeEnum, TokenStandardEnum,
-    TransactionExecutionStatusEnum, VoteRecordV2Vote, VoteRecordV2VoteEnum, VoteThresholdEnum,
-    VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum, WhitelistMintMode,
+    PayoutOperationEnum, ProposalState, ProposalStateEnum, ProposalVoteType, ProposalVoteTypeEnum,
+    TokenStandardEnum, TransactionExecutionStatusEnum, VoteRecordV2Vote, VoteRecordV2VoteEnum,
+    VoteThresholdEnum, VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum,
+    WhitelistMintMode,
 };
 
 /* MPL LISTING REWARDS */
@@ -70,13 +71,41 @@ pub struct RewardCenter<'a> {
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
 #[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
-pub struct ListingRewardRule<'a> {
+pub struct RewardRule<'a> {
     /// The reward_center being created
     pub reward_center_address: Cow<'a, str>,
     /// Basis Points to determine reward ratio for seller
     pub seller_reward_payout_basis_points: i16,
+    /// // Payout operation to consider when taking payout_numeral into account
+    pub mathematical_operand: PayoutOperationEnum,
     /// Payout Divider for determining reward distribution to seller/buyer
-    pub payout_divider: i16,
+    pub payout_numeral: i16,
+}
+
+/// A row in the `rewards` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct RewardPayout<'a> {
+    /// Purchase ticket pubkey
+    pub purchase_ticket: Cow<'a, str>,
+    /// metadata address
+    pub metadata: Cow<'a, str>,
+    /// Reward center address
+    pub reward_center: Cow<'a, str>,
+    /// buyer wallet
+    pub buyer: Cow<'a, str>,
+    /// buyer reward
+    pub buyer_reward: BigDecimal,
+    /// seller wallet
+    pub seller: Cow<'a, str>,
+    /// seller reward
+    pub seller_reward: BigDecimal,
+    /// The timestamp when the reward payout was created.
+    pub created_at: NaiveDateTime,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `rewards listings` table

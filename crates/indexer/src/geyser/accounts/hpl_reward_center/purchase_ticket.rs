@@ -1,14 +1,19 @@
+use std::ops::{Div, Mul, Sub};
+
+use hpl_reward_center::state::PurchaseTicket;
 use indexer_core::{
+    bigdecimal::BigDecimal,
     db::{
+        custom_types::PayoutOperationEnum,
         insert_into,
         models::{
-            AuctionHouse, FeedEventWallet, Purchase as DbPurchase, PurchaseEvent,
-            RewardsPurchaseTicket as DbRewardsPurchaseTicket,
+            AuctionHouse, FeedEventWallet, Purchase as DbPurchase, PurchaseEvent, RewardPayout,
+            RewardRule, RewardsPurchaseTicket as DbRewardsPurchaseTicket,
         },
         on_constraint, select,
         tables::{
             auction_houses, feed_event_wallets, feed_events, listings, offers, purchase_events,
-            purchases, reward_centers, rewards_purchase_tickets,
+            purchases, reward_centers, reward_payouts, reward_rules, rewards_purchase_tickets,
         },
         update,
     },
@@ -16,7 +21,6 @@ use indexer_core::{
     pubkeys, util,
     uuid::Uuid,
 };
-use mpl_reward_center::state::PurchaseTicket;
 
 use super::super::Client;
 use crate::prelude::*;
@@ -62,6 +66,49 @@ pub(crate) async fn process(
         })
         .await
         .context("Failed to insert rewards purchase ticket")?;
+
+    client
+        .db()
+        .run({
+            let row = row.clone();
+            move |db| {
+                let rule = reward_rules::table
+                    .select(reward_rules::all_columns)
+                    .filter(
+                        reward_rules::reward_center_address.eq(row.clone().reward_center_address),
+                    )
+                    .first::<RewardRule>(db)
+                    .optional()?;
+
+                if let Some(r) = rule {
+                    let (buyer_reward, seller_reward) = calculate_payout(account_data.price, &r)?;
+
+                    let reward_payout = RewardPayout {
+                        purchase_ticket: Owned(key.to_string()),
+                        metadata: Owned(account_data.metadata.to_string()),
+                        reward_center: r.reward_center_address,
+                        buyer: Owned(account_data.buyer.to_string()),
+                        buyer_reward,
+                        seller: Owned(account_data.seller.to_string()),
+                        seller_reward,
+                        created_at: row.clone().created_at,
+                        slot: slot.try_into().unwrap_or_default(),
+                        write_version: write_version.try_into().unwrap_or_default(),
+                    };
+
+                    insert_into(reward_payouts::table)
+                        .values(&reward_payout)
+                        .on_conflict(reward_payouts::purchase_ticket)
+                        .do_update()
+                        .set(&reward_payout)
+                        .execute(db)?;
+                }
+
+                Result::<_>::Ok(())
+            }
+        })
+        .await
+        .context("Failed to insert rewards payout")?;
 
     client
         .db()
@@ -186,4 +233,28 @@ pub(crate) async fn process(
         .context("Failed to insert rewards listing")?;
 
     Ok(())
+}
+
+fn calculate_payout(price: u64, rule: &RewardRule) -> Result<(BigDecimal, BigDecimal)> {
+    let payout_numeral =
+        u64::try_from(rule.payout_numeral).context("payout numeral is negative")?;
+
+    let tokens: BigDecimal = match rule.mathematical_operand {
+        PayoutOperationEnum::Multiple => price
+            .checked_mul(payout_numeral)
+            .map(Into::into)
+            .context("cannot cast u64 to numeric")?,
+        PayoutOperationEnum::Divide => price
+            .checked_div(payout_numeral)
+            .map(Into::into)
+            .context("cannot cast u64 to numeric")?,
+    };
+
+    let seller_reward: BigDecimal = BigDecimal::from(rule.seller_reward_payout_basis_points)
+        .mul(tokens.clone())
+        .div(10000);
+
+    let buyer_reward = tokens.sub(seller_reward.clone());
+
+    Ok((seller_reward, buyer_reward))
 }
