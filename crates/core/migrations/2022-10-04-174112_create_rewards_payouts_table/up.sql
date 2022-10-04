@@ -10,3 +10,9 @@ create table reward_payouts (
   slot bigint not null,
   write_version bigint not null
 );
+
+create index reward_payouts_reward_center_idx on reward_payouts(reward_center);
+create index reward_payouts_metadata_idx on reward_payouts(metadata);
+create index reward_payouts_buyer_idx on reward_payouts(buyer);
+create index reward_payouts_seller_idx on reward_payouts(seller);
+create index reward_payouts_created_at_idx on reward_payouts(created_at);
