@@ -1,14 +1,18 @@
+use hpl_reward_center::state::{PayoutOperation, PurchaseTicket, RewardCenter, RewardRules};
 use indexer_core::{
+    bigdecimal::BigDecimal,
     db::{
+        custom_types::PayoutOperationEnum,
         insert_into,
         models::{
             AuctionHouse, FeedEventWallet, Purchase as DbPurchase, PurchaseEvent,
+            RewardCenter as DbRewardCenter, RewardPayout,
             RewardsPurchaseTicket as DbRewardsPurchaseTicket,
         },
         on_constraint, select,
         tables::{
             auction_houses, feed_event_wallets, feed_events, listings, offers, purchase_events,
-            purchases, reward_centers, rewards_purchase_tickets,
+            purchases, reward_centers, reward_payouts, rewards_purchase_tickets,
         },
         update,
     },
@@ -16,7 +20,6 @@ use indexer_core::{
     pubkeys, util,
     uuid::Uuid,
 };
-use mpl_reward_center::state::PurchaseTicket;
 
 use super::super::Client;
 use crate::prelude::*;
@@ -62,6 +65,45 @@ pub(crate) async fn process(
         })
         .await
         .context("Failed to insert rewards purchase ticket")?;
+
+    client
+        .db()
+        .run({
+            let row = row.clone();
+            move |db| {
+                let reward_center = reward_centers::table
+                    .select(reward_centers::all_columns)
+                    .filter(reward_centers::address.eq(row.clone().reward_center_address))
+                    .first::<DbRewardCenter>(db)
+                    .optional()?;
+
+                if let Some(r) = reward_center {
+                    let (buyer_reward, seller_reward) = calculate_payout(account_data.price, &r)?;
+
+                    let reward_payout = RewardPayout {
+                        purchase_ticket: Owned(key.to_string()),
+                        metadata: Owned(account_data.metadata.to_string()),
+                        reward_center: r.address,
+                        buyer: Owned(account_data.buyer.to_string()),
+                        buyer_reward,
+                        seller: Owned(account_data.seller.to_string()),
+                        seller_reward,
+                        created_at: row.clone().created_at,
+                        slot: slot.try_into().unwrap_or_default(),
+                        write_version: write_version.try_into().unwrap_or_default(),
+                    };
+
+                    insert_into(reward_payouts::table)
+                        .values(&reward_payout)
+                        .on_conflict_do_nothing()
+                        .execute(db)?;
+                }
+
+                Result::<_>::Ok(())
+            }
+        })
+        .await
+        .context("Failed to insert rewards payout")?;
 
     client
         .db()
@@ -186,4 +228,24 @@ pub(crate) async fn process(
         .context("Failed to insert rewards listing")?;
 
     Ok(())
+}
+
+fn calculate_payout(price: u64, r: &DbRewardCenter) -> Result<(BigDecimal, BigDecimal)> {
+    let reward_center = RewardCenter {
+        token_mint: r.token_mint.parse()?,
+        auction_house: r.auction_house.parse()?,
+        reward_rules: RewardRules {
+            seller_reward_payout_basis_points: r.seller_reward_payout_basis_points.try_into()?,
+            mathematical_operand: match r.mathematical_operand {
+                PayoutOperationEnum::Multiple => PayoutOperation::Multiple,
+                PayoutOperationEnum::Divide => PayoutOperation::Divide,
+            },
+            payout_numeral: r.payout_numeral.try_into()?,
+        },
+        bump: r.bump.try_into()?,
+    };
+
+    let (seller, buyer) = reward_center.payouts(price)?;
+
+    Ok((seller.try_into()?, buyer.try_into()?))
 }

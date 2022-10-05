@@ -1,26 +1,25 @@
 use std::str::FromStr;
 
+use hpl_reward_center::state::Offer;
 use indexer_core::{
     db::{
-        custom_types::ListingEventLifecycleEnum,
+        custom_types::OfferEventLifecycleEnum,
         insert_into,
         models::{
-            AuctionHouse, CurrentMetadataOwner, FeedEventWallet, Listing as DbListing,
-            ListingEvent, RewardsListing as DbRewardsListing,
+            AuctionHouse, CurrentMetadataOwner, FeedEventWallet, Offer as Dboffer, OfferEvent,
+            RewardsOffer as DbRewardsOffer,
         },
         mutations, select,
         tables::{
-            auction_houses, current_metadata_owners, feed_event_wallets, feed_events,
-            listing_events, listings, metadatas, purchases, reward_centers, rewards_listings,
+            auction_houses, current_metadata_owners, feed_event_wallets, feed_events, metadatas,
+            offer_events, offers, purchases, reward_centers, rewards_offers,
         },
-        Error as DbError,
     },
     prelude::*,
     pubkeys, util,
     uuid::Uuid,
 };
 use mpl_auction_house::pda::find_auctioneer_trade_state_address;
-use mpl_reward_center::state::Listing;
 use solana_program::pubkey::Pubkey;
 
 use super::super::Client;
@@ -30,15 +29,15 @@ use crate::prelude::*;
 pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
-    account_data: Listing,
+    account_data: Offer,
     slot: u64,
     write_version: u64,
 ) -> Result<()> {
-    let row = DbRewardsListing {
+    let row = DbRewardsOffer {
         address: Owned(bs58::encode(key).into_string()),
         is_initialized: account_data.is_initialized,
         reward_center_address: Owned(bs58::encode(account_data.reward_center).into_string()),
-        seller: Owned(bs58::encode(account_data.seller).into_string()),
+        buyer: Owned(bs58::encode(account_data.buyer).into_string()),
         metadata: Owned(bs58::encode(account_data.metadata).into_string()),
         price: account_data
             .price
@@ -64,16 +63,16 @@ pub(crate) async fn process(
         .run({
             let values = row.clone();
             move |db| {
-                insert_into(rewards_listings::table)
+                insert_into(rewards_offers::table)
                     .values(&values)
-                    .on_conflict(rewards_listings::address)
+                    .on_conflict(rewards_offers::address)
                     .do_update()
                     .set(&values)
                     .execute(db)
             }
         })
         .await
-        .context("Failed to insert rewards listing")?;
+        .context("Failed to insert rewards offer")?;
 
     client
         .db()
@@ -103,7 +102,7 @@ pub(crate) async fn process(
                     .first::<CurrentMetadataOwner>(db)?;
 
                 let (trade_state, trade_state_bump) = find_auctioneer_trade_state_address(
-                    &account_data.seller,
+                    &account_data.buyer,
                     &Pubkey::from_str(&auction_houses.address)?,
                     &Pubkey::from_str(&current_metadata_owner.token_account_address)?,
                     &Pubkey::from_str(&auction_houses.treasury_mint)?,
@@ -113,8 +112,8 @@ pub(crate) async fn process(
 
                 let purchase_id = purchases::table
                     .filter(
-                        purchases::seller
-                            .eq(row.seller.clone())
+                        purchases::buyer
+                            .eq(row.buyer.clone())
                             .and(purchases::auction_house.eq(auction_houses.address.clone()))
                             .and(purchases::metadata.eq(row.metadata.clone()))
                             .and(purchases::price.eq(row.price))
@@ -128,72 +127,87 @@ pub(crate) async fn process(
                     .first::<Uuid>(db)
                     .optional()?;
 
-                let listing = DbListing {
+                let offer = Dboffer {
                     id: None,
                     trade_state: Owned(bs58::encode(trade_state).into_string()),
-                    trade_state_bump: trade_state_bump.into(),
                     auction_house: auction_houses.address,
-                    metadata: row.metadata.clone(),
-                    token_size: row.token_size,
                     marketplace_program: Owned(pubkeys::REWARD_CENTER.to_string()),
+                    buyer: row.buyer.clone(),
+                    metadata: row.metadata.clone(),
+                    token_account: Some(current_metadata_owner.token_account_address),
                     purchase_id,
-                    seller: row.seller.clone(),
                     price: row.price,
+                    token_size: row.token_size,
+                    trade_state_bump: trade_state_bump.try_into()?,
                     created_at: row.created_at,
-                    expiry: None,
                     canceled_at: row.canceled_at,
-                    write_version: Some(row.write_version),
                     slot: row.slot,
+                    write_version: Some(row.write_version),
+                    expiry: None,
                 };
 
-                let listing_exists = select(exists(
-                    listings::table.filter(
-                        listings::trade_state
+                let offer_exists = select(exists(
+                    offers::table.filter(
+                        offers::trade_state
                             .eq(trade_state.to_string())
-                            .and(listings::metadata.eq(row.metadata)),
+                            .and(offers::metadata.eq(row.metadata.clone())),
                     ),
                 ))
                 .get_result::<bool>(db)?;
 
-                let listing_id = mutations::listing::insert(db, &listing)?;
+                let offer_id = mutations::offer::insert(db, &offer)?;
 
-                if listing_exists || row.purchase_ticket.is_some() {
+                if offer_exists || row.purchase_ticket.is_some() {
                     return Ok(());
                 }
 
                 db.build_transaction().read_write().run(|| {
+                    let metadata_owner: String =
+                        current_metadata_owners::table
+                            .inner_join(metadatas::table.on(
+                                metadatas::mint_address.eq(current_metadata_owners::mint_address),
+                            ))
+                            .filter(metadatas::address.eq(row.metadata.clone()))
+                            .select(current_metadata_owners::owner_address)
+                            .first(db)?;
+
                     let feed_event_id = insert_into(feed_events::table)
                         .default_values()
                         .returning(feed_events::id)
                         .get_result::<Uuid>(db)
                         .context("Failed to insert feed event")?;
 
-                    let listing_event = insert_into(listing_events::table)
-                        .values(&ListingEvent {
+                    insert_into(offer_events::table)
+                        .values(&OfferEvent {
                             feed_event_id,
-                            lifecycle: ListingEventLifecycleEnum::Created,
-                            listing_id,
+                            lifecycle: OfferEventLifecycleEnum::Created,
+                            offer_id,
                         })
-                        .execute(db);
-
-                    if Err(DbError::RollbackTransaction) == listing_event {
-                        return Ok(());
-                    }
+                        .execute(db)
+                        .context("failed to insert offer created event")?;
 
                     insert_into(feed_event_wallets::table)
                         .values(&FeedEventWallet {
-                            wallet_address: row.seller,
+                            wallet_address: row.buyer,
                             feed_event_id,
                         })
                         .execute(db)
-                        .context("Failed to insert listing feed event wallet")?;
+                        .context("Failed to insert offer feed event wallet for buyer")?;
+
+                    insert_into(feed_event_wallets::table)
+                        .values(&FeedEventWallet {
+                            wallet_address: Owned(metadata_owner),
+                            feed_event_id,
+                        })
+                        .execute(db)
+                        .context("Failed to insert offer feed event wallet for metadata owner")?;
 
                     Result::<_>::Ok(())
                 })
             }
         })
         .await
-        .context("Failed to insert rewards listing")?;
+        .context("Failed to insert rewards offer")?;
 
     Ok(())
 }
