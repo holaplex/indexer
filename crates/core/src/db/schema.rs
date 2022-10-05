@@ -1552,6 +1552,9 @@ table! {
         token_mint -> Varchar,
         auction_house -> Varchar,
         bump -> Int2,
+        seller_reward_payout_basis_points -> Int2,
+        mathematical_operand -> Payout_operation,
+        payout_numeral -> Int2,
         slot -> Int8,
         write_version -> Int8,
     }
@@ -1573,19 +1576,6 @@ table! {
         created_at -> Timestamp,
         slot -> Int8,
         write_version -> Int8,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-
-    reward_rules (reward_center_address) {
-        reward_center_address -> Varchar,
-        seller_reward_payout_basis_points -> Int2,
-        mathematical_operand -> Payout_operation,
-        payout_numeral -> Int2,
     }
 }
 
@@ -2067,7 +2057,6 @@ joinable!(mint_events -> feed_events (feed_event_id));
 joinable!(offer_events -> feed_events (feed_event_id));
 joinable!(purchase_events -> feed_events (feed_event_id));
 joinable!(realm_configs -> realms (realm_address));
-joinable!(reward_rules -> reward_centers (reward_center_address));
 
 allow_tables_to_appear_in_same_query!(
     attributes,
@@ -2160,7 +2149,6 @@ allow_tables_to_appear_in_same_query!(
     realms,
     reward_centers,
     reward_payouts,
-    reward_rules,
     rewards_listings,
     rewards_offers,
     rewards_purchase_tickets,

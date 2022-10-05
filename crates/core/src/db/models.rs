@@ -61,25 +61,16 @@ pub struct RewardCenter<'a> {
     pub auction_house: Cow<'a, str>,
     /// the bump of the pda
     pub bump: i16,
-    /// The slot number of the most recent update for this account
-    pub slot: i64,
-    /// The write version of the most recent update for this account
-    pub write_version: i64,
-}
-
-/// A row in the `rewards` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
-#[diesel(treat_none_as_null = true)]
-#[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
-pub struct RewardRule<'a> {
-    /// The reward_center being created
-    pub reward_center_address: Cow<'a, str>,
     /// Basis Points to determine reward ratio for seller
     pub seller_reward_payout_basis_points: i16,
     /// // Payout operation to consider when taking payout_numeral into account
     pub mathematical_operand: PayoutOperationEnum,
     /// Payout Divider for determining reward distribution to seller/buyer
     pub payout_numeral: i16,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
 }
 
 /// A row in the `rewards` table
