@@ -83,7 +83,7 @@ struct MetadataJson {
     name: String,
     symbol: Option<String>,
     description: Option<String>,
-    seller_fee_basis_points: i64,
+    seller_fee_basis_points: Option<i64>,
     image: Option<String>,
     animation_url: Option<String>,
     collection: Option<Collection>,
