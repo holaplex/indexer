@@ -1,15 +1,18 @@
 use std::str::FromStr;
 
+use hpl_reward_center::state::Offer;
 use indexer_core::{
     db::{
+        custom_types::OfferEventLifecycleEnum,
         insert_into,
         models::{
-            AuctionHouse, CurrentMetadataOwner, Offer as Dboffer, RewardsOffer as DbRewardsOffer,
+            AuctionHouse, CurrentMetadataOwner, FeedEventWallet, Offer as Dboffer, OfferEvent,
+            RewardsOffer as DbRewardsOffer,
         },
-        mutations,
+        mutations, select,
         tables::{
-            auction_houses, current_metadata_owners, metadatas, purchases, reward_centers,
-            rewards_offers,
+            auction_houses, current_metadata_owners, feed_event_wallets, feed_events, metadatas,
+            offer_events, offers, purchases, reward_centers, rewards_offers,
         },
     },
     prelude::*,
@@ -17,7 +20,6 @@ use indexer_core::{
     uuid::Uuid,
 };
 use mpl_auction_house::pda::find_auctioneer_trade_state_address;
-use mpl_reward_center::state::Offer;
 use solana_program::pubkey::Pubkey;
 
 use super::super::Client;
@@ -60,7 +62,21 @@ pub(crate) async fn process(
         .db()
         .run({
             let values = row.clone();
+            move |db| {
+                insert_into(rewards_offers::table)
+                    .values(&values)
+                    .on_conflict(rewards_offers::address)
+                    .do_update()
+                    .set(&values)
+                    .execute(db)
+            }
+        })
+        .await
+        .context("Failed to insert rewards offer")?;
 
+    client
+        .db()
+        .run({
             move |db| {
                 let auction_houses = auction_houses::table
                     .select(auction_houses::all_columns)
@@ -116,8 +132,8 @@ pub(crate) async fn process(
                     trade_state: Owned(bs58::encode(trade_state).into_string()),
                     auction_house: auction_houses.address,
                     marketplace_program: Owned(pubkeys::REWARD_CENTER.to_string()),
-                    buyer: row.buyer,
-                    metadata: row.metadata,
+                    buyer: row.buyer.clone(),
+                    metadata: row.metadata.clone(),
                     token_account: Some(current_metadata_owner.token_account_address),
                     purchase_id,
                     price: row.price,
@@ -129,15 +145,62 @@ pub(crate) async fn process(
                     write_version: Some(row.write_version),
                     expiry: None,
                 };
-                db.build_transaction().read_write().run(|| {
-                    insert_into(rewards_offers::table)
-                        .values(&values)
-                        .on_conflict(rewards_offers::address)
-                        .do_update()
-                        .set(&values)
-                        .execute(db)?;
 
-                    mutations::offer::insert(db, &offer)?;
+                let offer_exists = select(exists(
+                    offers::table.filter(
+                        offers::trade_state
+                            .eq(trade_state.to_string())
+                            .and(offers::metadata.eq(row.metadata.clone())),
+                    ),
+                ))
+                .get_result::<bool>(db)?;
+
+                let offer_id = mutations::offer::insert(db, &offer)?;
+
+                if offer_exists || row.purchase_ticket.is_some() {
+                    return Ok(());
+                }
+
+                db.build_transaction().read_write().run(|| {
+                    let metadata_owner: String =
+                        current_metadata_owners::table
+                            .inner_join(metadatas::table.on(
+                                metadatas::mint_address.eq(current_metadata_owners::mint_address),
+                            ))
+                            .filter(metadatas::address.eq(row.metadata.clone()))
+                            .select(current_metadata_owners::owner_address)
+                            .first(db)?;
+
+                    let feed_event_id = insert_into(feed_events::table)
+                        .default_values()
+                        .returning(feed_events::id)
+                        .get_result::<Uuid>(db)
+                        .context("Failed to insert feed event")?;
+
+                    insert_into(offer_events::table)
+                        .values(&OfferEvent {
+                            feed_event_id,
+                            lifecycle: OfferEventLifecycleEnum::Created,
+                            offer_id,
+                        })
+                        .execute(db)
+                        .context("failed to insert offer created event")?;
+
+                    insert_into(feed_event_wallets::table)
+                        .values(&FeedEventWallet {
+                            wallet_address: row.buyer,
+                            feed_event_id,
+                        })
+                        .execute(db)
+                        .context("Failed to insert offer feed event wallet for buyer")?;
+
+                    insert_into(feed_event_wallets::table)
+                        .values(&FeedEventWallet {
+                            wallet_address: Owned(metadata_owner),
+                            feed_event_id,
+                        })
+                        .execute(db)
+                        .context("Failed to insert offer feed event wallet for metadata owner")?;
 
                     Result::<_>::Ok(())
                 })

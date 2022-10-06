@@ -1,7 +1,7 @@
 use anchor_lang_v0_24::{AccountDeserialize, Discriminator};
-use mpl_reward_center::state::{Listing, Offer, PurchaseTicket, RewardCenter};
+use hpl_reward_center::state::{Listing, Offer, PurchaseTicket, RewardCenter};
 
-use super::{accounts::mpl_reward_center as reward_center, AccountUpdate, Client};
+use super::{accounts::hpl_reward_center as reward_center, AccountUpdate, Client};
 use crate::prelude::*;
 
 async fn process_reward_center(client: &Client, update: AccountUpdate) -> Result<()> {

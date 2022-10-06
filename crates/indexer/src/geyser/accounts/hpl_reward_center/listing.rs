@@ -1,24 +1,26 @@
 use std::str::FromStr;
 
+use hpl_reward_center::state::Listing;
 use indexer_core::{
     db::{
+        custom_types::ListingEventLifecycleEnum,
         insert_into,
         models::{
-            AuctionHouse, CurrentMetadataOwner, Listing as DbListing,
-            RewardsListing as DbRewardsListing,
+            AuctionHouse, CurrentMetadataOwner, FeedEventWallet, Listing as DbListing,
+            ListingEvent, RewardsListing as DbRewardsListing,
         },
-        mutations,
+        mutations, select,
         tables::{
-            auction_houses, current_metadata_owners, metadatas, purchases, reward_centers,
-            rewards_listings,
+            auction_houses, current_metadata_owners, feed_event_wallets, feed_events,
+            listing_events, listings, metadatas, purchases, reward_centers, rewards_listings,
         },
+        Error as DbError,
     },
     prelude::*,
     pubkeys, util,
     uuid::Uuid,
 };
 use mpl_auction_house::pda::find_auctioneer_trade_state_address;
-use mpl_reward_center::state::Listing;
 use solana_program::pubkey::Pubkey;
 
 use super::super::Client;
@@ -61,6 +63,21 @@ pub(crate) async fn process(
         .db()
         .run({
             let values = row.clone();
+            move |db| {
+                insert_into(rewards_listings::table)
+                    .values(&values)
+                    .on_conflict(rewards_listings::address)
+                    .do_update()
+                    .set(&values)
+                    .execute(db)
+            }
+        })
+        .await
+        .context("Failed to insert rewards listing")?;
+
+    client
+        .db()
+        .run({
             move |db| {
                 let auction_houses = auction_houses::table
                     .select(auction_houses::all_columns)
@@ -116,11 +133,11 @@ pub(crate) async fn process(
                     trade_state: Owned(bs58::encode(trade_state).into_string()),
                     trade_state_bump: trade_state_bump.into(),
                     auction_house: auction_houses.address,
-                    metadata: row.metadata,
+                    metadata: row.metadata.clone(),
                     token_size: row.token_size,
                     marketplace_program: Owned(pubkeys::REWARD_CENTER.to_string()),
                     purchase_id,
-                    seller: row.seller,
+                    seller: row.seller.clone(),
                     price: row.price,
                     created_at: row.created_at,
                     expiry: None,
@@ -129,17 +146,47 @@ pub(crate) async fn process(
                     slot: row.slot,
                 };
 
-                db.build_transaction().read_write().run(|| {
-                    {
-                        insert_into(rewards_listings::table)
-                            .values(&values)
-                            .on_conflict(rewards_listings::address)
-                            .do_update()
-                            .set(&values)
-                            .execute(db)?;
+                let listing_exists = select(exists(
+                    listings::table.filter(
+                        listings::trade_state
+                            .eq(trade_state.to_string())
+                            .and(listings::metadata.eq(row.metadata)),
+                    ),
+                ))
+                .get_result::<bool>(db)?;
 
-                        mutations::listing::insert(db, &listing)?;
+                let listing_id = mutations::listing::insert(db, &listing)?;
+
+                if listing_exists || row.purchase_ticket.is_some() {
+                    return Ok(());
+                }
+
+                db.build_transaction().read_write().run(|| {
+                    let feed_event_id = insert_into(feed_events::table)
+                        .default_values()
+                        .returning(feed_events::id)
+                        .get_result::<Uuid>(db)
+                        .context("Failed to insert feed event")?;
+
+                    let listing_event = insert_into(listing_events::table)
+                        .values(&ListingEvent {
+                            feed_event_id,
+                            lifecycle: ListingEventLifecycleEnum::Created,
+                            listing_id,
+                        })
+                        .execute(db);
+
+                    if Err(DbError::RollbackTransaction) == listing_event {
+                        return Ok(());
                     }
+
+                    insert_into(feed_event_wallets::table)
+                        .values(&FeedEventWallet {
+                            wallet_address: row.seller,
+                            feed_event_id,
+                        })
+                        .execute(db)
+                        .context("Failed to insert listing feed event wallet")?;
 
                     Result::<_>::Ok(())
                 })

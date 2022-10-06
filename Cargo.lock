@@ -2970,6 +2970,7 @@ dependencies = [
  "holaplex-indexer-core",
  "holaplex-indexer-rabbitmq",
  "hostname",
+ "hpl-reward-center",
  "locked-voter",
  "metaplex",
  "metaplex-auction",
@@ -2978,7 +2979,6 @@ dependencies = [
  "mpl-auction-house",
  "mpl-candy-machine",
  "mpl-metaplex",
- "mpl-reward-center",
  "mpl-token-metadata",
  "namespaces",
  "reqwest",
@@ -3110,6 +3110,19 @@ dependencies = [
  "libc",
  "match_cfg",
  "winapi",
+]
+
+[[package]]
+name = "hpl-reward-center"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c274dc207b9c61d7c3518aca58eb2270f427d2b11236146e0008ecb6a4b7aaa0"
+dependencies = [
+ "anchor-lang 0.24.2",
+ "anchor-spl 0.24.2",
+ "mpl-auction-house",
+ "mpl-token-metadata",
+ "solana-program",
 ]
 
 [[package]]
@@ -3887,19 +3900,6 @@ dependencies = [
  "solana-program",
  "spl-token",
  "thiserror",
-]
-
-[[package]]
-name = "mpl-reward-center"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af4b0cbe631cc6c72521c602ec749d58860ff41bc3819798b11cf62c815845e8"
-dependencies = [
- "anchor-lang 0.24.2",
- "anchor-spl 0.24.2",
- "mpl-auction-house",
- "mpl-token-metadata",
- "solana-program",
 ]
 
 [[package]]
