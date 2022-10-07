@@ -1,0 +1,1 @@
+CREATE INDEX if not exists geno_habitat_datas_parent_habitat_idx ON public.geno_habitat_datas USING btree (parent_habitat);
