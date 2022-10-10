@@ -21,6 +21,7 @@ use objects::{
     nft::{Collection, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
     profile::TwitterProfile,
     purchase_receipt::PurchaseReceipt,
+    reward_center::RewardCenter,
     spl_governance::{
         Governance, GovernanceConfig, MultiChoice, Proposal, ProposalOption, ProposalV1,
         ProposalV2, Realm, RealmConfig, TokenOwnerRecord, VoteChoice, VoteRecordV2,
@@ -45,6 +46,7 @@ pub struct AppContext {
     pub ah_listing_loader: Loader<Uuid, Option<AhListing>>,
     pub ah_listings_loader: Loader<PublicKey<Nft>, Vec<AhListing>>,
     pub auction_house_loader: Loader<PublicKey<AuctionHouse>, Option<AuctionHouse>>,
+    pub reward_center_loader: Loader<PublicKey<AuctionHouse>, Option<RewardCenter>>,
     pub bid_receipt_loader: Loader<PublicKey<BidReceipt>, Option<BidReceipt>>,
     pub bid_receipts_loader: Loader<PublicKey<Nft>, Vec<BidReceipt>>,
     pub candy_machine_collection_pda_loader:
@@ -128,6 +130,7 @@ impl AppContext {
             ah_listing_loader: Loader::new(batcher.clone()),
             ah_listings_loader: Loader::new(batcher.clone()),
             auction_house_loader: Loader::new(batcher.clone()),
+            reward_center_loader: Loader::new(batcher.clone()),
             bid_receipt_loader: Loader::new(batcher.clone()),
             bid_receipts_loader: Loader::new(batcher.clone()),
             candy_machine_collection_pda_loader: Loader::new(batcher.clone()),

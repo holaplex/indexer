@@ -1,11 +1,12 @@
-use objects::stats::MintStats;
+use objects::{reward_center::RewardCenter, stats::MintStats};
 
 use super::prelude::*;
+use crate::schema::scalars::PublicKey;
 
 #[derive(Debug, Clone)]
 /// A Metaplex auction house
 pub struct AuctionHouse {
-    pub address: String,
+    pub address: PublicKey<Self>,
     /// Mint address of the token in which fees are vendored
     pub treasury_mint: String,
     pub auction_house_treasury: String,
@@ -43,7 +44,7 @@ impl<'a> From<models::AuctionHouse<'a>> for AuctionHouse {
         }: models::AuctionHouse,
     ) -> Self {
         Self {
-            address: address.into_owned(),
+            address: address.into(),
             treasury_mint: treasury_mint.into_owned(),
             auction_house_treasury: auction_house_treasury.into_owned(),
             treasury_withdrawal_destination: treasury_withdrawal_destination.into_owned(),
@@ -66,12 +67,12 @@ impl AuctionHouse {
     pub async fn stats(&self, context: &AppContext) -> FieldResult<Option<MintStats>> {
         context
             .mint_stats_loader
-            .load(self.address.clone().into())
+            .load(self.address.clone())
             .await
             .map_err(Into::into)
     }
 
-    pub fn address(&self) -> &str {
+    pub fn address(&self) -> &PublicKey<Self> {
         &self.address
     }
 
@@ -125,5 +126,13 @@ impl AuctionHouse {
 
     pub fn auction_house_fee_account(&self) -> &str {
         &self.auction_house_fee_account
+    }
+
+    pub async fn reward_center(&self, context: &AppContext) -> FieldResult<Option<RewardCenter>> {
+        context
+            .reward_center_loader
+            .load(self.address.clone())
+            .await
+            .map_err(Into::into)
     }
 }

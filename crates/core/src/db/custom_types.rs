@@ -585,3 +585,31 @@ pub enum CollectionSort {
     /// sort results by 30 day marketcap
     ThirtyDayMarketcap,
 }
+
+/// `HPL Reward Center` payout operation
+#[derive(SqlType, Debug, Clone, Copy)]
+/// Represents database `payout_operation` enum
+#[postgres(type_name = "payout_operation")]
+pub struct PayoutOperation;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "PayoutOperation"]
+#[allow(missing_docs)]
+pub enum PayoutOperationEnum {
+    Multiple,
+    Divide,
+}
+
+impl ToSql<PayoutOperation, Pg> for PayoutOperationEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<PayoutOperation, Pg> for PayoutOperationEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}
