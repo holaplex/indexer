@@ -5,7 +5,9 @@ use indexer_core::{
         insert_into,
         models::{FeedEventWallet, Listing, ListingEvent, SellInstruction},
         on_constraint, select,
-        tables::{feed_event_wallets, feed_events, listing_events, listings, sell_instructions},
+        tables::{
+            feed_event_wallets, feed_events, listing_events, listings, purchases, sell_instructions,
+        },
         Error as DbError,
     },
     pubkeys,
@@ -53,6 +55,32 @@ pub(crate) async fn process(
 
     let values = row.clone();
 
+    let purchase_id = client
+        .db()
+        .run({
+            let row = row.clone();
+            move |db| {
+                purchases::table
+                    .filter(
+                        purchases::seller
+                            .eq(row.wallet)
+                            .and(purchases::auction_house.eq(row.auction_house))
+                            .and(purchases::metadata.eq(row.metadata))
+                            .and(purchases::price.eq(row.buyer_price))
+                            .and(
+                                purchases::token_size
+                                    .eq(row.token_size)
+                                    .and(purchases::slot.eq(row.slot)),
+                            ),
+                    )
+                    .select(purchases::id)
+                    .first::<Uuid>(db)
+                    .optional()
+                    .context("failed to get purchase ids")
+            }
+        })
+        .await?;
+
     upsert_into_listings_table(client, Listing {
         id: None,
         trade_state: row.seller_trade_state.clone(),
@@ -60,7 +88,7 @@ pub(crate) async fn process(
         marketplace_program: Owned(pubkeys::AUCTION_HOUSE.to_string()),
         seller: row.wallet.clone(),
         metadata: row.metadata.clone(),
-        purchase_id: None,
+        purchase_id,
         price: row.buyer_price,
         token_size: row.token_size,
         trade_state_bump: row.trade_state_bump,

@@ -19,6 +19,7 @@ use crate::{
         Connection,
     },
     error::prelude::*,
+    util::unix_timestamp,
 };
 
 /// A habitat field by which to sort query results
@@ -34,6 +35,10 @@ pub enum HabitatSortField {
     KiHarvested,
     /// Sort by `crystals_refined`
     CrystalsRefined,
+    /// Sort by `total_ki_harvested`
+    TotalKiHarvested,
+    /// Sort by `ki_available_to_harvest`
+    KiAvailableToHarvest,
 }
 
 /// Input parameters for the [`list_habitats`] query.
@@ -67,6 +72,14 @@ pub struct ListHabitatOptions<M, W, H> {
     /// Select only habitats whose rental agreement's open-market flag matches
     /// the given value
     pub rental_open_market: Option<bool>,
+    /// Select only habitats having harvester/no harvester
+    pub has_harvester: Option<bool>,
+    /// Select only habitats having alchemist/no alchemist
+    pub has_alchemist: Option<bool>,
+    /// Select only habitats which have max ki i.e dailykicaplimit == ki_harvested
+    pub has_max_ki: Option<bool>,
+    /// Select activated habitats only i.e expiry_timestamp != 0
+    pub is_activated: Option<bool>,
     /// Field to sort results on
     pub sort_field: HabitatSortField,
     /// True if rows should be sorted in descending order, false if they should
@@ -108,12 +121,17 @@ pub fn list_habitats<
         expiries,
         harvester_open_market,
         rental_open_market,
+        has_harvester,
+        has_alchemist,
+        has_max_ki,
+        is_activated,
         sort_field,
         sort_desc,
         limit,
         offset,
     } = opts;
 
+    let minimum_unix_timestamp = unix_timestamp(0)?;
     let build_query = |sort| {
         let mut query = geno_habitat_datas::table.into_boxed();
         let mut count = true;
@@ -150,6 +168,26 @@ pub fn list_habitats<
             query = query.filter(geno_habitat_datas::genesis.eq(genesis));
         }
 
+        if has_harvester == Some(true) {
+            query = query.filter(geno_habitat_datas::harvester.ne(""));
+        }
+
+        if has_harvester == Some(false) {
+            query = query.filter(geno_habitat_datas::harvester.eq(""));
+        }
+
+        if is_activated == Some(false) {
+            query = query.filter(geno_habitat_datas::expiry_timestamp.eq(minimum_unix_timestamp));
+        }
+
+        if is_activated == Some(true) {
+            query = query.filter(geno_habitat_datas::expiry_timestamp.ne(minimum_unix_timestamp));
+        }
+
+        if let Some(has_max_ki) = has_max_ki {
+            query = query.filter(geno_habitat_datas::has_max_ki.eq(has_max_ki));
+        }
+
         if let Some(ref elements) = elements {
             query = query.filter(geno_habitat_datas::element.eq(any(elements)));
         }
@@ -174,6 +212,22 @@ pub fn list_habitats<
         if let Some(harvester_open_market) = harvester_open_market {
             query =
                 query.filter(geno_habitat_datas::harvester_open_market.eq(harvester_open_market));
+        }
+
+        if has_alchemist == Some(true) {
+            query = query.filter(
+                geno_habitat_datas::address.eq(any(geno_rental_agreements::table
+                    .filter(geno_rental_agreements::alchemist.is_not_null())
+                    .select(geno_rental_agreements::habitat_address))),
+            );
+        }
+
+        if has_alchemist == Some(false) {
+            query = query.filter(
+                geno_habitat_datas::address.ne(any(geno_rental_agreements::table
+                    .filter(geno_rental_agreements::alchemist.is_not_null())
+                    .select(geno_rental_agreements::habitat_address))),
+            );
         }
 
         if let Some(rental_open_market) = rental_open_market {
@@ -219,6 +273,18 @@ pub fn list_habitats<
                 (HabitatSortField::CrystalsRefined, true) => {
                     query = query.order_by(geno_habitat_datas::crystals_refined.desc());
                 },
+                (HabitatSortField::TotalKiHarvested, false) => {
+                    query = query.order_by(geno_habitat_datas::total_ki_harvested.asc());
+                },
+                (HabitatSortField::TotalKiHarvested, true) => {
+                    query = query.order_by(geno_habitat_datas::total_ki_harvested.desc());
+                },
+                (HabitatSortField::KiAvailableToHarvest, false) => {
+                    query = query.order_by(geno_habitat_datas::ki_available_to_harvest.asc());
+                },
+                (HabitatSortField::KiAvailableToHarvest, true) => {
+                    query = query.order_by(geno_habitat_datas::ki_available_to_harvest.desc());
+                },
             }
         }
 
@@ -234,7 +300,7 @@ pub fn list_habitats<
         Some(
             query
                 .count()
-                .get_result(conn)
+                .get_result::<i64>(conn)
                 .context("Failed to count Genopets habitats")?,
         )
     } else {

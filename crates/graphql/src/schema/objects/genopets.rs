@@ -3,7 +3,7 @@ use indexer_core::{
     meilisearch::IndirectMetadataDocument,
 };
 use objects::{nft::Nft, wallet::Wallet};
-use scalars::{markers::TokenMint, PublicKey, I64};
+use scalars::{markers::TokenMint, PublicKey, I64, U64};
 
 use super::prelude::*;
 
@@ -44,6 +44,10 @@ pub struct GenoHabitatsParams {
     pub harvester_open_market: Option<bool>,
     /// Filter by rental open (or closed) market
     pub rental_open_market: Option<bool>,
+    pub has_harvester: Option<bool>,
+    pub has_alchemist: Option<bool>,
+    pub has_max_ki: Option<bool>,
+    pub is_activated: Option<bool>,
     /// Filter habitats by a fuzzy text-search query
     pub term: Option<String>,
     /// Field to sort results by (default `ADDRESS`)
@@ -56,6 +60,7 @@ pub struct GenoHabitatsParams {
     pub offset: i32,
 }
 
+#[allow(clippy::too_many_lines)]
 impl GenoHabitatsParams {
     pub async fn into_db_opts(
         self,
@@ -90,6 +95,10 @@ impl GenoHabitatsParams {
             max_expiry,
             harvester_open_market,
             rental_open_market,
+            has_harvester,
+            has_alchemist,
+            has_max_ki,
+            is_activated,
             term,
             sort_field,
             sort_desc,
@@ -155,6 +164,10 @@ impl GenoHabitatsParams {
             expiries: make_range(min_expiry, max_expiry),
             harvester_open_market,
             rental_open_market,
+            has_harvester,
+            has_alchemist,
+            has_max_ki,
+            is_activated,
             sort_field: sort_field.unwrap_or(GenoHabitatSortField::Address).into(),
             sort_desc: sort_desc.unwrap_or(false),
             limit: limit.into(),
@@ -192,6 +205,10 @@ pub enum GenoHabitatSortField {
     KiHarvested,
     /// Sort by the `crystalsRefined` field
     CrystalsRefined,
+    /// Sort by the `totalKiHarvested` field
+    TotalKiHarvested,
+    /// Sort by the `kiAvailableToHarvest` field
+    KiAvailableToHarvest,
 }
 
 impl From<GenoHabitatSortField> for genopets::HabitatSortField {
@@ -202,6 +219,8 @@ impl From<GenoHabitatSortField> for genopets::HabitatSortField {
             GenoHabitatSortField::Lifespan => Self::Lifespan,
             GenoHabitatSortField::KiHarvested => Self::KiHarvested,
             GenoHabitatSortField::CrystalsRefined => Self::CrystalsRefined,
+            GenoHabitatSortField::TotalKiHarvested => Self::TotalKiHarvested,
+            GenoHabitatSortField::KiAvailableToHarvest => Self::KiAvailableToHarvest,
         }
     }
 }
@@ -219,7 +238,7 @@ pub struct GenoHabitat {
     pub next_day_timestamp: DateTime<Utc>,
     pub crystals_refined: i32,
     pub harvester: String,
-    pub ki_harvested: I64,
+    pub ki_harvested: U64,
     pub seeds_spawned: bool,
     pub is_sub_habitat: bool,
     pub parent_habitat: Option<PublicKey<TokenMint>>,
@@ -236,6 +255,9 @@ pub struct GenoHabitat {
     pub guild: Option<i32>,
     pub sub_habitat_cooldown_timestamp: DateTime<Utc>,
     pub harvester_settings_cooldown_timestamp: DateTime<Utc>,
+    pub ki_available_to_harvest: Option<U64>,
+    pub daily_ki_harvesting_cap: U64,
+    pub has_max_ki: Option<bool>,
 }
 
 #[graphql_object(Context = AppContext)]
@@ -280,7 +302,7 @@ impl GenoHabitat {
         &self.harvester
     }
 
-    pub fn ki_harvested(&self) -> &I64 {
+    pub fn ki_harvested(&self) -> &U64 {
         &self.ki_harvested
     }
 
@@ -346,6 +368,18 @@ impl GenoHabitat {
 
     pub fn harvester_settings_cooldown_timestamp(&self) -> &DateTime<Utc> {
         &self.harvester_settings_cooldown_timestamp
+    }
+
+    pub fn daily_ki_harvesting_cap(&self) -> &U64 {
+        &self.daily_ki_harvesting_cap
+    }
+
+    pub fn ki_available_to_harvest(&self) -> &Option<U64> {
+        &self.ki_available_to_harvest
+    }
+
+    pub fn has_max_ki(&self) -> &Option<bool> {
+        &self.has_max_ki
     }
 
     pub async fn rental_agreement(
@@ -423,6 +457,9 @@ impl<'a> From<models::GenoHabitatData<'a>> for GenoHabitat {
             slot: _,
             write_version: _,
             harvester,
+            daily_ki_harvesting_cap,
+            ki_available_to_harvest,
+            has_max_ki,
         }: models::GenoHabitatData,
     ) -> Self {
         Self {
@@ -436,7 +473,7 @@ impl<'a> From<models::GenoHabitatData<'a>> for GenoHabitat {
             next_day_timestamp: DateTime::from_utc(next_day_timestamp, Utc),
             crystals_refined: crystals_refined.into(),
             harvester: harvester.into_owned(),
-            ki_harvested: ki_harvested.into(),
+            ki_harvested: ki_harvested.try_into().unwrap_or_default(),
             seeds_spawned,
             is_sub_habitat,
             parent_habitat: parent_habitat.map(Into::into),
@@ -460,6 +497,10 @@ impl<'a> From<models::GenoHabitatData<'a>> for GenoHabitat {
                 harvester_settings_cooldown_timestamp,
                 Utc,
             ),
+            daily_ki_harvesting_cap: daily_ki_harvesting_cap.try_into().unwrap_or_default(),
+            ki_available_to_harvest: ki_available_to_harvest
+                .map(|k| k.try_into().unwrap_or_default()),
+            has_max_ki,
         }
     }
 }

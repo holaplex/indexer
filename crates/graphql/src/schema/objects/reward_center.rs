@@ -1,8 +1,11 @@
 use indexer_core::db::models;
+use objects::auction_house::AuctionHouse;
 
 use super::prelude::*;
-use objects::auction_house::AuctionHouse;
-use crate::schema::{scalars::{U64, PublicKey, markers::TokenMint}, enums::PayoutOperation};
+use crate::schema::{
+    enums::PayoutOperation,
+    scalars::{markers::TokenMint, PublicKey, U64},
+};
 
 #[derive(Debug, Clone)]
 /// A decorator for a Metaplex Auction House

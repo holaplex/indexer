@@ -510,7 +510,7 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
 
-    collections_volume (collection) {
+    collection_trends (collection) {
         collection -> Text,
         _1d_volume -> Nullable<Numeric>,
         _7d_volume -> Nullable<Numeric>,
@@ -518,6 +518,35 @@ table! {
         _prev_1d_volume -> Nullable<Numeric>,
         _prev_7d_volume -> Nullable<Numeric>,
         _prev_30d_volume -> Nullable<Numeric>,
+        _1d_sales_count -> Nullable<Numeric>,
+        prev_1d_sales_count -> Nullable<Numeric>,
+        _7d_sales_count -> Nullable<Numeric>,
+        prev_7d_sales_count -> Nullable<Numeric>,
+        _30d_sales_count -> Nullable<Numeric>,
+        prev_30d_sales_count -> Nullable<Numeric>,
+        floor_price -> Nullable<Numeric>,
+        prev_1d_floor_price -> Nullable<Numeric>,
+        prev_7d_floor_price -> Nullable<Numeric>,
+        prev_30d_floor_price -> Nullable<Numeric>,
+        _1d_volume_change -> Nullable<Int8>,
+        _7d_volume_change -> Nullable<Int8>,
+        _30d_volume_change -> Nullable<Int8>,
+        _1d_floor_price_change -> Nullable<Int8>,
+        _7d_floor_price_change -> Nullable<Int8>,
+        _30d_floor_price_change -> Nullable<Int8>,
+        _1d_sales_count_change -> Nullable<Int8>,
+        _7d_sales_count_change -> Nullable<Int8>,
+        _30d_sales_count_change -> Nullable<Int8>,
+        _1d_marketcap -> Numeric,
+        prev_1d_marketcap -> Numeric,
+        _7d_marketcap -> Numeric,
+        prev_7d_marketcap -> Numeric,
+        _30d_marketcap -> Numeric,
+        prev_30d_marketcap -> Numeric,
+        nft_count -> Int8,
+        _1d_marketcap_change -> Nullable<Int8>,
+        _7d_marketcap_change -> Nullable<Int8>,
+        _30d_marketcap_change -> Nullable<Int8>,
     }
 }
 
@@ -707,6 +736,9 @@ table! {
         slot -> Int8,
         write_version -> Int8,
         harvester -> Varchar,
+        daily_ki_harvesting_cap -> Numeric,
+        ki_available_to_harvest -> Nullable<Numeric>,
+        has_max_ki -> Nullable<Bool>,
     }
 }
 
@@ -780,6 +812,7 @@ table! {
         voting_proposal_count -> Int2,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1292,6 +1325,7 @@ table! {
         execution_status -> Transactionexecutionstatus,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1367,6 +1401,7 @@ table! {
         description_link -> Text,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1405,6 +1440,7 @@ table! {
         description_link -> Text,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1502,6 +1538,7 @@ table! {
         council_max_vote_weight_addin -> Nullable<Varchar>,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1539,6 +1576,7 @@ table! {
         name -> Text,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1681,6 +1719,7 @@ table! {
         signed_off -> Bool,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1837,6 +1876,7 @@ table! {
         governance_delegate -> Nullable<Varchar>,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1930,6 +1970,7 @@ table! {
         vote_weight -> Int8,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -1948,6 +1989,7 @@ table! {
         vote -> Vote_record_v2_vote,
         slot -> Int8,
         write_version -> Int8,
+        program_id -> Nullable<Varchar>,
     }
 }
 
@@ -2050,7 +2092,6 @@ joinable!(cardinal_token_manager_invalidators -> cardinal_token_managers (token_
 joinable!(feed_event_wallets -> feed_events (feed_event_id));
 joinable!(follow_events -> feed_events (feed_event_id));
 joinable!(follow_events -> graph_connections (graph_connection_address));
-joinable!(geno_rental_agreements -> geno_habitat_datas (habitat_address));
 joinable!(governance_configs -> governances (governance_address));
 joinable!(listing_events -> feed_events (feed_event_id));
 joinable!(mint_events -> feed_events (feed_event_id));
@@ -2087,7 +2128,7 @@ allow_tables_to_appear_in_same_query!(
     cardinal_token_managers,
     cardinal_use_invalidators,
     collection_stats,
-    collections_volume,
+    collection_trends,
     current_metadata_owners,
     deposit_instructions,
     editions,

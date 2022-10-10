@@ -31,6 +31,7 @@ use diesel::{pg, r2d2};
 pub use diesel_full_text_search::{
     websearch_to_tsquery, TsQuery, TsQueryExtensions, TsVector, TsVectorExtensions,
 };
+pub use sea_query::Order;
 
 use crate::prelude::*;
 

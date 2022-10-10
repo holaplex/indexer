@@ -36,7 +36,7 @@ const VOTE_RECORD_V2: u8 = GovernanceAccountType::VoteRecordV2 as u8;
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
     let discrimintator = update.data[0];
-
+    debug!("{:?}", update.owner);
     match discrimintator {
         GOVERNANCE_V1
         | GOVERNANCE_V2
@@ -67,63 +67,135 @@ async fn process_governance_account(client: &Client, update: AccountUpdate) -> R
     let acc: GovernanceV1 = GovernanceV1::deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize spl governance  account ")?;
 
-    process_governance(client, update.key, acc, update.slot, update.write_version).await
+    process_governance(
+        client,
+        update.key,
+        acc,
+        update.slot,
+        update.write_version,
+        update.owner,
+    )
+    .await
 }
 
 async fn process_realm_account(client: &Client, update: AccountUpdate) -> Result<()> {
     let acc: RealmV1 = RealmV1::deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize spl realm account ")?;
 
-    process_realmv2(client, update.key, acc, update.slot, update.write_version).await
+    process_realmv2(
+        client,
+        update.key,
+        acc,
+        update.slot,
+        update.write_version,
+        update.owner,
+    )
+    .await
 }
 
 async fn process_vote_recordv1_account(client: &Client, update: AccountUpdate) -> Result<()> {
     let acc: VoteRecordV1 = VoteRecordV1::deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize vote record v1 account ")?;
 
-    process_vote_record_v1(client, update.key, acc, update.slot, update.write_version).await
+    process_vote_record_v1(
+        client,
+        update.key,
+        acc,
+        update.slot,
+        update.write_version,
+        update.owner,
+    )
+    .await
 }
 
 async fn process_vote_recordv2_account(client: &Client, update: AccountUpdate) -> Result<()> {
     let acc: VoteRecordV2 = VoteRecordV2::deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize vote record v2 ")?;
 
-    process_vote_record_v2(client, update.key, acc, update.slot, update.write_version).await
+    process_vote_record_v2(
+        client,
+        update.key,
+        acc,
+        update.slot,
+        update.write_version,
+        update.owner,
+    )
+    .await
 }
 
 async fn process_token_owner_record_account(client: &Client, update: AccountUpdate) -> Result<()> {
     let acc: TokenOwnerRecordV1 = TokenOwnerRecordV1::deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize token owner record account ")?;
 
-    process_token_owner_record(client, update.key, acc, update.slot, update.write_version).await
+    process_token_owner_record(
+        client,
+        update.key,
+        acc,
+        update.slot,
+        update.write_version,
+        update.owner,
+    )
+    .await
 }
 
 async fn process_proposalv1_account(client: &Client, update: AccountUpdate) -> Result<()> {
     let acc: ProposalV1 = ProposalV1::deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize proposal v1 account")?;
 
-    process_proposal_v1(client, update.key, acc, update.slot, update.write_version).await
+    process_proposal_v1(
+        client,
+        update.key,
+        acc,
+        update.slot,
+        update.write_version,
+        update.owner,
+    )
+    .await
 }
 
 async fn process_proposalv2_account(client: &Client, update: AccountUpdate) -> Result<()> {
     let acc: ProposalV2 = ProposalV2::deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize proposal v2 account")?;
 
-    process_proposal_v2(client, update.key, acc, update.slot, update.write_version).await
+    process_proposal_v2(
+        client,
+        update.key,
+        acc,
+        update.slot,
+        update.write_version,
+        update.owner,
+    )
+    .await
 }
 
 async fn process_signatory_record_account(client: &Client, update: AccountUpdate) -> Result<()> {
     let acc: SignatoryRecordV1 = SignatoryRecordV1::deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize signatory record v2 account ")?;
 
-    process_signatory_record(client, update.key, acc, update.slot, update.write_version).await
+    process_signatory_record(
+        client,
+        update.key,
+        acc,
+        update.slot,
+        update.write_version,
+        update.owner,
+    )
+    .await
 }
 
 async fn process_realm_config_account(client: &Client, update: AccountUpdate) -> Result<()> {
     let acc: RealmConfigAccount = RealmConfigAccount::deserialize(&mut update.data.as_slice())
         .context("Failed to deserialize realm config account ")?;
 
-    process_realm_config(client, update.key, acc, update.slot, update.write_version).await
+    process_realm_config(
+        client,
+        update.key,
+        acc,
+        update.slot,
+        update.write_version,
+        update.owner,
+    )
+    .await
 }
 
 async fn process_proposal_transaction_account(
@@ -134,5 +206,13 @@ async fn process_proposal_transaction_account(
         ProposalTransactionV2::deserialize(&mut update.data.as_slice())
             .context("Failed to deserialize spl governance proposal transaction account")?;
 
-    process_proposal_transaction(client, update.key, acc, update.slot, update.write_version).await
+    process_proposal_transaction(
+        client,
+        update.key,
+        acc,
+        update.slot,
+        update.write_version,
+        update.owner,
+    )
+    .await
 }

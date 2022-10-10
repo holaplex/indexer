@@ -83,7 +83,7 @@ struct MetadataJson {
     name: String,
     symbol: Option<String>,
     description: Option<String>,
-    seller_fee_basis_points: i64,
+    seller_fee_basis_points: Option<i64>,
     image: Option<String>,
     animation_url: Option<String>,
     collection: Option<Collection>,
@@ -485,13 +485,7 @@ fn process_attributes(
 
         insert_into(attributes::table)
             .values(&row)
-            .on_conflict((
-                attributes::metadata_address,
-                attributes::value,
-                attributes::trait_type,
-            ))
-            .do_update()
-            .set(&row)
+            .on_conflict_do_nothing()
             .execute(db)
             .context("Failed to insert attribute!")?;
     }

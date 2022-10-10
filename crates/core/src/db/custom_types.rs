@@ -362,6 +362,18 @@ pub enum OrderDirection {
     Asc,
 }
 
+/// Direction for sorting SQL query results by the "SORT BY" variable(s)
+#[derive(Debug, Clone, Copy, strum::EnumString, strum::Display)]
+pub enum NftSort {
+    /// sort results by Price
+    #[strum(serialize = "Price")]
+    Price,
+
+    /// sort results by ListedAt
+    #[strum(serialize = "ListedAt")]
+    ListedAt,
+}
+
 /// `ProposalV2State`
 #[derive(SqlType, Debug, Clone, Copy)]
 /// Represents database `proposalstate` enum
@@ -538,6 +550,40 @@ impl FromSql<VoteWeightV1, Pg> for VoteWeightV1Enum {
     fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
         from_bytes(bytes)
     }
+}
+
+/// Direction for sorting Collections query results by the "SORT BY" variable(s)
+#[derive(Debug, Clone, Copy, strum::EnumString, strum::Display)]
+pub enum CollectionSort {
+    /// sort results by floor price
+    FloorPrice,
+
+    /// sort results by 1 day volume
+    OneDayVolume,
+
+    /// sort results by 7 days volume
+    SevenDayVolume,
+
+    /// sort results by 30 days volume]
+    ThirtyDayVolume,
+
+    /// sort results by 1 day sales count
+    OneDaySalesCount,
+
+    /// sort results by 7 days sales count
+    SevenDaySalesCount,
+
+    /// sort results by 30 days sales count
+    ThirtyDaySalesCount,
+
+    /// sort results by 1 day marketcap
+    OneDayMarketcap,
+
+    /// sort results by 7 day marketcap
+    SevenDayMarketcap,
+
+    /// sort results by 30 day marketcap
+    ThirtyDayMarketcap,
 }
 
 /// `HPL Reward Center` payout operation
