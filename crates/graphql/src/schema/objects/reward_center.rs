@@ -1,14 +1,15 @@
-use indexer_core::db::{custom_types::PayoutOperation, models};
+use indexer_core::db::models;
 
 use super::prelude::*;
-use crate::schema::scalars::U64;
+use objects::auction_house::AuctionHouse;
+use crate::schema::{scalars::{U64, PublicKey, markers::TokenMint}, enums::PayoutOperation};
 
 #[derive(Debug, Clone)]
 /// A decorator for a Metaplex Auction House
 pub struct RewardCenter {
-    pub address: String,
-    pub token_mint: String,
-    pub auction_house: String,
+    pub address: PublicKey<Self>,
+    pub token_mint: PublicKey<TokenMint>,
+    pub auction_house: PublicKey<AuctionHouse>,
     pub bump: i32,
     pub seller_reward_payout_basis_points: i32,
     pub mathematical_operand: PayoutOperation,
@@ -34,12 +35,12 @@ impl<'a> TryFrom<models::RewardCenter<'a>> for RewardCenter {
         }: models::RewardCenter,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            address: address.into_owned(),
-            token_mint: token_mint.into_owned(),
-            auction_house: auction_house.into_owned(),
+            address: address.into(),
+            token_mint: token_mint.into(),
+            auction_house: auction_house.into(),
             bump: bump.into(),
             seller_reward_payout_basis_points: seller_reward_payout_basis_points.into(),
-            mathematical_operand: mathematical_operand.into_owned(),
+            mathematical_operand: mathematical_operand.into(),
             payout_numeral: payout_numeral.into(),
             slot: slot.try_into()?,
             write_version: write_version.try_into()?,
@@ -49,15 +50,15 @@ impl<'a> TryFrom<models::RewardCenter<'a>> for RewardCenter {
 
 #[graphql_object(Context = AppContext)]
 impl RewardCenter {
-    pub fn address(&self) -> &str {
+    pub fn address(&self) -> &PublicKey<Self> {
         &self.address
     }
 
-    pub fn token_mint(&self) -> &str {
+    pub fn token_mint(&self) -> &PublicKey<TokenMint> {
         &self.token_mint
     }
 
-    pub fn auction_house(&self) -> &str {
+    pub fn auction_house(&self) -> &PublicKey<AuctionHouse> {
         &self.auction_house
     }
 
