@@ -2,7 +2,10 @@ use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     bigdecimal::ToPrimitive,
     db::{
-        queries::{self, metadatas::CollectionNftOptions},
+        queries::{
+            self,
+            metadatas::{CollectionListedNftOptions, CollectionNftOptions},
+        },
         sql_query,
         sql_types::Text,
         tables::{
@@ -1145,6 +1148,28 @@ impl CollectionTrend {
 
     pub fn thirty_day_marketcap_change(&self) -> i32 {
         self.one_day_marketcap_change
+    }
+
+    pub async fn listings(
+        &self,
+        ctx: &AppContext,
+        limit: i32,
+        offset: i32,
+        auction_house: Option<String>,
+    ) -> FieldResult<Vec<Nft>> {
+        let conn = ctx.shared.db.get()?;
+
+        let nfts = queries::metadatas::collection_listed_nfts(&conn, CollectionListedNftOptions {
+            collection: self.collection.clone(),
+            auction_house,
+            limit: limit.try_into()?,
+            offset: offset.try_into()?,
+        })?;
+
+        nfts.into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 
     pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {

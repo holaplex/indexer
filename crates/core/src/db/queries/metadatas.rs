@@ -467,6 +467,19 @@ pub struct CollectionNftOptions {
     pub offset: u64,
 }
 
+/// Input parameters for the [`collection_nfts`] query.
+#[derive(Debug)]
+pub struct CollectionListedNftOptions {
+    /// Collection address
+    pub collection: String,
+    /// Auction house of the collection
+    pub auction_house: Option<String>,
+    /// Limit the number of returned rows
+    pub limit: u64,
+    /// Skip the first `n` resulting rows
+    pub offset: u64,
+}
+
 /// Input parameters for the [`wallet_nfts`] query.
 #[derive(Debug)]
 pub struct WalletNftOptions {
@@ -662,6 +675,148 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
             );
         }
     }
+
+    let query = query.to_string(PostgresQueryBuilder);
+
+    diesel::sql_query(query)
+        .load(conn)
+        .context("Failed to load nft(s)")
+}
+
+/// Handles queries for a Collection Listed Nfts
+///
+/// # Errors
+/// returns an error when the underlying queries throw an error
+#[allow(clippy::too_many_lines)]
+pub fn collection_listed_nfts(
+    conn: &Connection,
+    options: CollectionListedNftOptions,
+) -> Result<Vec<Nft>> {
+    let CollectionListedNftOptions {
+        collection,
+        auction_house,
+        limit,
+        offset,
+    } = options;
+
+    let current_time = Utc::now().naive_utc();
+
+    let uuid = Uuid::parse_str(&collection);
+    let is_me_collection = match uuid {
+        Err(_error) => false,
+        Ok(_result) => true,
+    };
+    let query = Query::select()
+        .columns(vec![
+            (Metadatas::Table, Metadatas::Address),
+            (Metadatas::Table, Metadatas::Name),
+            (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+            (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
+            (Metadatas::Table, Metadatas::MintAddress),
+            (Metadatas::Table, Metadatas::PrimarySaleHappened),
+            (Metadatas::Table, Metadatas::Uri),
+            (Metadatas::Table, Metadatas::Slot),
+        ])
+        .columns(vec![
+            (MetadataJsons::Table, MetadataJsons::Description),
+            (MetadataJsons::Table, MetadataJsons::Image),
+            (MetadataJsons::Table, MetadataJsons::AnimationUrl),
+            (MetadataJsons::Table, MetadataJsons::ExternalUrl),
+            (MetadataJsons::Table, MetadataJsons::Category),
+            (MetadataJsons::Table, MetadataJsons::Model),
+        ])
+        .columns(vec![(
+            CurrentMetadataOwners::Table,
+            CurrentMetadataOwners::TokenAccountAddress,
+        )])
+        .from(MetadataJsons::Table)
+        .inner_join(
+            Metadatas::Table,
+            Expr::tbl(MetadataJsons::Table, MetadataJsons::MetadataAddress)
+                .equals(Metadatas::Table, Metadatas::Address),
+        )
+        .inner_join(
+            CurrentMetadataOwners::Table,
+            Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
+                CurrentMetadataOwners::Table,
+                CurrentMetadataOwners::MintAddress,
+            ),
+        )
+        .conditions(
+            is_me_collection,
+            |query| {
+                query.inner_join(
+                    MeMetadataCollections::Table,
+                    Expr::tbl(
+                        MeMetadataCollections::Table,
+                        MeMetadataCollections::MetadataAddress,
+                    )
+                    .equals(Metadatas::Table, Metadatas::Address),
+                );
+            },
+            |query| {
+                query.inner_join(
+                    MetadataCollectionKeys::Table,
+                    Expr::tbl(
+                        MetadataCollectionKeys::Table,
+                        MetadataCollectionKeys::MetadataAddress,
+                    )
+                    .equals(Metadatas::Table, Metadatas::Address),
+                );
+            },
+        )
+        .left_join(
+            Listings::Table,
+            Condition::all()
+                .add(
+                    Expr::tbl(Listings::Table, Listings::Metadata)
+                        .equals(Metadatas::Table, Metadatas::Address),
+                )
+                .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
+                    CurrentMetadataOwners::Table,
+                    CurrentMetadataOwners::OwnerAddress,
+                ))
+                .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
+                .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
+                .add(
+                    Expr::tbl(Listings::Table, Listings::AuctionHouse)
+                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
+                )
+                .add(
+                    Expr::tbl(Listings::Table, Listings::Expiry)
+                        .is_null()
+                        .or(Expr::tbl(Listings::Table, Listings::Expiry).gt(current_time)),
+                )
+                .add_option(auction_house.map(|auction_house| {
+                    Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house)
+                })),
+        )
+        .and_where(Expr::col(Metadatas::BurnedAt).is_null())
+        .conditions(
+            is_me_collection,
+            |query| {
+                query.and_where(
+                    Expr::col((
+                        MeMetadataCollections::Table,
+                        MeMetadataCollections::CollectionId,
+                    ))
+                    .eq(collection.clone()),
+                );
+            },
+            |query| {
+                query.and_where(
+                    Expr::col((
+                        MetadataCollectionKeys::Table,
+                        MetadataCollectionKeys::CollectionAddress,
+                    ))
+                    .eq(collection.clone()),
+                );
+            },
+        )
+        .limit(limit)
+        .offset(offset)
+        .order_by((Listings::Table, Listings::Price), Order::Asc)
+        .take();
 
     let query = query.to_string(PostgresQueryBuilder);
 
