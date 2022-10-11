@@ -3061,6 +3061,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "holaplex-indexer-dolphin-stats"
+version = "0.0.0"
+dependencies = [
+ "holaplex-indexer",
+ "holaplex-indexer-core",
+ "solana-client",
+ "solana-program",
+]
+
+[[package]]
 name = "holaplex-indexer-graphql"
 version = "0.1.0"
 dependencies = [

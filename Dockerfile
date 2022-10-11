@@ -29,6 +29,7 @@ RUN cargo build --locked \
     holaplex-indexer/search, \
   " \
   --bin burn-fix \
+  --bin dolphin-stats \
   --bin holaplex-indexer-dispatcher \
   --bin holaplex-indexer-geyser \
   --bin holaplex-indexer-http \
@@ -61,7 +62,11 @@ CMD ["./startup.sh"]
 
 FROM base AS tools
 
-COPY --from=build build/bin/burn-fix build/bin/moonrank-collections-indexer bin/
+COPY --from=build \
+  build/bin/burn-fix \
+  build/bin/dolphin-stats \
+  build/bin/moonrank-collections-indexer \
+  bin/
 CMD ["false"]
 
 FROM base AS dispatcher-base
