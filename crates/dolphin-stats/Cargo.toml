@@ -9,8 +9,10 @@ name = "dolphin-stats"
 path = "main.rs"
 
 [dependencies]
-solana-client = "~1.9.28"
-solana-program = "~1.9.28"
+reqwest = { version = "0.11.12", features = ["json"] }
+serde = { version = "1.0.145", features = ["derive"] }
+serde_json = "1.0.86"
+tokio = { version = "1.14.1", features = ["net", "rt", "time"] }
 
 [dependencies.indexer-core]
 package = "holaplex-indexer-core"
