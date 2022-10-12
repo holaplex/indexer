@@ -1,7 +1,7 @@
 use indexer_core::db::{models, queries};
-use objects::auction_house::AuctionHouse;
+use objects::{auction_house::AuctionHouse, reward_payout::RewardPayout};
 
-use super::{prelude::*, reward_payout::RewardPayout};
+use super::prelude::*;
 use crate::schema::{
     enums::PayoutOperation,
     scalars::{markers::TokenMint, PublicKey, U64},
