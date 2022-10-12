@@ -10,6 +10,9 @@ CREATE TABLE collections (
     updated_at timestamp NOT NULL
 );
 
+create index  on collections (verified_collection_address);
+create index  on collections (updated_at);
+
 CREATE TABLE collection_mints (
     collection_id text NOT NULL,
     mint varchar(48) NOT NULL,
@@ -21,6 +24,9 @@ CREATE TABLE collection_mints (
     PRIMARY KEY (collection_id, mint)
 );
 
+create index  on collection_mints (collection_id);
+create index  on collection_mints (mint);
+
 CREATE TABLE collection_mint_attributes (
     mint varchar(48) NOT NULL,
     attribute text NOT NULL,
@@ -29,3 +35,4 @@ CREATE TABLE collection_mint_attributes (
     PRIMARY KEY (mint, attribute, value)
 );
 
+create index  on collection_mint_attributes (mint);
