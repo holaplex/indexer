@@ -7,6 +7,7 @@ use diesel::{
 };
 use sea_query::{
     Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc,
+    Value,
 };
 use uuid::Uuid;
 
@@ -19,7 +20,6 @@ use crate::{
     },
     error::prelude::*,
     prelude::Utc,
-    pubkeys,
 };
 
 /// Format for incoming filters on attributes
@@ -195,7 +195,7 @@ pub const NFT_COLUMNS: NftColumns = (
 /// # Errors
 /// returns an error when the underlying queries throw an error
 #[allow(clippy::too_many_lines)]
-pub fn list(
+pub fn list<O: Clone + Into<Value>>(
     conn: &Connection,
     ListQueryOptions {
         addresses,
@@ -212,6 +212,7 @@ pub fn list(
         limit,
         offset,
     }: ListQueryOptions,
+    opensea_auction_house: O,
 ) -> Result<Vec<Nft>> {
     let current_time = Utc::now().naive_utc();
 
@@ -229,7 +230,7 @@ pub fn list(
                 .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
                 .add(
                     Expr::tbl(Listings::Table, Listings::AuctionHouse)
-                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
+                        .ne(opensea_auction_house.clone()),
                 )
                 .add(
                     Expr::tbl(Listings::Table, Listings::Expiry)
@@ -353,10 +354,7 @@ pub fn list(
                 .add(Expr::col((Offers::Table, Offers::Buyer)).is_in(offerers))
                 .add(Expr::tbl(Offers::Table, Offers::PurchaseId).is_null())
                 .add(Expr::tbl(Offers::Table, Offers::CanceledAt).is_null())
-                .add(
-                    Expr::tbl(Offers::Table, Offers::AuctionHouse)
-                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
-                )
+                .add(Expr::tbl(Offers::Table, Offers::AuctionHouse).ne(opensea_auction_house))
                 .add(
                     Expr::tbl(Offers::Table, Offers::Expiry)
                         .is_null()
@@ -502,7 +500,11 @@ impl From<NftSort> for Listings {
 /// # Errors
 /// returns an error when the underlying queries throw an error
 #[allow(clippy::too_many_lines)]
-pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Result<Vec<Nft>> {
+pub fn collection_nfts<O: Into<Value>>(
+    conn: &Connection,
+    options: CollectionNftOptions,
+    opensea_auction_house: O,
+) -> Result<Vec<Nft>> {
     let CollectionNftOptions {
         collection,
         auction_house,
@@ -596,10 +598,7 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
                 ))
                 .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
                 .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
-                .add(
-                    Expr::tbl(Listings::Table, Listings::AuctionHouse)
-                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
-                )
+                .add(Expr::tbl(Listings::Table, Listings::AuctionHouse).ne(opensea_auction_house))
                 .add(
                     Expr::tbl(Listings::Table, Listings::Expiry)
                         .is_null()
@@ -675,7 +674,11 @@ pub fn collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Resu
 /// # Errors
 /// returns an error when the underlying queries throw an error
 #[allow(clippy::too_many_lines)]
-pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<Nft>> {
+pub fn wallet_nfts<O: Into<Value>>(
+    conn: &Connection,
+    options: WalletNftOptions,
+    opensea_auction_house: O,
+) -> Result<Vec<Nft>> {
     let WalletNftOptions {
         wallet,
         auction_house,
@@ -747,10 +750,7 @@ pub fn wallet_nfts(conn: &Connection, options: WalletNftOptions) -> Result<Vec<N
                 ))
                 .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
                 .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
-                .add(
-                    Expr::tbl(Listings::Table, Listings::AuctionHouse)
-                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
-                )
+                .add(Expr::tbl(Listings::Table, Listings::AuctionHouse).ne(opensea_auction_house))
                 .add(
                     Expr::tbl(Listings::Table, Listings::Expiry)
                         .is_null()
