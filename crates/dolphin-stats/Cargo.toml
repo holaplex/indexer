@@ -9,6 +9,7 @@ name = "dolphin-stats"
 path = "main.rs"
 
 [dependencies]
+percent-encoding = "2.2.0"
 reqwest = { version = "0.11.12", features = ["json"] }
 serde = { version = "1.0.145", features = ["derive"] }
 serde_json = "1.0.86"

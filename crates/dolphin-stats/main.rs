@@ -106,12 +106,20 @@ fn market_stats_endpoint<T: TimeZone>(
     start: DateTime<T>,
     end: DateTime<T>,
 ) -> String {
-    // TODO: sanitize these values
     let url = format!(
         "https://app.getdolphin.io/apiv3/collections/marketStats/&symbol={}&timestamp_from={}&timestamp_end={}",
-        symbol,
-        start.timestamp(),
-        end.timestamp()
+        percent_encoding::utf8_percent_encode(
+            &symbol.to_string(),
+            percent_encoding::NON_ALPHANUMERIC
+        ),
+        percent_encoding::utf8_percent_encode(
+            &start.timestamp().to_string(),
+            percent_encoding::NON_ALPHANUMERIC
+        ),
+        percent_encoding::utf8_percent_encode(
+            &end.timestamp().to_string(),
+            percent_encoding::NON_ALPHANUMERIC
+        ),
     );
 
     debug!("Market stats URL: {:?}", url);
