@@ -17,11 +17,157 @@ use crate::db::custom_types::{
     EndSettingType, GovernanceAccountType, GovernanceAccountTypeEnum, InstructionExecutionFlags,
     InstructionExecutionFlagsEnum, ListingEventLifecycle, ListingEventLifecycleEnum,
     MintMaxVoteEnum, OfferEventLifecycle, OfferEventLifecycleEnum, OptionVoteResultEnum,
-    ProposalState, ProposalStateEnum, ProposalVoteType, ProposalVoteTypeEnum, TokenStandardEnum,
-    TransactionExecutionStatusEnum, VoteRecordV2Vote, VoteRecordV2VoteEnum, VoteThresholdEnum,
-    VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum, WhitelistMintMode,
+    PayoutOperationEnum, ProposalState, ProposalStateEnum, ProposalVoteType, ProposalVoteTypeEnum,
+    TokenStandardEnum, TransactionExecutionStatusEnum, VoteRecordV2Vote, VoteRecordV2VoteEnum,
+    VoteThresholdEnum, VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum,
+    WhitelistMintMode,
 };
 
+/* MPL LISTING REWARDS */
+
+/// A row in the `rewards_purchase_tickets` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
+pub struct RewardsPurchaseTicket<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// reward center associated of the purchase ticket
+    pub reward_center_address: Cow<'a, str>,
+    /// the buyer of the nft
+    pub buyer: Cow<'a, str>,
+    /// the seller of the nft
+    pub seller: Cow<'a, str>,
+    /// the metadata of the nft purchased
+    pub metadata: Cow<'a, str>,
+    /// price of the nft
+    pub price: i64,
+    /// number of tokens sold
+    pub token_size: i64,
+    /// the date and time of the purchase
+    pub created_at: NaiveDateTime,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
+}
+
+/// A row in the `reward_centers` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
+pub struct RewardCenter<'a> {
+    /// The address of this account
+    pub address: Cow<'a, str>,
+    /// the mint of the token used as rewards
+    pub token_mint: Cow<'a, str>,
+    /// the auction house associated to the reward center
+    pub auction_house: Cow<'a, str>,
+    /// the bump of the pda
+    pub bump: i16,
+    /// Basis Points to determine reward ratio for seller
+    pub seller_reward_payout_basis_points: i16,
+    /// // Payout operation to consider when taking payout_numeral into account
+    pub mathematical_operand: PayoutOperationEnum,
+    /// Payout Divider for determining reward distribution to seller/buyer
+    pub payout_numeral: i16,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
+}
+
+/// A row in the `rewards` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct RewardPayout<'a> {
+    /// Purchase ticket pubkey
+    pub purchase_ticket: Cow<'a, str>,
+    /// metadata address
+    pub metadata: Cow<'a, str>,
+    /// Reward center address
+    pub reward_center: Cow<'a, str>,
+    /// buyer wallet
+    pub buyer: Cow<'a, str>,
+    /// buyer reward
+    pub buyer_reward: BigDecimal,
+    /// seller wallet
+    pub seller: Cow<'a, str>,
+    /// seller reward
+    pub seller_reward: BigDecimal,
+    /// The timestamp when the reward payout was created.
+    pub created_at: NaiveDateTime,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
+}
+
+/// A row in the `rewards listings` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
+#[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
+pub struct RewardsListing<'a> {
+    /// addres of listing account
+    pub address: Cow<'a, str>,
+    /// track initilization status of account
+    pub is_initialized: bool,
+    /// reward center of the listing
+    pub reward_center_address: Cow<'a, str>,
+    /// wallet selling the nft
+    pub seller: Cow<'a, str>,
+    /// nft being sold
+    pub metadata: Cow<'a, str>,
+    /// price of the nft
+    pub price: i64,
+    /// number of tokens sold by the listing
+    pub token_size: i64,
+    ///  the bump of the listing account
+    pub bump: i16,
+    /// date the listing was created
+    pub created_at: NaiveDateTime,
+    /// potentially when the listing was canceled
+    pub canceled_at: Option<NaiveDateTime>,
+    /// potentially purchase associated to the listing
+    pub purchase_ticket: Option<Cow<'a, str>>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
+}
+
+/// A row in the `rewards offers` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
+#[diesel(treat_none_as_null = true)]
+#[belongs_to(parent = "RewardCenter<'_>", foreign_key = "reward_center_address")]
+pub struct RewardsOffer<'a> {
+    /// address of the offer
+    pub address: Cow<'a, str>,
+    /// track initilization status of the offer
+    pub is_initialized: bool,
+    /// reward center offer made under
+    pub reward_center_address: Cow<'a, str>,
+    /// the wallet making the offer
+    pub buyer: Cow<'a, str>,
+    /// the nft the offer is placed on
+    pub metadata: Cow<'a, str>,
+    /// the offer amount
+    pub price: i64,
+    /// number of tokens offer made on
+    pub token_size: i64,
+    /// address bump of the pda
+    pub bump: i16,
+    /// when the offer was submitted
+    pub created_at: NaiveDateTime,
+    /// when the offer was canceled
+    pub canceled_at: Option<NaiveDateTime>,
+    /// the purchase associated to the offer in case of a sale
+    pub purchase_ticket: Option<Cow<'a, str>>,
+    /// The slot number of the most recent update for this account
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    pub write_version: i64,
+}
+
+/** MPL AUCTION HOUSE */
 /// A row in the `bids` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]

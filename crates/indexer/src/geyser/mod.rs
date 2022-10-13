@@ -48,6 +48,7 @@ impl fmt::Display for MessageId {
 ///
 /// # Errors
 /// This function fails if an error occurs processing the message body.
+#[allow(clippy::too_many_lines)]
 pub async fn process_message<H: std::hash::BuildHasher>(
     msg: Message,
     client: &Client,
@@ -67,6 +68,9 @@ pub async fn process_message<H: std::hash::BuildHasher>(
             if update.owner == pubkeys::METADATA && check_ignore(IgnoreType::Metadata, &update) =>
         {
             programs::metadata::process(client, update).await
+        },
+        Message::AccountUpdate(update) if update.owner == pubkeys::REWARD_CENTER => {
+            programs::reward_center::process(client, update).await
         },
         Message::AccountUpdate(update) if update.owner == pubkeys::AUCTION => {
             programs::auction::process(client, update).await
