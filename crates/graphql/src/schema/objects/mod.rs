@@ -24,6 +24,7 @@ pub mod stats;
 pub mod store_creator;
 pub mod storefront;
 pub mod wallet;
+pub mod offer;
 
 pub(self) mod prelude {
     pub(super) use super::super::prelude::*;

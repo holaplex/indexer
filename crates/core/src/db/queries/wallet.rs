@@ -8,14 +8,14 @@ use diesel::{
 
 use crate::{
     db::{
-        models::{CollectedCollection, CreatedCollection, WalletActivity},
+        models::{CollectedCollection, CreatedCollection, WalletActivity, ReadOffer},
         Connection,
     },
     error::prelude::*,
 };
 
 const ACTIVITES_QUERY: &str = r"
-SELECT listings.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
+SELECT listings.id as id, metadata, price, auction_house, created_at, marketplace_program,
 array[seller] as wallets,
 array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
 'listing' as activity_type
@@ -26,7 +26,7 @@ array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
     AND listings.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
     AND ('LISTINGS' = ANY($2) OR $2 IS NULL)
 UNION
-SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
+SELECT purchases.id as id, metadata, price, auction_house, created_at, marketplace_program,
 array[seller, buyer] as wallets,
 array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
 'purchase' as activity_type
@@ -36,7 +36,7 @@ array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
     WHERE buyer = $1
     AND ('PURCHASES' = ANY($2) OR $2 IS NULL)
 UNION
-SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
+SELECT purchases.id as id, metadata, price, auction_house, created_at, marketplace_program,
 array[seller, buyer] as wallets,
 array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
 'sell' as activity_type
@@ -46,7 +46,7 @@ array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
     WHERE seller = $1
     AND ('SALES' = ANY($2) OR $2 IS NULL)
 UNION
-SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
+SELECT offers.id as id, metadata, price, auction_house, created_at, marketplace_program,
 array[buyer] as wallets,
 array[bth.twitter_handle] as wallet_twitter_handles,
 'offer' as activity_type
@@ -65,7 +65,7 @@ OFFSET $4;
 -- $3: limit::integer
 -- $4: offset::integer";
 
-/// Load listing and sales activity for wallets.
+/// Load listing, purchase, sales and offer activity for wallets.
 ///
 /// # Errors
 /// This function fails if the underlying SQL query returns an error
@@ -83,6 +83,58 @@ pub fn activities(
         .bind(offset)
         .load(conn)
         .context("Failed to load wallet(s) activities")
+}
+
+
+const OFFERS_QUERY: &str = r"
+SELECT offers.id as id,  metadata, price, auction_house, created_at, marketplace_program,
+buyer, th.twitter_handle as buyer_twitter_handles, trade_state, token_account, purchase_id,
+token_size, trade_state_bump, canceled_at, slot, write_version, expiry
+FROM offers
+    LEFT JOIN twitter_handle_name_services th on (th.wallet_address = offers.buyer)
+    WHERE buyer = $1
+    AND offers.purchase_id IS NULL
+    AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
+    AND ('OFFER_PLACED' = ANY($2) OR $2 IS NULL)
+UNION
+SELECT offers.id as id,  metadata, price, auction_house, created_at, marketplace_program,
+buyer, th.twitter_handle as buyer_twitter_handles, trade_state, token_account, purchase_id,
+token_size, trade_state_bump, canceled_at, slot, write_version, expiry
+FROM offers
+    LEFT JOIN twitter_handle_name_services th on (th.wallet_address = offers.buyer)
+    LEFT JOIN metadatas on (metadatas.address = offers.metadata)
+    LEFT JOIN current_metadata_owners on (current_metadata_owners.mint_address = metadatas.mint_address)
+    WHERE current_metadata_owners.owner_address = $1
+    AND offers.purchase_id IS NULL
+    AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
+    AND ('OFFER_RECEIVED' = ANY($2) OR $2 IS NULL)
+ORDER BY created_at DESC
+LIMIT $3
+OFFSET $4;
+
+-- $1: address::text
+-- $2: offers_type::text
+-- $3: limit::integer
+-- $4: offset::integer";
+
+/// Load offers for a wallet.
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
+pub fn offers(
+    conn: &Connection,
+    address: impl ToSql<Text, Pg>,
+    offers_type: impl ToSql<Nullable<Text>, Pg>,
+    limit: impl ToSql<Integer, Pg>,
+    offset: impl ToSql<Integer, Pg>,
+) -> Result<Vec<ReadOffer>> {
+    diesel::sql_query(OFFERS_QUERY)
+        .bind(address)
+        .bind(offers_type)
+        .bind(limit)
+        .bind(offset)
+        .load(conn)
+        .context("Failed to load wallet offers")
 }
 
 const COLLECTED_COLLECTIONS_QUERY: &str = r"

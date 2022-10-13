@@ -11,7 +11,7 @@ use objects::{
 use scalars::{PublicKey, U64};
 use tables::{bids, graph_connections};
 
-use super::prelude::*;
+use super::{prelude::*, offer::Offer};
 use crate::schema::enums::{NftSort, OrderDirection};
 
 #[derive(Debug, Clone)]
@@ -360,6 +360,25 @@ impl Wallet {
             queries::wallet::activities(&conn, &self.address, event_types, limit, offset)?;
 
         activities
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    pub fn offers(
+        &self,
+        ctx: &AppContext,
+        offer_type: Option<String>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<Offer>> {
+        let conn = ctx.shared.db.get()?;
+
+        let offers =
+            queries::wallet::offers(&conn, &self.address, offer_type, limit, offset)?;
+
+            offers
             .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
