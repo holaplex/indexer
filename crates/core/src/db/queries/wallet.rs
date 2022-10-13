@@ -87,18 +87,18 @@ pub fn activities(
 
 const OFFERS_QUERY: &str = r"
 SELECT offers.id as id,  metadata, price, auction_house, created_at, marketplace_program,
-buyer, th.twitter_handle as buyer_twitter_handles, trade_state, token_account, purchase_id,
-token_size, trade_state_bump, canceled_at, slot, write_version, expiry
+buyer, th.twitter_handle as buyer_twitter_handle, trade_state, token_account, purchase_id,
+token_size, trade_state_bump, canceled_at, expiry
 FROM offers
     LEFT JOIN twitter_handle_name_services th on (th.wallet_address = offers.buyer)
     WHERE buyer = $1
     AND offers.purchase_id IS NULL
     AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
-    AND ('OFFER_PLACED' = ANY($2) OR $2 IS NULL)
+    AND ('OFFER_PLACED' = $2 OR $2 IS NULL)
 UNION
 SELECT offers.id as id,  metadata, price, auction_house, created_at, marketplace_program,
-buyer, th.twitter_handle as buyer_twitter_handles, trade_state, token_account, purchase_id,
-token_size, trade_state_bump, canceled_at, slot, write_version, expiry
+buyer, th.twitter_handle as buyer_twitter_handle, trade_state, token_account, purchase_id,
+token_size, trade_state_bump, canceled_at, expiry
 FROM offers
     LEFT JOIN twitter_handle_name_services th on (th.wallet_address = offers.buyer)
     LEFT JOIN metadatas on (metadatas.address = offers.metadata)
@@ -106,7 +106,7 @@ FROM offers
     WHERE current_metadata_owners.owner_address = $1
     AND offers.purchase_id IS NULL
     AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
-    AND ('OFFER_RECEIVED' = ANY($2) OR $2 IS NULL)
+    AND ('OFFER_RECEIVED' = $2 OR $2 IS NULL)
 ORDER BY created_at DESC
 LIMIT $3
 OFFSET $4;
@@ -127,13 +127,15 @@ pub fn offers(
     limit: impl ToSql<Integer, Pg>,
     offset: impl ToSql<Integer, Pg>,
 ) -> Result<Vec<ReadOffer>> {
-    diesel::sql_query(OFFERS_QUERY)
+    let result = diesel::sql_query(OFFERS_QUERY)
         .bind(address)
         .bind(offers_type)
         .bind(limit)
         .bind(offset)
         .load(conn)
-        .context("Failed to load wallet offers")
+        .context("Failed to load wallet offers");
+    println!("Query Result: {:?}", result);
+    result
 }
 
 const COLLECTED_COLLECTIONS_QUERY: &str = r"

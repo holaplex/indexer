@@ -2794,12 +2794,6 @@ pub struct ReadOffer<'a> {
     /// Canceled_at timestamp
     #[sql_type = "Nullable<Timestamp>"]
     pub canceled_at: Option<NaiveDateTime>,
-    /// Solana slot number
-    #[sql_type = "Int8"]
-    pub slot: i64,
-    /// Solana write_version
-    #[sql_type = "Nullable<Int8>"]
-    pub write_version: Option<i64>,
     /// Marketplace program address
     #[sql_type = "VarChar"]
     pub marketplace_program: Cow<'a, str>,
