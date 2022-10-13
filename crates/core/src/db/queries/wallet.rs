@@ -8,7 +8,7 @@ use diesel::{
 
 use crate::{
     db::{
-        models::{CollectedCollection, CreatedCollection, WalletActivity, ReadOffer},
+        models::{CollectedCollection, CreatedCollection, ReadOffer, WalletActivity},
         Connection,
     },
     error::prelude::*,
@@ -84,7 +84,6 @@ pub fn activities(
         .load(conn)
         .context("Failed to load wallet(s) activities")
 }
-
 
 const OFFERS_QUERY: &str = r"
 SELECT offers.id as id,  metadata, price, auction_house, created_at, marketplace_program,

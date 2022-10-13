@@ -2811,7 +2811,6 @@ pub struct ReadOffer<'a> {
     pub buyer_twitter_handle: Option<String>,
 }
 
-
 /// A row in the `purchases` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]

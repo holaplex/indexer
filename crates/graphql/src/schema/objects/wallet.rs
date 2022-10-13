@@ -11,7 +11,7 @@ use objects::{
 use scalars::{PublicKey, U64};
 use tables::{bids, graph_connections};
 
-use super::{prelude::*, offer::Offer};
+use super::{offer::Offer, prelude::*};
 use crate::schema::enums::{NftSort, OrderDirection};
 
 #[derive(Debug, Clone)]
@@ -375,10 +375,9 @@ impl Wallet {
     ) -> FieldResult<Vec<Offer>> {
         let conn = ctx.shared.db.get()?;
 
-        let offers =
-            queries::wallet::offers(&conn, &self.address, offer_type, limit, offset)?;
+        let offers = queries::wallet::offers(&conn, &self.address, offer_type, limit, offset)?;
 
-            offers
+        offers
             .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
