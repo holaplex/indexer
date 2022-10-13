@@ -3385,13 +3385,17 @@ pub struct Collection<'a> {
     pub image: Cow<'a, str>,
     pub name: Cow<'a, str>,
     pub description: Cow<'a, str>,
+    pub twitter_url: Option<Cow<'a, str>>,
+    pub discord_url: Option<Cow<'a, str>>,
+    pub website_url: Option<Cow<'a, str>>,
+    pub magic_eden_id: Option<Cow<'a, str>>,
     pub verified_collection_address: Option<Cow<'a, str>>,
     pub pieces: i64,
     pub verified: bool,
+    pub go_live_at: NaiveDateTime,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
-
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[allow(missing_docs)]

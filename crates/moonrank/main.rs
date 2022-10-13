@@ -38,7 +38,7 @@ struct Metadata {
     private: bool,
     shadow: bool,
     access_key: String,
-    go_live_at: String,
+    go_live_at: DateTime<Utc>,
     api_block: bool,
     x_collection_metadata: Option<XCollectionMetadata>,
     #[serde(flatten)]
@@ -193,6 +193,11 @@ async fn upsert_collection_data(
     let conn = pool.get()?;
     let collection_id = json.collection.id;
 
+    let mut discord_url = None;
+    let mut twitter_url = None;
+    let mut website_url = None;
+    let mut magic_eden_id = None;
+
     let indexed_timestamp: Option<NaiveDateTime> = collections::table
         .filter(collections::id.eq(collection_id.clone()))
         .select(collections::updated_at)
@@ -205,14 +210,26 @@ async fn upsert_collection_data(
         return Ok(());
     }
 
+    if let Some(metadata) = json.collection.metadata.x_collection_metadata {
+        discord_url = metadata.x_url_discord.map(Owned);
+        twitter_url = metadata.x_url_twitter.map(Owned);
+        website_url = metadata.x_url_web.map(Owned);
+        magic_eden_id = metadata.x_market_magiceden_id.map(Owned);
+    }
+
     let collection = DbCollection {
         id: Owned(collection_id.clone()),
         image: Owned(json.collection.image),
         name: Owned(json.collection.name),
         description: Owned(json.collection.description),
+        twitter_url,
+        discord_url,
+        website_url,
+        magic_eden_id,
         verified_collection_address: json.collection.verified_collection_address.map(Owned),
         pieces: json.collection.pieces.try_into()?,
         verified: json.collection.verified,
+        go_live_at: json.collection.metadata.go_live_at.naive_utc(),
         created_at: json.crawl.created.naive_utc(),
         updated_at: json.crawl.updated.naive_utc(),
     };
