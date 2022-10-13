@@ -34,7 +34,8 @@ RUN cargo build --locked \
   --bin holaplex-indexer-job-runner \
   --bin holaplex-indexer-search \
   --bin holaplex-indexer-migrator \
-  --bin holaplex-indexer-graphql
+  --bin holaplex-indexer-graphql \
+  --bin moonrank-collections-indexer
 
 COPY scripts scripts
 
@@ -94,3 +95,8 @@ FROM base AS graphql
 
 COPY --from=build build/bin/holaplex-indexer-graphql bin/
 COPY --from=build build/scripts/docker/graphql.sh startup.sh
+
+FROM base AS moonrank-collections-indexer
+
+COPY --from=build build/bin/moonrank-collections-indexer bin/
+COPY --from=build build/scripts/docker/moonrank-collections-indexer.sh startup.sh
