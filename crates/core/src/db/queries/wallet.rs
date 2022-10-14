@@ -8,7 +8,7 @@ use diesel::{
 
 use crate::{
     db::{
-        models::{CollectedCollection, CreatedCollection, ReadOffer, WalletActivity},
+        models::{CollectedCollection, CreatedCollection, Offer, WalletActivity},
         Connection,
     },
     error::prelude::*,
@@ -87,20 +87,18 @@ pub fn activities(
 
 const OFFERS_QUERY: &str = r"
 SELECT offers.id as id,  metadata, price, auction_house, created_at, marketplace_program,
-buyer, th.twitter_handle as buyer_twitter_handle, trade_state, token_account, purchase_id,
-token_size, trade_state_bump, canceled_at, expiry
+buyer, trade_state, token_account, purchase_id,
+token_size, trade_state_bump, canceled_at, write_version, expiry, offers.slot as slot
 FROM offers
-    LEFT JOIN twitter_handle_name_services th on (th.wallet_address = offers.buyer)
     WHERE buyer = $1
     AND offers.purchase_id IS NULL
     AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
     AND ('OFFER_PLACED' = $2 OR $2 IS NULL)
 UNION
 SELECT offers.id as id,  metadata, price, auction_house, created_at, marketplace_program,
-buyer, th.twitter_handle as buyer_twitter_handle, trade_state, token_account, purchase_id,
-token_size, trade_state_bump, canceled_at, expiry
+buyer, trade_state, token_account, purchase_id,
+token_size, trade_state_bump, canceled_at, write_version, expiry, offers.slot as slot
 FROM offers
-    LEFT JOIN twitter_handle_name_services th on (th.wallet_address = offers.buyer)
     LEFT JOIN metadatas on (metadatas.address = offers.metadata)
     LEFT JOIN current_metadata_owners on (current_metadata_owners.mint_address = metadatas.mint_address)
     WHERE current_metadata_owners.owner_address = $1
@@ -126,7 +124,7 @@ pub fn offers(
     offers_type: impl ToSql<Nullable<Text>, Pg>,
     limit: impl ToSql<Integer, Pg>,
     offset: impl ToSql<Integer, Pg>,
-) -> Result<Vec<ReadOffer>> {
+) -> Result<Vec<Offer>> {
     let result = diesel::sql_query(OFFERS_QUERY)
         .bind(address)
         .bind(offers_type)

@@ -16,7 +16,6 @@ pub mod listing;
 pub mod listing_receipt;
 pub mod marketplace;
 pub mod nft;
-pub mod offer;
 pub mod profile;
 pub mod purchase_receipt;
 pub mod reward_center;

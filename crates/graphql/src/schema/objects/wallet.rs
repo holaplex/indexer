@@ -11,7 +11,7 @@ use objects::{
 use scalars::{PublicKey, U64};
 use tables::{bids, graph_connections};
 
-use super::{offer::Offer, prelude::*};
+use super::{ah_offer::Offer, prelude::*};
 use crate::schema::enums::{NftSort, OrderDirection};
 
 #[derive(Debug, Clone)]

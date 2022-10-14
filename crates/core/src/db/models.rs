@@ -2712,8 +2712,9 @@ pub struct WithdrawFromTreasuryInstruction<'a> {
 }
 
 /// A row in the `offers` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
 #[diesel(treat_none_as_null = true)]
+#[table_name = "offers"]
 pub struct Offer<'a> {
     /// Random Uuid primary key from offers table
     /// Optional so that it can be generated randomly when other fields are inserted into table
@@ -2750,59 +2751,6 @@ pub struct Offer<'a> {
     pub marketplace_program: Cow<'a, str>,
     /// Timestamp when the offer expires
     pub expiry: Option<NaiveDateTime>,
-}
-
-/// A row in the `offers` table along with buyer_twitter_handle
-#[derive(Debug, Clone, Queryable, QueryableByName)]
-#[diesel(treat_none_as_null = true)]
-pub struct ReadOffer<'a> {
-    /// Random Uuid primary key from offers table
-    /// Optional so that it can be generated randomly when other fields are inserted into table
-    /// Deserialzed as Uuid as id field is primary key so not null
-    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
-    pub id: Option<Uuid>,
-    /// Trade State account pubkey
-    #[sql_type = "VarChar"]
-    pub trade_state: Cow<'a, str>,
-    /// Auction house account pubkey
-    #[sql_type = "VarChar"]
-    pub auction_house: Cow<'a, str>,
-    /// Buyer address
-    #[sql_type = "VarChar"]
-    pub buyer: Cow<'a, str>,
-    /// Metadata address
-    #[sql_type = "VarChar"]
-    pub metadata: Cow<'a, str>,
-    /// Token account address
-    #[sql_type = "Nullable<Text>"]
-    pub token_account: Option<Cow<'a, str>>,
-    /// Purchase receipt address
-    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
-    pub purchase_id: Option<Uuid>,
-    /// Price
-    #[sql_type = "Int8"]
-    pub price: i64,
-    /// Token size
-    #[sql_type = "Int8"]
-    pub token_size: i64,
-    /// Trade State bump
-    #[sql_type = "diesel::sql_types::SmallInt"]
-    pub trade_state_bump: i16,
-    /// Created_at timestamp
-    #[sql_type = "Timestamp"]
-    pub created_at: NaiveDateTime,
-    /// Canceled_at timestamp
-    #[sql_type = "Nullable<Timestamp>"]
-    pub canceled_at: Option<NaiveDateTime>,
-    /// Marketplace program address
-    #[sql_type = "VarChar"]
-    pub marketplace_program: Cow<'a, str>,
-    /// Timestamp when the offer expires
-    #[sql_type = "Nullable<Timestamp>"]
-    pub expiry: Option<NaiveDateTime>,
-    /// buyer twitter handle
-    #[sql_type = "Nullable<Text>"]
-    pub buyer_twitter_handle: Option<String>,
 }
 
 /// A row in the `purchases` table
