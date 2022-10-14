@@ -3084,6 +3084,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "holaplex-indexer-moonrank"
+version = "0.0.0"
+dependencies = [
+ "futures-util",
+ "holaplex-indexer",
+ "holaplex-indexer-core",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "url",
+]
+
+[[package]]
 name = "holaplex-indexer-rabbitmq"
 version = "0.3.0"
 source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.6.0#56b0ef22ee666630c415d7fed8c7a8ba426e05f9"
