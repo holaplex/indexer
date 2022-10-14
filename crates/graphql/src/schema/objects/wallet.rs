@@ -12,7 +12,7 @@ use scalars::{PublicKey, U64};
 use tables::{bids, graph_connections};
 
 use super::{ah_offer::Offer, prelude::*};
-use crate::schema::enums::{NftSort, OrderDirection};
+use crate::schema::enums::{NftSort, OfferType, OrderDirection};
 
 #[derive(Debug, Clone)]
 pub struct Wallet {
@@ -369,12 +369,12 @@ impl Wallet {
     pub fn offers(
         &self,
         ctx: &AppContext,
-        offer_type: Option<String>,
+        offer_type: Option<OfferType>,
         limit: i32,
         offset: i32,
     ) -> FieldResult<Vec<Offer>> {
         let conn = ctx.shared.db.get()?;
-
+        let offer_type: Option<String> = offer_type.map(Into::into);
         let offers = queries::wallet::offers(&conn, &self.address, offer_type, limit, offset)?;
 
         offers

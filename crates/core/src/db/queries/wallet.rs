@@ -121,13 +121,13 @@ OFFSET $4;
 pub fn offers(
     conn: &Connection,
     address: impl ToSql<Text, Pg>,
-    offers_type: impl ToSql<Nullable<Text>, Pg>,
+    offer_type: impl ToSql<Nullable<Text>, Pg>,
     limit: impl ToSql<Integer, Pg>,
     offset: impl ToSql<Integer, Pg>,
 ) -> Result<Vec<Offer>> {
     let result = diesel::sql_query(OFFERS_QUERY)
         .bind(address)
-        .bind(offers_type)
+        .bind(offer_type)
         .bind(limit)
         .bind(offset)
         .load(conn)
