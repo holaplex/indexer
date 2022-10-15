@@ -1,7 +1,7 @@
 use std::fmt::{self, Debug, Display};
 
 use indexer_core::{
-    assets::{proxy_url, proxy_url_hinted, proxy_non_permaweb_url, AssetIdentifier},
+    assets::{proxy_non_permaweb_url, proxy_url, proxy_url_hinted, AssetIdentifier},
     db::{
         delete, insert_into,
         models::{
