@@ -783,7 +783,7 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         address: String,
-    ) -> FieldResult<Option<Collection>> {
+    ) -> FieldResult<Option<objects::nft::Coll>> {
         context
             .generic_collection_loader
             .load(address)

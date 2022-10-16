@@ -661,3 +661,71 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Co
         .load(conn)
         .context("Failed to load trending collection(s)")
 }
+
+// MoonRank queries
+
+const MR_COLLECTION_ACTIVITES_QUERY: &str = r"
+SELECT listings.id as id, metadata, auction_house, price, created_at, marketplace_program,
+    array[seller] as wallets,
+    array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
+    'listing' as activity_type
+        FROM listings
+        LEFT JOIN twitter_handle_name_services ON(twitter_handle_name_services.wallet_address = listings.seller)
+        INNER JOIN metadatas on (metadatas.address = listings.metadata)
+        INNER JOIN collection_mints ON(collection_mints.mint = metadatas.mint_address)
+        WHERE collection_mints.id = $1
+        AND listings.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
+        AND ('LISTINGS' = ANY($2) OR $2 IS NULL)
+    UNION
+    SELECT purchases.id as id, metadata, auction_house, price, created_at, marketplace_program,
+    array[seller, buyer] as wallets,
+    array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
+    'purchase' as activity_type
+        FROM purchases
+        LEFT JOIN twitter_handle_name_services sth ON(sth.wallet_address = purchases.seller)
+        LEFT JOIN twitter_handle_name_services bth ON(bth.wallet_address = purchases.buyer)
+        INNER JOIN metadatas on (metadatas.address = purchases.metadata)
+        INNER JOIN collection_mints ON(collection_mints.mint = metadatas.mint_address)
+        WHERE collection_mints.id = $1
+        AND ('PURCHASES' = ANY($2) OR $2 IS NULL)
+    UNION
+    SELECT offers.id as id, metadata, auction_house, price, created_at, marketplace_program,
+    array[buyer] as wallets,
+    array[bth.twitter_handle] as wallet_twitter_handles,
+    'offer' as activity_type
+        FROM offers
+        LEFT JOIN twitter_handle_name_services bth ON(bth.wallet_address = offers.buyer)
+        INNER JOIN metadatas on (metadatas.address = offers.metadata)
+        INNER JOIN collection_mints ON(collection_mints.mint = metadatas.mint_address)
+        WHERE collection_mints.id = $1
+        AND offers.purchase_id IS NULL
+        AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
+        AND ('OFFERS' = ANY($2) OR $2 IS NULL)
+    ORDER BY created_at DESC
+    LIMIT $3
+    OFFSET $4;
+
+ -- $1: address::text
+ -- $2: event_types::text[]
+ -- $3: limit::integer
+ -- $4: offset::integer";
+
+/// Load listing, sales, offers activity for a collection
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
+pub fn mr_collection_activities(
+    conn: &Connection,
+    address: impl ToSql<Text, Pg>,
+    event_types: impl ToSql<Nullable<Array<Text>>, Pg>,
+    limit: impl ToSql<Integer, Pg>,
+    offset: impl ToSql<Integer, Pg>,
+) -> Result<Vec<NftActivity>> {
+    diesel::sql_query(MR_COLLECTION_ACTIVITES_QUERY)
+        .bind(address)
+        .bind(event_types)
+        .bind(limit)
+        .bind(offset)
+        .load(conn)
+        .context("Failed to load collection activities")
+}

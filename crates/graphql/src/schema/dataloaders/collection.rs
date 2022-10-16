@@ -1,6 +1,7 @@
 use indexer_core::db::{
     sql_query,
     sql_types::{Array, Text},
+    tables::collections,
 };
 use objects::{
     nft::{Collection, Nft},
@@ -9,6 +10,7 @@ use objects::{
 use scalars::{PublicKey, I64};
 
 use super::prelude::*;
+use crate::schema::objects::nft::{Coll, CollectionId};
 
 #[async_trait]
 impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
@@ -251,60 +253,80 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionFloorPrice>> for Batcher
     }
 }
 
+// Moon rank dataloader
 #[async_trait]
-impl TryBatchFn<String, Option<Collection>> for Batcher {
-    async fn load(&mut self, identifiers: &[String]) -> TryBatchMap<String, Option<Collection>> {
+impl TryBatchFn<CollectionId, Option<Coll>> for Batcher {
+    async fn load(&mut self, identifiers: &[String]) -> TryBatchMap<CollectionId, Option<Coll>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::Nft> = sql_query("
-        SELECT
-            metadatas.address,
-            metadatas.name,
-            metadatas.seller_fee_basis_points,
-            metadatas.update_authority_address,
-            metadatas.mint_address,
-            metadatas.primary_sale_happened,
-            metadatas.uri,
-            metadatas.slot,
-            metadata_jsons.description,
-            metadata_jsons.image,
-            metadata_jsons.animation_url,
-            metadata_jsons.external_url,
-            metadata_jsons.category,
-            metadata_jsons.model,
-            current_metadata_owners.token_account_address
-            FROM metadatas
-            INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
-            INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address)
-            WHERE metadatas.mint_address = ANY($1)
-        UNION ALL
-        SELECT
-            me_collections.id::text as address,
-            COALESCE(me_collections.name, '') as name,
-            0 as seller_fee_basis_points,
-            '' as update_authority_address,
-            me_collections.id::text as mint_address,
-            false as primary_sale_happened,
-            '' as uri,
-            0 as slot,
-            '' as description,
-            me_collections.image as image,
-            '' as animation_url,
-            '' as external_url,
-            '' as category,
-            '' as model,
-            '' as token_account_address
-            FROM me_collections
-            WHERE id::text = ANY($1);
-    -- $1: identifiers::text[]
-    ")
-        .bind::<Array<Text>, _>(identifiers)
-        .load(&conn)
-        .context("Failed to load floor price for collection")?;
+        let rows: Vec<models::Collection> = collections::table
+            .select(collections::all_columns)
+            .filter(collections::id.eq(any(identifiers)))
+            .load(&conn)
+            .context("failed to load mr collection")?;
 
         Ok(rows
             .into_iter()
-            .map(|a| (a.mint_address.clone(), a.try_into()))
+            .map(|a| (a.id.clone(), a.try_into()))
             .batch(identifiers))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<CollectionId, Option<CollectionNftCount>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[CollectionId],
+    ) -> TryBatchMap<CollectionId, Option<CollectionNftCount>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::CollectionCount> = sql_query(
+            "SELECT COLLECTION_ID AS COLLECTION, COUNT(*) as COUNT
+            FROM COLLECTION_MINTS
+            GROUP BY COLLECTION_ID
+            where COLLECTION_ADDRESS = ANY($1);
+            -- $1: addresses::text[]",
+        )
+        .bind::<Array<Text>, _>(addresses)
+        .load(&conn)
+        .context("Failed to load NFT count for mr collection")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|models::CollectionCount { collection, count }| {
+                (collection, CollectionNftCount::from(count))
+            })
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<CollectionId, Option<CollectionHoldersCount>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[CollectionId],
+    ) -> TryBatchMap<CollectionId, Option<CollectionHoldersCount>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::CollectionCount> = sql_query(
+            "SELECT  DISTINCT COUNT(*) OVER () AS holders_count, COLLECTION_MINTS.COLLECTION_ID as collection
+            FROM COLLECTION_MINTS
+            INNER JOIN METADATAS ON METADATAS.MINT_ADDRESS = COLLECTION_MINTS.MINT
+            INNER JOIN CURRENT_METADATA_OWNERS ON CURRENT_METADATA_OWNERS.MINT_ADDRESS = METADATAS.MINT_ADDRESS
+            WHERE METADATAS.BURNED_AT IS NULL
+                AND COLLECTION_MINTS.COLLECTION_ID = ANY($1)
+            GROUP BY (COLLECTION_MINTS.COLLECTION_ID, CURRENT_METADATA_OWNERS.OWNER_ADDRESS));
+            -- $1: addresses::text[]",
+        )
+        .bind::<Array<Text>, _>(addresses)
+        .load(&conn)
+        .context("Failed to load holder count for mr collection")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|models::CollectionCount { collection, count }| {
+                (collection, CollectionHoldersCount::from(count))
+            })
+            .batch(addresses))
     }
 }
