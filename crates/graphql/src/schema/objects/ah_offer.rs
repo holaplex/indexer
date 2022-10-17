@@ -36,6 +36,15 @@ impl Offer {
         &self.buyer
     }
 
+    async fn buyer_wallet(&self, ctx: &AppContext) -> Wallet {
+        let twitter_handle = ctx
+            .twitter_handle_loader
+            .load(self.buyer.clone())
+            .await
+            .unwrap_or_default();
+        Wallet::new(self.buyer.clone(), twitter_handle)
+    }
+
     fn metadata(&self) -> &PublicKey<Nft> {
         &self.metadata
     }

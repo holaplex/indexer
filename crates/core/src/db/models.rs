@@ -673,7 +673,7 @@ pub struct CollectionVolume {
     pub volume: BigDecimal,
 }
 
-/// Union of `listings` and `purchases` for a `WalletActivity`
+/// Union of `listings`, `purchases`, `sell` and 'offers' for a `WalletActivity`
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct WalletActivity {
     /// The id of the activity
@@ -708,7 +708,7 @@ pub struct WalletActivity {
     #[sql_type = "Array<Nullable<Text>>"]
     pub wallet_twitter_handles: Vec<Option<String>>,
 
-    /// Listing/Purchase created time
+    /// Activity type - listing, purchase, sell or offer
     #[sql_type = "Text"]
     pub activity_type: String,
 }
@@ -2712,8 +2712,9 @@ pub struct WithdrawFromTreasuryInstruction<'a> {
 }
 
 /// A row in the `offers` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
 #[diesel(treat_none_as_null = true)]
+#[table_name = "offers"]
 pub struct Offer<'a> {
     /// Random Uuid primary key from offers table
     /// Optional so that it can be generated randomly when other fields are inserted into table
