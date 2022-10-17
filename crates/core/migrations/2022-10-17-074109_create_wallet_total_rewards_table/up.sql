@@ -1,8 +1,8 @@
 create table wallet_total_rewards (
-    id uuid primary key default gen_random_uuid(),
     wallet_address varchar(48) not null,
     reward_center_address varchar(48) not null,
-    total_reward numeric not null
+    total_reward numeric not null,
+    primary key (wallet_address, reward_center_address)
 );
 
 create index wallet_total_rewards_wallet_address_idx
@@ -15,24 +15,14 @@ create function update_total_rewards() returns trigger
     language plpgsql
     as $$
 begin
-    update wallet_total_rewards set total_reward =
-    case 
-        when wallet_address in
-        (
-            select wallet_address
-            from reward_payouts
-            where wallet_address = new.buyer
-        )
-        then total_reward + new.buyer_reward
-        when wallet_address in
-        (
-            select wallet_address
-            from reward_payouts
-            where wallet_address = new.seller
-        )
-        then total_reward + new.seller_reward
-    end
-    where reward_center_address = new.reward_center;
+    insert into wallet_total_rewards values (new.buyer, new.reward_center, new.buyer_reward)
+    on conflict (wallet_address, reward_center_address)
+    do update set total_reward = total_reward + new.buyer_reward;
+
+    insert into wallet_total_rewards values (new.seller, new.reward_center, new.seller_reward)
+    on conflict (wallet_address, reward_center_address)
+    do update set total_reward = total_reward + new.seller_reward;
+
     return null;
 end
 $$;
