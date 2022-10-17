@@ -101,20 +101,6 @@ pub struct RewardPayout<'a> {
     pub write_version: i64,
 }
 
-/// A row in the `wallet_total_rewards` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
-#[diesel(treat_none_as_null = true)]
-pub struct WalletTotalReward<'a> {
-    /// generated id
-    pub id: Uuid,
-    /// Reward center address
-    pub reward_center_address: Cow<'a, str>,
-    /// wallet address
-    pub wallet_address: Cow<'a, str>,
-    /// total reward
-    pub total_reward: BigDecimal,
-}
-
 /// A row in the `rewards listings` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
