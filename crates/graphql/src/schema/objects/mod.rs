@@ -7,6 +7,7 @@ pub mod bid_receipt;
 pub mod bonding_change;
 pub mod candy_machine;
 pub mod chart;
+pub mod collections;
 pub mod creator;
 pub mod denylist;
 pub mod feed_event;
@@ -24,7 +25,6 @@ pub mod stats;
 pub mod store_creator;
 pub mod storefront;
 pub mod wallet;
-
 pub(self) mod prelude {
     pub(super) use super::super::prelude::*;
 }
