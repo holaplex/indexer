@@ -3090,6 +3090,7 @@ dependencies = [
  "futures-util",
  "holaplex-indexer",
  "holaplex-indexer-core",
+ "holaplex-indexer-rabbitmq",
  "reqwest",
  "serde",
  "serde_json",

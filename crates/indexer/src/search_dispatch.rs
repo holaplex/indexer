@@ -3,13 +3,16 @@ use indexer_rabbitmq::search_indexer::{Document, Message, Producer, QueueType};
 use serde::Serialize;
 
 use crate::prelude::*;
-
+#[allow(missing_docs)]
+/// `MeiliSearch` document for name-services index
 #[derive(Debug, Serialize)]
 pub struct TwitterHandleDocument {
     pub owner: String,
     pub handle: String,
 }
 
+#[allow(missing_docs)]
+/// `Meilisearch` document for 'collections' index
 #[derive(Debug, Clone, Serialize)]
 pub struct CollectionDocument {
     pub name: String,
@@ -17,6 +20,20 @@ pub struct CollectionDocument {
     pub mint_address: String,
 }
 
+#[allow(missing_docs)]
+/// ``Meilisearch`` document for 'mr-collections' index
+#[derive(Debug, Clone, Serialize)]
+pub struct MRCollectionDocument {
+    pub name: String,
+    pub image: Option<String>,
+    pub magic_eden_id: Option<String>,
+    pub verified_collection_address: Option<String>,
+    pub twitter_url: Option<String>,
+    pub discord_url: Option<String>,
+    pub website_url: Option<String>,
+}
+
+/// Arguments to build the ``search_dispatch`` client
 #[derive(Debug, Clone, clap::Parser)]
 pub struct Args {
     /// Pass this flag to run backfill search upsert jobs
@@ -25,10 +42,13 @@ pub struct Args {
     #[clap(long, env)]
     backfill_search: bool,
 
+    /// Meilisearch arguments
+    /// Contains Key and URL
     #[clap(flatten)]
     search: meilisearch::Args,
 }
 
+#[allow(missing_docs)]
 #[derive(Debug)]
 pub struct Client {
     producer: Producer,
@@ -38,6 +58,10 @@ pub struct Client {
 
 #[allow(dead_code)]
 impl Client {
+    /// Creates a ``search_dispatch`` client
+    ///
+    /// # Errors
+    /// This function fails if it fails to construct meilisearch client or rabbitmq producer
     pub async fn new(
         conn: &indexer_rabbitmq::lapin::Connection,
         queue: QueueType,
@@ -113,11 +137,19 @@ impl Client {
             .context("Failed to send indirect metadata message")
     }
 
+    /// Dispatches geno habitat document message to the AMQP queue
+    ///
+    /// # Errors
+    /// This function fails if the AMQP payload cannot be sent.
     pub async fn upsert_geno_habitat(&self, is_for_backfill: bool, mint: Pubkey) -> Result<()> {
         self.dispatch_indirect_meta(is_for_backfill, "geno_habitats", mint)
             .await
     }
 
+    /// Dispatches collection document message to the AMQP queue
+    ///
+    /// # Errors
+    /// This function fails if the AMQP payload cannot be sent.
     pub async fn upsert_collection(
         &self,
         is_for_backfill: bool,
@@ -130,6 +162,24 @@ impl Client {
             .await
     }
 
+    /// Dispatches moonrank collection document message to the AMQP queue
+    ///
+    /// # Errors
+    /// This function fails if the AMQP payload cannot be sent.
+    pub async fn upsert_mr_collection(
+        &self,
+        is_for_backfill: bool,
+        key: String,
+        body: MRCollectionDocument,
+    ) -> Result<()> {
+        self.dispatch_upsert(is_for_backfill, "mr-collections", key, body)
+            .await
+    }
+
+    /// Dispatches twitter name service message to the AMQP queue
+    ///
+    /// # Errors
+    /// This function fails if the AMQP payload cannot be sent.
     pub async fn upsert_twitter_handle(
         &self,
         is_for_backfill: bool,

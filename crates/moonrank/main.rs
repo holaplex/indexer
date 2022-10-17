@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use futures_util::StreamExt;
-use indexer::prelude::*;
+use indexer::{prelude::*, search_dispatch};
 use indexer_core::{
     clap,
     clap::Parser,
@@ -16,6 +16,7 @@ use indexer_core::{
     num_cpus,
     util::unix_timestamp_unsigned,
 };
+use indexer_rabbitmq::{search_indexer, suffix::Suffix};
 use serde::{Deserialize, Serialize};
 use serde_json::value::Value;
 
@@ -133,47 +134,84 @@ struct Opts {
     moonrank_endpoint: String,
 
     #[clap(flatten)]
+    search: search_dispatch::Args,
+
+    #[clap(flatten)]
     db: db::ConnectArgs,
+
+    /// The address of an AMQP server to connect to
+    #[clap(long, env)]
+    amqp_url: String,
+
+    /// The ID of the indexer sending events to listen for
+    #[clap(long, env)]
+    sender: String,
+
+    #[clap(flatten)]
+    queue_suffix: Suffix,
 }
 
 fn main() {
     indexer_core::run(|| {
-        let opts = Opts::parse();
-
-        let Opts {
-            moonrank_endpoint,
-            db,
-        } = opts;
-
-        let db::ConnectResult {
-            pool,
-            ty: _,
-            migrated: _,
-        } = db::connect(db, db::ConnectMode::Write { migrate: false })?;
-
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .worker_threads(num_cpus::get())
             .build()?;
 
-        runtime.block_on(get_collections(moonrank_endpoint, pool))
+        runtime.block_on(process())
     });
 }
 
-async fn get_collections(endpoint: String, conn: Pool) -> Result<()> {
-    let collection_list = url::Url::parse(&endpoint)?.join("../collection_list")?;
+async fn process() -> Result<()> {
+    let opts = Opts::parse();
+
+    let Opts {
+        moonrank_endpoint,
+        search,
+        db,
+        amqp_url,
+        sender,
+        queue_suffix,
+    } = opts;
+
+    let db::ConnectResult {
+        pool,
+        ty: _,
+        migrated: _,
+    } = db::connect(db, db::ConnectMode::Write { migrate: false })?;
+
+    let receiver = match queue_suffix {
+        Suffix::Debug(ref s) => s.clone(),
+        _ => sender.clone(),
+    };
+
+    let rabbitmq_conn = indexer::amqp_connect(amqp_url, env!("CARGO_BIN_NAME")).await?;
+
+    let search = search_dispatch::Client::new(
+        &rabbitmq_conn,
+        search_indexer::QueueType::new(&receiver, &queue_suffix)?,
+        search,
+    )
+    .await?;
 
     let http = reqwest::Client::builder().build()?;
 
-    let bytes = http.get(collection_list).send().await?.bytes().await?;
+    let collection_list = url::Url::parse(&moonrank_endpoint)?.join("../collection_list")?;
 
-    let collections: Vec<Data> = serde_json::from_slice(&bytes)?;
+    let collections = http
+        .get(collection_list)
+        .send()
+        .await?
+        .json::<Vec<Data>>()
+        .await?;
+
+    dispatch_documents(collections.clone(), search).await?;
 
     futures_util::stream::iter(collections.into_iter().map(|data| {
         tokio::spawn(upsert_collection_data(
-            endpoint.clone(),
+            moonrank_endpoint.clone(),
             data,
-            conn.clone(),
+            pool.clone(),
             http.clone(),
         ))
     }))
@@ -287,6 +325,39 @@ async fn upsert_collection_data(
                 .on_conflict_do_nothing()
                 .execute(&conn)?;
         }
+    }
+
+    Ok(())
+}
+
+async fn dispatch_documents(collections: Vec<Data>, search: search_dispatch::Client) -> Result<()> {
+    let mut discord_url = None;
+    let mut twitter_url = None;
+    let mut website_url = None;
+    let mut magic_eden_id = None;
+
+    for c in collections {
+        if let Some(metadata) = c.collection.metadata.x_collection_metadata {
+            discord_url = metadata.x_url_discord;
+            twitter_url = metadata.x_url_twitter;
+            website_url = metadata.x_url_web;
+            magic_eden_id = metadata.x_market_magiceden_id;
+        }
+        search
+            .upsert_mr_collection(
+                false,
+                c.collection.id,
+                search_dispatch::MRCollectionDocument {
+                    name: c.collection.name,
+                    image: Some(c.collection.image),
+                    magic_eden_id: magic_eden_id.clone(),
+                    verified_collection_address: c.collection.verified_collection_address,
+                    twitter_url: twitter_url.clone(),
+                    discord_url: discord_url.clone(),
+                    website_url: website_url.clone(),
+                },
+            )
+            .await?;
     }
 
     Ok(())
