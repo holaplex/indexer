@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use futures_util::StreamExt;
 use indexer::{prelude::*, search_dispatch};
 use indexer_core::{
+    assets::{proxy_url, AssetIdentifier, AssetProxyArgs},
     clap,
     clap::Parser,
     db::{
@@ -139,6 +140,9 @@ struct Opts {
     #[clap(flatten)]
     db: db::ConnectArgs,
 
+    #[clap(flatten)]
+    asset_proxy: AssetProxyArgs,
+
     /// The address of an AMQP server to connect to
     #[clap(long, env)]
     amqp_url: String,
@@ -172,6 +176,7 @@ async fn process() -> Result<()> {
         amqp_url,
         sender,
         queue_suffix,
+        asset_proxy,
     } = opts;
 
     let db::ConnectResult {
@@ -205,7 +210,7 @@ async fn process() -> Result<()> {
         .json::<Vec<Data>>()
         .await?;
 
-    dispatch_documents(collections.clone(), search).await?;
+    dispatch_documents(collections.clone(), search, asset_proxy).await?;
 
     futures_util::stream::iter(collections.into_iter().map(|data| {
         tokio::spawn(upsert_collection_data(
@@ -330,7 +335,11 @@ async fn upsert_collection_data(
     Ok(())
 }
 
-async fn dispatch_documents(collections: Vec<Data>, search: search_dispatch::Client) -> Result<()> {
+async fn dispatch_documents(
+    collections: Vec<Data>,
+    search: search_dispatch::Client,
+    asset_proxy: AssetProxyArgs,
+) -> Result<()> {
     let mut discord_url = None;
     let mut twitter_url = None;
     let mut website_url = None;
@@ -343,13 +352,28 @@ async fn dispatch_documents(collections: Vec<Data>, search: search_dispatch::Cli
             website_url = metadata.x_url_web;
             magic_eden_id = metadata.x_market_magiceden_id;
         }
+
+        let image = url::Url::parse(&c.collection.image)
+            .ok()
+            .and_then(|u| {
+                proxy_url(
+                    &asset_proxy,
+                    &AssetIdentifier::new(&u),
+                    Some(("width", "200")),
+                )
+                .map(|o| o.map(|u| u.to_string()))
+                .transpose()
+            })
+            .transpose()?
+            .unwrap_or(c.collection.image);
+
         search
             .upsert_mr_collection(
                 false,
                 c.collection.id,
                 search_dispatch::MRCollectionDocument {
                     name: c.collection.name,
-                    image: Some(c.collection.image),
+                    image,
                     magic_eden_id: magic_eden_id.clone(),
                     verified_collection_address: c.collection.verified_collection_address,
                     twitter_url: twitter_url.clone(),

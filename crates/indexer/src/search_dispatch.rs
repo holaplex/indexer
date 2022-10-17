@@ -25,7 +25,7 @@ pub struct CollectionDocument {
 #[derive(Debug, Clone, Serialize)]
 pub struct MRCollectionDocument {
     pub name: String,
-    pub image: Option<String>,
+    pub image: String,
     pub magic_eden_id: Option<String>,
     pub verified_collection_address: Option<String>,
     pub twitter_url: Option<String>,

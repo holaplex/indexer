@@ -6,7 +6,7 @@ use super::prelude::*;
 pub struct CollectionDocument {
     pub id: String,
     pub name: String,
-    pub image: Option<String>,
+    pub image: String,
     pub magic_eden_id: Option<String>,
     pub verified_collection_address: Option<String>,
     pub twitter_url: Option<String>,
@@ -27,7 +27,11 @@ impl From<serde_json::Value> for CollectionDocument {
                 .and_then(Value::as_str)
                 .map(Into::into)
                 .unwrap_or_default(),
-            image: value.get("image").and_then(Value::as_str).map(Into::into),
+            image: value
+                .get("image")
+                .and_then(Value::as_str)
+                .map(Into::into)
+                .unwrap_or_default(),
             magic_eden_id: value
                 .get("magic_eden_id")
                 .and_then(Value::as_str)
