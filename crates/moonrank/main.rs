@@ -169,6 +169,8 @@ fn main() {
 async fn process() -> Result<()> {
     let opts = Opts::parse();
 
+    debug!("{:#?}", opts);
+
     let Opts {
         moonrank_endpoint,
         search,
