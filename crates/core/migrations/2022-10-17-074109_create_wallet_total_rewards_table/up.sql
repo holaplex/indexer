@@ -15,24 +15,15 @@ create function update_total_rewards() returns trigger
     language plpgsql
     as $$
 begin
-    update wallet_total_rewards set total_reward =
-    case 
-        when wallet_address in
-        (
-            select wallet_address
-            from reward_payouts
-            where wallet_address = new.buyer
-        )
-        then total_reward + new.buyer_reward
-        when wallet_address in
-        (
-            select wallet_address
-            from reward_payouts
-            where wallet_address = new.seller
-        )
-        then total_reward + new.seller_reward
-    end
-    where reward_center_address = new.reward_center;
+    insert into wallet_total_rewards
+    (total_reward, wallet_address, reward_center_address)
+    values
+    (new.buyer_reward, new.buyer, new.reward_center),
+    (new.seller_reward, new.seller, new.reward_center)
+    on conflict do update
+    set total_reward = total_reward + excluded.total_reward
+    where reward_center_address = excluded.reward_center_address
+    and wallet_address = excluded.wallet_address;
     return null;
 end
 $$;
