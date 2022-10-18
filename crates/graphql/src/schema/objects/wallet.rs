@@ -7,7 +7,7 @@ use indexer_core::{
 use objects::{
     auction_house::AuctionHouse,
     listing::Bid,
-    nft::{Collection, Nft, NftCreator},
+    nft::{CollectionNFT, Nft, NftCreator},
     profile::TwitterProfile,
 };
 use scalars::{PublicKey, U64};
@@ -156,7 +156,7 @@ impl TryFrom<models::CollectedCollection> for CollectedCollection {
 
 #[graphql_object(Context = AppContext)]
 impl CollectedCollection {
-    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
+    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNFT>> {
         ctx.nft_loader
             .load(self.metadata_address.clone())
             .await
@@ -188,7 +188,7 @@ impl From<models::CreatedCollection> for CreatedCollection {
 
 #[graphql_object(Context = AppContext)]
 impl CreatedCollection {
-    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
+    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNFT>> {
         ctx.nft_loader
             .load(self.address.clone())
             .await

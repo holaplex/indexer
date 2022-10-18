@@ -1,12 +1,7 @@
-use indexer_core::db::{
-    queries,
-    tables::{collection_mints, metadata_collection_keys},
-};
+use indexer_core::db::{queries, tables::metadata_collection_keys};
 use objects::{
     listing_receipt::ListingReceipt,
-    nft::{
-        Collection, CollectionId, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner,
-    },
+    nft::{CollectionNFT, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
     purchase_receipt::PurchaseReceipt,
 };
 use scalars::{markers::TokenMint, PublicKey};
@@ -38,11 +33,11 @@ impl TryBatchFn<PublicKey<Nft>, Vec<NftAttribute>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Nft>, Option<Collection>> for Batcher {
+impl TryBatchFn<PublicKey<Nft>, Option<CollectionNFT>> for Batcher {
     async fn load(
         &mut self,
         addresses: &[PublicKey<Nft>],
-    ) -> TryBatchMap<PublicKey<Nft>, Option<Collection>> {
+    ) -> TryBatchMap<PublicKey<Nft>, Option<CollectionNFT>> {
         let conn = self.db()?;
 
         let rows: Vec<(String, models::Nft)> = metadatas::table

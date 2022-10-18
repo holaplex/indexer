@@ -21,7 +21,7 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::{Collection, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
+    nft::{CollectionNFT, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
     profile::{ProfilesStats, TwitterProfile},
     spl_governance::{
         Governance, Proposal, ProposalV2, Realm, SignatoryRecord, TokenOwnerRecord, VoteRecord,
@@ -783,7 +783,7 @@ impl QueryRoot {
         &self,
         context: &AppContext,
         address: String,
-    ) -> FieldResult<Option<objects::nft::Coll>> {
+    ) -> FieldResult<Option<objects::collections::Collection>> {
         context
             .generic_collection_loader
             .load(address)
@@ -890,7 +890,7 @@ impl QueryRoot {
         end_date: DateTime<Utc>,
         limit: i32,
         offset: i32,
-    ) -> FieldResult<Vec<Collection>> {
+    ) -> FieldResult<Vec<CollectionNFT>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let addresses: Option<Vec<String>> = match term {
@@ -959,7 +959,7 @@ impl QueryRoot {
         end_date: DateTime<Utc>,
         limit: i32,
         offset: i32,
-    ) -> FieldResult<Vec<Collection>> {
+    ) -> FieldResult<Vec<CollectionNFT>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let addresses: Option<Vec<String>> = match term {

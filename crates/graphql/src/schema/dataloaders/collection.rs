@@ -4,13 +4,13 @@ use indexer_core::db::{
     tables::collections,
 };
 use objects::{
-    nft::{Collection, Nft},
+    collections::{Collection, CollectionId},
+    nft::{CollectionNFT, Nft},
     store_creator::StoreCreator,
 };
 use scalars::{PublicKey, I64};
 
 use super::prelude::*;
-use crate::schema::objects::nft::{Coll, CollectionId};
 
 #[async_trait]
 impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
@@ -145,11 +145,11 @@ impl From<i64> for CollectionHoldersCount {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Collection>, Option<CollectionNftCount>> for Batcher {
+impl TryBatchFn<PublicKey<CollectionNFT>, Option<CollectionNftCount>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<Collection>],
-    ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionNftCount>> {
+        addresses: &[PublicKey<CollectionNFT>],
+    ) -> TryBatchMap<PublicKey<CollectionNFT>, Option<CollectionNftCount>> {
         let conn = self.db()?;
 
         let rows: Vec<models::CollectionCount> = sql_query(
@@ -176,11 +176,11 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionNftCount>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Collection>, Option<CollectionHoldersCount>> for Batcher {
+impl TryBatchFn<PublicKey<CollectionNFT>, Option<CollectionHoldersCount>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<Collection>],
-    ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionHoldersCount>> {
+        addresses: &[PublicKey<CollectionNFT>],
+    ) -> TryBatchMap<PublicKey<CollectionNFT>, Option<CollectionHoldersCount>> {
         let conn = self.db()?;
 
         let rows: Vec<models::CollectionCount> = sql_query(
@@ -220,11 +220,11 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionHoldersCount>> for Batch
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Collection>, Option<CollectionFloorPrice>> for Batcher {
+impl TryBatchFn<PublicKey<CollectionNFT>, Option<CollectionFloorPrice>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<Collection>],
-    ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionFloorPrice>> {
+        addresses: &[PublicKey<CollectionNFT>],
+    ) -> TryBatchMap<PublicKey<CollectionNFT>, Option<CollectionFloorPrice>> {
         let conn = self.db()?;
 
         let rows: Vec<models::CollectionFloorPrice> = sql_query(
@@ -255,8 +255,11 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionFloorPrice>> for Batcher
 
 // Moon rank dataloader
 #[async_trait]
-impl TryBatchFn<CollectionId, Option<Coll>> for Batcher {
-    async fn load(&mut self, identifiers: &[String]) -> TryBatchMap<CollectionId, Option<Coll>> {
+impl TryBatchFn<CollectionId, Option<Collection>> for Batcher {
+    async fn load(
+        &mut self,
+        identifiers: &[String],
+    ) -> TryBatchMap<CollectionId, Option<Collection>> {
         let conn = self.db()?;
 
         let rows: Vec<models::Collection> = collections::table

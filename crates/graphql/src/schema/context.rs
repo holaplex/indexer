@@ -18,7 +18,7 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Bid, Listing},
     listing_receipt::ListingReceipt,
-    nft::{Collection, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
+    nft::{CollectionNFT, Nft, NftActivity, NftAttribute, NftCreator, NftFile, NftOwner},
     profile::TwitterProfile,
     purchase_receipt::PurchaseReceipt,
     reward_center::RewardCenter,
@@ -63,12 +63,13 @@ pub struct AppContext {
     pub candy_machine_whitelist_mint_settings_loader:
         Loader<PublicKey<CandyMachine>, Option<CandyMachineWhitelistMintSetting>>,
     pub collection_count_loader: Loader<PublicKey<StoreCreator>, Option<i32>>,
-    pub collection_floor_price_loader: Loader<PublicKey<Collection>, Option<CollectionFloorPrice>>,
+    pub collection_floor_price_loader:
+        Loader<PublicKey<CollectionNFT>, Option<CollectionFloorPrice>>,
     pub collection_holders_count_loader:
-        Loader<PublicKey<Collection>, Option<CollectionHoldersCount>>,
+        Loader<PublicKey<CollectionNFT>, Option<CollectionHoldersCount>>,
     pub collection_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
     pub storecreator_nft_loader: Loader<PublicKey<StoreCreator>, Vec<Nft>>,
-    pub collection_nft_count_loader: Loader<PublicKey<Collection>, Option<CollectionNftCount>>,
+    pub collection_nft_count_loader: Loader<PublicKey<CollectionNFT>, Option<CollectionNftCount>>,
     pub geno_habitat_loader: Loader<PublicKey<TokenMint>, Option<GenoHabitat>>,
     pub geno_rental_agreement_loader: Loader<PublicKey<GenoHabitat>, Option<GenoRentalAgreement>>,
     pub graph_connection_loader: Loader<PublicKey<GraphConnection>, Option<GraphConnection>>,
@@ -80,15 +81,16 @@ pub struct AppContext {
     pub market_stats_loader: Loader<PublicKey<StoreConfig>, Option<MarketStats>>,
     pub mint_stats_loader: Loader<PublicKey<AuctionHouse>, Option<MintStats>>,
     pub mr_collection_nft_count_loader:
-        Loader<objects::nft::CollectionId, Option<CollectionNftCount>>,
+        Loader<objects::collections::CollectionId, Option<CollectionNftCount>>,
     pub mr_collection_holders_count_loader:
-        Loader<objects::nft::CollectionId, Option<CollectionHoldersCount>>,
+        Loader<objects::collections::CollectionId, Option<CollectionHoldersCount>>,
     // pub mr_collection_nfts_loader: Loader<objects::nft::CollectionId, Vec<Nft>>,
     pub nft_activities_loader: Loader<PublicKey<Nft>, Vec<NftActivity>>,
     pub nft_attributes_loader: Loader<PublicKey<Nft>, Vec<NftAttribute>>,
     pub nft_by_mint_loader: Loader<PublicKey<TokenMint>, Option<Nft>>,
-    pub nft_collection_loader: Loader<PublicKey<Nft>, Option<Collection>>,
-    pub generic_collection_loader: Loader<objects::nft::CollectionId, Option<objects::nft::Coll>>,
+    pub nft_collection_loader: Loader<PublicKey<Nft>, Option<CollectionNFT>>,
+    pub generic_collection_loader:
+        Loader<objects::collections::CollectionId, Option<objects::collections::Collection>>,
     pub nft_creators_loader: Loader<PublicKey<Nft>, Vec<NftCreator>>,
     pub nft_files_loader: Loader<PublicKey<Nft>, Vec<NftFile>>,
     pub nft_loader: Loader<PublicKey<Nft>, Option<Nft>>,
