@@ -7,6 +7,7 @@ pub mod bid_receipt;
 pub mod bonding_change;
 pub mod candy_machine;
 pub mod chart;
+pub mod collections;
 pub mod creator;
 pub mod denylist;
 pub mod feed_event;

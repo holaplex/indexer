@@ -353,6 +353,19 @@ mod cdn {
 
         Ok(url)
     }
+    /// Get the proxy URL parameters for non-permaweb assets
+    ///
+    /// # Errors
+    /// This function fails if the asset proxy configured by `args` has an
+    /// invalid URL
+
+    #[inline]
+    pub fn proxy_non_permaweb_url(args: &AssetProxyArgs, endpoint: impl AsRef<str>) -> Result<Url> {
+        let mut url = Url::parse(&args.asset_proxy_endpoint.replace("[n]", ""))
+            .context("Invalid asset proxy URL")?;
+        url.query_pairs_mut().append_pair("url", endpoint.as_ref());
+        Ok(url)
+    }
 
     /// Format an [`AssetIdentifier`] as an Holaplex asset proxy URL.  Returns
     /// `None` if the ID was unparseable or ambiguous.
