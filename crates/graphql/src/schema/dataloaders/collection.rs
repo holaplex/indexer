@@ -1,7 +1,7 @@
 use indexer_core::db::{
     sql_query,
     sql_types::{Array, Text},
-    tables::collections,
+    tables::{collection_trends, collections},
 };
 use objects::{
     collections::{Collection, CollectionId},
@@ -330,6 +330,27 @@ impl TryBatchFn<CollectionId, Option<CollectionHoldersCount>> for Batcher {
             .map(|models::CollectionCount { collection, count }| {
                 (collection, CollectionHoldersCount::from(count))
             })
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<CollectionId, Option<objects::nft::CollectionTrend>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[CollectionId],
+    ) -> TryBatchMap<CollectionId, Option<objects::nft::CollectionTrend>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::CollectionTrend> = collection_trends::table
+            .select(collection_trends::all_columns)
+            .filter(collection_trends::collection.eq(any(addresses)))
+            .load(&conn)
+            .context("Failed to load collection trends")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|a| (a.collection.clone(), a.try_into()))
             .batch(addresses))
     }
 }

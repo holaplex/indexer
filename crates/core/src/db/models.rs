@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use diesel::sql_types::{
-    Array, BigInt, Bool, Int4, Int8, Nullable, Numeric, Text, Timestamp, Timestamptz, VarChar,
+    Array, Bool, Int4, Int8, Nullable, Numeric, Text, Timestamp, Timestamptz, VarChar,
 };
 use uuid::Uuid;
 
@@ -519,167 +519,112 @@ pub struct NftActivity {
 }
 
 /// A row in the `collection_trends` table
-#[derive(Debug, Clone, Queryable, QueryableByName)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
+#[table_name = "collection_trends"]
 pub struct CollectionTrend {
     /// Collection address or id
-    #[sql_type = "Text"]
     pub collection: String,
-
-    /// Collection floor price
-    #[sql_type = "Numeric"]
-    pub floor_price: BigDecimal,
-
-    /// Number of nfts in the collection
-    #[sql_type = "Int8"]
-    pub nft_count: i64,
-
     /// Collection 1 day volume
-    #[sql_type = "Numeric"]
     #[column_name = "_1d_volume"]
     pub one_day_volume: BigDecimal,
-
     /// Collection 7 days volume
-    #[sql_type = "Numeric"]
     #[column_name = "_7d_volume"]
     pub seven_day_volume: BigDecimal,
-
     /// Collection 30 days volume
-    #[sql_type = "Numeric"]
     #[column_name = "_30d_volume"]
     pub thirty_day_volume: BigDecimal,
-
-    /// Collection 1 day sales count
-    #[sql_type = "Numeric"]
-    #[column_name = "_1d_sales_count"]
-    pub one_day_sales_count: BigDecimal,
-
-    /// Collection 7 days sales count
-    #[sql_type = "Numeric"]
-    #[column_name = "_7d_sales_count"]
-    pub seven_day_sales_count: BigDecimal,
-
-    /// Collection 30 days sales count
-    #[sql_type = "Numeric"]
-    #[column_name = "_30d_sales_count"]
-    pub thirty_day_sales_count: BigDecimal,
-
     /// Collection previous 1 day volume
-    #[sql_type = "Numeric"]
     #[column_name = "_prev_1d_volume"]
     pub prev_one_day_volume: BigDecimal,
-
     /// Collection previous 7 days volume
-    #[sql_type = "Numeric"]
     #[column_name = "_prev_7d_volume"]
     pub prev_seven_day_volume: BigDecimal,
-
     /// Collection previous 30 days volume
-    #[sql_type = "Numeric"]
     #[column_name = "_prev_30d_volume"]
     pub prev_thirty_day_volume: BigDecimal,
-
+    /// Collection 1 day sales count
+    #[column_name = "_1d_sales_count"]
+    pub one_day_sales_count: BigDecimal,
     /// Collection previous 1 day sales count
-    #[sql_type = "Numeric"]
     #[column_name = "prev_1d_sales_count"]
     pub prev_one_day_sales_count: BigDecimal,
-
+    /// Collection 7 days sales count
+    #[column_name = "_7d_sales_count"]
+    pub seven_day_sales_count: BigDecimal,
     /// Collection previous 7 days sales count
-    #[sql_type = "Numeric"]
     #[column_name = "prev_7d_sales_count"]
     pub prev_seven_day_sales_count: BigDecimal,
-
+    /// Collection 30 days sales count
+    #[column_name = "_30d_sales_count"]
+    pub thirty_day_sales_count: BigDecimal,
     /// Collection previous 30 days sales count
-    #[sql_type = "Numeric"]
     #[column_name = "prev_30d_sales_count"]
     pub prev_thirty_day_sales_count: BigDecimal,
-
+    /// Collection floor price
+    pub floor_price: BigDecimal,
     /// Collection previous 1 day floor price
-    #[sql_type = "Numeric"]
     #[column_name = "prev_1d_floor_price"]
     pub prev_one_day_floor_price: BigDecimal,
-
     /// Collection previous 7 days floor price
-    #[sql_type = "Numeric"]
     #[column_name = "prev_7d_floor_price"]
     pub prev_seven_day_floor_price: BigDecimal,
-
     /// Collection previous 30 day floor price
-    #[sql_type = "Numeric"]
     #[column_name = "prev_30d_floor_price"]
     pub prev_thirty_day_floor_price: BigDecimal,
-
     /// Collection 1 day volume change
-    #[sql_type = "BigInt"]
     #[column_name = "_1d_volume_change"]
     pub one_day_volume_change: i64,
-
     /// Collection 7 days volume change
-    #[sql_type = "BigInt"]
     #[column_name = "_7d_volume_change"]
     pub seven_day_volume_change: i64,
-
     /// Collection 30 days volume change
-    #[sql_type = "BigInt"]
     #[column_name = "_30d_volume_change"]
     pub thirty_day_volume_change: i64,
-
     /// Collection 1 day floor price change
-    #[sql_type = "BigInt"]
     #[column_name = "_1d_floor_price_change"]
     pub one_day_floor_price_change: i64,
-
     /// Collection 7 days floor price change
-    #[sql_type = "BigInt"]
     #[column_name = "_7d_floor_price_change"]
     pub seven_day_floor_price_change: i64,
-
     /// Collection 30 day floor price change
-    #[sql_type = "BigInt"]
     #[column_name = "_30d_floor_price_change"]
     pub thirty_day_floor_price_change: i64,
-
     /// Collection 1 day sales count change
-    #[sql_type = "BigInt"]
     #[column_name = "_1d_sales_count_change"]
     pub one_day_sales_count_change: i64,
-
     /// Collection 7 days sales count change
-    #[sql_type = "BigInt"]
     #[column_name = "_7d_sales_count_change"]
     pub seven_day_sales_count_change: i64,
-
     /// Collection 30 days sales count change
-    #[sql_type = "BigInt"]
     #[column_name = "_30d_sales_count_change"]
     pub thirty_day_sales_count_change: i64,
-
     /// Collection 1 day marketcap
-    #[sql_type = "Numeric"]
     #[column_name = "_1d_marketcap"]
     pub one_day_marketcap: BigDecimal,
-
+    /// Collection prev 1 day marketcap
+    #[column_name = "prev_1d_marketcap"]
+    pub prev_one_day_marketcap: BigDecimal,
     /// Collection 7 day marketcap
-    #[sql_type = "Numeric"]
     #[column_name = "_7d_marketcap"]
     pub seven_day_marketcap: BigDecimal,
-
+    /// Collection prev 7 day marketcap
+    #[column_name = "prev_7d_marketcap"]
+    pub prev_seven_day_marketcap: BigDecimal,
     /// Collection 30 day marketcap
-    #[sql_type = "Numeric"]
     #[column_name = "_30d_marketcap"]
     pub thirty_day_marketcap: BigDecimal,
-
+    /// Collection prev 30 day marketcap
+    #[column_name = "prev_30d_marketcap"]
+    pub prev_thirty_day_marketcap: BigDecimal,
+    /// Number of nfts in the collection
+    pub nft_count: i64,
     /// Collection 1 day marketcap
-    #[sql_type = "BigInt"]
     #[column_name = "_1d_marketcap_change"]
     pub one_day_marketcap_change: i64,
-
     /// Collection 7 day marketcap change
-    #[sql_type = "BigInt"]
     #[column_name = "_7d_marketcap_change"]
     pub seven_day_marketcap_change: i64,
-
     /// Collection 30 day marketcap change
-    #[sql_type = "BigInt"]
     #[column_name = "_30d_marketcap_change"]
     pub thirty_day_marketcap_change: i64,
 }

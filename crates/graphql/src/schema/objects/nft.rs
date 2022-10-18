@@ -969,6 +969,7 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
             seven_day_marketcap_change,
             thirty_day_marketcap,
             thirty_day_marketcap_change,
+            ..
         }: models::CollectionTrend,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
