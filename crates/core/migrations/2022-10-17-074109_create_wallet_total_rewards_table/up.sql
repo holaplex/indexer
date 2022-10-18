@@ -17,11 +17,11 @@ create function update_total_rewards() returns trigger
 begin
     insert into wallet_total_rewards values (new.buyer, new.reward_center, new.buyer_reward)
     on conflict (wallet_address, reward_center_address)
-    do update set total_reward = total_reward + new.buyer_reward;
+    do update set total_reward = wallet_total_rewards.total_reward + new.buyer_reward;
 
     insert into wallet_total_rewards values (new.seller, new.reward_center, new.seller_reward)
     on conflict (wallet_address, reward_center_address)
-    do update set total_reward = total_reward + new.seller_reward;
+    do update set total_reward = wallet_total_rewards.total_reward + new.seller_reward;
 
     return null;
 end
