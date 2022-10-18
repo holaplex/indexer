@@ -1,10 +1,8 @@
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     db::{
-        queries::{self},
-        tables::{
-            attributes, collection_mints, current_metadata_owners, metadata_jsons, metadatas,
-        },
+        queries::{self, metadatas::CollectionNftOptions},
+        tables::{attributes, collection_mints, metadatas},
     },
 };
 use objects::attributes::AttributeGroup;
@@ -13,6 +11,10 @@ use serde_json::Value;
 use services;
 
 use super::{nft::Nft, prelude::*};
+use crate::schema::{
+    enums::{NftSort, OrderDirection},
+    query_root::AttributeFilter,
+};
 
 #[derive(Debug, Clone, GraphQLObject)]
 pub struct CollectionDocument {
@@ -204,26 +206,29 @@ impl Collection {
         )
     }
 
-    pub async fn nfts(&self, ctx: &AppContext, limit: i32, offset: i32) -> FieldResult<Vec<Nft>> {
+    pub async fn nfts(
+        &self,
+        ctx: &AppContext,
+        limit: i32,
+        offset: i32,
+        sort_by: Option<NftSort>,
+        order: Option<OrderDirection>,
+        marketplace_program: Option<String>,
+        auction_house: Option<String>,
+        attributes: Option<Vec<AttributeFilter>>,
+    ) -> FieldResult<Vec<Nft>> {
         let conn = ctx.shared.db.get()?;
 
-        let nfts: Vec<models::Nft> = metadatas::table
-            .inner_join(
-                metadata_jsons::table.on(metadata_jsons::metadata_address.eq(metadatas::address)),
-            )
-            .inner_join(
-                current_metadata_owners::table
-                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
-            )
-            .inner_join(
-                collection_mints::table.on(metadatas::mint_address.eq(collection_mints::mint)),
-            )
-            .filter(collection_mints::collection_id.eq(self.id.clone()))
-            .select(queries::metadatas::NFT_COLUMNS)
-            .offset(offset.into())
-            .limit(limit.into())
-            .load(&conn)
-            .context("Failed to load NFTs")?;
+        let nfts = queries::metadatas::mr_collection_nfts(&conn, CollectionNftOptions {
+            collection: self.id.clone(),
+            auction_house,
+            attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
+            marketplace_program,
+            sort_by: sort_by.map(Into::into),
+            order: order.map(Into::into),
+            limit: limit.try_into()?,
+            offset: offset.try_into()?,
+        })?;
 
         nfts.into_iter()
             .map(TryInto::try_into)

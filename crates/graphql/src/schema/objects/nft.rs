@@ -28,6 +28,7 @@ use crate::schema::{
     enums::{NftSort, OrderDirection},
     query_root::AttributeFilter,
 };
+
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
     pub metadata_address: String,

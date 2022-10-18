@@ -53,6 +53,13 @@ enum MeMetadataCollections {
 }
 
 #[derive(Iden)]
+enum CollectionMints {
+    Table,
+    Collection,
+    Mint,
+}
+
+#[derive(Iden)]
 enum MetadataJsons {
     Table,
     MetadataAddress,
@@ -841,4 +848,135 @@ pub fn activities(
         .bind(addresses)
         .load(conn)
         .context("Failed to load nft(s) activities")
+}
+
+/// Handles queries for a Moonrank Collection Nfts
+///
+/// # Errors
+/// returns an error when the underlying queries throw an error
+#[allow(clippy::too_many_lines)]
+pub fn mr_collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Result<Vec<Nft>> {
+    let CollectionNftOptions {
+        collection,
+        auction_house,
+        attributes,
+        marketplace_program,
+        sort_by,
+        order,
+        limit,
+        offset,
+    } = options;
+
+    let sort_by = sort_by.map_or(Listings::Price, Into::into);
+
+    let current_time = Utc::now().naive_utc();
+
+    let order = order.unwrap_or(Order::Desc);
+
+    let mut query = Query::select()
+        .columns(vec![
+            (Metadatas::Table, Metadatas::Address),
+            (Metadatas::Table, Metadatas::Name),
+            (Metadatas::Table, Metadatas::SellerFeeBasisPoints),
+            (Metadatas::Table, Metadatas::UpdateAuthorityAddress),
+            (Metadatas::Table, Metadatas::MintAddress),
+            (Metadatas::Table, Metadatas::PrimarySaleHappened),
+            (Metadatas::Table, Metadatas::Uri),
+            (Metadatas::Table, Metadatas::Slot),
+        ])
+        .columns(vec![
+            (MetadataJsons::Table, MetadataJsons::Description),
+            (MetadataJsons::Table, MetadataJsons::Image),
+            (MetadataJsons::Table, MetadataJsons::AnimationUrl),
+            (MetadataJsons::Table, MetadataJsons::ExternalUrl),
+            (MetadataJsons::Table, MetadataJsons::Category),
+            (MetadataJsons::Table, MetadataJsons::Model),
+        ])
+        .columns(vec![(
+            CurrentMetadataOwners::Table,
+            CurrentMetadataOwners::TokenAccountAddress,
+        )])
+        .from(MetadataJsons::Table)
+        .inner_join(
+            Metadatas::Table,
+            Expr::tbl(MetadataJsons::Table, MetadataJsons::MetadataAddress)
+                .equals(Metadatas::Table, Metadatas::Address),
+        )
+        .inner_join(
+            CurrentMetadataOwners::Table,
+            Expr::tbl(Metadatas::Table, Metadatas::MintAddress).equals(
+                CurrentMetadataOwners::Table,
+                CurrentMetadataOwners::MintAddress,
+            ),
+        )
+        .inner_join(
+            CollectionMints::Table,
+            Expr::tbl(CollectionMints::Table, CollectionMints::Mint)
+                .equals(Metadatas::Table, Metadatas::MintAddress),
+        )
+        .left_join(
+            Listings::Table,
+            Condition::all()
+                .add(
+                    Expr::tbl(Listings::Table, Listings::Metadata)
+                        .equals(Metadatas::Table, Metadatas::Address),
+                )
+                .add(Expr::tbl(Listings::Table, Listings::Seller).equals(
+                    CurrentMetadataOwners::Table,
+                    CurrentMetadataOwners::OwnerAddress,
+                ))
+                .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
+                .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
+                .add(
+                    Expr::tbl(Listings::Table, Listings::AuctionHouse)
+                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
+                )
+                .add(
+                    Expr::tbl(Listings::Table, Listings::Expiry)
+                        .is_null()
+                        .or(Expr::tbl(Listings::Table, Listings::Expiry).gt(current_time)),
+                )
+                .add_option(auction_house.map(|auction_house| {
+                    Expr::col((Listings::Table, Listings::AuctionHouse)).eq(auction_house)
+                }))
+                .add_option(marketplace_program.map(|marketplace_program| {
+                    Expr::col((Listings::Table, Listings::MarketplaceProgram))
+                        .eq(marketplace_program)
+                })),
+        )
+        .and_where(Expr::col(Metadatas::BurnedAt).is_null())
+        .and_where(Expr::col((CollectionMints::Table, CollectionMints::Collection)).eq(collection))
+        .limit(limit)
+        .offset(offset)
+        .order_by((Listings::Table, sort_by), order)
+        .take();
+
+    if let Some(attributes) = attributes {
+        for AttributeFilter { trait_type, values } in attributes {
+            let alias = format!("attributes_{}", trait_type);
+            let alias: DynIden = SeaRc::new(Alias::new(&alias));
+
+            query.join_lateral(
+                JoinType::LeftJoin,
+                Query::select()
+                    .from(Attributes::Table)
+                    .column((Attributes::Table, Attributes::MetadataAddress))
+                    .cond_where(
+                        Condition::all()
+                            .add(Expr::col(Attributes::TraitType).eq(trait_type))
+                            .add(Expr::col(Attributes::Value).is_in(values)),
+                    )
+                    .take(),
+                alias.clone(),
+                Expr::tbl(alias, Attributes::MetadataAddress)
+                    .equals(Metadatas::Table, Metadatas::Address),
+            );
+        }
+    }
+
+    let query = query.to_string(PostgresQueryBuilder);
+
+    diesel::sql_query(query)
+        .load(conn)
+        .context("Failed to load nft(s)")
 }
