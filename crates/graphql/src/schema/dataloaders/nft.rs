@@ -279,31 +279,3 @@ impl TryBatchFn<PublicKey<TokenMint>, Option<Nft>> for Batcher {
             .batch(addresses))
     }
 }
-
-// #[async_trait]
-// impl TryBatchFn<CollectionId, Vec<Nft>> for Batcher {
-//     async fn load(&mut self, addresses: &[String]) -> TryBatchMap<String, Vec<Nft>> {
-//         let conn = self.db()?;
-
-//         let rows: Vec<models::Nft> = metadatas::table
-//             .inner_join(
-//                 metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
-//             )
-//             .inner_join(
-//                 collection_mints::table.on(metadatas::mint_address.eq(collection_mints::mint)),
-//             )
-//             .inner_join(
-//                 current_metadata_owners::table
-//                     .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
-//             )
-//             .filter(collection_mints::collection_id.eq(any(addresses)))
-//             .select(queries::metadatas::NFT_COLUMNS)
-//             .load(&conn)
-//             .context("Failed to load NFTs")?;
-
-//         Ok(rows
-//             .into_iter()
-//             .map(|c| (c.mint_address.clone(), nft.try_into()))
-//             .batch(addresses))
-//     }
-// }

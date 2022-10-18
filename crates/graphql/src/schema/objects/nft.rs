@@ -1151,12 +1151,15 @@ impl CollectionTrend {
         self.one_day_marketcap_change
     }
 
-    // pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-    //     ctx.generic_collection_loader
-    //         .load(self.collection.clone())
-    //         .await
-    //         .map_err(Into::into)
-    // }
+    pub async fn collection(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<objects::collections::Collection>> {
+        ctx.generic_collection_loader
+            .load(self.collection.clone())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 #[derive(Debug, Clone)]

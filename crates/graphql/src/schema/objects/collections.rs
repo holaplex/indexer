@@ -1,8 +1,14 @@
-use indexer_core::db::{
-    queries::{self},
-    tables::{attributes, collection_mints, current_metadata_owners, metadata_jsons, metadatas},
+use indexer_core::{
+    assets::{proxy_url, AssetIdentifier, ImageSize},
+    db::{
+        queries::{self},
+        tables::{
+            attributes, collection_mints, current_metadata_owners, metadata_jsons, metadatas,
+        },
+    },
 };
 use objects::attributes::AttributeGroup;
+use reqwest::Url;
 use serde_json::Value;
 use services;
 
@@ -128,10 +134,6 @@ impl Collection {
         &self.id
     }
 
-    pub fn image(&self) -> &str {
-        &self.image
-    }
-
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -180,7 +182,27 @@ impl Collection {
         self.updated_at
     }
 
-    // nfts data loader
+    #[graphql(description = r"Get the original URL of the image as stored in the NFT's metadata")]
+    pub fn image_original(&self) -> &str {
+        &self.image
+    }
+
+    pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
+        let url = Url::parse(&self.image);
+        let id = if let Ok(ref url) = url {
+            AssetIdentifier::new(url)
+        } else {
+            return Ok(self.image.clone());
+        };
+
+        let width = ImageSize::from(width.unwrap_or(ImageSize::XSmall as i32));
+        let width_str = (width as i32).to_string();
+
+        Ok(
+            proxy_url(&ctx.shared.asset_proxy, &id, Some(("width", &*width_str)))?
+                .map_or_else(|| self.image.clone(), |u| u.to_string()),
+        )
+    }
 
     pub async fn nfts(&self, ctx: &AppContext, limit: i32, offset: i32) -> FieldResult<Vec<Nft>> {
         let conn = ctx.shared.db.get()?;
