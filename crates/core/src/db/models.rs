@@ -3419,3 +3419,29 @@ pub struct CollectionMintAttribute<'a> {
     pub value: Cow<'a, str>,
     pub value_perc: BigDecimal,
 }
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[table_name = "dolphin_stats"]
+#[allow(missing_docs)]
+pub struct DolphinStats<'a> {
+    pub collection_symbol: Cow<'a, str>,
+    pub floor_1d: i64,
+    pub floor_7d: i64,
+    pub floor_30d: i64,
+    pub listed_1d: i64,
+    pub listed_7d: i64,
+    pub listed_30d: i64,
+    pub volume_1d: i64,
+    pub volume_7d: i64,
+    pub volume_30d: i64,
+    pub last_floor_1d: i64,
+    pub last_floor_7d: i64,
+    pub last_floor_30d: i64,
+    pub last_listed_1d: i64,
+    pub last_listed_7d: i64,
+    pub last_listed_30d: i64,
+    pub last_volume_1d: i64,
+    pub last_volume_7d: i64,
+    pub last_volume_30d: i64,
+}
