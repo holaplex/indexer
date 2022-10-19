@@ -1,4 +1,5 @@
 use indexer_core::{
+    bigdecimal::BigDecimal,
     db::queries::{self, metadatas::WalletNftOptions},
     uuid::Uuid,
 };
@@ -9,10 +10,10 @@ use objects::{
     profile::TwitterProfile,
 };
 use scalars::{PublicKey, U64};
-use tables::{bids, graph_connections};
+use tables::{bids, graph_connections, wallet_total_rewards};
 
-use super::prelude::*;
-use crate::schema::enums::{NftSort, OrderDirection};
+use super::{ah_offer::Offer, prelude::*, reward_center::RewardCenter};
+use crate::schema::enums::{NftSort, OfferType, OrderDirection};
 
 #[derive(Debug, Clone)]
 pub struct Wallet {
@@ -366,6 +367,24 @@ impl Wallet {
             .map_err(Into::into)
     }
 
+    pub fn offers(
+        &self,
+        ctx: &AppContext,
+        offer_type: Option<OfferType>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<Offer>> {
+        let conn = ctx.shared.db.get()?;
+        let offer_type: Option<String> = offer_type.map(Into::into);
+        let offers = queries::wallet::offers(&conn, &self.address, offer_type, limit, offset)?;
+
+        offers
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
     pub fn bids(&self, ctx: &AppContext) -> FieldResult<Vec<Bid>> {
         let db_conn = ctx.shared.db.get()?;
 
@@ -407,6 +426,26 @@ impl Wallet {
         creators: Option<Vec<PublicKey<NftCreator>>>,
     ) -> WalletNftCount {
         WalletNftCount::new(self.address.clone(), creators)
+    }
+
+    pub fn total_rewards(
+        &self,
+        ctx: &AppContext,
+        reward_center: PublicKey<RewardCenter>,
+    ) -> FieldResult<U64> {
+        let db_conn = ctx.shared.db.get()?;
+
+        let wallet_total_rewards = wallet_total_rewards::table
+            .select(wallet_total_rewards::total_reward)
+            .filter(
+                wallet_total_rewards::reward_center_address
+                    .eq(&reward_center)
+                    .and(wallet_total_rewards::wallet_address.eq(&self.address)),
+            )
+            .first::<BigDecimal>(&db_conn)
+            .context("Failed to load total rewards")?;
+
+        Ok(wallet_total_rewards.try_into().unwrap_or_default())
     }
 }
 

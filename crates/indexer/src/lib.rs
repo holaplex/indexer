@@ -21,7 +21,8 @@ pub(crate) mod reqwest;
 #[cfg(feature = "search")]
 pub mod search;
 #[cfg(feature = "search-dispatch")]
-pub(crate) mod search_dispatch;
+/// Search dispatch module for creating client and dispatching AMQP messages to the search indexer
+pub mod search_dispatch;
 pub(crate) mod util;
 
 pub use runtime::*;

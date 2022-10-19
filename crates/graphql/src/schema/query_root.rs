@@ -10,6 +10,7 @@ use objects::{
     bonding_change::EnrichedBondingChange,
     candy_machine::CandyMachine,
     chart::PriceChart,
+    collections::CollectionDocument,
     creator::Creator,
     denylist::Denylist,
     feed_event::FeedEvent,
@@ -1001,24 +1002,24 @@ impl QueryRoot {
         #[graphql(description = "Search term")] term: String,
         #[graphql(description = "Query limit")] limit: i32,
         #[graphql(description = "Query offset")] offset: i32,
-    ) -> FieldResult<Vec<MetadataJson>> {
+    ) -> FieldResult<Vec<CollectionDocument>> {
         let search = &context.shared.search;
 
         let query_result = search
-            .index("collections")
+            .index("mr-collections")
             .search()
             .with_query(&term)
             .with_offset(offset.try_into()?)
             .with_limit(limit.try_into()?)
             .execute::<Value>()
             .await
-            .context("failed to load search result for collections")?
+            .context("failed to load search result for mr collections")?
             .hits;
 
         Ok(query_result
             .into_iter()
             .map(|r| r.result.into())
-            .collect::<Vec<MetadataJson>>())
+            .collect::<Vec<CollectionDocument>>())
     }
 
     #[graphql(description = "returns profiles matching the search term")]

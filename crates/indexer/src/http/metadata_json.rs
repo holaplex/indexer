@@ -1,7 +1,7 @@
 use std::fmt::{self, Debug, Display};
 
 use indexer_core::{
-    assets::{proxy_url, proxy_url_hinted, AssetIdentifier},
+    assets::{proxy_non_permaweb_url, proxy_url, proxy_url_hinted, AssetIdentifier},
     db::{
         delete, insert_into,
         models::{
@@ -214,7 +214,7 @@ async fn try_locate_json(
             proxy_url_hinted(client.proxy_args(), id, hint, None)
                 .map(|u| u.unwrap_or_else(|| unreachable!()))
         } else if FETCH_NON_PERMAWEB {
-            Ok(id.url.clone())
+            Ok(proxy_non_permaweb_url(client.proxy_args(), id.url.clone())?)
         } else {
             continue;
         };

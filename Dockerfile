@@ -28,13 +28,15 @@ RUN cargo build --locked \
     holaplex-indexer/job-runner, \
     holaplex-indexer/search, \
   " \
+  --bin burn-fix \
   --bin holaplex-indexer-dispatcher \
   --bin holaplex-indexer-geyser \
   --bin holaplex-indexer-http \
   --bin holaplex-indexer-job-runner \
   --bin holaplex-indexer-search \
   --bin holaplex-indexer-migrator \
-  --bin holaplex-indexer-graphql
+  --bin holaplex-indexer-graphql \
+  --bin moonrank-collections-indexer
 
 COPY scripts scripts
 
@@ -56,6 +58,11 @@ RUN mkdir -p bin
 COPY .env .env.prod ./
 
 CMD ["./startup.sh"]
+
+FROM base AS tools
+
+COPY --from=build build/bin/burn-fix build/bin/moonrank-collections-indexer bin/
+CMD ["false"]
 
 FROM base AS dispatcher-base
 

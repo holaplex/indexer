@@ -673,7 +673,7 @@ pub struct CollectionVolume {
     pub volume: BigDecimal,
 }
 
-/// Union of `listings` and `purchases` for a `WalletActivity`
+/// Union of `listings`, `purchases`, `sell` and 'offers' for a `WalletActivity`
 #[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct WalletActivity {
     /// The id of the activity
@@ -708,7 +708,7 @@ pub struct WalletActivity {
     #[sql_type = "Array<Nullable<Text>>"]
     pub wallet_twitter_handles: Vec<Option<String>>,
 
-    /// Listing/Purchase created time
+    /// Activity type - listing, purchase, sell or offer
     #[sql_type = "Text"]
     pub activity_type: String,
 }
@@ -2712,8 +2712,9 @@ pub struct WithdrawFromTreasuryInstruction<'a> {
 }
 
 /// A row in the `offers` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
 #[diesel(treat_none_as_null = true)]
+#[table_name = "offers"]
 pub struct Offer<'a> {
     /// Random Uuid primary key from offers table
     /// Optional so that it can be generated randomly when other fields are inserted into table
@@ -3375,4 +3376,46 @@ pub struct ProposalTransactionInstructionAccount<'a> {
     pub slot: i64,
     /// The write version of this account's last known update
     pub write_version: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct Collection<'a> {
+    pub id: Cow<'a, str>,
+    pub image: Cow<'a, str>,
+    pub name: Cow<'a, str>,
+    pub description: Cow<'a, str>,
+    pub twitter_url: Option<Cow<'a, str>>,
+    pub discord_url: Option<Cow<'a, str>>,
+    pub website_url: Option<Cow<'a, str>>,
+    pub magic_eden_id: Option<Cow<'a, str>>,
+    pub verified_collection_address: Option<Cow<'a, str>>,
+    pub pieces: i64,
+    pub verified: bool,
+    pub go_live_at: NaiveDateTime,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+}
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct CollectionMint<'a> {
+    pub collection_id: Cow<'a, str>,
+    pub mint: Cow<'a, str>,
+    pub name: Cow<'a, str>,
+    pub image: Cow<'a, str>,
+    pub created_at: NaiveDateTime,
+    pub rank: i64,
+    pub rarity: BigDecimal,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+pub struct CollectionMintAttribute<'a> {
+    pub mint: Cow<'a, str>,
+    pub attribute: Cow<'a, str>,
+    pub value: Cow<'a, str>,
+    pub value_perc: BigDecimal,
 }
