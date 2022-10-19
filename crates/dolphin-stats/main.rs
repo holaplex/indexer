@@ -37,7 +37,23 @@ struct Opts {
 
 const COLLECTIONS_ENDPOINT: &str = "https://app.getdolphin.io/apiv3/collections/";
 
-type CollectionsResponse = Vec<Collection>;
+#[derive(Debug, serde::Deserialize)]
+#[serde(untagged)]
+enum Response<T> {
+    Error { error: serde_json::Value },
+    Success(T),
+}
+
+impl<T> Response<T> {
+    fn into_inner(self) -> Result<T> {
+        match self {
+            Self::Error { error } => Err(anyhow!("API call returned error: {:?}", error)),
+            Self::Success(s) => Ok(s),
+        }
+    }
+}
+
+type CollectionsResponse = Response<Vec<Collection>>;
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -61,7 +77,7 @@ struct CollectionLinks {
     twitter: Option<String>,
 }
 
-type Datapoint = (u64, Number);
+type MarketStatsResponse = Response<MarketStats>;
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -71,6 +87,8 @@ struct MarketStats {
     volume_data: Vec<Datapoint>,
     volume_data_all: Vec<Datapoint>,
 }
+
+type Datapoint = (u64, Number);
 
 #[derive(Debug, Clone, Copy)]
 struct Stats<T> {
@@ -124,16 +142,12 @@ fn is_int(n: &Number) -> bool {
     n.is_i64() || n.is_u64()
 }
 
+#[inline]
 fn int_error<M: FnOnce() -> D, D: std::fmt::Display>(num: &Number, msg: M) -> Result<()> {
-    if cfg!(debug_assertions) {
-        error!("Non-integer {:?} found in {}", num, msg());
-
-        Ok(())
-    } else {
-        Err(anyhow!("Non-integer {:?} found in {}", num, msg()))
-    }
+    Err(anyhow!("Non-integer {:?} found in {}", num, msg()))
 }
 
+#[inline]
 fn check_int<M: FnOnce() -> D, D: std::fmt::Display>(num: &Number, msg: M) -> Result<()> {
     if is_int(num) {
         return Ok(());
@@ -159,6 +173,13 @@ where
 
         if last_ts.as_ref().map_or(false, |l| l > ts) {
             panic!("Stats array for {} of {:?} was not sorted!", msg, sym);
+        }
+
+        if last_ts.as_ref().map_or(false, |l| l == ts) {
+            warn!(
+                "Stats array for {} of {:?} has duplicate datapoint at {}!",
+                msg, sym, ts
+            );
         }
 
         last_ts = Some(*ts);
@@ -237,16 +258,18 @@ fn main() {
             .enable_all()
             .build()?;
 
-        let json: CollectionsResponse = rt.block_on(async {
-            client
-                .get(COLLECTIONS_ENDPOINT)
-                .header("Authorization", &dolphin_key)
-                .header("Content-Type", "application/json")
-                .send()
-                .await?
-                .json()
-                .await
-        })?;
+        let json = rt
+            .block_on(async {
+                client
+                    .get(COLLECTIONS_ENDPOINT)
+                    .header("Authorization", &dolphin_key)
+                    .header("Content-Type", "application/json")
+                    .send()
+                    .await?
+                    .json::<CollectionsResponse>()
+                    .await
+            })?
+            .into_inner()?;
 
         for Collection {
             symbol,
@@ -257,18 +280,27 @@ fn main() {
             ..
         } in &json
         {
-            supply.as_ref().map_or(Ok(()), |n| {
-                check_int(n, || format!("collection supply for {:?}", symbol))
-            })?;
-            floor.as_ref().map_or(Ok(()), |n| {
-                check_int(n, || format!("collection floor for {:?}", symbol))
-            })?;
-            listed.as_ref().map_or(Ok(()), |n| {
-                check_int(n, || format!("collection listed count for {:?}", symbol))
-            })?;
-            volume_all.as_ref().map_or(Ok(()), |n| {
-                check_int(n, || format!("collection volume for {:?}", symbol))
-            })?;
+            let run = || {
+                supply.as_ref().map_or(Ok(()), |n| {
+                    check_int(n, || format!("collection supply for {:?}", symbol))
+                })?;
+                floor.as_ref().map_or(Ok(()), |n| {
+                    check_int(n, || format!("collection floor for {:?}", symbol))
+                })?;
+                listed.as_ref().map_or(Ok(()), |n| {
+                    check_int(n, || format!("collection listed count for {:?}", symbol))
+                })?;
+                volume_all.as_ref().map_or(Ok(()), |n| {
+                    check_int(n, || format!("collection volume for {:?}", symbol))
+                })?;
+
+                Result::<_>::Ok(())
+            };
+
+            match run() {
+                Ok(()) => (),
+                Err(e) => error!("{:?}", e),
+            }
         }
 
         let symbols: Vec<_> = json
@@ -320,9 +352,10 @@ fn main() {
                         .send()
                         .await
                         .with_context(|| format!("Request failed for {:?}", s))?
-                        .json()
+                        .json::<MarketStatsResponse>()
                         .await
-                        .with_context(|| format!("Parsing JSON failed for {:?}", s))?;
+                        .with_context(|| format!("Parsing JSON failed for {:?}", s))?
+                        .into_inner()?;
 
                     std::mem::drop(permit);
 
