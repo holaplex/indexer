@@ -1,4 +1,5 @@
 use indexer_core::{
+    bigdecimal::BigDecimal,
     db::queries::{self, metadatas::WalletNftOptions},
     uuid::Uuid,
 };
@@ -9,9 +10,9 @@ use objects::{
     profile::TwitterProfile,
 };
 use scalars::{PublicKey, U64};
-use tables::{bids, graph_connections};
+use tables::{bids, graph_connections, wallet_total_rewards};
 
-use super::{ah_offer::Offer, prelude::*};
+use super::{ah_offer::Offer, prelude::*, reward_center::RewardCenter};
 use crate::schema::enums::{NftSort, OfferType, OrderDirection};
 
 #[derive(Debug, Clone)]
@@ -425,6 +426,26 @@ impl Wallet {
         creators: Option<Vec<PublicKey<NftCreator>>>,
     ) -> WalletNftCount {
         WalletNftCount::new(self.address.clone(), creators)
+    }
+
+    pub fn total_rewards(
+        &self,
+        ctx: &AppContext,
+        reward_center: PublicKey<RewardCenter>,
+    ) -> FieldResult<U64> {
+        let db_conn = ctx.shared.db.get()?;
+
+        let wallet_total_rewards = wallet_total_rewards::table
+            .select(wallet_total_rewards::total_reward)
+            .filter(
+                wallet_total_rewards::reward_center_address
+                    .eq(&reward_center)
+                    .and(wallet_total_rewards::wallet_address.eq(&self.address)),
+            )
+            .first::<BigDecimal>(&db_conn)
+            .context("Failed to load total rewards")?;
+
+        Ok(wallet_total_rewards.try_into().unwrap_or_default())
     }
 }
 
