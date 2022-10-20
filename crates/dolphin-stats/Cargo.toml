@@ -19,7 +19,3 @@ tokio = { version = "1.14.1", features = ["net", "rt", "rt-multi-thread", "sync"
 [dependencies.indexer-core]
 package = "holaplex-indexer-core"
 path = "../core"
-
-[dependencies.indexer]
-package = "holaplex-indexer"
-path = "../indexer"

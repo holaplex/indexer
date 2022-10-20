@@ -3445,3 +3445,16 @@ pub struct DolphinStats<'a> {
     pub last_volume_7d: i64,
     pub last_volume_30d: i64,
 }
+
+#[derive(Debug, Clone, AsChangeset)]
+#[table_name = "dolphin_stats"]
+#[allow(missing_docs)]
+pub struct DolphinStats1D<'a> {
+    pub collection_symbol: Cow<'a, str>,
+    pub floor_1d: i64,
+    pub listed_1d: i64,
+    pub volume_1d: i64,
+    pub last_floor_1d: i64,
+    pub last_listed_1d: i64,
+    pub last_volume_1d: i64,
+}

@@ -3065,7 +3065,6 @@ name = "holaplex-indexer-dolphin-stats"
 version = "0.0.0"
 dependencies = [
  "futures-util",
- "holaplex-indexer",
  "holaplex-indexer-core",
  "percent-encoding",
  "reqwest",

@@ -7,9 +7,15 @@ use indexer_core::{
     clap,
     clap::Parser,
     db,
-    db::{insert_into, models::DolphinStats, tables::dolphin_stats},
+    db::{
+        insert_into,
+        models::{DolphinStats, DolphinStats1D},
+        tables::dolphin_stats,
+        update, Pool,
+    },
     hash::HashSet,
     prelude::*,
+    url::Url,
     util,
 };
 use serde_json::Number;
@@ -35,7 +41,39 @@ struct Opts {
     db: db::ConnectArgs,
 }
 
-const COLLECTIONS_ENDPOINT: &str = "https://app.getdolphin.io/apiv3/collections/";
+const V3_BASE: &str = "https://app.getdolphin.io/apiv3";
+
+#[inline]
+fn collections_endpoint() -> String {
+    format!("{}/collections/", V3_BASE)
+}
+
+fn market_stats_endpoint<T: TimeZone>(
+    symbol: impl std::fmt::Display,
+    start: DateTime<T>,
+    end: DateTime<T>,
+) -> Result<Url> {
+    let url = format!(
+        "{}/collections/marketStats/&symbol={}&timestamp_from={}&timestamp_to={}",
+        V3_BASE,
+        percent_encoding::utf8_percent_encode(
+            &symbol.to_string(),
+            percent_encoding::NON_ALPHANUMERIC
+        ),
+        percent_encoding::utf8_percent_encode(
+            &start.timestamp().to_string(),
+            percent_encoding::NON_ALPHANUMERIC
+        ),
+        percent_encoding::utf8_percent_encode(
+            &end.timestamp().to_string(),
+            percent_encoding::NON_ALPHANUMERIC
+        ),
+    );
+
+    debug!("Market stats URL: {:?}", url);
+
+    url.parse().map_err(Into::into)
+}
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(untagged)]
@@ -45,9 +83,13 @@ enum Response<T> {
 }
 
 impl<T> Response<T> {
-    fn into_inner(self) -> Result<T> {
+    fn into_inner<'a>(self, url: impl FnOnce() -> &'a Url) -> Result<T> {
         match self {
-            Self::Error { error } => Err(anyhow!("API call returned error: {:?}", error)),
+            Self::Error { error } => Err(anyhow!(
+                "API call for {:?} returned error: {:?}",
+                url().as_str(),
+                error
+            )),
             Self::Success(s) => Ok(s),
         }
     }
@@ -59,18 +101,23 @@ type CollectionsResponse = Response<Vec<Collection>>;
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Collection {
     symbol: Option<String>,
+    #[allow(unused)]
     name: Option<String>,
+    #[allow(unused)]
     description: Option<String>,
+    #[allow(unused)]
     image: Option<String>,
     supply: Option<Number>,
     floor: Option<Number>,
     listed: Option<Number>,
     #[serde(rename = "volumeAll")]
     volume_all: Option<Number>,
+    #[allow(unused)]
     external_links: CollectionLinks,
 }
 
 #[derive(Debug, serde::Deserialize)]
+#[allow(unused)]
 struct CollectionLinks {
     website: Option<String>,
     discord: Option<String>,
@@ -84,6 +131,8 @@ type MarketStatsResponse = Response<MarketStats>;
 struct MarketStats {
     floor_data: Vec<Datapoint>,
     listed_data: Vec<Datapoint>,
+    #[deprecated = "Use volume_data_all"]
+    #[allow(unused)]
     volume_data: Vec<Datapoint>,
     volume_data_all: Vec<Datapoint>,
 }
@@ -164,10 +213,14 @@ fn check_stats<N: IntoIterator>(
 where
     N::Item: Borrow<(u64, Number)>,
 {
-    let mut first = None;
+    use std::fmt::Write;
+
+    let mut first_err = None;
+    let mut first_dup = None;
     let mut last_err = None;
     let mut last_ts = None;
-    let mut count = 0_u64;
+    let mut err_count = 0_u64;
+    let mut dup_count = 0_u64;
     for pair in nums {
         let (ts, num) = pair.borrow();
 
@@ -176,10 +229,11 @@ where
         }
 
         if last_ts.as_ref().map_or(false, |l| l == ts) {
-            warn!(
-                "Stats array for {} of {:?} has duplicate datapoint at {}!",
-                msg, sym, ts
-            );
+            if first_dup.is_some() {
+                dup_count += 1;
+            } else {
+                first_dup = Some(*ts);
+            }
         }
 
         last_ts = Some(*ts);
@@ -190,22 +244,49 @@ where
 
         last_err = Some(num.clone());
 
-        if first.is_some() {
-            count += 1;
+        if first_err.is_some() {
+            err_count += 1;
         } else {
-            first = Some((*ts, num.clone()));
+            first_err = Some((*ts, num.clone()));
         }
     }
 
-    let (ts, num) = if let Some(pair) = first {
+    if let Some(ts) = first_dup {
+        let mut s = format!(
+            "Stats array for {} of {:?} has duplicate datapoint at ",
+            msg, sym
+        );
+
+        const SPLIT: u64 = 1_000;
+        let secs = ts / SPLIT;
+        let micros = ts % SPLIT;
+
+        if let Some(ts) = secs
+            .try_into()
+            .ok()
+            .and_then(|s| NaiveDateTime::from_timestamp_opt(s, micros.try_into().ok()?))
+        {
+            write!(s, "{}", ts).unwrap();
+        } else {
+            write!(s, "UNIX timestamp {}", ts).unwrap();
+        }
+
+        s.push('!');
+
+        if dup_count != 0 {
+            write!(s, " (plus {} more)", dup_count).unwrap();
+        }
+
+        warn!("{}", s);
+    }
+
+    let (ts, num) = if let Some(pair) = first_err {
         pair
     } else {
         return Ok(());
     };
 
     int_error(&num, || {
-        use std::fmt::Write;
-
         let mut s = "datapoint at ".to_owned();
 
         const SPLIT: u64 = 1_000;
@@ -224,8 +305,8 @@ where
 
         write!(s, " for {} of collection {:?}", msg, sym).unwrap();
 
-        if count != 0 {
-            write!(s, " (plus {} more)", count).unwrap();
+        if err_count != 0 {
+            write!(s, " (plus {} more)", err_count).unwrap();
         }
 
         s
@@ -251,17 +332,19 @@ fn main() {
             ty: _,
             migrated: _,
         } = db::connect(db, db::ConnectMode::Write { migrate: false })?;
-        let pool = Arc::new(pool);
 
         let client = reqwest::Client::new();
         let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()?;
 
+        let now = Utc::now();
+
+        let url: Url = collections_endpoint().parse()?;
         let json = rt
             .block_on(async {
                 client
-                    .get(COLLECTIONS_ENDPOINT)
+                    .get(url.clone())
                     .header("Authorization", &dolphin_key)
                     .header("Content-Type", "application/json")
                     .send()
@@ -269,7 +352,7 @@ fn main() {
                     .json::<CollectionsResponse>()
                     .await
             })?
-            .into_inner()?;
+            .into_inner(|| &url)?;
 
         for Collection {
             symbol,
@@ -309,6 +392,13 @@ fn main() {
             .filter(|s| !s.is_empty())
             .collect();
 
+        let time = Utc::now() - now;
+
+        info!(
+            "Collections fetch completed in {}",
+            util::duration_hhmmssfff(time)
+        );
+
         if cfg!(debug_assertions) {
             let symbol_set: HashSet<_> = symbols.iter().cloned().collect();
 
@@ -326,200 +416,278 @@ fn main() {
             last_30d: get_split(now, Duration::days(60)),
         };
 
-        let results = rt.block_on(async move {
-            let sem = Semaphore::new(jobs);
+        rt.block_on(async move {
+            struct Shared {
+                sem: Semaphore,
+                dolphin_key: String,
+                split_info: Stats<u64>,
+                pool: Pool,
+            }
 
-            futures_util::future::join_all(symbols.into_iter().map(|s| {
-                let client = client.clone();
-                let dolphin_key = &dolphin_key;
-                let sem = &sem;
-                let split_info = &split_info;
-                let pool = Arc::clone(&pool);
+            fn insert_full(
+                sym: &str,
+                Shared { pool, .. }: &Shared,
+                floor: Stats<i64>,
+                listed: Stats<i64>,
+                volume: Stats<i64>,
+            ) -> Result<()> {
+                let conn = pool.get()?;
+                let Stats {
+                    curr_1d: floor_1d,
+                    curr_7d: floor_7d,
+                    curr_30d: floor_30d,
+                    last_1d: last_floor_1d,
+                    last_7d: last_floor_7d,
+                    last_30d: last_floor_30d,
+                } = floor;
+                let Stats {
+                    curr_1d: listed_1d,
+                    curr_7d: listed_7d,
+                    curr_30d: listed_30d,
+                    last_1d: last_listed_1d,
+                    last_7d: last_listed_7d,
+                    last_30d: last_listed_30d,
+                } = listed;
+                let Stats {
+                    curr_1d: volume_1d,
+                    curr_7d: volume_7d,
+                    curr_30d: volume_30d,
+                    last_1d: last_volume_1d,
+                    last_7d: last_volume_7d,
+                    last_30d: last_volume_30d,
+                } = volume;
 
-                async move {
-                    let permit = sem
-                        .acquire()
-                        .await
-                        .context("Couldn't get semapore permit")?;
-                    let json = client
-                        .get(market_stats_endpoint(
-                            &s,
-                            now - indexer_core::chrono::Duration::days(60),
-                            now,
-                        ))
-                        .header("Authorization", dolphin_key)
-                        .header("Content-Type", "application/json")
-                        .send()
-                        .await
-                        .with_context(|| format!("Request failed for {:?}", s))?
-                        .json::<MarketStatsResponse>()
-                        .await
-                        .with_context(|| format!("Parsing JSON failed for {:?}", s))?
-                        .into_inner()?;
+                let row = DolphinStats {
+                    collection_symbol: Borrowed(sym),
+                    floor_1d,
+                    floor_7d,
+                    floor_30d,
+                    listed_1d,
+                    listed_7d,
+                    listed_30d,
+                    volume_1d,
+                    volume_7d,
+                    volume_30d,
+                    last_floor_1d,
+                    last_floor_7d,
+                    last_floor_30d,
+                    last_listed_1d,
+                    last_listed_7d,
+                    last_listed_30d,
+                    last_volume_1d,
+                    last_volume_7d,
+                    last_volume_30d,
+                };
 
-                    std::mem::drop(permit);
+                insert_into(dolphin_stats::table)
+                    .values(&row)
+                    .on_conflict(dolphin_stats::collection_symbol)
+                    .do_update()
+                    .set(&row)
+                    .execute(&conn)
+                    .with_context(|| format!("Stats upsert for {:?} failed", sym))?;
 
-                    debug!("Completed {:?}", s);
+                Result::<_>::Ok(())
+            }
 
-                    let MarketStats {
-                        floor_data,
-                        listed_data,
-                        volume_data,
-                        volume_data_all,
-                    } = json;
+            fn insert_1d(
+                sym: &str,
+                Shared { pool, .. }: &Shared,
+                floor: Stats<i64>,
+                listed: Stats<i64>,
+                volume: Stats<i64>,
+            ) -> Result<()> {
+                let conn = pool.get()?;
+                let Stats {
+                    curr_1d: floor_1d,
+                    last_1d: last_floor_1d,
+                    ..
+                } = floor;
+                let Stats {
+                    curr_1d: listed_1d,
+                    last_1d: last_listed_1d,
+                    ..
+                } = listed;
+                let Stats {
+                    curr_1d: volume_1d,
+                    last_1d: last_volume_1d,
+                    ..
+                } = volume;
 
-                    check_stats(&floor_data, "floor data", &s)?;
-                    check_stats(&listed_data, "listed data", &s)?;
-                    check_stats(&volume_data, "volume data", &s)?;
-                    check_stats(&volume_data_all, "delta volume data", &s)?;
+                let row = DolphinStats1D {
+                    collection_symbol: Borrowed(sym),
+                    floor_1d,
+                    listed_1d,
+                    volume_1d,
+                    last_floor_1d,
+                    last_listed_1d,
+                    last_volume_1d,
+                };
 
-                    let Stats {
-                        curr_1d: floor_1d,
-                        curr_7d: floor_7d,
-                        curr_30d: floor_30d,
-                        last_1d: last_floor_1d,
-                        last_7d: last_floor_7d,
-                        last_30d: last_floor_30d,
-                    } = split_stats(split_info, floor_data, |f| {
-                        f.iter()
-                            .try_fold(None::<u64>, |s, (_, n)| {
-                                n.as_u64()
-                                    .ok_or_else(|| anyhow!("Invalid number {:?}", n))
-                                    .map(|n| Some(s.map_or(n, |s| s.min(n))))
-                            })?
-                            .unwrap_or(0)
-                            .try_into()
-                            .context("Value was too big to store")
-                    })
-                    .with_context(|| format!("Error while processing floor data for {:?}", s))?;
+                update(dolphin_stats::table.filter(dolphin_stats::collection_symbol.eq(sym)))
+                    .set(row)
+                    .execute(&conn)
+                    .with_context(|| format!("One-day stats update for {:?} failed", sym))?;
 
-                    let Stats {
-                        curr_1d: listed_1d,
-                        curr_7d: listed_7d,
-                        curr_30d: listed_30d,
-                        last_1d: last_listed_1d,
-                        last_7d: last_listed_7d,
-                        last_30d: last_listed_30d,
-                    } = split_stats(split_info, listed_data, |f| {
-                        f.iter()
-                            .try_fold(None::<u64>, |s, (_, n)| {
-                                n.as_u64()
-                                    .ok_or_else(|| anyhow!("Invalid number {:?}", n))
-                                    .map(|n| Some(s.map_or(n, |s| s.max(n))))
-                            })?
-                            .unwrap_or(0)
-                            .try_into()
-                            .context("Value was too big to store")
-                    })
-                    .with_context(|| format!("Error while processing listed data for {:?}", s))?;
+                Result::<_>::Ok(())
+            }
 
-                    let Stats {
-                        curr_1d: volume_1d,
-                        curr_7d: volume_7d,
-                        curr_30d: volume_30d,
-                        last_1d: last_volume_1d,
-                        last_7d: last_volume_7d,
-                        last_30d: last_volume_30d,
-                    } = split_stats(split_info, volume_data, |f| {
-                        f.first()
-                            .zip(f.last())
-                            .map_or(Ok(0), |((_, first), (_, last))| {
-                                let first = first
-                                    .as_u64()
-                                    .ok_or_else(|| anyhow!("Invalid number {:?}", first))?;
-                                let last = last
-                                    .as_u64()
-                                    .ok_or_else(|| anyhow!("Invalid number {:?}", last))?;
+            let shared = Arc::new(Shared {
+                sem: Semaphore::new(jobs),
+                dolphin_key,
+                split_info,
+                pool,
+            });
 
-                                last.checked_sub(first).ok_or_else(|| {
-                                    anyhow!("Overflow when calculating {:?} - {:?}", last, first)
+            let handles: Vec<_> = symbols
+                .into_iter()
+                .map(|s| {
+                    let task = tokio::task::spawn({
+                        let client = client.clone();
+                        let s = s.clone();
+                        let shared = Arc::clone(&shared);
+
+                        async move {
+                            let Shared {
+                                ref sem,
+                                ref dolphin_key,
+                                ref split_info,
+                                ..
+                            } = *shared;
+
+                            let permit = sem
+                                .acquire()
+                                .await
+                                .context("Couldn't get semapore permit")?;
+                            let url = market_stats_endpoint(
+                                &s,
+                                now - indexer_core::chrono::Duration::days(if full {
+                                    60
+                                } else {
+                                    2
+                                }),
+                                now,
+                            )?;
+                            let json = client
+                                .get(url.clone())
+                                .header("Authorization", dolphin_key)
+                                .header("Content-Type", "application/json")
+                                .send()
+                                .await
+                                .with_context(|| format!("Request failed for {:?}", s))?
+                                .json::<MarketStatsResponse>()
+                                .await
+                                .with_context(|| format!("Parsing JSON failed for {:?}", s))?
+                                .into_inner(|| &url)?;
+
+                            std::mem::drop(permit);
+
+                            debug!("Completed {:?}", s);
+
+                            #[allow(deprecated)]
+                            let MarketStats {
+                                floor_data,
+                                listed_data,
+                                volume_data: _,
+                                volume_data_all,
+                            } = json;
+
+                            check_stats(&floor_data, "floor data", &s)?;
+                            check_stats(&listed_data, "listed data", &s)?;
+                            // check_stats(&volume_data, "volume data", &s)?;
+                            check_stats(&volume_data_all, "delta volume data", &s)?;
+
+                            let floor = split_stats(split_info, floor_data, |f| {
+                                f.iter()
+                                    .try_fold(None::<u64>, |s, (_, n)| {
+                                        n.as_u64()
+                                            .ok_or_else(|| anyhow!("Invalid number {:?}", n))
+                                            .map(|n| Some(s.map_or(n, |s| s.min(n))))
+                                    })?
+                                    .unwrap_or(0)
+                                    .try_into()
+                                    .context("Value was too big to store")
+                            })
+                            .with_context(|| {
+                                format!("Error while processing floor data for {:?}", s)
+                            })?;
+
+                            let listed = split_stats(split_info, listed_data, |f| {
+                                f.iter()
+                                    .try_fold(None::<u64>, |s, (_, n)| {
+                                        n.as_u64()
+                                            .ok_or_else(|| anyhow!("Invalid number {:?}", n))
+                                            .map(|n| Some(s.map_or(n, |s| s.max(n))))
+                                    })?
+                                    .unwrap_or(0)
+                                    .try_into()
+                                    .context("Value was too big to store")
+                            })
+                            .with_context(|| {
+                                format!("Error while processing listed data for {:?}", s)
+                            })?;
+
+                            let volume =
+                                split_stats(split_info, volume_data_all, |f| {
+                                    f.iter()
+                                        .try_fold(None::<u64>, |s, (_, n)| {
+                                            let n = n
+                                                .as_u64()
+                                                .ok_or_else(|| anyhow!("Invalid number {:?}", n))?;
+
+                                            let next =
+                                                s.map_or(Ok(n), |s| {
+                                                    s.checked_add(n).ok_or_else(|| {
+                                        anyhow!("Overflow when calculationg {:?} + {:?}", s, n)
+                                    })
+                                                })?;
+
+                                            Result::<_>::Ok(Some(next))
+                                        })?
+                                        .unwrap_or(0)
+                                        .try_into()
+                                        .context("Value was too big to store")
                                 })
-                            })?
-                            .try_into()
-                            .context("Value was too big to store")
-                    })
-                    .with_context(|| format!("Error while processing volume data for {:?}", s))?;
+                                .with_context(|| {
+                                    format!("Error while processing volume data for {:?}", s)
+                                })?;
 
-                    tokio::task::spawn_blocking(move || {
-                        let conn = pool.get()?;
+                            tokio::task::spawn_blocking(move || {
+                                if full {
+                                    insert_full(&s, &*shared, floor, listed, volume)
+                                } else {
+                                    insert_1d(&s, &*shared, floor, listed, volume)
+                                }
+                            })
+                            .await??;
 
-                        let row = DolphinStats {
-                            collection_symbol: Borrowed(&s),
-                            floor_1d,
-                            floor_7d,
-                            floor_30d,
-                            listed_1d,
-                            listed_7d,
-                            listed_30d,
-                            volume_1d,
-                            volume_7d,
-                            volume_30d,
-                            last_floor_1d,
-                            last_floor_7d,
-                            last_floor_30d,
-                            last_listed_1d,
-                            last_listed_7d,
-                            last_listed_30d,
-                            last_volume_1d,
-                            last_volume_7d,
-                            last_volume_30d,
-                        };
+                            Result::<_>::Ok(())
+                        }
+                    });
 
-                        insert_into(dolphin_stats::table)
-                            .values(&row)
-                            .on_conflict(dolphin_stats::collection_symbol)
-                            .do_update()
-                            .set(&row)
-                            .execute(&conn)
-                            .with_context(|| format!("Stats upsert for {:?} failed", s))?;
+                    (s, task)
+                })
+                .collect();
 
-                        Result::<_>::Ok(())
-                    })
-                    .await??;
-
-                    Result::<_>::Ok(())
+            for (sym, handle) in handles {
+                match handle
+                    .await
+                    .with_context(|| format!("Stats task for {:?} crashed", sym))
+                    .and_then(|h| h.with_context(|| format!("Stats task for {:?} failed", sym)))
+                {
+                    Ok(()) => (),
+                    Err(e) => error!("{:?}", e),
                 }
-            }))
-            .await
+            }
         });
 
         let time = Utc::now() - now;
 
-        debug!("Received in {}", util::duration_hhmmssfff(time));
-
-        for res in results {
-            match res {
-                Ok(()) => (),
-                Err(e) => error!("{:?}", e),
-            }
-        }
+        info!(
+            "Stats fetch completed in {}",
+            util::duration_hhmmssfff(time)
+        );
 
         Ok(())
     });
-}
-
-fn market_stats_endpoint<T: TimeZone>(
-    symbol: impl std::fmt::Display,
-    start: DateTime<T>,
-    end: DateTime<T>,
-) -> String {
-    let url = format!(
-        "https://app.getdolphin.io/apiv3/collections/marketStats/&symbol={}&timestamp_from={}&timestamp_to={}",
-        percent_encoding::utf8_percent_encode(
-            &symbol.to_string(),
-            percent_encoding::NON_ALPHANUMERIC
-        ),
-        percent_encoding::utf8_percent_encode(
-            &start.timestamp().to_string(),
-            percent_encoding::NON_ALPHANUMERIC
-        ),
-        percent_encoding::utf8_percent_encode(
-            &end.timestamp().to_string(),
-            percent_encoding::NON_ALPHANUMERIC
-        ),
-    );
-
-    debug!("Market stats URL: {:?}", url);
-
-    url
 }
