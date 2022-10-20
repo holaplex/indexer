@@ -134,6 +134,7 @@ struct MarketStats {
     #[deprecated = "Use volume_data_all"]
     #[allow(unused)]
     volume_data: Vec<Datapoint>,
+    holder_data: Vec<Datapoint>,
     volume_data_all: Vec<Datapoint>,
 }
 
@@ -589,12 +590,14 @@ fn main() {
                                 floor_data,
                                 listed_data,
                                 volume_data: _,
+                                holder_data,
                                 volume_data_all,
                             } = json;
 
                             check_stats(&floor_data, "floor data", &s)?;
                             check_stats(&listed_data, "listed data", &s)?;
                             // check_stats(&volume_data, "volume data", &s)?;
+                            check_stats(&holder_data, "holder data", &s)?;
                             check_stats(&volume_data_all, "delta volume data", &s)?;
 
                             let floor = split_stats(split_info, floor_data, |f| {
