@@ -44,7 +44,7 @@ impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
             buyer_reward: buyer_reward.try_into().unwrap_or_default(),
             seller: Wallet::new(seller.into(), seller_twitter_handle),
             seller_reward: seller_reward.try_into().unwrap_or_default(),
-            created_at: created_at.into(),
+            created_at,
             slot: slot.try_into()?,
             write_version: write_version.try_into()?,
         })
