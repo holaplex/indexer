@@ -10,7 +10,6 @@ use indexer_core::{
         },
         update,
     },
-    pubkeys,
     uuid::Uuid,
 };
 

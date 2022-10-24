@@ -1,12 +1,9 @@
 use borsh::BorshDeserialize;
-use hpl_reward_center::instruction::CloseListing;
+use hpl_reward_center::listings::close::CloseListingParams;
 use indexer_core::db::{
     insert_into,
-    models::{CancelInstruction, HplRewardCenterCloseListing},
-    select,
-    tables::{
-        cancel_instructions, hpl_reward_center_close_listing_ins, listings, rewards_listings,
-    },
+    models::HplRewardCenterCloseListing,
+    tables::{hpl_reward_center_close_listing_ins, listings, rewards_listings},
     update,
 };
 use solana_program::pubkey::Pubkey;
@@ -20,7 +17,7 @@ pub(crate) async fn process(
     accounts: &[Pubkey],
     slot: u64,
 ) -> Result<()> {
-    let params = hpl_reward_center::listings::close::CloseListingParams::try_from_slice(data)
+    let params = CloseListingParams::try_from_slice(data)
         .context("failed to deserialize close listing args")?;
 
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
@@ -43,7 +40,7 @@ pub(crate) async fn process(
         ah_auctioneer_pda: Owned(accts[10].clone()),
         token_size: params.token_size.try_into()?,
         created_at: Utc::now().naive_utc(),
-        slot: slot.try_into()?,
+        slot,
     };
 
     client
@@ -67,13 +64,11 @@ pub(crate) async fn process(
                     rewards_listings::closed_at.eq(closed_at),
                     rewards_listings::slot.eq(slot),
                 ))
-                .execute(db);
+                .execute(db)?;
 
                 update(listings::table.filter(listings::trade_state.eq(trade_state)))
                     .set((listings::canceled_at.eq(closed_at), listings::slot.eq(slot)))
-                    .execute(db);
-
-                Result::<_>::Ok(())
+                    .execute(db)
             })
         })
         .await
