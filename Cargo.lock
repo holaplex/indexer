@@ -2802,8 +2802,8 @@ version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "730788801b3fc91d9f97095e3590239f7078d81c8c1e9a35460898a806c0b24d"
 dependencies = [
- "anchor-lang 0.22.1",
- "anchor-spl 0.22.1",
+ "anchor-lang 0.24.2",
+ "anchor-spl 0.24.2",
  "num-traits",
  "smart-wallet 0.9.0",
  "vipers",
@@ -3129,9 +3129,9 @@ dependencies = [
 
 [[package]]
 name = "hpl-reward-center"
-version = "0.1.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c274dc207b9c61d7c3518aca58eb2270f427d2b11236146e0008ecb6a4b7aaa0"
+checksum = "9d4eb438361a27a0f0d19a78a390981a113bd71f43bdc4eac52bf7006a0b2134"
 dependencies = [
  "anchor-lang 0.24.2",
  "anchor-spl 0.24.2",
@@ -3631,8 +3631,8 @@ version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f5e4241760b2efb99e1d8a12e33cebd53f85ac4af093f804891517cd98a952b"
 dependencies = [
- "anchor-lang 0.22.1",
- "anchor-spl 0.22.1",
+ "anchor-lang 0.24.2",
+ "anchor-spl 0.24.2",
  "govern",
  "num-traits",
  "vipers",

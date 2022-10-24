@@ -36,7 +36,6 @@ pub(crate) async fn process(
 ) -> Result<()> {
     let row = DbRewardsListing {
         address: Owned(bs58::encode(key).into_string()),
-        is_initialized: account_data.is_initialized,
         reward_center_address: Owned(bs58::encode(account_data.reward_center).into_string()),
         seller: Owned(bs58::encode(account_data.seller).into_string()),
         metadata: Owned(bs58::encode(account_data.metadata).into_string()),
@@ -49,11 +48,8 @@ pub(crate) async fn process(
             .try_into()
             .context("Token size is too big to store")?,
         created_at: util::unix_timestamp(account_data.created_at)?,
-        canceled_at: account_data
-            .canceled_at
-            .map(util::unix_timestamp)
-            .transpose()?,
-        purchase_ticket: account_data.purchase_ticket.map(|p| Owned(p.to_string())),
+        closed_at: None,
+        purchase_id: None,
         bump: account_data.bump.try_into()?,
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,

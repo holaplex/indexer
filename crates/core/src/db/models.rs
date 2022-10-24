@@ -23,7 +23,7 @@ use crate::db::custom_types::{
     WhitelistMintMode,
 };
 
-/* MPL LISTING REWARDS */
+/* HPL LISTING REWARDS */
 
 /// A row in the `rewards_purchase_tickets` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
@@ -108,8 +108,6 @@ pub struct RewardPayout<'a> {
 pub struct RewardsListing<'a> {
     /// addres of listing account
     pub address: Cow<'a, str>,
-    /// track initilization status of account
-    pub is_initialized: bool,
     /// reward center of the listing
     pub reward_center_address: Cow<'a, str>,
     /// wallet selling the nft
@@ -124,10 +122,10 @@ pub struct RewardsListing<'a> {
     pub bump: i16,
     /// date the listing was created
     pub created_at: NaiveDateTime,
-    /// potentially when the listing was canceled
-    pub canceled_at: Option<NaiveDateTime>,
+    /// potentially when the listing was closed
+    pub closed_at: Option<NaiveDateTime>,
     /// potentially purchase associated to the listing
-    pub purchase_ticket: Option<Cow<'a, str>>,
+    pub purchase_id: Option<Uuid>,
     /// The slot number of the most recent update for this account
     pub slot: i64,
     /// The write version of the most recent update for this account
@@ -141,8 +139,6 @@ pub struct RewardsListing<'a> {
 pub struct RewardsOffer<'a> {
     /// address of the offer
     pub address: Cow<'a, str>,
-    /// track initilization status of the offer
-    pub is_initialized: bool,
     /// reward center offer made under
     pub reward_center_address: Cow<'a, str>,
     /// the wallet making the offer
@@ -158,9 +154,9 @@ pub struct RewardsOffer<'a> {
     /// when the offer was submitted
     pub created_at: NaiveDateTime,
     /// when the offer was canceled
-    pub canceled_at: Option<NaiveDateTime>,
+    pub closed_at: Option<NaiveDateTime>,
     /// the purchase associated to the offer in case of a sale
-    pub purchase_ticket: Option<Cow<'a, str>>,
+    pub purchase_id: Option<Uuid>,
     /// The slot number of the most recent update for this account
     pub slot: i64,
     /// The write version of the most recent update for this account

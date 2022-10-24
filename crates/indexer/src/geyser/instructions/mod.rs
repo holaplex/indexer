@@ -8,5 +8,6 @@ pub mod token;
 pub mod withdraw;
 pub mod withdraw_from_fee;
 pub mod withdraw_from_treasury;
+pub mod hpl_reward_center;
 
 pub(self) use super::Client;
