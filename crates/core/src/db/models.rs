@@ -75,7 +75,7 @@ pub struct RewardCenter<'a> {
     pub write_version: i64,
 }
 
-/// A row in the `rewards` table
+/// A row in the `reward_payouts` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct RewardPayout<'a> {
@@ -98,6 +98,47 @@ pub struct RewardPayout<'a> {
     /// The slot number of the most recent update for this account
     pub slot: i64,
     /// The write version of the most recent update for this account
+    pub write_version: i64,
+}
+/// A row in `reward_payouts` table along with `buyer_twitter_handle` and `seller_twitter_handle`
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+#[diesel(treat_none_as_null = true)]
+pub struct ReadRewardPayout<'a> {
+    /// Purchase ticket pubkey
+    #[sql_type = "VarChar"]
+    pub purchase_ticket: Cow<'a, str>,
+    /// metadata address
+    #[sql_type = "VarChar"]
+    pub metadata: Cow<'a, str>,
+    /// Reward center address
+    #[sql_type = "VarChar"]
+    pub reward_center: Cow<'a, str>,
+    /// buyer wallet
+    #[sql_type = "VarChar"]
+    pub buyer: Cow<'a, str>,
+    /// buyer twitter handle
+    #[sql_type = "Nullable<Text>"]
+    pub buyer_twitter_handle: Option<String>,
+    /// buyer reward
+    #[sql_type = "Numeric"]
+    pub buyer_reward: BigDecimal,
+    /// seller wallet
+    #[sql_type = "VarChar"]
+    pub seller: Cow<'a, str>,
+    /// seller twitter handle
+    #[sql_type = "Nullable<Text>"]
+    pub seller_twitter_handle: Option<String>,
+    /// seller reward
+    #[sql_type = "Numeric"]
+    pub seller_reward: BigDecimal,
+    /// The timestamp when the reward payout was created.
+    #[sql_type = "Timestamp"]
+    pub created_at: NaiveDateTime,
+    /// The slot number of the most recent update for this account
+    #[sql_type = "Int8"]
+    pub slot: i64,
+    /// The write version of the most recent update for this account
+    #[sql_type = "Int8"]
     pub write_version: i64,
 }
 

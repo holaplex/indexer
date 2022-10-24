@@ -1,5 +1,5 @@
-use indexer_core::db::models;
-use objects::auction_house::AuctionHouse;
+use indexer_core::db::{models, queries};
+use objects::{auction_house::AuctionHouse, reward_payout::RewardPayout};
 
 use super::prelude::*;
 use crate::schema::{
@@ -87,5 +87,22 @@ impl RewardCenter {
 
     pub fn write_version(&self) -> U64 {
         self.write_version
+    }
+
+    pub fn payouts(
+        &self,
+        context: &AppContext,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<RewardPayout>> {
+        let conn = context.shared.db.get()?;
+
+        let payouts = queries::reward_centers::payouts(&conn, &self.address, limit, offset)?;
+
+        payouts
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 }
