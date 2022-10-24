@@ -1,80 +1,4 @@
-// @generated automatically by Diesel CLI.
-
-pub mod sql_types {
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "governanceaccounttype"))]
-    pub struct Governanceaccounttype;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "instructionexecutionflags"))]
-    pub struct Instructionexecutionflags;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "listingeventlifecycle"))]
-    pub struct Listingeventlifecycle;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "mintmaxvotetype"))]
-    pub struct Mintmaxvotetype;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "mode"))]
-    pub struct Mode;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "offereventlifecycle"))]
-    pub struct Offereventlifecycle;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "optionvoteresult"))]
-    pub struct Optionvoteresult;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "payout_operation"))]
-    pub struct PayoutOperation;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "proposalstate"))]
-    pub struct Proposalstate;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "proposalvotetype"))]
-    pub struct Proposalvotetype;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "settingtype"))]
-    pub struct Settingtype;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "token_standard"))]
-    pub struct TokenStandard;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "transactionexecutionstatus"))]
-    pub struct Transactionexecutionstatus;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "tsvector", schema = "pg_catalog"))]
-    pub struct Tsvector;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "vote_record_v2_vote"))]
-    pub struct VoteRecordV2Vote;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "votethresholdtype"))]
-    pub struct Votethresholdtype;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "votetipping"))]
-    pub struct Votetipping;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "voteweightv1"))]
-    pub struct Voteweightv1;
-}
-
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -90,7 +14,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -106,7 +30,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -125,7 +49,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -138,7 +62,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -161,7 +85,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -186,7 +110,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -200,7 +124,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -214,7 +138,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -241,7 +165,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -262,7 +186,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -274,7 +198,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -288,7 +212,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -301,7 +225,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -320,11 +244,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Settingtype;
 
     candy_machine_end_settings (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -333,7 +256,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -345,7 +268,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -358,11 +281,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Mode;
 
     candy_machine_whitelist_mint_settings (candy_machine_address) {
         candy_machine_address -> Varchar,
@@ -373,7 +295,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -387,7 +309,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -409,7 +331,7 @@ diesel::table! {
         receipt_mint -> Nullable<Varchar>,
         claim_approver -> Nullable<Varchar>,
         transfer_authority -> Nullable<Varchar>,
-        invalidators -> Nullable<Array<Nullable<Text>>>,
+        invalidators -> Nullable<Array<Text>>,
         paid_claim_approver_payment_amount -> Nullable<Int8>,
         paid_claim_approver_payment_mint -> Nullable<Varchar>,
         paid_claim_approver_payment_manager -> Nullable<Varchar>,
@@ -437,7 +359,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -455,7 +377,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -477,7 +399,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -493,7 +415,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -514,7 +436,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -525,7 +447,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -550,7 +472,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -571,7 +493,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -584,7 +506,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -600,7 +522,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -612,38 +534,38 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
 
     collection_trends (collection) {
         collection -> Text,
-        _1d_volume -> Nullable<Numeric>,
-        _7d_volume -> Nullable<Numeric>,
-        _30d_volume -> Nullable<Numeric>,
-        _prev_1d_volume -> Nullable<Numeric>,
-        _prev_7d_volume -> Nullable<Numeric>,
-        _prev_30d_volume -> Nullable<Numeric>,
-        _1d_sales_count -> Nullable<Numeric>,
-        prev_1d_sales_count -> Nullable<Numeric>,
-        _7d_sales_count -> Nullable<Numeric>,
-        prev_7d_sales_count -> Nullable<Numeric>,
-        _30d_sales_count -> Nullable<Numeric>,
-        prev_30d_sales_count -> Nullable<Numeric>,
-        floor_price -> Nullable<Numeric>,
-        prev_1d_floor_price -> Nullable<Numeric>,
-        prev_7d_floor_price -> Nullable<Numeric>,
-        prev_30d_floor_price -> Nullable<Numeric>,
-        _1d_volume_change -> Nullable<Int8>,
-        _7d_volume_change -> Nullable<Int8>,
-        _30d_volume_change -> Nullable<Int8>,
-        _1d_floor_price_change -> Nullable<Int8>,
-        _7d_floor_price_change -> Nullable<Int8>,
-        _30d_floor_price_change -> Nullable<Int8>,
-        _1d_sales_count_change -> Nullable<Int8>,
-        _7d_sales_count_change -> Nullable<Int8>,
-        _30d_sales_count_change -> Nullable<Int8>,
+        _1d_volume -> Numeric,
+        _7d_volume -> Numeric,
+        _30d_volume -> Numeric,
+        _prev_1d_volume -> Numeric,
+        _prev_7d_volume -> Numeric,
+        _prev_30d_volume -> Numeric,
+        _1d_sales_count -> Numeric,
+        prev_1d_sales_count -> Numeric,
+        _7d_sales_count -> Numeric,
+        prev_7d_sales_count -> Numeric,
+        _30d_sales_count -> Numeric,
+        prev_30d_sales_count -> Numeric,
+        floor_price -> Numeric,
+        prev_1d_floor_price -> Numeric,
+        prev_7d_floor_price -> Numeric,
+        prev_30d_floor_price -> Numeric,
+        _1d_volume_change -> Int8,
+        _7d_volume_change -> Int8,
+        _30d_volume_change -> Int8,
+        _1d_floor_price_change -> Int8,
+        _7d_floor_price_change -> Int8,
+        _30d_floor_price_change -> Int8,
+        _1d_sales_count_change -> Int8,
+        _7d_sales_count_change -> Int8,
+        _30d_sales_count_change -> Int8,
         _1d_marketcap -> Numeric,
         prev_1d_marketcap -> Numeric,
         _7d_marketcap -> Numeric,
@@ -651,13 +573,13 @@ diesel::table! {
         _30d_marketcap -> Numeric,
         prev_30d_marketcap -> Numeric,
         nft_count -> Int8,
-        _1d_marketcap_change -> Nullable<Int8>,
-        _7d_marketcap_change -> Nullable<Int8>,
-        _30d_marketcap_change -> Nullable<Int8>,
+        _1d_marketcap_change -> Int8,
+        _7d_marketcap_change -> Int8,
+        _30d_marketcap_change -> Int8,
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -680,7 +602,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -694,7 +616,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -716,7 +638,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -729,7 +651,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -747,7 +669,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -781,7 +703,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -792,7 +714,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -803,7 +725,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -818,7 +740,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -829,7 +751,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -872,7 +794,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -893,12 +815,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Votethresholdtype;
-    use super::sql_types::Votetipping;
 
     governance_configs (governance_address) {
         governance_address -> Varchar,
@@ -915,7 +835,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -929,11 +849,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Governanceaccounttype;
 
     governances (address) {
         address -> Varchar,
@@ -949,7 +868,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -964,7 +883,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -980,7 +899,99 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
+
+    hpl_reward_center_close_listing_ins (id) {
+        id -> Uuid,
+        wallet -> Varchar,
+        listing -> Varchar,
+        metadata -> Varchar,
+        token_account -> Varchar,
+        token_mint -> Varchar,
+        authority -> Varchar,
+        reward_center -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        trade_state -> Varchar,
+        ah_auctioneer_pda -> Varchar,
+        token_size -> Int8,
+        created_at -> Timestamp,
+        slot -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
+
+    hpl_reward_center_close_offer_ins (id) {
+        id -> Uuid,
+        wallet -> Varchar,
+        offer -> Varchar,
+        treasury_mint -> Varchar,
+        token_account -> Varchar,
+        receipt_account -> Varchar,
+        escrow_payment_account -> Varchar,
+        metadata -> Varchar,
+        token_mint -> Varchar,
+        authority -> Varchar,
+        reward_center -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        trade_state -> Varchar,
+        ah_auctioneer_pda -> Varchar,
+        escrow_payment_bump -> Int2,
+        buyer_price -> Int8,
+        token_size -> Int8,
+        created_at -> Timestamp,
+        slot -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
+
+    hpl_reward_center_execute_sale_ins (id) {
+        id -> Uuid,
+        buyer -> Varchar,
+        buyer_reward_token_account -> Varchar,
+        seller -> Varchar,
+        seller_reward_token_account -> Varchar,
+        listing -> Varchar,
+        offer -> Varchar,
+        payer -> Varchar,
+        token_account -> Varchar,
+        token_mint -> Varchar,
+        metadata -> Varchar,
+        treasury_mint -> Varchar,
+        seller_payment_receipt_account -> Varchar,
+        buyer_receipt_token_account -> Varchar,
+        authority -> Varchar,
+        escrow_payment_account -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        auction_house_treasury -> Varchar,
+        buyer_trade_state -> Varchar,
+        seller_trade_state -> Varchar,
+        free_trade_state -> Varchar,
+        reward_center -> Varchar,
+        reward_center_reward_token_account -> Varchar,
+        ah_auctioneer_pda -> Varchar,
+        escrow_payment_bump -> Int2,
+        free_trade_state_bump -> Int2,
+        program_as_signer_bump -> Int2,
+        created_at -> Timestamp,
+        slot -> Int8,
+    }
+}
+
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -994,7 +1005,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1006,7 +1017,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1017,7 +1028,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1032,7 +1043,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1045,7 +1056,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1056,11 +1067,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Listingeventlifecycle;
 
     listing_events (feed_event_id) {
         feed_event_id -> Uuid,
@@ -1069,7 +1079,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1081,7 +1091,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1105,7 +1115,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1129,7 +1139,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1144,7 +1154,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1158,7 +1168,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1173,7 +1183,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1186,7 +1196,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1198,7 +1208,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1212,7 +1222,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1223,7 +1233,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1235,7 +1245,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1249,7 +1259,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1263,7 +1273,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1286,11 +1296,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::TokenStandard;
 
     metadatas (address) {
         address -> Varchar,
@@ -1304,13 +1313,13 @@ diesel::table! {
         is_mutable -> Bool,
         edition_nonce -> Nullable<Int4>,
         edition_pda -> Varchar,
-        token_standard -> Nullable<TokenStandard>,
+        token_standard -> Nullable<Token_standard>,
         slot -> Nullable<Int8>,
         burned_at -> Nullable<Timestamp>,
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1321,11 +1330,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Offereventlifecycle;
 
     offer_events (feed_event_id) {
         feed_event_id -> Uuid,
@@ -1334,7 +1342,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1359,7 +1367,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1373,7 +1381,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1385,7 +1393,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1398,11 +1406,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Optionvoteresult;
 
     proposal_options (proposal_address, label) {
         proposal_address -> Varchar,
@@ -1417,7 +1424,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1432,7 +1439,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1446,12 +1453,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Governanceaccounttype;
-    use super::sql_types::Transactionexecutionstatus;
 
     proposal_transactions (address) {
         address -> Varchar,
@@ -1468,7 +1473,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1482,7 +1487,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1506,14 +1511,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Governanceaccounttype;
-    use super::sql_types::Proposalstate;
-    use super::sql_types::Instructionexecutionflags;
-    use super::sql_types::Votethresholdtype;
 
     proposals_v1 (address) {
         address -> Varchar,
@@ -1548,15 +1549,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Governanceaccounttype;
-    use super::sql_types::Proposalstate;
-    use super::sql_types::Proposalvotetype;
-    use super::sql_types::Instructionexecutionflags;
-    use super::sql_types::Votethresholdtype;
 
     proposals_v2 (address) {
         address -> Varchar,
@@ -1592,7 +1588,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1619,7 +1615,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1630,7 +1626,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1651,7 +1647,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1671,11 +1667,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Governanceaccounttype;
 
     realm_config_accounts (address) {
         address -> Varchar,
@@ -1691,11 +1686,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Mintmaxvotetype;
 
     realm_configs (realm_address) {
         realm_address -> Varchar,
@@ -1711,11 +1705,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Governanceaccounttype;
 
     realms (address) {
         address -> Varchar,
@@ -1731,11 +1724,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::PayoutOperation;
 
     reward_centers (address) {
         address -> Varchar,
@@ -1743,14 +1735,14 @@ diesel::table! {
         auction_house -> Varchar,
         bump -> Int2,
         seller_reward_payout_basis_points -> Int2,
-        mathematical_operand -> PayoutOperation,
+        mathematical_operand -> Payout_operation,
         payout_numeral -> Int2,
         slot -> Int8,
         write_version -> Int8,
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1769,7 +1761,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1790,7 +1782,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1811,7 +1803,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1837,11 +1829,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Governanceaccounttype;
 
     signatory_records (address) {
         address -> Varchar,
@@ -1855,7 +1846,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1867,7 +1858,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1884,7 +1875,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1895,7 +1886,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1912,7 +1903,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1923,7 +1914,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1934,7 +1925,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1945,11 +1936,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Tsvector;
 
     storefronts (address) {
         owner_address -> Varchar,
@@ -1965,7 +1955,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1977,7 +1967,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -1990,11 +1980,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Governanceaccounttype;
 
     token_owner_records (address) {
         address -> Varchar,
@@ -2014,7 +2003,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -2025,7 +2014,7 @@ diesel::table! {
         index -> Int8,
         bump -> Int2,
         proposer -> Varchar,
-        signers -> Array<Nullable<Bool>>,
+        signers -> Array<Bool>,
         owner_set_seqno -> Int8,
         eta -> Int8,
         executor -> Varchar,
@@ -2033,7 +2022,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -2049,7 +2038,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -2063,7 +2052,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -2075,7 +2064,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -2089,12 +2078,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Governanceaccounttype;
-    use super::sql_types::Voteweightv1;
 
     vote_records_v1 (address) {
         address -> Varchar,
@@ -2110,12 +2097,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-    use super::sql_types::Governanceaccounttype;
-    use super::sql_types::VoteRecordV2Vote;
 
     vote_records_v2 (address) {
         address -> Varchar,
@@ -2124,14 +2109,14 @@ diesel::table! {
         governing_token_owner -> Varchar,
         is_relinquished -> Bool,
         voter_weight -> Int8,
-        vote -> VoteRecordV2Vote,
+        vote -> Vote_record_v2_vote,
         slot -> Int8,
         write_version -> Int8,
         program_id -> Nullable<Varchar>,
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -2146,7 +2131,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -2158,7 +2143,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -2170,7 +2155,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -2182,7 +2167,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -2199,7 +2184,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -2217,7 +2202,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
+table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
@@ -2238,18 +2223,18 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(cardinal_token_manager_invalidators -> cardinal_token_managers (token_manager_address));
-diesel::joinable!(feed_event_wallets -> feed_events (feed_event_id));
-diesel::joinable!(follow_events -> feed_events (feed_event_id));
-diesel::joinable!(follow_events -> graph_connections (graph_connection_address));
-diesel::joinable!(governance_configs -> governances (governance_address));
-diesel::joinable!(listing_events -> feed_events (feed_event_id));
-diesel::joinable!(mint_events -> feed_events (feed_event_id));
-diesel::joinable!(offer_events -> feed_events (feed_event_id));
-diesel::joinable!(purchase_events -> feed_events (feed_event_id));
-diesel::joinable!(realm_configs -> realms (realm_address));
+joinable!(cardinal_token_manager_invalidators -> cardinal_token_managers (token_manager_address));
+joinable!(feed_event_wallets -> feed_events (feed_event_id));
+joinable!(follow_events -> feed_events (feed_event_id));
+joinable!(follow_events -> graph_connections (graph_connection_address));
+joinable!(governance_configs -> governances (governance_address));
+joinable!(listing_events -> feed_events (feed_event_id));
+joinable!(mint_events -> feed_events (feed_event_id));
+joinable!(offer_events -> feed_events (feed_event_id));
+joinable!(purchase_events -> feed_events (feed_event_id));
+joinable!(realm_configs -> realms (realm_address));
 
-diesel::allow_tables_to_appear_in_same_query!(
+allow_tables_to_appear_in_same_query!(
     attributes,
     auction_caches,
     auction_datas,
@@ -2298,6 +2283,9 @@ diesel::allow_tables_to_appear_in_same_query!(
     governances,
     governors,
     graph_connections,
+    hpl_reward_center_close_listing_ins,
+    hpl_reward_center_close_offer_ins,
+    hpl_reward_center_execute_sale_ins,
     ins_buffer_bundle_ins_keys,
     ins_buffer_bundle_instructions,
     ins_buffer_bundles,

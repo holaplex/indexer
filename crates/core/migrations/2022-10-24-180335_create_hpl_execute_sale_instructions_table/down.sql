@@ -1,0 +1,3 @@
+drop table hpl_reward_center_execute_sale_ins;
+drop table hpl_reward_center_close_offer_ins;
+drop table hpl_reward_center_close_listing_ins;

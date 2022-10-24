@@ -137,7 +137,7 @@ pub(crate) async fn process(
                     price: row.price,
                     created_at: row.created_at,
                     expiry: None,
-                    canceled_at: row.canceled_at,
+                    canceled_at: None,
                     write_version: Some(row.write_version),
                     slot: row.slot,
                 };
@@ -153,7 +153,7 @@ pub(crate) async fn process(
 
                 let listing_id = mutations::listing::insert(db, &listing)?;
 
-                if listing_exists || row.purchase_ticket.is_some() {
+                if listing_exists {
                     return Ok(());
                 }
 

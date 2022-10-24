@@ -2,10 +2,10 @@ use borsh::BorshDeserialize;
 use indexer_core::{
     db::{
         insert_into,
-        models::{ExecuteSaleInstruction, FeedEventWallet, Purchase, PurchaseEvent},
+        models::{FeedEventWallet, HplRewardCenterExecuteSale, Purchase, PurchaseEvent},
         on_constraint, select,
         tables::{
-            execute_sale_instructions, feed_event_wallets, feed_events, listings, offers,
+            feed_event_wallets, feed_events, hpl_reward_center_execute_sale_ins, listings, offers,
             purchase_events, purchases,
         },
         update,
@@ -13,9 +13,8 @@ use indexer_core::{
     pubkeys,
     uuid::Uuid,
 };
-use mpl_auction_house::instruction::ExecuteSale;
 
-use super::Client;
+use super::super::Client;
 use crate::prelude::*;
 
 #[allow(clippy::pedantic)]
@@ -25,46 +24,73 @@ pub(crate) async fn process(
     accounts: &[Pubkey],
     slot: u64,
 ) -> Result<()> {
-    let params = ExecuteSale::try_from_slice(data).context("failed to deserialize")?;
+    let params = hpl_reward_center::execute_sale::ExecuteSaleParams::try_from_slice(data)
+        .context("failed to deserialize")?;
 
-    if accounts.len() < 21 {
-        debug!("invalid accounts for ExecuteSaleInstruction");
-        return Ok(());
-    }
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
-    let accts: Vec<String> = accounts.iter().map(ToString::to_string).collect();
+    let row = HplRewardCenterExecuteSale {
+        buyer: Owned(accts[0].clone()),
+        buyer_reward_token_account: Owned(accts[1].clone()),
+        seller: Owned(accts[2].clone()),
+        seller_reward_token_account: Owned(accts[3].clone()),
+        listing: Owned(accts[4].clone()),
+        offer: Owned(accts[5].clone()),
+        payer: Owned(accts[6].clone()),
+        token_account: Owned(accts[7].clone()),
+        token_mint: Owned(accts[8].clone()),
+        metadata: Owned(accts[9].clone()),
+        treasury_mint: Owned(accts[10].clone()),
+        seller_payment_receipt_account: Owned(accts[11].clone()),
+        buyer_receipt_token_account: Owned(accts[12].clone()),
+        authority: Owned(accts[13].clone()),
+        escrow_payment_account: Owned(accts[14].clone()),
+        auction_house: Owned(accts[15].clone()),
+        auction_house_fee_account: Owned(accts[16].clone()),
+        auction_house_treasury: Owned(accts[17].clone()),
+        buyer_trade_state: Owned(accts[18].clone()),
+        seller_trade_state: Owned(accts[19].clone()),
+        free_trade_state: Owned(accts[20].clone()),
+        reward_center: Owned(accts[21].clone()),
+        reward_center_reward_token_account: Owned(accts[22].clone()),
+        ah_auctioneer_pda: Owned(accts[23].clone()),
+        escrow_payment_bump: params.escrow_payment_bump.try_into()?,
+        free_trade_state_bump: params.free_trade_state_bump.try_into()?,
+        program_as_signer_bump: params.program_as_signer_bump.try_into()?,
+        created_at: Utc::now().naive_utc(),
+        slot: slot.try_into()?,
+    };
 
-
-    upsert_into_purchases_table(
-        client,
-        Purchase {
-            id: None,
-            buyer: row.buyer.clone(),
-            seller: row.seller.clone(),
-            auction_house: row.auction_house.clone(),
-            marketplace_program: Owned(pubkeys::AUCTION_HOUSE.to_string()),
-            metadata: row.metadata.clone(),
-            token_size: row.token_size,
-            price: row.buyer_price,
-            created_at: row.created_at,
-            slot: row.slot,
-            write_version: None,
-        },
-        accts[13].clone(),
-        accts[14].clone(),
-    )
-    .await
-    .context("failed to insert purchase!")?;
+    // upsert_into_purchases_table(
+    //     client,
+    //     Purchase {
+    //         id: None,
+    //         buyer: row.buyer.clone(),
+    //         seller: row.seller.clone(),
+    //         auction_house: row.auction_house.clone(),
+    //         marketplace_program: Owned(pubkeys::AUCTION_HOUSE.to_string()),
+    //         metadata: row.metadata.clone(),
+    //         token_size: row.token_size,
+    //         price: row.buyer_price,
+    //         created_at: row.created_at,
+    //         slot: row.slot,
+    //         write_version: None,
+    //     },
+    //     accts[13].clone(),
+    //     accts[14].clone(),
+    // )
+    // .await
+    // .context("failed to insert purchase!")?;
 
     client
         .db()
         .run(move |db| {
-            insert_into(execute_sale_instructions::table)
+            insert_into(hpl_reward_center_execute_sale_ins::table)
                 .values(&row)
                 .execute(db)
         })
         .await
-        .context("failed to insert execute sale instruction ")?;
+        .context("failed to insert reward center execute sale instruction ")?;
     Ok(())
 }
 

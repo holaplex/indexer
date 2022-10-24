@@ -25,32 +25,6 @@ use crate::db::custom_types::{
 
 /* HPL LISTING REWARDS */
 
-/// A row in the `rewards_purchase_tickets` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
-#[diesel(treat_none_as_null = true)]
-pub struct RewardsPurchaseTicket<'a> {
-    /// The address of this account
-    pub address: Cow<'a, str>,
-    /// reward center associated of the purchase ticket
-    pub reward_center_address: Cow<'a, str>,
-    /// the buyer of the nft
-    pub buyer: Cow<'a, str>,
-    /// the seller of the nft
-    pub seller: Cow<'a, str>,
-    /// the metadata of the nft purchased
-    pub metadata: Cow<'a, str>,
-    /// price of the nft
-    pub price: i64,
-    /// number of tokens sold
-    pub token_size: i64,
-    /// the date and time of the purchase
-    pub created_at: NaiveDateTime,
-    /// The slot number of the most recent update for this account
-    pub slot: i64,
-    /// The write version of the most recent update for this account
-    pub write_version: i64,
-}
-
 /// A row in the `reward_centers` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
 #[diesel(treat_none_as_null = true)]
@@ -2579,6 +2553,96 @@ pub struct ExecuteSaleInstruction<'a> {
     /// Solana slot number
     pub slot: i64,
 }
+
+/// A row in the `hpl_reward_center_execute_sale_ins` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+#[table_name = "hpl_reward_center_execute_sale_ins"]
+pub struct HplRewardCenterExecuteSale<'a> {
+    pub buyer: Cow<'a, str>,
+    pub buyer_reward_token_account: Cow<'a, str>,
+    pub seller: Cow<'a, str>,
+    pub seller_reward_token_account: Cow<'a, str>,
+    pub listing: Cow<'a, str>,
+    pub offer: Cow<'a, str>,
+    pub payer: Cow<'a, str>,
+    pub token_account: Cow<'a, str>,
+    pub token_mint: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub treasury_mint: Cow<'a, str>,
+    pub seller_payment_receipt_account: Cow<'a, str>,
+    pub buyer_receipt_token_account: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub escrow_payment_account: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub auction_house_treasury: Cow<'a, str>,
+    pub buyer_trade_state: Cow<'a, str>,
+    pub seller_trade_state: Cow<'a, str>,
+    pub free_trade_state: Cow<'a, str>,
+    pub reward_center: Cow<'a, str>,
+    pub reward_center_reward_token_account: Cow<'a, str>,
+    pub ah_auctioneer_pda: Cow<'a, str>,
+    pub escrow_payment_bump: i16,
+    pub free_trade_state_bump: i16,
+    pub program_as_signer_bump: i16,
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+/// A row in the `hpl_reward_center_close_offer_ins` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+#[table_name = "hpl_reward_center_close_offer_ins"]
+pub struct HplRewardCenterCloseoffer<'a> {
+    pub wallet: Cow<'a, str>,
+    pub offer: Cow<'a, str>,
+    pub treasury_mint: Cow<'a, str>,
+    pub token_account: Cow<'a, str>,
+    pub receipt_account: Cow<'a, str>,
+    pub escrow_payment_account: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub token_mint: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub reward_center: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub trade_state: Cow<'a, str>,
+    pub ah_auctioneer_pda: Cow<'a, str>,
+    pub escrow_payment_bump: i16,
+    pub buyer_price: i64,
+    pub token_size: i64,
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+// A row in the `hpl_reward_center_close_offer_ins` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+#[table_name = "hpl_reward_center_close_listing_ins"]
+pub struct HplRewardCenterCloseListing<'a> {
+    pub wallet: Cow<'a, str>,
+    pub listing: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub token_account: Cow<'a, str>,
+    pub token_mint: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub reward_center: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub trade_state: Cow<'a, str>,
+    pub ah_auctioneer_pda: Cow<'a, str>,
+    pub token_size: i64,
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
 /// A row in the `cancel_instructions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]

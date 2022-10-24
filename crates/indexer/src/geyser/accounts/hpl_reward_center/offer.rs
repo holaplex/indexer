@@ -136,7 +136,7 @@ pub(crate) async fn process(
                     token_size: row.token_size,
                     trade_state_bump: trade_state_bump.try_into()?,
                     created_at: row.created_at,
-                    canceled_at: row.canceled_at,
+                    canceled_at: None,
                     slot: row.slot,
                     write_version: Some(row.write_version),
                     expiry: None,
@@ -153,7 +153,7 @@ pub(crate) async fn process(
 
                 let offer_id = mutations::offer::insert(db, &offer)?;
 
-                if offer_exists || row.purchase_ticket.is_some() {
+                if offer_exists {
                     return Ok(());
                 }
 
