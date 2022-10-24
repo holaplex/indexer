@@ -13,7 +13,7 @@ use objects::{
     bonding_change::EnrichedBondingChange,
     candy_machine::CandyMachine,
     chart::PriceChart,
-    collections::CollectionDocument,
+    collection::{CollectionDocument, CollectionTrend},
     creator::Creator,
     denylist::Denylist,
     feed_event::FeedEvent,
@@ -37,12 +37,10 @@ use tables::{
     graph_connections, metadata_jsons, metadatas, realms, signatory_records, store_config_jsons,
     storefronts, token_owner_records, twitter_handle_name_services, wallet_totals,
 };
+use enums::{CollectionInterval, CollectionSort, OrderDirection};
 
-use super::{
-    enums::{CollectionInterval, CollectionSort, OrderDirection},
-    objects::nft::CollectionTrend,
-    prelude::*,
-};
+use super::prelude::*;
+
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
@@ -777,16 +775,16 @@ impl QueryRoot {
 
     #[graphql(
         description = "Returns collection data along with collection activities",
-        arguments(address(description = "Collection address"))
+        arguments(id(description = "Collection ID"))
     )]
     async fn collection(
         &self,
         context: &AppContext,
-        address: String,
-    ) -> FieldResult<Option<objects::collections::Collection>> {
+        id: String,
+    ) -> FieldResult<Option<objects::collection::Collection>> {
         context
             .generic_collection_loader
-            .load(address)
+            .load(id)
             .await
             .map_err(Into::into)
     }
@@ -824,23 +822,14 @@ impl QueryRoot {
             (CollectionInterval::Thirty, CollectionSort::Volume) => {
                 db::custom_types::CollectionSort::ThirtyDayVolume
             },
-            (CollectionInterval::One, CollectionSort::NumberSales) => {
-                db::custom_types::CollectionSort::OneDaySalesCount
+            (CollectionInterval::One, CollectionSort::NumberListed) => {
+                db::custom_types::CollectionSort::OneDayListedCount
             },
-            (CollectionInterval::Seven, CollectionSort::NumberSales) => {
-                db::custom_types::CollectionSort::SevenDaySalesCount
+            (CollectionInterval::Seven, CollectionSort::NumberListed) => {
+                db::custom_types::CollectionSort::SevenDayListedCount
             },
-            (CollectionInterval::Thirty, CollectionSort::NumberSales) => {
-                db::custom_types::CollectionSort::ThirtyDaySalesCount
-            },
-            (CollectionInterval::One, CollectionSort::Marketcap) => {
-                db::custom_types::CollectionSort::OneDayMarketcap
-            },
-            (CollectionInterval::Seven, CollectionSort::Marketcap) => {
-                db::custom_types::CollectionSort::SevenDayMarketcap
-            },
-            (CollectionInterval::Thirty, CollectionSort::Marketcap) => {
-                db::custom_types::CollectionSort::ThirtyDayMarketcap
+            (CollectionInterval::Thirty, CollectionSort::NumberListed) => {
+                db::custom_types::CollectionSort::ThirtyDayListedCount
             },
             (
                 CollectionInterval::One | CollectionInterval::Seven | CollectionInterval::Thirty,

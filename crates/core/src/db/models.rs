@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use diesel::sql_types::{
-    Array, Bool, Int4, Int8, Nullable, Numeric, Text, Timestamp, Timestamptz, VarChar,
+    Array, Bool, Int4, Int8, Nullable, Numeric, Text, Timestamp, Timestamptz, VarChar, BigInt
 };
 use uuid::Uuid;
 
@@ -3406,30 +3406,67 @@ pub struct CollectionMintAttribute<'a> {
     pub value_perc: BigDecimal,
 }
 
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, QueryableByName, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "dolphin_stats"]
 #[allow(missing_docs)]
 pub struct DolphinStats<'a> {
+    #[sql_type = "VarChar"]
     pub collection_symbol: Cow<'a, str>,
+    #[sql_type = "BigInt"]
     pub floor_1d: i64,
+    #[sql_type = "BigInt"]
     pub floor_7d: i64,
+    #[sql_type = "BigInt"]
     pub floor_30d: i64,
+    #[sql_type = "BigInt"]
     pub listed_1d: i64,
+    #[sql_type = "BigInt"]
     pub listed_7d: i64,
+    #[sql_type = "BigInt"]
     pub listed_30d: i64,
+    #[sql_type = "BigInt"]
     pub volume_1d: i64,
+    #[sql_type = "BigInt"]
     pub volume_7d: i64,
+    #[sql_type = "BigInt"]
     pub volume_30d: i64,
+    #[sql_type = "BigInt"]
     pub last_floor_1d: i64,
+    #[sql_type = "BigInt"]
     pub last_floor_7d: i64,
+    #[sql_type = "BigInt"]
     pub last_floor_30d: i64,
+    #[sql_type = "BigInt"]
     pub last_listed_1d: i64,
+    #[sql_type = "BigInt"]
     pub last_listed_7d: i64,
+    #[sql_type = "BigInt"]
     pub last_listed_30d: i64,
+    #[sql_type = "BigInt"]
     pub last_volume_1d: i64,
+    #[sql_type = "BigInt"]
     pub last_volume_7d: i64,
+    #[sql_type = "BigInt"]
     pub last_volume_30d: i64,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_floor_1d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_floor_7d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_floor_30d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_volume_1d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_volume_7d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_volume_30d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_listed_1d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_listed_7d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_listed_30d: Option<i32>,
 }
 
 #[derive(Debug, Clone, AsChangeset)]
@@ -3443,4 +3480,7 @@ pub struct DolphinStats1D<'a> {
     pub last_floor_1d: i64,
     pub last_listed_1d: i64,
     pub last_volume_1d: i64,
+    pub change_floor_1d: Option<i32>,
+    pub change_volume_1d: Option<i32>,
+    pub change_listed_1d: Option<i32>,
 }

@@ -663,6 +663,15 @@ table! {
         last_volume_1d -> Int8,
         last_volume_7d -> Int8,
         last_volume_30d -> Int8,
+        change_floor_1d -> Nullable<Int4>,
+        change_floor_7d -> Nullable<Int4>,
+        change_floor_30d -> Nullable<Int4>,
+        change_volume_1d -> Nullable<Int4>,
+        change_volume_7d -> Nullable<Int4>,
+        change_volume_30d -> Nullable<Int4>,
+        change_listed_1d -> Nullable<Int4>,
+        change_listed_7d -> Nullable<Int4>,
+        change_listed_30d -> Nullable<Int4>,
     }
 }
 

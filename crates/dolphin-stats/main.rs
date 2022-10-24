@@ -188,6 +188,22 @@ fn split_stats<T, E: Into<Error>>(
 }
 
 #[inline]
+fn calc_percent_change(current: i64, previous: i64) -> Option<i32> {
+    if previous == 0 {
+        return None;
+    }
+
+    let current = current as f64;
+    let previous = previous as f64;
+
+    let numerator = current - previous;
+
+    let percentage_change = (numerator / previous.abs()) * 100.0;
+
+    Some(percentage_change.floor() as i32)
+}
+
+#[inline]
 fn is_int(n: &Number) -> bool {
     n.is_i64() || n.is_u64()
 }
@@ -478,6 +494,15 @@ fn main() {
                     last_volume_1d,
                     last_volume_7d,
                     last_volume_30d,
+                    change_floor_1d: calc_percent_change(floor_1d, last_floor_1d),
+                    change_floor_7d: calc_percent_change(floor_7d, last_floor_7d),
+                    change_floor_30d: calc_percent_change(floor_30d, last_floor_30d),
+                    change_volume_1d: calc_percent_change(volume_1d, last_volume_1d),
+                    change_volume_7d: calc_percent_change(volume_7d, last_volume_7d),
+                    change_volume_30d: calc_percent_change(volume_30d, last_volume_30d),
+                    change_listed_1d: calc_percent_change(listed_1d, last_listed_1d),
+                    change_listed_7d: calc_percent_change(listed_7d, last_listed_7d),
+                    change_listed_30d: calc_percent_change(listed_30d, last_listed_30d),
                 };
 
                 insert_into(dolphin_stats::table)
@@ -523,6 +548,9 @@ fn main() {
                     last_floor_1d,
                     last_listed_1d,
                     last_volume_1d,
+                    change_floor_1d: calc_percent_change(floor_1d, last_floor_1d),
+                    change_volume_1d: calc_percent_change(volume_1d, last_volume_1d),
+                    change_listed_1d: calc_percent_change(listed_1d, last_listed_1d),
                 };
 
                 update(dolphin_stats::table.filter(dolphin_stats::collection_symbol.eq(sym)))

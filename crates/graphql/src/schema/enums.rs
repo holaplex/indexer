@@ -52,10 +52,8 @@ pub enum CollectionSort {
     Volume,
     #[graphql(name = "FLOOR")]
     Floor,
-    #[graphql(name = "NUMBER_SALES")]
-    NumberSales,
-    #[graphql(name = "MARKETCAP")]
-    Marketcap,
+    #[graphql(name = "NUMBER_LISTED")]
+    NumberListed,
 }
 
 #[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]

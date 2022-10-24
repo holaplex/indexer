@@ -4,6 +4,7 @@ use indexer_core::{
         queries::{self, metadatas::CollectionNftOptions},
         tables::{attributes, collection_mints, metadatas},
     },
+    pubkeys,
 };
 use objects::attributes::AttributeGroup;
 use reqwest::Url;
@@ -14,6 +15,7 @@ use super::{nft::Nft, prelude::*};
 use crate::schema::{
     enums::{NftSort, OrderDirection},
     query_root::AttributeFilter,
+    scalars::{I64, U64},
 };
 
 #[derive(Debug, Clone, GraphQLObject)]
@@ -184,6 +186,19 @@ impl Collection {
         self.updated_at
     }
 
+    pub async fn trends(&self, context: &AppContext) -> FieldResult<Option<CollectionTrend>> {
+        let magic_eden_id = match self.magic_eden_id {
+            Some(ref id) => id.clone(),
+            None => return Ok(None)
+        };
+
+        context
+            .mr_collection_trends_loader
+            .load(magic_eden_id)
+            .await
+            .map_err(Into::into)
+    }
+
     #[graphql(description = r"Get the original URL of the image as stored in the NFT's metadata")]
     pub fn image_original(&self) -> &str {
         &self.image
@@ -219,16 +234,20 @@ impl Collection {
     ) -> FieldResult<Vec<Nft>> {
         let conn = ctx.shared.db.get()?;
 
-        let nfts = queries::metadatas::mr_collection_nfts(&conn, CollectionNftOptions {
-            collection: self.id.clone(),
-            auction_house,
-            attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
-            marketplace_program,
-            sort_by: sort_by.map(Into::into),
-            order: order.map(Into::into),
-            limit: limit.try_into()?,
-            offset: offset.try_into()?,
-        })?;
+        let nfts = queries::metadatas::mr_collection_nfts(
+            &conn,
+            CollectionNftOptions {
+                collection: self.id.clone(),
+                auction_house,
+                attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
+                marketplace_program,
+                sort_by: sort_by.map(Into::into),
+                order: order.map(Into::into),
+                limit: limit.try_into()?,
+                offset: offset.try_into()?,
+            },
+            pubkeys::OPENSEA_AUCTION_HOUSE.to_string(),
+        )?;
 
         nfts.into_iter()
             .map(TryInto::try_into)
@@ -252,19 +271,10 @@ impl Collection {
         services::attributes::group(metadata_attributes)
     }
 
-    #[graphql(description = "Count of NFTs in the collection.")]
-    async fn nft_count(&self, context: &AppContext) -> FieldResult<Option<scalars::I64>> {
-        Ok(context
-            .mr_collection_nft_count_loader
-            .load(self.id.clone())
-            .await?
-            .map(|dataloaders::collection::CollectionNftCount(nft_count)| nft_count))
-    }
-
     #[graphql(
         description = "Count of wallets that currently hold at least one NFT from the collection."
     )]
-    pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<Option<scalars::I64>> {
+    pub async fn holder_count(&self, ctx: &AppContext) -> FieldResult<Option<I64>> {
         Ok(ctx
             .mr_collection_holders_count_loader
             .load(self.id.clone())
@@ -291,6 +301,231 @@ impl Collection {
         rows.into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+}
+
+// TODO: use collection identifier for the data loader instead of string
+#[derive(Debug, Clone)]
+pub struct CollectionIdentifier(pub String);
+
+#[derive(Debug, Clone)]
+pub struct CollectionTrend {
+    pub collection: String,
+    pub floor_1d: U64,
+    pub floor_7d: U64,
+    pub floor_30d: U64,
+    pub volume_1d: U64,
+    pub volume_7d: U64,
+    pub volume_30d: U64,
+    pub listed_1d: i32,
+    pub listed_7d: i32,
+    pub listed_30d: i32,
+    pub last_volume_1d: U64,
+    pub last_volume_7d: U64,
+    pub last_volume_30d: U64,
+    pub last_listed_1d: i32,
+    pub last_listed_7d: i32,
+    pub last_listed_30d: i32,
+    pub last_floor_1d: U64,
+    pub last_floor_7d: U64,
+    pub last_floor_30d: U64,
+    pub change_volume_1d: Option<i32>,
+    pub change_volume_7d: Option<i32>,
+    pub change_volume_30d: Option<i32>,
+    pub change_floor_1d: Option<i32>,
+    pub change_floor_7d: Option<i32>,
+    pub change_floor_30d: Option<i32>,
+    pub change_listed_1d: Option<i32>,
+    pub change_listed_7d: Option<i32>,
+    pub change_listed_30d: Option<i32>,
+}
+
+impl<'a> TryFrom<models::DolphinStats<'a>> for CollectionTrend {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::DolphinStats {
+            collection_symbol,
+            floor_1d,
+            floor_7d,
+            floor_30d,
+            last_floor_1d,
+            last_floor_7d,
+            last_floor_30d,
+            change_floor_1d,
+            change_floor_7d,
+            change_floor_30d,
+            volume_1d,
+            volume_7d,
+            volume_30d,
+            last_volume_1d,
+            last_volume_7d,
+            last_volume_30d,
+            change_volume_1d,
+            change_volume_7d,
+            change_volume_30d,
+            listed_1d,
+            listed_7d,
+            listed_30d,
+            last_listed_1d,
+            last_listed_7d,
+            last_listed_30d,
+            change_listed_1d,
+            change_listed_7d,
+            change_listed_30d,
+        }: models::DolphinStats,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            collection: collection_symbol.into_owned(),
+            floor_1d: floor_1d.try_into()?,
+            floor_7d: floor_7d.try_into()?,
+            floor_30d: floor_30d.try_into()?,
+            volume_1d: volume_1d.try_into()?,
+            volume_7d: volume_7d.try_into()?,
+            volume_30d: volume_30d.try_into()?,
+            listed_1d: listed_1d.try_into()?,
+            listed_7d: listed_7d.try_into()?,
+            listed_30d: listed_30d.try_into()?,
+            last_volume_1d: last_volume_1d.try_into()?,
+            last_volume_7d: last_volume_7d.try_into()?,
+            last_volume_30d: last_volume_30d.try_into()?,
+            last_listed_1d: last_listed_1d.try_into()?,
+            last_listed_7d: last_listed_7d.try_into()?,
+            last_listed_30d: last_listed_30d.try_into()?,
+            last_floor_1d: last_floor_1d.try_into()?,
+            last_floor_7d: last_floor_7d.try_into()?,
+            last_floor_30d: last_floor_30d.try_into()?,
+            change_volume_1d: change_volume_1d.map(Into::into),
+            change_volume_7d: change_volume_7d.map(Into::into),
+            change_volume_30d: change_volume_30d.map(Into::into),
+            change_floor_1d: change_floor_1d.map(Into::into),
+            change_floor_7d: change_floor_7d.map(Into::into),
+            change_floor_30d: change_floor_30d.map(Into::into),
+            change_listed_1d: change_listed_1d.map(Into::into),
+            change_listed_7d: change_listed_7d.map(Into::into),
+            change_listed_30d: change_listed_30d.map(Into::into),
+        })
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl CollectionTrend {
+    pub fn floor_1d(&self) -> U64 {
+        self.floor_1d
+    }
+
+    pub fn floor_7d(&self) -> U64 {
+        self.floor_7d
+    }
+
+    pub fn floor_30d(&self) -> U64 {
+        self.floor_30d
+    }
+
+    pub fn volume_1d(&self) -> U64 {
+        self.volume_1d
+    }
+
+    pub fn volume_7d(&self) -> U64 {
+        self.volume_7d
+    }
+
+    pub fn volume_30d(&self) -> U64 {
+        self.volume_30d
+    }
+
+    pub fn listed_1d(&self) -> i32 {
+        self.listed_1d
+    }
+
+    pub fn listed_7d(&self) -> i32 {
+        self.listed_7d
+    }
+
+    pub fn listed_30d(&self) -> i32 {
+        self.listed_30d
+    }
+
+    pub fn last_listed_1d(&self) -> i32 {
+        self.last_listed_1d
+    }
+
+    pub fn last_listed_7d(&self) -> i32 {
+        self.last_listed_7d
+    }
+
+    pub fn last_listed_30d(&self) -> i32 {
+        self.last_listed_30d
+    }
+
+    pub fn last_volume_1d(&self) -> U64 {
+        self.last_volume_1d
+    }
+
+    pub fn last_volume_7d(&self) -> U64 {
+        self.last_volume_7d
+    }
+
+    pub fn last_volume_30d(&self) -> U64 {
+        self.last_volume_30d
+    }
+
+    pub fn last_floor_1d(&self) -> U64 {
+        self.last_floor_1d
+    }
+
+    pub fn last_floor_7d(&self) -> U64 {
+        self.last_floor_7d
+    }
+
+    pub fn last_floor_30d(&self) -> U64 {
+        self.last_floor_30d
+    }
+
+    pub fn change_floor_1d(&self) -> Option<i32> {
+        self.change_floor_1d
+    }
+
+    pub fn change_floor_7d(&self) -> Option<i32> {
+        self.change_floor_7d
+    }
+
+    pub fn change_floor_30d(&self) -> Option<i32> {
+        self.change_floor_30d
+    }
+
+    pub fn change_volume_1d(&self) -> Option<i32> {
+        self.change_volume_1d
+    }
+
+    pub fn change_volume_7d(&self) -> Option<i32> {
+        self.change_volume_7d
+    }
+
+    pub fn change_volume_30d(&self) -> Option<i32> {
+        self.change_volume_30d
+    }
+
+    pub fn change_listed_1d(&self) -> Option<i32> {
+        self.change_listed_1d
+    }
+
+    pub fn change_listed_7d(&self) -> Option<i32> {
+        self.change_listed_7d
+    }
+
+    pub fn change_listed_30d(&self) -> Option<i32> {
+        self.change_listed_30d
+    }
+
+    pub async fn collection(
+        &self,
+        ctx: &AppContext,
+    ) -> FieldResult<Option<objects::collection::Collection>> {
+        ctx.generic_collection_loader
+            .load(self.collection.clone())
+            .await
             .map_err(Into::into)
     }
 }

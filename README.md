@@ -52,7 +52,7 @@ To set up a development environment, you will need `rustup`, Cargo, Docker,
 installed with the `postgres` feature, which can be done like so:
 
 ```sh
-$ cargo install diesel_cli --no-default-features --features postgres
+$ cargo install diesel_cli --version 1.4.1 --no-default-features --features postgres
 ```
 
 Installing diesel will require `libpq` to be on your system (`brew install

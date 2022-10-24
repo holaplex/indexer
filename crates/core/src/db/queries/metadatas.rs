@@ -855,7 +855,7 @@ pub fn activities(
 /// # Errors
 /// returns an error when the underlying queries throw an error
 #[allow(clippy::too_many_lines)]
-pub fn mr_collection_nfts(conn: &Connection, options: CollectionNftOptions) -> Result<Vec<Nft>> {
+pub fn mr_collection_nfts<O: Into<Value>>(conn: &Connection, options: CollectionNftOptions, opensea_auction_house: O) -> Result<Vec<Nft>> {
     let CollectionNftOptions {
         collection,
         auction_house,
@@ -864,7 +864,7 @@ pub fn mr_collection_nfts(conn: &Connection, options: CollectionNftOptions) -> R
         sort_by,
         order,
         limit,
-        offset,
+        offset, 
     } = options;
 
     let sort_by = sort_by.map_or(Listings::Price, Into::into);
@@ -929,7 +929,7 @@ pub fn mr_collection_nfts(conn: &Connection, options: CollectionNftOptions) -> R
                 .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
                 .add(
                     Expr::tbl(Listings::Table, Listings::AuctionHouse)
-                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
+                        .ne(opensea_auction_house),
                 )
                 .add(
                     Expr::tbl(Listings::Table, Listings::Expiry)

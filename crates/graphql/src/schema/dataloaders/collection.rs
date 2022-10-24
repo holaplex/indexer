@@ -1,10 +1,10 @@
 use indexer_core::db::{
     sql_query,
     sql_types::{Array, Text},
-    tables::{collection_trends, collections},
+    tables::{collections, dolphin_stats},
 };
 use objects::{
-    collections::{Collection, CollectionId},
+    collection::{Collection, CollectionId, CollectionTrend},
     nft::{CollectionNFT, Nft},
     store_creator::StoreCreator,
 };
@@ -276,34 +276,6 @@ impl TryBatchFn<CollectionId, Option<Collection>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<CollectionId, Option<CollectionNftCount>> for Batcher {
-    async fn load(
-        &mut self,
-        addresses: &[CollectionId],
-    ) -> TryBatchMap<CollectionId, Option<CollectionNftCount>> {
-        let conn = self.db()?;
-
-        let rows: Vec<models::CollectionCount> = sql_query(
-            "SELECT COLLECTION_ID AS COLLECTION, COUNT(*) as COUNT
-            FROM COLLECTION_MINTS
-            GROUP BY COLLECTION_ID
-            where COLLECTION_ADDRESS = ANY($1);
-            -- $1: addresses::text[]",
-        )
-        .bind::<Array<Text>, _>(addresses)
-        .load(&conn)
-        .context("Failed to load NFT count for mr collection")?;
-
-        Ok(rows
-            .into_iter()
-            .map(|models::CollectionCount { collection, count }| {
-                (collection, CollectionNftCount::from(count))
-            })
-            .batch(addresses))
-    }
-}
-
-#[async_trait]
 impl TryBatchFn<CollectionId, Option<CollectionHoldersCount>> for Batcher {
     async fn load(
         &mut self,
@@ -335,22 +307,22 @@ impl TryBatchFn<CollectionId, Option<CollectionHoldersCount>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<CollectionId, Option<objects::nft::CollectionTrend>> for Batcher {
+impl TryBatchFn<String, Option<CollectionTrend>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[CollectionId],
-    ) -> TryBatchMap<CollectionId, Option<objects::nft::CollectionTrend>> {
+        collection_symbols: &[String],
+    ) -> TryBatchMap<String, Option<CollectionTrend>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::CollectionTrend> = collection_trends::table
-            .select(collection_trends::all_columns)
-            .filter(collection_trends::collection.eq(any(addresses)))
+        let rows: Vec<models::DolphinStats> = dolphin_stats::table
+            .select(dolphin_stats::all_columns)
+            .filter(dolphin_stats::collection_symbol.eq(any(collection_symbols)))
             .load(&conn)
-            .context("Failed to load collection trends")?;
+            .context("Failed to load dolphin sttats")?;
 
         Ok(rows
             .into_iter()
-            .map(|a| (a.collection.clone(), a.try_into()))
-            .batch(addresses))
+            .map(|a| (a.collection_symbol.clone(), a.try_into()))
+            .batch(collection_symbols))
     }
 }
