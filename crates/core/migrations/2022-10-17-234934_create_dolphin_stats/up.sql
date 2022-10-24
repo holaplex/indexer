@@ -1,0 +1,21 @@
+create table dolphin_stats (
+  collection_symbol text primary key,
+  floor_1d bigint not null,
+  floor_7d bigint not null,
+  floor_30d bigint not null,
+  listed_1d bigint not null,
+  listed_7d bigint not null,
+  listed_30d bigint not null,
+  volume_1d bigint not null,
+  volume_7d bigint not null,
+  volume_30d bigint not null,
+  last_floor_1d bigint not null,
+  last_floor_7d bigint not null,
+  last_floor_30d bigint not null,
+  last_listed_1d bigint not null,
+  last_listed_7d bigint not null,
+  last_listed_30d bigint not null,
+  last_volume_1d bigint not null,
+  last_volume_7d bigint not null,
+  last_volume_30d bigint not null
+);

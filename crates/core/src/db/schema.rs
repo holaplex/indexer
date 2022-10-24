@@ -643,6 +643,34 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
 
+    dolphin_stats (collection_symbol) {
+        collection_symbol -> Text,
+        floor_1d -> Int8,
+        floor_7d -> Int8,
+        floor_30d -> Int8,
+        listed_1d -> Int8,
+        listed_7d -> Int8,
+        listed_30d -> Int8,
+        volume_1d -> Int8,
+        volume_7d -> Int8,
+        volume_30d -> Int8,
+        last_floor_1d -> Int8,
+        last_floor_7d -> Int8,
+        last_floor_30d -> Int8,
+        last_listed_1d -> Int8,
+        last_listed_7d -> Int8,
+        last_listed_30d -> Int8,
+        last_volume_1d -> Int8,
+        last_volume_7d -> Int8,
+        last_volume_30d -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
+
     editions (address) {
         address -> Varchar,
         parent_address -> Varchar,
@@ -2198,6 +2226,7 @@ allow_tables_to_appear_in_same_query!(
     collections,
     current_metadata_owners,
     deposit_instructions,
+    dolphin_stats,
     editions,
     escrows,
     execute_sale_instructions,

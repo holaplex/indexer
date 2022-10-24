@@ -1,7 +1,10 @@
-use indexer_core::db::{
-    self,
-    expression::dsl::all,
-    queries::{self, collections::TrendingQueryOptions, feed_event::EventType},
+use indexer_core::{
+    db::{
+        self,
+        expression::dsl::all,
+        queries::{self, collections::TrendingQueryOptions, feed_event::EventType},
+    },
+    pubkeys,
 };
 use objects::{
     ah_listing::AhListing,
@@ -478,7 +481,11 @@ impl QueryRoot {
             limit: limit.try_into()?,
             offset: offset.try_into()?,
         };
-        let nfts = queries::metadatas::list(&conn, query_options)?;
+        let nfts = queries::metadatas::list(
+            &conn,
+            query_options,
+            pubkeys::OPENSEA_AUCTION_HOUSE.to_string(),
+        )?;
 
         nfts.into_iter()
             .map(TryInto::try_into)

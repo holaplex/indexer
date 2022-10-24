@@ -1,6 +1,7 @@
 use indexer_core::{
     bigdecimal::BigDecimal,
     db::queries::{self, metadatas::WalletNftOptions},
+    pubkeys,
     uuid::Uuid,
 };
 use objects::{
@@ -95,6 +96,7 @@ impl WalletNftCount {
             &self.wallet,
             self.creators.as_deref(),
             auction_houses.as_deref(),
+            pubkeys::OPENSEA_AUCTION_HOUSE.to_string(),
         )?;
 
         Ok(count.try_into()?)
@@ -309,16 +311,20 @@ impl Wallet {
     ) -> FieldResult<Vec<Nft>> {
         let conn = ctx.shared.db.get()?;
 
-        let nfts = queries::metadatas::wallet_nfts(&conn, WalletNftOptions {
-            wallet: self.address.clone().into(),
-            auction_house,
-            marketplace_program,
-            collections: collections.map(|c| c.into_iter().map(Into::into).collect()),
-            sort_by: sort_by.map(Into::into),
-            order: order_by.map(Into::into),
-            limit: limit.try_into()?,
-            offset: offset.try_into()?,
-        })?;
+        let nfts = queries::metadatas::wallet_nfts(
+            &conn,
+            WalletNftOptions {
+                wallet: self.address.clone().into(),
+                auction_house,
+                marketplace_program,
+                collections: collections.map(|c| c.into_iter().map(Into::into).collect()),
+                sort_by: sort_by.map(Into::into),
+                order: order_by.map(Into::into),
+                limit: limit.try_into()?,
+                offset: offset.try_into()?,
+            },
+            pubkeys::OPENSEA_AUCTION_HOUSE.to_string(),
+        )?;
 
         nfts.into_iter()
             .map(TryInto::try_into)

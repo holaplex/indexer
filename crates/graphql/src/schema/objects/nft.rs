@@ -589,16 +589,20 @@ impl Collection {
     ) -> FieldResult<Vec<Nft>> {
         let conn = ctx.shared.db.get()?;
 
-        let nfts = queries::metadatas::collection_nfts(&conn, CollectionNftOptions {
-            collection: self.0.mint_address.clone(),
-            auction_house,
-            attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
-            marketplace_program,
-            sort_by: sort_by.map(Into::into),
-            order: order.map(Into::into),
-            limit: limit.try_into()?,
-            offset: offset.try_into()?,
-        })?;
+        let nfts = queries::metadatas::collection_nfts(
+            &conn,
+            CollectionNftOptions {
+                collection: self.0.mint_address.clone(),
+                auction_house,
+                attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
+                marketplace_program,
+                sort_by: sort_by.map(Into::into),
+                order: order.map(Into::into),
+                limit: limit.try_into()?,
+                offset: offset.try_into()?,
+            },
+            pubkeys::OPENSEA_AUCTION_HOUSE.to_string(),
+        )?;
 
         nfts.into_iter()
             .map(TryInto::try_into)
@@ -1185,7 +1189,12 @@ impl NftCount {
     ) -> FieldResult<i32> {
         let conn = context.shared.db.get()?;
 
-        let count = queries::nft_count::listed(&conn, &self.creators, auction_houses.as_deref())?;
+        let count = queries::nft_count::listed(
+            &conn,
+            &self.creators,
+            auction_houses.as_deref(),
+            pubkeys::OPENSEA_AUCTION_HOUSE.to_string(),
+        )?;
 
         Ok(count.try_into()?)
     }
