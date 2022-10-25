@@ -3129,9 +3129,9 @@ dependencies = [
 
 [[package]]
 name = "hpl-reward-center"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d4eb438361a27a0f0d19a78a390981a113bd71f43bdc4eac52bf7006a0b2134"
+checksum = "add7c02891c5262965ef4b779d64a38dd602911d154c394541a49b681e06c077"
 dependencies = [
  "anchor-lang 0.24.2",
  "anchor-spl 0.24.2",
