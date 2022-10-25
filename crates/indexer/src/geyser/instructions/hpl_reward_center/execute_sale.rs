@@ -1,15 +1,22 @@
 use borsh::BorshDeserialize;
+use hpl_reward_center::state::{PayoutOperation, RewardCenter, RewardRules};
 use indexer_core::{
+    bigdecimal::BigDecimal,
     db::{
+        custom_types::PayoutOperationEnum,
         insert_into,
-        models::{FeedEventWallet, HplRewardCenterExecuteSale, Purchase, PurchaseEvent},
+        models::{
+            FeedEventWallet, HplRewardCenterExecuteSale, Purchase, PurchaseEvent,
+            RewardCenter as DbRewardCenter, RewardPayout,
+        },
         on_constraint, select,
         tables::{
             feed_event_wallets, feed_events, hpl_reward_center_execute_sale_ins, listings, offers,
-            purchase_events, purchases,
+            purchase_events, purchases, reward_centers, reward_payouts, rewards_listings,
         },
         update,
     },
+    pubkeys,
     uuid::Uuid,
 };
 
@@ -60,26 +67,44 @@ pub(crate) async fn process(
         slot: slot.try_into()?,
     };
 
-    // upsert_into_purchases_table(
-    //     client,
-    //     Purchase {
-    //         id: None,
-    //         buyer: row.buyer.clone(),
-    //         seller: row.seller.clone(),
-    //         auction_house: row.auction_house.clone(),
-    //         marketplace_program: Owned(pubkeys::AUCTION_HOUSE.to_string()),
-    //         metadata: row.metadata.clone(),
-    //         token_size: row.token_size,
-    //         price: row.buyer_price,
-    //         created_at: row.created_at,
-    //         slot: row.slot,
-    //         write_version: None,
-    //     },
-    //     accts[13].clone(),
-    //     accts[14].clone(),
-    // )
-    // .await
-    // .context("failed to insert purchase!")?;
+    let listing = client
+        .db()
+        .run({
+            let listing = row.clone().listing;
+            move |db| {
+                rewards_listings::table
+                    .select((rewards_listings::token_size, rewards_listings::price))
+                    .filter(rewards_listings::address.eq(listing.to_string()))
+                    .first(db)
+                    .optional()
+            }
+        })
+        .await
+        .context("failed to load rewards listing!")?;
+
+    if let Some((token_size, price)) = listing {
+        upsert_into_purchases_table(
+            client,
+            Purchase {
+                id: None,
+                buyer: row.buyer.clone(),
+                seller: row.seller.clone(),
+                auction_house: row.auction_house.clone(),
+                marketplace_program: Owned(pubkeys::AUCTION_HOUSE.to_string()),
+                metadata: row.metadata.clone(),
+                token_size,
+                price,
+                created_at: row.created_at,
+                slot: row.slot,
+                write_version: None,
+            },
+            accts[13].clone(),
+            accts[14].clone(),
+            row.reward_center.to_string(),
+        )
+        .await
+        .context("failed to insert purchase!")?;
+    }
 
     client
         .db()
@@ -93,11 +118,13 @@ pub(crate) async fn process(
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 pub(crate) async fn upsert_into_purchases_table<'a>(
     client: &Client,
     data: Purchase<'static>,
     buyer_trade_state: String,
     seller_trade_state: String,
+    reward_center_address: String,
 ) -> Result<()> {
     client
         .db()
@@ -149,6 +176,34 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
                 return Ok(());
             }
 
+            let reward_center = reward_centers::table
+                .select(reward_centers::all_columns)
+                .filter(reward_centers::address.eq(reward_center_address.clone()))
+                .first::<DbRewardCenter>(db)
+                .optional()?;
+
+            if let Some(r) = reward_center {
+                let (buyer_reward, seller_reward) = calculate_payout(data.price.try_into()?, &r)?;
+
+                let reward_payout = RewardPayout {
+                    purchase_id,
+                    metadata: Owned(data.metadata.to_string()),
+                    reward_center: Owned(reward_center_address),
+                    buyer: Owned(data.buyer.to_string()),
+                    buyer_reward,
+                    seller: Owned(data.seller.to_string()),
+                    seller_reward,
+                    created_at: data.created_at,
+                    slot: data.slot,
+                    write_version: -1,
+                };
+
+                insert_into(reward_payouts::table)
+                    .values(&reward_payout)
+                    .on_conflict_do_nothing()
+                    .execute(db)?;
+            }
+
             db.build_transaction().read_write().run(|| {
                 let feed_event_id = insert_into(feed_events::table)
                     .default_values()
@@ -187,4 +242,24 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
         .context("Failed to insert purchase!")?;
 
     Ok(())
+}
+
+fn calculate_payout(price: u64, r: &DbRewardCenter) -> Result<(BigDecimal, BigDecimal)> {
+    let reward_center = RewardCenter {
+        token_mint: r.token_mint.parse()?,
+        auction_house: r.auction_house.parse()?,
+        reward_rules: RewardRules {
+            seller_reward_payout_basis_points: r.seller_reward_payout_basis_points.try_into()?,
+            mathematical_operand: match r.mathematical_operand {
+                PayoutOperationEnum::Multiple => PayoutOperation::Multiple,
+                PayoutOperationEnum::Divide => PayoutOperation::Divide,
+            },
+            payout_numeral: r.payout_numeral.try_into()?,
+        },
+        bump: r.bump.try_into()?,
+    };
+
+    let (seller, buyer) = reward_center.payouts(price)?;
+
+    Ok((seller.try_into()?, buyer.try_into()?))
 }

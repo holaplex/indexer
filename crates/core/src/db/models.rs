@@ -53,8 +53,8 @@ pub struct RewardCenter<'a> {
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct RewardPayout<'a> {
-    /// Purchase ticket pubkey
-    pub purchase_ticket: Cow<'a, str>,
+    /// Purchase id uuid
+    pub purchase_id: Uuid,
     /// metadata address
     pub metadata: Cow<'a, str>,
     /// Reward center address
