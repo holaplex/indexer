@@ -17,7 +17,7 @@ use indexer_core::{
 };
 use objects::{
     ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, attributes::AttributeGroup,
-    auction_house::AuctionHouse, profile::TwitterProfile, wallet::Wallet,
+    auction_house::AuctionHouse, collection::Collection, profile::TwitterProfile, wallet::Wallet,
 };
 use scalars::{PublicKey, U64};
 use serde_json::Value;
@@ -28,6 +28,7 @@ use crate::schema::{
     enums::{NftSort, OrderDirection},
     query_root::AttributeFilter,
 };
+
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
     pub metadata_address: String,
@@ -518,7 +519,7 @@ If no value is provided, it will return XSmall")))]
 
     pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
         ctx.nft_collection_loader
-            .load(self.address.clone().into())
+            .load(self.mint_address.clone().into())
             .await
             .map_err(Into::into)
     }
@@ -545,16 +546,16 @@ If no value is provided, it will return XSmall")))]
 }
 
 #[derive(Debug, Clone)]
-pub struct Collection(pub Nft);
+pub struct CollectionNFT(pub Nft);
 
-impl From<Nft> for Collection {
+impl From<Nft> for CollectionNFT {
     fn from(nft: Nft) -> Self {
         Self(nft)
     }
 }
 
 #[graphql_object(Context = AppContext)]
-impl Collection {
+impl CollectionNFT {
     fn nft(&self) -> &Nft {
         &self.0
     }
@@ -852,14 +853,6 @@ impl Collection {
             .map_err(Into::into)
     }
 
-    #[graphql(deprecated = "use `nft { collection }`")]
-    pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        ctx.nft_collection_loader
-            .load(self.0.address.clone().into())
-            .await
-            .map_err(Into::into)
-    }
-
     #[graphql(deprecated = "use `nft { created_at }`")]
     pub async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
         if let Some(slot) = self.0.slot {
@@ -882,280 +875,11 @@ impl Collection {
     }
 }
 
-impl TryFrom<models::Nft> for Collection {
+impl TryFrom<models::Nft> for CollectionNFT {
     type Error = <Nft as TryFrom<models::Nft>>::Error;
 
     fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
         value.try_into().map(Self)
-    }
-}
-
-// TODO: use collection identifier for the data loader instead of string
-#[derive(Debug, Clone)]
-pub struct CollectionIdentifier(pub String);
-
-#[derive(Debug, Clone)]
-pub struct CollectionTrend {
-    pub collection: String,
-    pub floor_price: U64,
-    pub nft_count: i32,
-    pub one_day_volume: U64,
-    pub seven_day_volume: U64,
-    pub thirty_day_volume: U64,
-    pub one_day_sales_count: U64,
-    pub seven_day_sales_count: U64,
-    pub thirty_day_sales_count: U64,
-    pub prev_one_day_volume: U64,
-    pub prev_seven_day_volume: U64,
-    pub prev_thirty_day_volume: U64,
-    pub prev_one_day_sales_count: U64,
-    pub prev_seven_day_sales_count: U64,
-    pub prev_thirty_day_sales_count: U64,
-    pub prev_one_day_floor_price: U64,
-    pub prev_seven_day_floor_price: U64,
-    pub prev_thirty_day_floor_price: U64,
-    pub one_day_volume_change: i32,
-    pub seven_day_volume_change: i32,
-    pub thirty_day_volume_change: i32,
-    pub one_day_floor_price_change: i32,
-    pub seven_day_floor_price_change: i32,
-    pub thirty_day_floor_price_change: i32,
-    pub one_day_sales_count_change: i32,
-    pub seven_day_sales_count_change: i32,
-    pub thirty_day_sales_count_change: i32,
-    pub one_day_marketcap: U64,
-    pub seven_day_marketcap: U64,
-    pub thirty_day_marketcap: U64,
-    pub one_day_marketcap_change: i32,
-    pub seven_day_marketcap_change: i32,
-    pub thirty_day_marketcap_change: i32,
-}
-
-impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
-    type Error = std::num::TryFromIntError;
-
-    fn try_from(
-        models::CollectionTrend {
-            collection,
-            floor_price,
-            nft_count,
-            one_day_volume,
-            seven_day_volume,
-            thirty_day_volume,
-            one_day_sales_count,
-            seven_day_sales_count,
-            thirty_day_sales_count,
-            prev_one_day_volume,
-            prev_seven_day_volume,
-            prev_thirty_day_volume,
-            prev_one_day_sales_count,
-            prev_seven_day_sales_count,
-            prev_thirty_day_sales_count,
-            prev_one_day_floor_price,
-            prev_seven_day_floor_price,
-            prev_thirty_day_floor_price,
-            one_day_volume_change,
-            seven_day_volume_change,
-            thirty_day_volume_change,
-            one_day_floor_price_change,
-            seven_day_floor_price_change,
-            thirty_day_floor_price_change,
-            one_day_sales_count_change,
-            seven_day_sales_count_change,
-            thirty_day_sales_count_change,
-            one_day_marketcap,
-            one_day_marketcap_change,
-            seven_day_marketcap,
-            seven_day_marketcap_change,
-            thirty_day_marketcap,
-            thirty_day_marketcap_change,
-        }: models::CollectionTrend,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            collection,
-            floor_price: floor_price.try_into().unwrap_or_default(),
-            nft_count: nft_count.try_into()?,
-            one_day_volume: one_day_volume.try_into().unwrap_or_default(),
-            seven_day_volume: seven_day_volume.try_into().unwrap_or_default(),
-            thirty_day_volume: thirty_day_volume.try_into().unwrap_or_default(),
-            one_day_sales_count: one_day_sales_count.try_into().unwrap_or_default(),
-            seven_day_sales_count: seven_day_sales_count.try_into().unwrap_or_default(),
-            thirty_day_sales_count: thirty_day_sales_count.try_into().unwrap_or_default(),
-            prev_one_day_volume: prev_one_day_volume.try_into().unwrap_or_default(),
-            prev_seven_day_volume: prev_seven_day_volume.try_into().unwrap_or_default(),
-            prev_thirty_day_volume: prev_thirty_day_volume.try_into().unwrap_or_default(),
-            prev_one_day_sales_count: prev_one_day_sales_count.try_into().unwrap_or_default(),
-            prev_seven_day_sales_count: prev_seven_day_sales_count
-                .to_u64()
-                .unwrap_or_default()
-                .into(),
-            prev_thirty_day_sales_count: prev_thirty_day_sales_count
-                .to_u64()
-                .unwrap_or_default()
-                .into(),
-            prev_one_day_floor_price: prev_one_day_floor_price.try_into().unwrap_or_default(),
-            prev_seven_day_floor_price: prev_seven_day_floor_price
-                .to_u64()
-                .unwrap_or_default()
-                .into(),
-            prev_thirty_day_floor_price: prev_thirty_day_floor_price
-                .to_u64()
-                .unwrap_or_default()
-                .into(),
-            one_day_volume_change: one_day_volume_change.try_into()?,
-            seven_day_volume_change: seven_day_volume_change.try_into()?,
-            thirty_day_volume_change: thirty_day_volume_change.try_into()?,
-            one_day_floor_price_change: one_day_floor_price_change.try_into()?,
-            seven_day_floor_price_change: seven_day_floor_price_change.try_into()?,
-            thirty_day_floor_price_change: thirty_day_floor_price_change.try_into()?,
-            one_day_sales_count_change: one_day_sales_count_change.try_into()?,
-            seven_day_sales_count_change: seven_day_sales_count_change.try_into()?,
-            thirty_day_sales_count_change: thirty_day_sales_count_change.try_into()?,
-            one_day_marketcap: one_day_marketcap.try_into().unwrap_or_default(),
-            seven_day_marketcap: seven_day_marketcap.try_into().unwrap_or_default(),
-            thirty_day_marketcap: thirty_day_marketcap.try_into().unwrap_or_default(),
-            one_day_marketcap_change: one_day_marketcap_change.try_into()?,
-            seven_day_marketcap_change: seven_day_marketcap_change.try_into()?,
-            thirty_day_marketcap_change: thirty_day_marketcap_change.try_into()?,
-        })
-    }
-}
-
-#[graphql_object(Context = AppContext)]
-impl CollectionTrend {
-    pub fn floor_price(&self) -> U64 {
-        self.floor_price
-    }
-
-    pub fn nft_count(&self) -> i32 {
-        self.nft_count
-    }
-
-    pub fn one_day_volume(&self) -> U64 {
-        self.one_day_volume
-    }
-
-    pub fn seven_day_volume(&self) -> U64 {
-        self.seven_day_volume
-    }
-
-    pub fn thirty_day_volume(&self) -> U64 {
-        self.thirty_day_volume
-    }
-
-    pub fn one_day_sales_count(&self) -> U64 {
-        self.one_day_sales_count
-    }
-
-    pub fn seven_day_sales_count(&self) -> U64 {
-        self.seven_day_sales_count
-    }
-
-    pub fn thirty_day_sales_count(&self) -> U64 {
-        self.thirty_day_sales_count
-    }
-
-    pub fn prev_one_day_volume(&self) -> U64 {
-        self.prev_one_day_volume
-    }
-
-    pub fn prev_seven_day_volume(&self) -> U64 {
-        self.prev_seven_day_volume
-    }
-
-    pub fn prev_thirty_day_volume(&self) -> U64 {
-        self.prev_thirty_day_volume
-    }
-
-    pub fn prev_one_day_sales_count(&self) -> U64 {
-        self.prev_one_day_sales_count
-    }
-
-    pub fn prev_seven_day_sales_count(&self) -> U64 {
-        self.prev_seven_day_sales_count
-    }
-
-    pub fn prev_thirty_day_sales_count(&self) -> U64 {
-        self.prev_thirty_day_sales_count
-    }
-
-    pub fn prev_one_day_floor_price(&self) -> U64 {
-        self.prev_one_day_floor_price
-    }
-
-    pub fn prev_seven_day_floor_price(&self) -> U64 {
-        self.prev_seven_day_floor_price
-    }
-
-    pub fn prev_thirty_day_floor_price(&self) -> U64 {
-        self.prev_thirty_day_floor_price
-    }
-
-    pub fn one_day_volume_change(&self) -> i32 {
-        self.one_day_volume_change
-    }
-
-    pub fn seven_day_volume_change(&self) -> i32 {
-        self.seven_day_volume_change
-    }
-
-    pub fn thirty_day_volume_change(&self) -> i32 {
-        self.thirty_day_volume_change
-    }
-
-    pub fn one_day_floor_price_change(&self) -> i32 {
-        self.one_day_floor_price_change
-    }
-
-    pub fn seven_day_floor_price_change(&self) -> i32 {
-        self.seven_day_floor_price_change
-    }
-
-    pub fn thirty_day_floor_price_change(&self) -> i32 {
-        self.thirty_day_floor_price_change
-    }
-
-    pub fn one_day_sales_count_change(&self) -> i32 {
-        self.one_day_sales_count_change
-    }
-
-    pub fn seven_day_sales_count_change(&self) -> i32 {
-        self.seven_day_sales_count_change
-    }
-
-    pub fn thirty_day_sales_count_change(&self) -> i32 {
-        self.thirty_day_sales_count_change
-    }
-
-    pub fn one_day_marketcap(&self) -> U64 {
-        self.one_day_marketcap
-    }
-
-    pub fn seven_day_marketcap(&self) -> U64 {
-        self.one_day_marketcap
-    }
-
-    pub fn thirty_day_marketcap(&self) -> U64 {
-        self.one_day_marketcap
-    }
-
-    pub fn one_day_marketcap_change(&self) -> i32 {
-        self.one_day_marketcap_change
-    }
-
-    pub fn seven_day_marketcap_change(&self) -> i32 {
-        self.one_day_marketcap_change
-    }
-
-    pub fn thirty_day_marketcap_change(&self) -> i32 {
-        self.one_day_marketcap_change
-    }
-
-    pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        ctx.generic_collection_loader
-            .load(self.collection.clone())
-            .await
-            .map_err(Into::into)
     }
 }
 

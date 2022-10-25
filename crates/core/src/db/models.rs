@@ -519,167 +519,112 @@ pub struct NftActivity {
 }
 
 /// A row in the `collection_trends` table
-#[derive(Debug, Clone, Queryable, QueryableByName)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
+#[table_name = "collection_trends"]
 pub struct CollectionTrend {
     /// Collection address or id
-    #[sql_type = "Text"]
     pub collection: String,
-
-    /// Collection floor price
-    #[sql_type = "Numeric"]
-    pub floor_price: BigDecimal,
-
-    /// Number of nfts in the collection
-    #[sql_type = "Int8"]
-    pub nft_count: i64,
-
     /// Collection 1 day volume
-    #[sql_type = "Numeric"]
     #[column_name = "_1d_volume"]
     pub one_day_volume: BigDecimal,
-
     /// Collection 7 days volume
-    #[sql_type = "Numeric"]
     #[column_name = "_7d_volume"]
     pub seven_day_volume: BigDecimal,
-
     /// Collection 30 days volume
-    #[sql_type = "Numeric"]
     #[column_name = "_30d_volume"]
     pub thirty_day_volume: BigDecimal,
-
-    /// Collection 1 day sales count
-    #[sql_type = "Numeric"]
-    #[column_name = "_1d_sales_count"]
-    pub one_day_sales_count: BigDecimal,
-
-    /// Collection 7 days sales count
-    #[sql_type = "Numeric"]
-    #[column_name = "_7d_sales_count"]
-    pub seven_day_sales_count: BigDecimal,
-
-    /// Collection 30 days sales count
-    #[sql_type = "Numeric"]
-    #[column_name = "_30d_sales_count"]
-    pub thirty_day_sales_count: BigDecimal,
-
     /// Collection previous 1 day volume
-    #[sql_type = "Numeric"]
     #[column_name = "_prev_1d_volume"]
     pub prev_one_day_volume: BigDecimal,
-
     /// Collection previous 7 days volume
-    #[sql_type = "Numeric"]
     #[column_name = "_prev_7d_volume"]
     pub prev_seven_day_volume: BigDecimal,
-
     /// Collection previous 30 days volume
-    #[sql_type = "Numeric"]
     #[column_name = "_prev_30d_volume"]
     pub prev_thirty_day_volume: BigDecimal,
-
+    /// Collection 1 day sales count
+    #[column_name = "_1d_sales_count"]
+    pub one_day_sales_count: BigDecimal,
     /// Collection previous 1 day sales count
-    #[sql_type = "Numeric"]
     #[column_name = "prev_1d_sales_count"]
     pub prev_one_day_sales_count: BigDecimal,
-
+    /// Collection 7 days sales count
+    #[column_name = "_7d_sales_count"]
+    pub seven_day_sales_count: BigDecimal,
     /// Collection previous 7 days sales count
-    #[sql_type = "Numeric"]
     #[column_name = "prev_7d_sales_count"]
     pub prev_seven_day_sales_count: BigDecimal,
-
+    /// Collection 30 days sales count
+    #[column_name = "_30d_sales_count"]
+    pub thirty_day_sales_count: BigDecimal,
     /// Collection previous 30 days sales count
-    #[sql_type = "Numeric"]
     #[column_name = "prev_30d_sales_count"]
     pub prev_thirty_day_sales_count: BigDecimal,
-
+    /// Collection floor price
+    pub floor_price: BigDecimal,
     /// Collection previous 1 day floor price
-    #[sql_type = "Numeric"]
     #[column_name = "prev_1d_floor_price"]
     pub prev_one_day_floor_price: BigDecimal,
-
     /// Collection previous 7 days floor price
-    #[sql_type = "Numeric"]
     #[column_name = "prev_7d_floor_price"]
     pub prev_seven_day_floor_price: BigDecimal,
-
     /// Collection previous 30 day floor price
-    #[sql_type = "Numeric"]
     #[column_name = "prev_30d_floor_price"]
     pub prev_thirty_day_floor_price: BigDecimal,
-
     /// Collection 1 day volume change
-    #[sql_type = "BigInt"]
     #[column_name = "_1d_volume_change"]
     pub one_day_volume_change: i64,
-
     /// Collection 7 days volume change
-    #[sql_type = "BigInt"]
     #[column_name = "_7d_volume_change"]
     pub seven_day_volume_change: i64,
-
     /// Collection 30 days volume change
-    #[sql_type = "BigInt"]
     #[column_name = "_30d_volume_change"]
     pub thirty_day_volume_change: i64,
-
     /// Collection 1 day floor price change
-    #[sql_type = "BigInt"]
     #[column_name = "_1d_floor_price_change"]
     pub one_day_floor_price_change: i64,
-
     /// Collection 7 days floor price change
-    #[sql_type = "BigInt"]
     #[column_name = "_7d_floor_price_change"]
     pub seven_day_floor_price_change: i64,
-
     /// Collection 30 day floor price change
-    #[sql_type = "BigInt"]
     #[column_name = "_30d_floor_price_change"]
     pub thirty_day_floor_price_change: i64,
-
     /// Collection 1 day sales count change
-    #[sql_type = "BigInt"]
     #[column_name = "_1d_sales_count_change"]
     pub one_day_sales_count_change: i64,
-
     /// Collection 7 days sales count change
-    #[sql_type = "BigInt"]
     #[column_name = "_7d_sales_count_change"]
     pub seven_day_sales_count_change: i64,
-
     /// Collection 30 days sales count change
-    #[sql_type = "BigInt"]
     #[column_name = "_30d_sales_count_change"]
     pub thirty_day_sales_count_change: i64,
-
     /// Collection 1 day marketcap
-    #[sql_type = "Numeric"]
     #[column_name = "_1d_marketcap"]
     pub one_day_marketcap: BigDecimal,
-
+    /// Collection prev 1 day marketcap
+    #[column_name = "prev_1d_marketcap"]
+    pub prev_one_day_marketcap: BigDecimal,
     /// Collection 7 day marketcap
-    #[sql_type = "Numeric"]
     #[column_name = "_7d_marketcap"]
     pub seven_day_marketcap: BigDecimal,
-
+    /// Collection prev 7 day marketcap
+    #[column_name = "prev_7d_marketcap"]
+    pub prev_seven_day_marketcap: BigDecimal,
     /// Collection 30 day marketcap
-    #[sql_type = "Numeric"]
     #[column_name = "_30d_marketcap"]
     pub thirty_day_marketcap: BigDecimal,
-
+    /// Collection prev 30 day marketcap
+    #[column_name = "prev_30d_marketcap"]
+    pub prev_thirty_day_marketcap: BigDecimal,
+    /// Number of nfts in the collection
+    pub nft_count: i64,
     /// Collection 1 day marketcap
-    #[sql_type = "BigInt"]
     #[column_name = "_1d_marketcap_change"]
     pub one_day_marketcap_change: i64,
-
     /// Collection 7 day marketcap change
-    #[sql_type = "BigInt"]
     #[column_name = "_7d_marketcap_change"]
     pub seven_day_marketcap_change: i64,
-
     /// Collection 30 day marketcap change
-    #[sql_type = "BigInt"]
     #[column_name = "_30d_marketcap_change"]
     pub thirty_day_marketcap_change: i64,
 }
@@ -1483,23 +1428,15 @@ pub struct TwitterHandle<'a> {
 /// A row in a `collected_collections` query of a wallet
 #[derive(Debug, Clone, QueryableByName)]
 pub struct CollectedCollection {
-    /// The collection nft metadadata address
-    #[sql_type = "VarChar"]
-    pub collection_nft_address: String,
+    /// The moonrank collection id
+    #[sql_type = "Text"]
+    pub collection_id: String,
     /// The nfts from this collection owned by the wallet
     #[sql_type = "Int8"]
     pub nfts_owned: i64,
     /// The estimated value of the collection owend by the wallet
     #[sql_type = "Int8"]
     pub estimated_value: i64,
-}
-
-/// A row in a `created_collections` query of a wallet
-#[derive(Debug, Clone, QueryableByName)]
-pub struct CreatedCollection {
-    /// The metadata address for the collection
-    #[sql_type = "VarChar"]
-    pub address: String,
 }
 
 /// A row in the `metadata_collection_keys` table
@@ -3461,30 +3398,67 @@ pub struct CollectionMintAttribute<'a> {
     pub value_perc: BigDecimal,
 }
 
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, QueryableByName, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "dolphin_stats"]
 #[allow(missing_docs)]
 pub struct DolphinStats<'a> {
+    #[sql_type = "VarChar"]
     pub collection_symbol: Cow<'a, str>,
+    #[sql_type = "BigInt"]
     pub floor_1d: i64,
+    #[sql_type = "BigInt"]
     pub floor_7d: i64,
+    #[sql_type = "BigInt"]
     pub floor_30d: i64,
+    #[sql_type = "BigInt"]
     pub listed_1d: i64,
+    #[sql_type = "BigInt"]
     pub listed_7d: i64,
+    #[sql_type = "BigInt"]
     pub listed_30d: i64,
+    #[sql_type = "BigInt"]
     pub volume_1d: i64,
+    #[sql_type = "BigInt"]
     pub volume_7d: i64,
+    #[sql_type = "BigInt"]
     pub volume_30d: i64,
+    #[sql_type = "BigInt"]
     pub last_floor_1d: i64,
+    #[sql_type = "BigInt"]
     pub last_floor_7d: i64,
+    #[sql_type = "BigInt"]
     pub last_floor_30d: i64,
+    #[sql_type = "BigInt"]
     pub last_listed_1d: i64,
+    #[sql_type = "BigInt"]
     pub last_listed_7d: i64,
+    #[sql_type = "BigInt"]
     pub last_listed_30d: i64,
+    #[sql_type = "BigInt"]
     pub last_volume_1d: i64,
+    #[sql_type = "BigInt"]
     pub last_volume_7d: i64,
+    #[sql_type = "BigInt"]
     pub last_volume_30d: i64,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_floor_1d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_floor_7d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_floor_30d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_volume_1d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_volume_7d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_volume_30d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_listed_1d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_listed_7d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_listed_30d: Option<i32>,
 }
 
 #[derive(Debug, Clone, AsChangeset)]
@@ -3498,4 +3472,7 @@ pub struct DolphinStats1D<'a> {
     pub last_floor_1d: i64,
     pub last_listed_1d: i64,
     pub last_volume_1d: i64,
+    pub change_floor_1d: Option<i32>,
+    pub change_volume_1d: Option<i32>,
+    pub change_listed_1d: Option<i32>,
 }

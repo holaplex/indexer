@@ -4,7 +4,7 @@ use juniper::{EmptyMutation, EmptySubscription, RootNode};
 
 mod context;
 pub(self) mod dataloaders;
-pub mod enums;
+pub(self) mod enums;
 pub(self) mod objects;
 mod query_root;
 pub(self) mod scalars;
@@ -22,7 +22,7 @@ pub(self) mod prelude {
         GraphQLObject,
     };
 
-    pub(super) use super::{context::AppContext, dataloaders, objects, scalars, services};
+    pub(super) use super::{context::AppContext, dataloaders, enums, objects, scalars, services};
     pub(crate) use crate::SharedData;
 }
 

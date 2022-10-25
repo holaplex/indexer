@@ -568,22 +568,13 @@ pub enum CollectionSort {
     ThirtyDayVolume,
 
     /// sort results by 1 day sales count
-    OneDaySalesCount,
+    OneDayListedCount,
 
     /// sort results by 7 days sales count
-    SevenDaySalesCount,
+    SevenDayListedCount,
 
     /// sort results by 30 days sales count
-    ThirtyDaySalesCount,
-
-    /// sort results by 1 day marketcap
-    OneDayMarketcap,
-
-    /// sort results by 7 day marketcap
-    SevenDayMarketcap,
-
-    /// sort results by 30 day marketcap
-    ThirtyDayMarketcap,
+    ThirtyDayListedCount,
 }
 
 /// `HPL Reward Center` payout operation
