@@ -145,7 +145,7 @@ SELECT collections.id as collection_id,
 	INNER JOIN metadatas ON (metadatas.mint_address = collection_mints.mint)
     INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address)
     INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
-    INNER JOIN dolphin_stats ON (dolphin_stats.collection_symbol = collections.magic_eden_id)
+    INNER JOIN dolphin_stats ON (dolphin_stats.collection_symbol = collections.id)
     WHERE current_metadata_owners.owner_address = $1
     GROUP BY collections.id, dolphin_stats.floor_1d
 	ORDER BY estimated_value DESC;

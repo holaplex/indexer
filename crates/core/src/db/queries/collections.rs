@@ -90,7 +90,7 @@ enum DolphinStats {
 #[allow(missing_docs)]
 enum Collections {
     Table,
-    MagicEdenId,
+    Id,
 }
 
 /// Query collection by address
@@ -575,7 +575,7 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Do
         .from(DolphinStats::Table)
         .inner_join(
             Collections::Table,
-            Expr::tbl(Collections::Table, Collections::MagicEdenId)
+            Expr::tbl(Collections::Table, Collections::Id)
                 .equals(DolphinStats::Table, DolphinStats::CollectionSymbol),
         )
         .limit(limit)
