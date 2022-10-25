@@ -1,0 +1,1 @@
+drop table associated_token_accounts;
