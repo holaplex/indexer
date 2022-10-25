@@ -1,7 +1,11 @@
 use anchor_lang_v0_24::{AccountDeserialize, Discriminator};
 use hpl_reward_center::state::{Listing, Offer, RewardCenter};
 
-use super::{accounts::hpl_reward_center as reward_center, instructions, AccountUpdate, Client};
+use super::{
+    accounts::hpl_reward_center as reward_center,
+    instructions::hpl_reward_center::{close_listing, close_offer, execute_sale},
+    AccountUpdate, Client,
+};
 use crate::prelude::*;
 
 const EXECUTE_SALE: [u8; 8] = [37, 74, 217, 157, 79, 49, 35, 6];
@@ -54,18 +58,9 @@ pub(crate) async fn process_instruction(
     let params = data[8..].to_vec();
 
     match discriminator {
-        EXECUTE_SALE => {
-            instructions::hpl_reward_center::execute_sale::process(client, &params, accounts, slot)
-                .await
-        },
-        CLOSE_OFFER => {
-            instructions::hpl_reward_center::close_offer::process(client, &params, accounts, slot)
-                .await
-        },
-        CLOSE_LISTING => {
-            instructions::hpl_reward_center::close_listing::process(client, &params, accounts, slot)
-                .await
-        },
+        EXECUTE_SALE => execute_sale::process(client, &params, accounts, slot).await,
+        CLOSE_OFFER => close_offer::process(client, &params, accounts, slot).await,
+        CLOSE_LISTING => close_listing::process(client, &params, accounts, slot).await,
         _ => Ok(()),
     }
 }

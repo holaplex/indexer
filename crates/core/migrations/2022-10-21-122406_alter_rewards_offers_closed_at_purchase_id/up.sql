@@ -14,8 +14,8 @@ alter table reward_payouts
   add column purchase_id uuid default gen_random_uuid();
 
 alter table reward_payouts
-drop constraint reward_payouts_pkey cascade,
-add primary key(purchase_id); 
+  drop constraint reward_payouts_pkey cascade,
+  add primary key(purchase_id); 
 
 alter table reward_payouts
   drop column purchase_ticket;
