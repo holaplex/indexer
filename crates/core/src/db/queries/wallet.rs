@@ -8,7 +8,7 @@ use diesel::{
 
 use crate::{
     db::{
-        models::{CollectedCollection, CreatedCollection, Offer, WalletActivity},
+        models::{CollectedCollection, Offer, WalletActivity},
         Connection,
     },
     error::prelude::*,
@@ -99,8 +99,8 @@ SELECT offers.id as id,  metadata, price, auction_house, created_at, marketplace
 buyer, trade_state, token_account, purchase_id,
 token_size, trade_state_bump, canceled_at, write_version, expiry, offers.slot as slot
 FROM offers
-    LEFT JOIN metadatas on (metadatas.address = offers.metadata)
-    LEFT JOIN current_metadata_owners on (current_metadata_owners.mint_address = metadatas.mint_address)
+    INNER JOIN metadatas on (metadatas.address = offers.metadata)
+    INNER JOIN current_metadata_owners on (current_metadata_owners.mint_address = metadatas.mint_address)
     WHERE current_metadata_owners.owner_address = $1
     AND offers.purchase_id IS NULL
     AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
@@ -137,19 +137,17 @@ pub fn offers(
 }
 
 const COLLECTED_COLLECTIONS_QUERY: &str = r"
-SELECT collection_metadatas.address as collection_nft_address,
+SELECT collections.id as collection_id,
 	COUNT(metadatas.address) as nfts_owned,
-	COALESCE(collection_stats.floor_price * COUNT(metadatas.address), 0) as estimated_value
-    FROM metadatas
+	COALESCE(dolphin_stats.floor_1d * COUNT(metadatas.address), 0) as estimated_value
+    FROM collections
+    INNER JOIN collection_mints ON (collection_mints.collection_id = collections.id)
+	INNER JOIN metadatas ON (metadatas.mint_address = collection_mints.mint)
     INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address)
     INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
-    INNER JOIN metadata_collection_keys ON (metadata_collection_keys.metadata_address = metadatas.address)
-	INNER JOIN collection_stats ON (metadata_collection_keys.collection_address = collection_stats.collection_address)
-    INNER JOIN metadatas collection_metadatas ON (collection_metadatas.mint_address = metadata_collection_keys.collection_address)
-	INNER JOIN metadata_jsons collection_metadata_jsons ON (collection_metadata_jsons.metadata_address = collection_metadatas.address)
+    INNER JOIN dolphin_stats ON (dolphin_stats.collection_symbol = collections.id)
     WHERE current_metadata_owners.owner_address = $1
-    AND metadata_collection_keys.verified
-    GROUP BY collection_nft_address, collection_stats.floor_price
+    GROUP BY collections.id, dolphin_stats.floor_1d
 	ORDER BY estimated_value DESC;
     -- $1: address::text";
 
@@ -165,26 +163,4 @@ pub fn collected_collections(
         .bind(address)
         .load(conn)
         .context("Failed to load wallet(s) collected collections")
-}
-
-const CREATED_COLLECTIONS_QUERY: &str = r"
-SELECT metadatas.address
-    FROM metadatas
-    INNER JOIN collection_stats ON (metadatas.mint_address = collection_stats.collection_address)
-    WHERE
-        metadatas.update_authority_address = $1;
--- $1: address::text";
-
-/// Load created collections for a wallet.
-///
-/// # Errors
-/// This function fails if the underlying SQL query returns an error
-pub fn created_collections(
-    conn: &Connection,
-    address: impl ToSql<Text, Pg>,
-) -> Result<Vec<CreatedCollection>> {
-    diesel::sql_query(CREATED_COLLECTIONS_QUERY)
-        .bind(address)
-        .load(conn)
-        .context("Failed to load wallet(s) created collections")
 }

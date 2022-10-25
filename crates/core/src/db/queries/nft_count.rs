@@ -19,7 +19,6 @@ use crate::{
         Connection,
     },
     error::prelude::*,
-    pubkeys,
 };
 
 /// Handles queries for total nfts count
@@ -42,11 +41,36 @@ pub fn total<C: ToSql<Text, Pg>>(conn: &Connection, creators: &[C]) -> Result<i6
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
-pub fn listed<C: ToSql<Text, Pg>, L: ToSql<Text, Pg>>(
+pub fn listed<C: ToSql<Text, Pg>, L: ToSql<Text, Pg>, O: AsExpression<Text>>(
     conn: &Connection,
     creators: &[C],
     listed: Option<&[L]>,
-) -> Result<i64> {
+    opensea_auction_house: O,
+) -> Result<i64>
+where
+    O::Expression: QueryFragment<Pg>
+        + NonAggregate
+        + AppearsOnTable<
+            JoinOn<
+                Join<
+                    JoinOn<
+                        Join<
+                            JoinOn<
+                                Join<metadatas::table, metadata_creators::table, Inner>,
+                                Eq<metadatas::address, metadata_creators::metadata_address>,
+                            >,
+                            listings::table,
+                            Inner,
+                        >,
+                        Eq<metadatas::address, listings::metadata>,
+                    >,
+                    current_metadata_owners::table,
+                    Inner,
+                >,
+                Eq<metadatas::mint_address, current_metadata_owners::mint_address>,
+            >,
+        >,
+{
     let mut query = metadatas::table
         .inner_join(
             metadata_creators::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
@@ -67,7 +91,7 @@ pub fn listed<C: ToSql<Text, Pg>, L: ToSql<Text, Pg>>(
         .filter(metadata_creators::verified.eq(true))
         .filter(listings::purchase_id.is_null())
         .filter(listings::canceled_at.is_null())
-        .filter(listings::auction_house.ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()))
+        .filter(listings::auction_house.ne(opensea_auction_house))
         .filter(listings::seller.eq(current_metadata_owners::owner_address))
         .count()
         .get_result(conn)
@@ -155,14 +179,36 @@ where
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
-pub fn offered<W: AsExpression<Text>, C: ToSql<Text, Pg>, H: ToSql<Text, Pg>>(
+#[allow(clippy::type_repetition_in_bounds)] // thar be dragons
+pub fn offered<
+    W: AsExpression<Text>,
+    C: ToSql<Text, Pg>,
+    H: ToSql<Text, Pg>,
+    O: AsExpression<Text>,
+>(
     conn: &Connection,
     wallet: W,
     creators: Option<&[C]>,
     auction_houses: Option<&[H]>,
+    opensea_auction_house: O,
 ) -> Result<i64>
 where
     W::Expression: NonAggregate
+        + QueryFragment<Pg>
+        + AppearsOnTable<
+            JoinOn<
+                Join<
+                    JoinOn<
+                        Join<metadatas::table, metadata_creators::table, Inner>,
+                        Eq<metadatas::address, metadata_creators::metadata_address>,
+                    >,
+                    offers::table,
+                    Inner,
+                >,
+                Eq<metadatas::address, offers::metadata>,
+            >,
+        >,
+    O::Expression: NonAggregate
         + QueryFragment<Pg>
         + AppearsOnTable<
             JoinOn<
@@ -198,7 +244,7 @@ where
         .filter(offers::buyer.eq(wallet))
         .filter(offers::purchase_id.is_null())
         .filter(offers::canceled_at.is_null())
-        .filter(offers::auction_house.ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()))
+        .filter(offers::auction_house.ne(opensea_auction_house))
         .count()
         .get_result(conn)
         .context("failed to load nfts count of open offers for a wallet")
