@@ -52,10 +52,8 @@ pub enum CollectionSort {
     Volume,
     #[graphql(name = "FLOOR")]
     Floor,
-    #[graphql(name = "NUMBER_SALES")]
-    NumberSales,
-    #[graphql(name = "MARKETCAP")]
-    Marketcap,
+    #[graphql(name = "NUMBER_LISTED")]
+    NumberListed,
 }
 
 #[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]
@@ -67,4 +65,40 @@ pub enum CollectionInterval {
     Seven,
     #[graphql(name = "THIRTY_DAY")]
     Thirty,
+}
+
+#[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]
+#[graphql(description = "Reward center mathematical operands")]
+pub enum PayoutOperation {
+    #[graphql(name = "MULTIPLE")]
+    Multiple,
+    #[graphql(name = "DIVIDE")]
+    Divide,
+}
+
+impl From<db::custom_types::PayoutOperationEnum> for PayoutOperation {
+    fn from(operation: db::custom_types::PayoutOperationEnum) -> Self {
+        match operation {
+            db::custom_types::PayoutOperationEnum::Multiple => Self::Multiple,
+            db::custom_types::PayoutOperationEnum::Divide => Self::Divide,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, juniper::GraphQLEnum)]
+#[graphql(description = "Sorts results by price or listed at")]
+pub enum OfferType {
+    #[graphql(name = "OFFER_PLACED")]
+    OfferPlaced,
+    #[graphql(name = "OFFER_RECEIVED")]
+    OfferReceived,
+}
+
+impl From<OfferType> for String {
+    fn from(other: OfferType) -> Self {
+        match other {
+            OfferType::OfferPlaced => String::from("OFFER_PLACED"),
+            OfferType::OfferReceived => String::from("OFFER_RECEIVED"),
+        }
+    }
 }

@@ -1,18 +1,21 @@
 use indexer_core::{
+    bigdecimal::BigDecimal,
     db::queries::{self, metadatas::WalletNftOptions},
+    pubkeys,
     uuid::Uuid,
 };
 use objects::{
     auction_house::AuctionHouse,
+    collection::Collection,
     listing::Bid,
-    nft::{Collection, Nft, NftCreator},
+    nft::{Nft, NftCreator},
     profile::TwitterProfile,
 };
 use scalars::{markers::TokenMint, PublicKey, U64};
-use tables::{associated_token_accounts, bids, graph_connections};
+use tables::{associated_token_accounts, bids, graph_connections, wallet_total_rewards};
 
-use super::prelude::*;
-use crate::schema::enums::{NftSort, OrderDirection};
+use super::{ah_offer::Offer, prelude::*, reward_center::RewardCenter};
+use crate::schema::enums::{NftSort, OfferType, OrderDirection};
 
 #[derive(Debug, Clone)]
 pub struct Wallet {
@@ -94,6 +97,7 @@ impl WalletNftCount {
             &self.wallet,
             self.creators.as_deref(),
             auction_houses.as_deref(),
+            pubkeys::OPENSEA_AUCTION_HOUSE.to_string(),
         )?;
 
         Ok(count.try_into()?)
@@ -128,7 +132,7 @@ impl WalletNftCount {
 
 #[derive(Debug, Clone)]
 pub struct CollectedCollection {
-    metadata_address: PublicKey<Nft>,
+    collection_id: String,
     nfts_owned: i32,
     estimated_value: U64,
 }
@@ -138,13 +142,13 @@ impl TryFrom<models::CollectedCollection> for CollectedCollection {
 
     fn try_from(
         models::CollectedCollection {
-            collection_nft_address,
+            collection_id,
             nfts_owned,
             estimated_value,
         }: models::CollectedCollection,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            metadata_address: collection_nft_address.into(),
+            collection_id,
             nfts_owned: nfts_owned.try_into()?,
             estimated_value: estimated_value.try_into()?,
         })
@@ -154,10 +158,9 @@ impl TryFrom<models::CollectedCollection> for CollectedCollection {
 #[graphql_object(Context = AppContext)]
 impl CollectedCollection {
     async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        ctx.nft_loader
-            .load(self.metadata_address.clone())
+        ctx.generic_collection_loader
+            .load(self.collection_id.clone())
             .await
-            .map(|op| op.map(Into::into))
             .map_err(Into::into)
     }
 
@@ -167,30 +170,6 @@ impl CollectedCollection {
 
     fn estimated_value(&self) -> U64 {
         self.estimated_value
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct CreatedCollection {
-    address: PublicKey<Nft>,
-}
-
-impl From<models::CreatedCollection> for CreatedCollection {
-    fn from(models::CreatedCollection { address }: models::CreatedCollection) -> Self {
-        Self {
-            address: address.into(),
-        }
-    }
-}
-
-#[graphql_object(Context = AppContext)]
-impl CreatedCollection {
-    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        ctx.nft_loader
-            .load(self.address.clone())
-            .await
-            .map(|op| op.map(Into::into))
-            .map_err(Into::into)
     }
 }
 
@@ -308,16 +287,20 @@ impl Wallet {
     ) -> FieldResult<Vec<Nft>> {
         let conn = ctx.shared.db.get()?;
 
-        let nfts = queries::metadatas::wallet_nfts(&conn, WalletNftOptions {
-            wallet: self.address.clone().into(),
-            auction_house,
-            marketplace_program,
-            collections: collections.map(|c| c.into_iter().map(Into::into).collect()),
-            sort_by: sort_by.map(Into::into),
-            order: order_by.map(Into::into),
-            limit: limit.try_into()?,
-            offset: offset.try_into()?,
-        })?;
+        let nfts = queries::metadatas::wallet_nfts(
+            &conn,
+            WalletNftOptions {
+                wallet: self.address.clone().into(),
+                auction_house,
+                marketplace_program,
+                collections: collections.map(|c| c.into_iter().map(Into::into).collect()),
+                sort_by: sort_by.map(Into::into),
+                order: order_by.map(Into::into),
+                limit: limit.try_into()?,
+                offset: offset.try_into()?,
+            },
+            pubkeys::OPENSEA_AUCTION_HOUSE.to_string(),
+        )?;
 
         nfts.into_iter()
             .map(TryInto::try_into)
@@ -360,17 +343,6 @@ impl Wallet {
             .map_err(Into::into)
     }
 
-    pub fn created_collections(&self, ctx: &AppContext) -> FieldResult<Vec<CreatedCollection>> {
-        let conn = ctx.shared.db.get()?;
-
-        let collections = queries::wallet::created_collections(&conn, &self.address)?;
-        collections
-            .into_iter()
-            .map(TryInto::try_into)
-            .collect::<Result<_, _>>()
-            .map_err(Into::into)
-    }
-
     pub fn activities(
         &self,
         ctx: &AppContext,
@@ -384,6 +356,24 @@ impl Wallet {
             queries::wallet::activities(&conn, &self.address, event_types, limit, offset)?;
 
         activities
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    pub fn offers(
+        &self,
+        ctx: &AppContext,
+        offer_type: Option<OfferType>,
+        limit: i32,
+        offset: i32,
+    ) -> FieldResult<Vec<Offer>> {
+        let conn = ctx.shared.db.get()?;
+        let offer_type: Option<String> = offer_type.map(Into::into);
+        let offers = queries::wallet::offers(&conn, &self.address, offer_type, limit, offset)?;
+
+        offers
             .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
@@ -431,6 +421,26 @@ impl Wallet {
         creators: Option<Vec<PublicKey<NftCreator>>>,
     ) -> WalletNftCount {
         WalletNftCount::new(self.address.clone(), creators)
+    }
+
+    pub fn total_rewards(
+        &self,
+        ctx: &AppContext,
+        reward_center: PublicKey<RewardCenter>,
+    ) -> FieldResult<U64> {
+        let db_conn = ctx.shared.db.get()?;
+
+        let wallet_total_rewards = wallet_total_rewards::table
+            .select(wallet_total_rewards::total_reward)
+            .filter(
+                wallet_total_rewards::reward_center_address
+                    .eq(&reward_center)
+                    .and(wallet_total_rewards::wallet_address.eq(&self.address)),
+            )
+            .first::<BigDecimal>(&db_conn)
+            .context("Failed to load total rewards")?;
+
+        Ok(wallet_total_rewards.try_into().unwrap_or_default())
     }
 }
 

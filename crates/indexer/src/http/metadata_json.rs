@@ -1,7 +1,7 @@
 use std::fmt::{self, Debug, Display};
 
 use indexer_core::{
-    assets::{proxy_url, proxy_url_hinted, AssetIdentifier},
+    assets::{proxy_non_permaweb_url, proxy_url, proxy_url_hinted, AssetIdentifier},
     db::{
         delete, insert_into,
         models::{
@@ -83,7 +83,7 @@ struct MetadataJson {
     name: String,
     symbol: Option<String>,
     description: Option<String>,
-    seller_fee_basis_points: i64,
+    seller_fee_basis_points: Option<i64>,
     image: Option<String>,
     animation_url: Option<String>,
     collection: Option<Collection>,
@@ -214,7 +214,7 @@ async fn try_locate_json(
             proxy_url_hinted(client.proxy_args(), id, hint, None)
                 .map(|u| u.unwrap_or_else(|| unreachable!()))
         } else if FETCH_NON_PERMAWEB {
-            Ok(id.url.clone())
+            Ok(proxy_non_permaweb_url(client.proxy_args(), id.url.clone())?)
         } else {
             continue;
         };
@@ -485,13 +485,7 @@ fn process_attributes(
 
         insert_into(attributes::table)
             .values(&row)
-            .on_conflict((
-                attributes::metadata_address,
-                attributes::value,
-                attributes::trait_type,
-            ))
-            .do_update()
-            .set(&row)
+            .on_conflict_do_nothing()
             .execute(db)
             .context("Failed to insert attribute!")?;
     }

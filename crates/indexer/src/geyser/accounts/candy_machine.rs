@@ -90,8 +90,6 @@ async fn process_config_lines(
     key: Pubkey,
     config_lines: Vec<(ConfigLine, usize, bool)>,
 ) -> Result<()> {
-    let mut db_config_lines: Vec<CMConfigLine> = Vec::new();
-
     for config_line in &config_lines {
         let db_config_line = CMConfigLine {
             candy_machine_address: Owned(key.to_string()),
@@ -101,26 +99,17 @@ async fn process_config_lines(
             taken: config_line.2,
         };
 
-        db_config_lines.push(db_config_line);
-    }
-
-    client
-        .db()
-        .run(move |db| {
-            db.build_transaction().read_write().run(|| {
-                for cl in &db_config_lines {
-                    insert_into(candy_machine_config_lines::table)
-                        .values(cl)
-                        .on_conflict_do_nothing()
-                        .execute(db)
-                        .context("Failed to insert config line")?;
-                }
-
-                Result::<_>::Ok(())
+        client
+            .db()
+            .run(move |db| {
+                insert_into(candy_machine_config_lines::table)
+                    .values(db_config_line)
+                    .on_conflict_do_nothing()
+                    .execute(db)
             })
-        })
-        .await
-        .context("Failed to insert candy machine config lines")?;
+            .await
+            .context("Failed to insert candy machine config lines")?;
+    }
 
     Ok(())
 }

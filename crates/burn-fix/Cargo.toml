@@ -9,8 +9,8 @@ name = "burn-fix"
 path = "main.rs"
 
 [dependencies]
-solana-client = "1.9.15"
-solana-program = "1.9.15"
+solana-client = "~1.9.28"
+solana-program = "~1.9.28"
 
 [dependencies.indexer-core]
 package = "holaplex-indexer-core"

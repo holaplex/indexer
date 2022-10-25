@@ -555,8 +555,14 @@ impl FromSql<VoteWeightV1, Pg> for VoteWeightV1Enum {
 /// Direction for sorting Collections query results by the "SORT BY" variable(s)
 #[derive(Debug, Clone, Copy, strum::EnumString, strum::Display)]
 pub enum CollectionSort {
-    /// sort results by floor price
-    FloorPrice,
+    /// sort results by floor price 1d
+    OneDayFloorPrice,
+
+    /// sort results by floor price 7d
+    SevenDayFloorPrice,
+
+    /// sort results by floor price 30d
+    ThirtyDayFloorPrice,
 
     /// sort results by 1 day volume
     OneDayVolume,
@@ -568,20 +574,39 @@ pub enum CollectionSort {
     ThirtyDayVolume,
 
     /// sort results by 1 day sales count
-    OneDaySalesCount,
+    OneDayListedCount,
 
     /// sort results by 7 days sales count
-    SevenDaySalesCount,
+    SevenDayListedCount,
 
     /// sort results by 30 days sales count
-    ThirtyDaySalesCount,
+    ThirtyDayListedCount,
+}
 
-    /// sort results by 1 day marketcap
-    OneDayMarketcap,
+/// `HPL Reward Center` payout operation
+#[derive(SqlType, Debug, Clone, Copy)]
+/// Represents database `payout_operation` enum
+#[postgres(type_name = "payout_operation")]
+pub struct PayoutOperation;
 
-    /// sort results by 7 day marketcap
-    SevenDayMarketcap,
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "PayoutOperation"]
+#[allow(missing_docs)]
+pub enum PayoutOperationEnum {
+    Multiple,
+    Divide,
+}
 
-    /// sort results by 30 day marketcap
-    ThirtyDayMarketcap,
+impl ToSql<PayoutOperation, Pg> for PayoutOperationEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<PayoutOperation, Pg> for PayoutOperationEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
 }
