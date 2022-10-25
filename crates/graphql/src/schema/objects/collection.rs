@@ -187,14 +187,9 @@ impl Collection {
     }
 
     pub async fn trends(&self, context: &AppContext) -> FieldResult<Option<CollectionTrend>> {
-        let magic_eden_id = match self.magic_eden_id {
-            Some(ref id) => id.clone(),
-            None => return Ok(None),
-        };
-
         context
             .mr_collection_trends_loader
-            .load(magic_eden_id)
+            .load(self.id.clone())
             .await
             .map_err(Into::into)
     }
