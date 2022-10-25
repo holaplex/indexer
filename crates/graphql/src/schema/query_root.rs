@@ -831,10 +831,15 @@ impl QueryRoot {
             (CollectionInterval::Thirty, CollectionSort::NumberListed) => {
                 db::custom_types::CollectionSort::ThirtyDayListedCount
             },
-            (
-                CollectionInterval::One | CollectionInterval::Seven | CollectionInterval::Thirty,
-                CollectionSort::Floor,
-            ) => db::custom_types::CollectionSort::FloorPrice,
+            (CollectionInterval::One, CollectionSort::Floor) => {
+                db::custom_types::CollectionSort::OneDayFloorPrice
+            },
+            (CollectionInterval::Seven, CollectionSort::Floor) => {
+                db::custom_types::CollectionSort::SevenDayFloorPrice
+            },
+            (CollectionInterval::Thirty, CollectionSort::Floor) => {
+                db::custom_types::CollectionSort::ThirtyDayFloorPrice
+            },
         };
 
         let collections = queries::collections::trends(&conn, TrendingQueryOptions {

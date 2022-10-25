@@ -514,7 +514,9 @@ pub struct TrendingQueryOptions {
 impl From<CollectionSort> for DolphinStats {
     fn from(sort: CollectionSort) -> Self {
         match sort {
-            CollectionSort::FloorPrice => DolphinStats::Floor1d,
+            CollectionSort::OneDayFloorPrice => DolphinStats::Floor1d,
+            CollectionSort::SevenDayFloorPrice => DolphinStats::Floor7d,
+            CollectionSort::ThirtyDayFloorPrice => DolphinStats::Floor30d,
             CollectionSort::OneDayVolume => DolphinStats::Volume1d,
             CollectionSort::SevenDayVolume => DolphinStats::Volume7d,
             CollectionSort::ThirtyDayVolume => DolphinStats::Volume30d,
