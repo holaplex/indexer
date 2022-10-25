@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use diesel::sql_types::{
-    Array, Bool, Int4, Int8, Nullable, Numeric, Text, Timestamp, Timestamptz, VarChar, BigInt
+    Array, BigInt, Bool, Int4, Int8, Nullable, Numeric, Text, Timestamp, Timestamptz, VarChar,
 };
 use uuid::Uuid;
 
@@ -1428,23 +1428,15 @@ pub struct TwitterHandle<'a> {
 /// A row in a `collected_collections` query of a wallet
 #[derive(Debug, Clone, QueryableByName)]
 pub struct CollectedCollection {
-    /// The collection nft metadadata address
-    #[sql_type = "VarChar"]
-    pub collection_nft_address: String,
+    /// The moonrank collection id
+    #[sql_type = "Text"]
+    pub collection_id: String,
     /// The nfts from this collection owned by the wallet
     #[sql_type = "Int8"]
     pub nfts_owned: i64,
     /// The estimated value of the collection owend by the wallet
     #[sql_type = "Int8"]
     pub estimated_value: i64,
-}
-
-/// A row in a `created_collections` query of a wallet
-#[derive(Debug, Clone, QueryableByName)]
-pub struct CreatedCollection {
-    /// The metadata address for the collection
-    #[sql_type = "VarChar"]
-    pub address: String,
 }
 
 /// A row in the `metadata_collection_keys` table

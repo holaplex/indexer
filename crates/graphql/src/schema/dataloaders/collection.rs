@@ -279,21 +279,21 @@ impl TryBatchFn<CollectionId, Option<Collection>> for Batcher {
 impl TryBatchFn<CollectionId, Option<CollectionHoldersCount>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[CollectionId],
+        ids: &[CollectionId],
     ) -> TryBatchMap<CollectionId, Option<CollectionHoldersCount>> {
         let conn = self.db()?;
 
         let rows: Vec<models::CollectionCount> = sql_query(
-            "SELECT  DISTINCT COUNT(*) OVER () AS holders_count, COLLECTION_MINTS.COLLECTION_ID as collection
+            "SELECT  DISTINCT COLLECTION_MINTS.COLLECTION_ID as collection, COUNT(*) OVER () AS count
             FROM COLLECTION_MINTS
             INNER JOIN METADATAS ON METADATAS.MINT_ADDRESS = COLLECTION_MINTS.MINT
             INNER JOIN CURRENT_METADATA_OWNERS ON CURRENT_METADATA_OWNERS.MINT_ADDRESS = METADATAS.MINT_ADDRESS
             WHERE METADATAS.BURNED_AT IS NULL
                 AND COLLECTION_MINTS.COLLECTION_ID = ANY($1)
-            GROUP BY (COLLECTION_MINTS.COLLECTION_ID, CURRENT_METADATA_OWNERS.OWNER_ADDRESS));
-            -- $1: addresses::text[]",
+            GROUP BY (COLLECTION_MINTS.COLLECTION_ID, CURRENT_METADATA_OWNERS.OWNER_ADDRESS);
+            -- $1: ids::text[]",
         )
-        .bind::<Array<Text>, _>(addresses)
+        .bind::<Array<Text>, _>(ids)
         .load(&conn)
         .context("Failed to load holder count for mr collection")?;
 
@@ -302,7 +302,7 @@ impl TryBatchFn<CollectionId, Option<CollectionHoldersCount>> for Batcher {
             .map(|models::CollectionCount { collection, count }| {
                 (collection, CollectionHoldersCount::from(count))
             })
-            .batch(addresses))
+            .batch(ids))
     }
 }
 
@@ -318,7 +318,7 @@ impl TryBatchFn<String, Option<CollectionTrend>> for Batcher {
             .select(dolphin_stats::all_columns)
             .filter(dolphin_stats::collection_symbol.eq(any(collection_symbols)))
             .load(&conn)
-            .context("Failed to load dolphin sttats")?;
+            .context("Failed to load dolphin stats")?;
 
         Ok(rows
             .into_iter()

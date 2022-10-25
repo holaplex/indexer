@@ -55,7 +55,7 @@ enum MeMetadataCollections {
 #[derive(Iden)]
 enum CollectionMints {
     Table,
-    Collection,
+    CollectionId,
     Mint,
 }
 
@@ -783,20 +783,13 @@ pub fn wallet_nfts<O: Into<Value>>(
 
     if let Some(collections) = collections {
         query.inner_join(
-            MetadataCollectionKeys::Table,
-            Expr::tbl(
-                MetadataCollectionKeys::Table,
-                MetadataCollectionKeys::MetadataAddress,
-            )
-            .equals(Metadatas::Table, Metadatas::Address),
+            CollectionMints::Table,
+            Expr::tbl(CollectionMints::Table, CollectionMints::Mint)
+                .equals(Metadatas::Table, Metadatas::MintAddress),
         );
 
         query.and_where(
-            Expr::col((
-                MetadataCollectionKeys::Table,
-                MetadataCollectionKeys::CollectionAddress,
-            ))
-            .is_in(collections),
+            Expr::col((CollectionMints::Table, CollectionMints::CollectionId)).is_in(collections),
         );
     }
 
@@ -855,7 +848,11 @@ pub fn activities(
 /// # Errors
 /// returns an error when the underlying queries throw an error
 #[allow(clippy::too_many_lines)]
-pub fn mr_collection_nfts<O: Into<Value>>(conn: &Connection, options: CollectionNftOptions, opensea_auction_house: O) -> Result<Vec<Nft>> {
+pub fn mr_collection_nfts<O: Into<Value>>(
+    conn: &Connection,
+    options: CollectionNftOptions,
+    opensea_auction_house: O,
+) -> Result<Vec<Nft>> {
     let CollectionNftOptions {
         collection,
         auction_house,
@@ -864,7 +861,7 @@ pub fn mr_collection_nfts<O: Into<Value>>(conn: &Connection, options: Collection
         sort_by,
         order,
         limit,
-        offset, 
+        offset,
     } = options;
 
     let sort_by = sort_by.map_or(Listings::Price, Into::into);
@@ -927,10 +924,7 @@ pub fn mr_collection_nfts<O: Into<Value>>(conn: &Connection, options: Collection
                 ))
                 .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
                 .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
-                .add(
-                    Expr::tbl(Listings::Table, Listings::AuctionHouse)
-                        .ne(opensea_auction_house),
-                )
+                .add(Expr::tbl(Listings::Table, Listings::AuctionHouse).ne(opensea_auction_house))
                 .add(
                     Expr::tbl(Listings::Table, Listings::Expiry)
                         .is_null()
@@ -945,7 +939,9 @@ pub fn mr_collection_nfts<O: Into<Value>>(conn: &Connection, options: Collection
                 })),
         )
         .and_where(Expr::col(Metadatas::BurnedAt).is_null())
-        .and_where(Expr::col((CollectionMints::Table, CollectionMints::Collection)).eq(collection))
+        .and_where(
+            Expr::col((CollectionMints::Table, CollectionMints::CollectionId)).eq(collection),
+        )
         .limit(limit)
         .offset(offset)
         .order_by((Listings::Table, sort_by), order)

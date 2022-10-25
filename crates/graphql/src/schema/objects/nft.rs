@@ -17,7 +17,7 @@ use indexer_core::{
 };
 use objects::{
     ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, attributes::AttributeGroup,
-    auction_house::AuctionHouse, profile::TwitterProfile, wallet::Wallet,
+    auction_house::AuctionHouse, collection::Collection, profile::TwitterProfile, wallet::Wallet,
 };
 use scalars::{PublicKey, U64};
 use serde_json::Value;
@@ -517,9 +517,9 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
-    pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNFT>> {
+    pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
         ctx.nft_collection_loader
-            .load(self.address.clone().into())
+            .load(self.mint_address.clone().into())
             .await
             .map_err(Into::into)
     }
@@ -848,14 +848,6 @@ impl CollectionNFT {
     #[graphql(deprecated = "use `nft { files }`")]
     pub async fn files(&self, ctx: &AppContext) -> FieldResult<Vec<NftFile>> {
         ctx.nft_files_loader
-            .load(self.0.address.clone().into())
-            .await
-            .map_err(Into::into)
-    }
-
-    #[graphql(deprecated = "use `nft { collection }`")]
-    pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNFT>> {
-        ctx.nft_collection_loader
             .load(self.0.address.clone().into())
             .await
             .map_err(Into::into)

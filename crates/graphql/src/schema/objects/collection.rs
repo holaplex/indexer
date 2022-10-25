@@ -189,7 +189,7 @@ impl Collection {
     pub async fn trends(&self, context: &AppContext) -> FieldResult<Option<CollectionTrend>> {
         let magic_eden_id = match self.magic_eden_id {
             Some(ref id) => id.clone(),
-            None => return Ok(None)
+            None => return Ok(None),
         };
 
         context

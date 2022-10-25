@@ -1,3 +1,4 @@
+use enums::{CollectionInterval, CollectionSort, OrderDirection};
 use indexer_core::{
     db::{
         self,
@@ -37,7 +38,6 @@ use tables::{
     graph_connections, metadata_jsons, metadatas, realms, signatory_records, store_config_jsons,
     storefronts, token_owner_records, twitter_handle_name_services, wallet_totals,
 };
-use enums::{CollectionInterval, CollectionSort, OrderDirection};
 
 use super::prelude::*;
 
