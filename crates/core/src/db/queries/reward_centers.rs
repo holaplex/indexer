@@ -4,7 +4,7 @@ use diesel::{
     expression::{AsExpression, NonAggregate},
     pg::Pg,
     query_builder::{QueryFragment, QueryId},
-    sql_types::{Integer, Text},
+    sql_types::{Integer, Text, Timestamp},
     types::ToSql,
     AppearsOnTable,
 };
@@ -68,4 +68,34 @@ pub fn payouts(
         .bind(offset)
         .load(conn)
         .context("Failed to load reward center payouts")
+}
+
+const TOKENS_DISTRIBUTED_QUERY: &str = r"
+SELECT COALESCE(SUM(reward_payouts.seller_reward + reward_payouts.seller_reward), 0) as tokens_distributed
+    FROM reward_payouts
+    WHERE reward_payouts.reward_center = $1
+    AND reward_payouts.created_at >= $2
+    AND reward_payouts.created_at <= $3
+;
+
+-- $1: address::text
+-- $2: start_date::timestamp
+-- $3: end_date::timestamp";
+
+/// Load token distributed for reward center.
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
+pub fn tokens_distributed(
+    conn: &Connection,
+    address: impl ToSql<Text, Pg>,
+    start_date: NaiveDateTime,
+    end_date: NaiveDateTime,
+) -> Result<i64> {
+    diesel::sql_query(PAYOUTS_QUERY)
+        .bind(address)
+        .bind::<Timestamp, _>(start_date)
+        .bind::<Timestamp, _>(end_date)
+        .load(conn)
+        .context("Failed to load tokens distributed")
 }
