@@ -1173,7 +1173,9 @@ impl CollectionTrend {
             auction_house,
             limit: limit.try_into()?,
             offset: offset.try_into()?,
-        })?;
+        },
+        pubkeys::OPENSEA_AUCTION_HOUSE.to_string(),
+    )?;
 
         nfts.into_iter()
             .map(TryInto::try_into)

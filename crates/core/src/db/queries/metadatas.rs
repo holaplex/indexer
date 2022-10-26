@@ -694,9 +694,10 @@ pub fn collection_nfts<O: Into<Value>>(
 /// # Errors
 /// returns an error when the underlying queries throw an error
 #[allow(clippy::too_many_lines)]
-pub fn collection_listed_nfts(
+pub fn collection_listed_nfts<O: Into<Value>>(
     conn: &Connection,
     options: CollectionListedNftOptions,
+    opensea_auction_house: O,
 ) -> Result<Vec<Nft>> {
     let CollectionListedNftOptions {
         collection,
@@ -707,11 +708,6 @@ pub fn collection_listed_nfts(
 
     let current_time = Utc::now().naive_utc();
 
-    let uuid = Uuid::parse_str(&collection);
-    let is_me_collection = match uuid {
-        Err(_error) => false,
-        Ok(_result) => true,
-    };
     let query = Query::select()
         .columns(vec![
             (Metadatas::Table, Metadatas::Address),
@@ -748,28 +744,10 @@ pub fn collection_listed_nfts(
                 CurrentMetadataOwners::MintAddress,
             ),
         )
-        .conditions(
-            is_me_collection,
-            |query| {
-                query.inner_join(
-                    MeMetadataCollections::Table,
-                    Expr::tbl(
-                        MeMetadataCollections::Table,
-                        MeMetadataCollections::MetadataAddress,
-                    )
-                    .equals(Metadatas::Table, Metadatas::Address),
-                );
-            },
-            |query| {
-                query.inner_join(
-                    MetadataCollectionKeys::Table,
-                    Expr::tbl(
-                        MetadataCollectionKeys::Table,
-                        MetadataCollectionKeys::MetadataAddress,
-                    )
-                    .equals(Metadatas::Table, Metadatas::Address),
-                );
-            },
+        .inner_join(
+            CollectionMints::Table,
+            Expr::tbl(CollectionMints::Table, CollectionMints::Mint)
+                .equals(Metadatas::Table, Metadatas::MintAddress),
         )
         .left_join(
             Listings::Table,
@@ -784,10 +762,7 @@ pub fn collection_listed_nfts(
                 ))
                 .add(Expr::tbl(Listings::Table, Listings::PurchaseId).is_null())
                 .add(Expr::tbl(Listings::Table, Listings::CanceledAt).is_null())
-                .add(
-                    Expr::tbl(Listings::Table, Listings::AuctionHouse)
-                        .ne(pubkeys::OPENSEA_AUCTION_HOUSE.to_string()),
-                )
+                .add(Expr::tbl(Listings::Table, Listings::AuctionHouse).ne(opensea_auction_house))
                 .add(
                     Expr::tbl(Listings::Table, Listings::Expiry)
                         .is_null()
@@ -798,26 +773,8 @@ pub fn collection_listed_nfts(
                 })),
         )
         .and_where(Expr::col(Metadatas::BurnedAt).is_null())
-        .conditions(
-            is_me_collection,
-            |query| {
-                query.and_where(
-                    Expr::col((
-                        MeMetadataCollections::Table,
-                        MeMetadataCollections::CollectionId,
-                    ))
-                    .eq(collection.clone()),
-                );
-            },
-            |query| {
-                query.and_where(
-                    Expr::col((
-                        MetadataCollectionKeys::Table,
-                        MetadataCollectionKeys::CollectionAddress,
-                    ))
-                    .eq(collection.clone()),
-                );
-            },
+        .and_where(
+            Expr::col((CollectionMints::Table, CollectionMints::CollectionId)).eq(collection),
         )
         .limit(limit)
         .offset(offset)
@@ -828,7 +785,7 @@ pub fn collection_listed_nfts(
 
     diesel::sql_query(query)
         .load(conn)
-        .context("Failed to load nft(s)")
+        .context("Failed to load collection listed nft(s)")
 }
 
 /// Handles queries for a wallet Nfts
