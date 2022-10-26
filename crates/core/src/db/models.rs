@@ -3507,3 +3507,11 @@ pub struct TokensDistributed {
     #[sql_type = "Numeric"]
     pub tokens_distributed: BigDecimal,
 }
+
+/// Auction House Volume
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct AuctionHouseVolume {
+    /// Auction House Volume
+    #[sql_type = "Numeric"]
+    pub volume: BigDecimal,
+}

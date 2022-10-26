@@ -127,7 +127,7 @@ impl RewardCenter {
 
         Ok(result
             .into_iter()
-            .nth(0)
+            .next()
             .map(|models::TokensDistributed { tokens_distributed }| {
                 tokens_distributed.to_u64().unwrap_or_default().into()
             }))

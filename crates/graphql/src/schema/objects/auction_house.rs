@@ -1,7 +1,11 @@
+use indexer_core::{
+    bigdecimal::ToPrimitive,
+    db::{models, queries},
+};
 use objects::{reward_center::RewardCenter, stats::MintStats};
 
 use super::prelude::*;
-use crate::schema::scalars::PublicKey;
+use crate::schema::scalars::{PublicKey, U64};
 
 #[derive(Debug, Clone)]
 /// A Metaplex auction house
@@ -134,5 +138,31 @@ impl AuctionHouse {
             .load(self.address.clone())
             .await
             .map_err(Into::into)
+    }
+
+    pub async fn volume(
+        &self,
+        ctx: &AppContext,
+        start_date: Option<DateTime<Utc>>,
+        end_date: Option<DateTime<Utc>>,
+    ) -> FieldResult<Option<U64>> {
+        let conn = ctx.shared.db.get()?;
+
+        let start_date = start_date.unwrap_or_default();
+        let end_date = end_date.unwrap_or(Utc::now());
+
+        let result = queries::auction_house::volume(
+            &conn,
+            &self.address,
+            start_date.naive_utc(),
+            end_date.naive_utc(),
+        )?;
+
+        Ok(result
+            .into_iter()
+            .next()
+            .map(|models::AuctionHouseVolume { volume }| {
+                volume.to_u64().unwrap_or_default().into()
+            }))
     }
 }
