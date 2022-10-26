@@ -1,7 +1,10 @@
 use indexer_core::db::{
-    sql_query,
+    queries, sql_query,
     sql_types::{Array, Text},
-    tables::{collections, dolphin_stats},
+    tables::{
+        collections, current_metadata_owners, dolphin_stats, metadata_collection_keys,
+        metadata_jsons, metadatas,
+    },
 };
 use objects::{
     collection::{Collection, CollectionId, CollectionTrend},
@@ -215,6 +218,41 @@ impl TryBatchFn<PublicKey<CollectionNFT>, Option<CollectionHoldersCount>> for Ba
             .map(|models::CollectionCount { collection, count }| {
                 (collection, CollectionHoldersCount::from(count))
             })
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<Nft>, Option<CollectionNFT>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Nft>],
+    ) -> TryBatchMap<PublicKey<Nft>, Option<CollectionNFT>> {
+        let conn = self.db()?;
+
+        let rows: Vec<(String, models::Nft)> = metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+            )
+            .inner_join(
+                metadata_collection_keys::table
+                    .on(metadata_collection_keys::collection_address.eq(metadatas::mint_address)),
+            )
+            .filter(metadata_collection_keys::metadata_address.eq(any(addresses)))
+            .select((
+                metadata_collection_keys::metadata_address,
+                queries::metadatas::NFT_COLUMNS,
+            ))
+            .load(&conn)
+            .context("Failed to load Collection NFTs")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|(addr, nft)| (addr, nft.try_into()))
             .batch(addresses))
     }
 }
