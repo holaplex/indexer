@@ -11,7 +11,7 @@ use diesel::{
 
 use crate::{
     db::{
-        models::{ReadRewardPayout, RewardCenter},
+        models::{ReadRewardPayout, RewardCenter, TokensDistributed},
         tables::reward_centers,
         Connection,
     },
@@ -91,8 +91,8 @@ pub fn tokens_distributed(
     address: impl ToSql<Text, Pg>,
     start_date: NaiveDateTime,
     end_date: NaiveDateTime,
-) -> Result<i64> {
-    diesel::sql_query(PAYOUTS_QUERY)
+) -> Result<Vec<TokensDistributed>> {
+    diesel::sql_query(TOKENS_DISTRIBUTED_QUERY)
         .bind(address)
         .bind::<Timestamp, _>(start_date)
         .bind::<Timestamp, _>(end_date)
