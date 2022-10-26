@@ -9,6 +9,7 @@ pub mod feed_event;
 pub mod genopets;
 pub mod graph_connection;
 pub mod listing_denylist;
+pub mod listings;
 pub mod metadata_edition;
 pub mod metadatas;
 pub mod nft_count;

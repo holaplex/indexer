@@ -2,10 +2,7 @@ use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     bigdecimal::ToPrimitive,
     db::{
-        queries::{
-            self,
-            metadatas::{CollectionListedNftOptions, CollectionNftOptions},
-        },
+        queries::{self, listings::CollectionListedNftOptions, metadatas::CollectionNftOptions},
         sql_query,
         sql_types::Text,
         tables::{
@@ -1168,7 +1165,7 @@ impl CollectionTrend {
     ) -> FieldResult<Vec<Nft>> {
         let conn = ctx.shared.db.get()?;
 
-        let nfts = queries::metadatas::collection_listed_nfts(
+        let nfts = queries::listings::list(
             &conn,
             CollectionListedNftOptions {
                 collection: self.collection.clone(),
