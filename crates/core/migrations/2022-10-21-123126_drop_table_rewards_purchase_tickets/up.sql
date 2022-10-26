@@ -1,0 +1,3 @@
+drop trigger rewards_purchase_tickets_check_slot_wv on rewards_purchase_tickets;
+
+drop table rewards_purchase_tickets;
