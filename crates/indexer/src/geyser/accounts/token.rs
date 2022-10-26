@@ -1,6 +1,12 @@
 use indexer_core::{
-    db::{insert_into, models::CurrentMetadataOwner, tables::current_metadata_owners, update},
+    db::{
+        insert_into,
+        models::{AssociatedTokenAccount, CurrentMetadataOwner},
+        tables::{associated_token_accounts, current_metadata_owners},
+        update,
+    },
     prelude::*,
+    pubkeys,
 };
 use spl_token::state::Account as TokenAccount;
 
@@ -12,8 +18,15 @@ pub async fn process(
     key: Pubkey,
     token_account: TokenAccount,
     slot: u64,
+    write_version: u64,
 ) -> Result<()> {
     let pubkey = key.to_string();
+
+    if pubkeys::TOKEN_MINTS.contains(&token_account.mint) {
+        upsert_ata(client, key, token_account, slot, write_version)
+            .await
+            .context("failed to insert associated token account")?;
+    }
 
     let amount: i64 = token_account
         .amount
@@ -83,5 +96,37 @@ pub async fn process(
         })
         .await
         .context("failed to insert token metadata owner!")?;
+    Ok(())
+}
+
+async fn upsert_ata(
+    client: &Client,
+    key: Pubkey,
+    acct: TokenAccount,
+    slot: u64,
+    write_version: u64,
+) -> Result<()> {
+    let row = AssociatedTokenAccount {
+        address: Owned(key.to_string()),
+        mint: Owned(acct.mint.to_string()),
+        owner: Owned(acct.owner.to_string()),
+        amount: acct.amount.try_into()?,
+        slot: slot.try_into()?,
+        write_version: write_version.try_into()?,
+    };
+
+    client
+        .db()
+        .run(move |db| {
+            insert_into(associated_token_accounts::table)
+                .values(&row)
+                .on_conflict(associated_token_accounts::address)
+                .do_update()
+                .set(&row)
+                .execute(db)
+        })
+        .await
+        .context("failed to insert token account")?;
+
     Ok(())
 }

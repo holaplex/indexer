@@ -20,7 +20,7 @@ use indexer_core::{
 };
 use objects::{
     ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, attributes::AttributeGroup,
-    auction_house::AuctionHouse, profile::TwitterProfile, wallet::Wallet,
+    auction_house::AuctionHouse, collection::Collection, profile::TwitterProfile, wallet::Wallet,
 };
 use scalars::{PublicKey, U64};
 use serde_json::Value;
@@ -31,6 +31,7 @@ use crate::schema::{
     enums::{NftSort, OrderDirection},
     query_root::AttributeFilter,
 };
+
 #[derive(Debug, Clone)]
 pub struct NftAttribute {
     pub metadata_address: String,
@@ -521,7 +522,7 @@ If no value is provided, it will return XSmall")))]
 
     pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
         ctx.nft_collection_loader
-            .load(self.address.clone().into())
+            .load(self.mint_address.clone().into())
             .await
             .map_err(Into::into)
     }
@@ -548,16 +549,16 @@ If no value is provided, it will return XSmall")))]
 }
 
 #[derive(Debug, Clone)]
-pub struct Collection(pub Nft);
+pub struct CollectionNFT(pub Nft);
 
-impl From<Nft> for Collection {
+impl From<Nft> for CollectionNFT {
     fn from(nft: Nft) -> Self {
         Self(nft)
     }
 }
 
 #[graphql_object(Context = AppContext)]
-impl Collection {
+impl CollectionNFT {
     fn nft(&self) -> &Nft {
         &self.0
     }
@@ -592,16 +593,20 @@ impl Collection {
     ) -> FieldResult<Vec<Nft>> {
         let conn = ctx.shared.db.get()?;
 
-        let nfts = queries::metadatas::collection_nfts(&conn, CollectionNftOptions {
-            collection: self.0.mint_address.clone(),
-            auction_house,
-            attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
-            marketplace_program,
-            sort_by: sort_by.map(Into::into),
-            order: order.map(Into::into),
-            limit: limit.try_into()?,
-            offset: offset.try_into()?,
-        })?;
+        let nfts = queries::metadatas::collection_nfts(
+            &conn,
+            CollectionNftOptions {
+                collection: self.0.mint_address.clone(),
+                auction_house,
+                attributes: attributes.map(|a| a.into_iter().map(Into::into).collect()),
+                marketplace_program,
+                sort_by: sort_by.map(Into::into),
+                order: order.map(Into::into),
+                limit: limit.try_into()?,
+                offset: offset.try_into()?,
+            },
+            pubkeys::OPENSEA_AUCTION_HOUSE.to_string(),
+        )?;
 
         nfts.into_iter()
             .map(TryInto::try_into)
@@ -851,14 +856,6 @@ impl Collection {
             .map_err(Into::into)
     }
 
-    #[graphql(deprecated = "use `nft { collection }`")]
-    pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        ctx.nft_collection_loader
-            .load(self.0.address.clone().into())
-            .await
-            .map_err(Into::into)
-    }
-
     #[graphql(deprecated = "use `nft { created_at }`")]
     pub async fn created_at(&self, ctx: &AppContext) -> FieldResult<Option<DateTime<Utc>>> {
         if let Some(slot) = self.0.slot {
@@ -881,7 +878,7 @@ impl Collection {
     }
 }
 
-impl TryFrom<models::Nft> for Collection {
+impl TryFrom<models::Nft> for CollectionNFT {
     type Error = <Nft as TryFrom<models::Nft>>::Error;
 
     fn try_from(value: models::Nft) -> Result<Self, Self::Error> {
@@ -913,6 +910,9 @@ pub struct CollectionTrend {
     pub prev_one_day_floor_price: U64,
     pub prev_seven_day_floor_price: U64,
     pub prev_thirty_day_floor_price: U64,
+    pub prev_one_day_marketcap: U64,
+    pub prev_seven_day_marketcap: U64,
+    pub prev_thirty_day_marketcap: U64,
     pub one_day_volume_change: i32,
     pub seven_day_volume_change: i32,
     pub thirty_day_volume_change: i32,
@@ -953,6 +953,9 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
             prev_one_day_floor_price,
             prev_seven_day_floor_price,
             prev_thirty_day_floor_price,
+            prev_one_day_marketcap,
+            prev_seven_day_marketcap,
+            prev_thirty_day_marketcap,
             one_day_volume_change,
             seven_day_volume_change,
             thirty_day_volume_change,
@@ -998,6 +1001,12 @@ impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
                 .unwrap_or_default()
                 .into(),
             prev_thirty_day_floor_price: prev_thirty_day_floor_price
+                .to_u64()
+                .unwrap_or_default()
+                .into(),
+            prev_one_day_marketcap: prev_one_day_marketcap.to_u64().unwrap_or_default().into(),
+            prev_seven_day_marketcap: prev_seven_day_marketcap.to_u64().unwrap_or_default().into(),
+            prev_thirty_day_marketcap: prev_thirty_day_marketcap
                 .to_u64()
                 .unwrap_or_default()
                 .into(),
@@ -1210,7 +1219,12 @@ impl NftCount {
     ) -> FieldResult<i32> {
         let conn = context.shared.db.get()?;
 
-        let count = queries::nft_count::listed(&conn, &self.creators, auction_houses.as_deref())?;
+        let count = queries::nft_count::listed(
+            &conn,
+            &self.creators,
+            auction_houses.as_deref(),
+            pubkeys::OPENSEA_AUCTION_HOUSE.to_string(),
+        )?;
 
         Ok(count.try_into()?)
     }

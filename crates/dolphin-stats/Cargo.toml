@@ -1,0 +1,21 @@
+[package]
+name = "holaplex-indexer-dolphin-stats"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "dolphin-stats"
+path = "main.rs"
+
+[dependencies]
+futures-util = "0.3.24"
+percent-encoding = "2.2.0"
+reqwest = { version = "0.11.12", features = ["json"] }
+serde = { version = "1.0.145", features = ["derive"] }
+serde_json = "1.0.86"
+tokio = { version = "1.14.1", features = ["net", "rt", "rt-multi-thread", "sync", "time"] }
+
+[dependencies.indexer-core]
+package = "holaplex-indexer-core"
+path = "../core"

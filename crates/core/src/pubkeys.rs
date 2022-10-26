@@ -56,6 +56,8 @@ pub static CARDINAL_TWITTER_NAMESPACE: Pubkey =
     pubkey!("2zwXjjGEUrFMyE2CF2Ju4CJwMzwdbBMYnF2boEzgPhGu");
 /// `OpenSea` Auction house program pubkey
 pub static OPENSEA_AUCTION_HOUSE: Pubkey = pubkey!("3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y");
+/// Mint addresses of token accounts to index
+pub const TOKEN_MINTS: [Pubkey; 1] = [pubkey!("FpRTwmoN3dprxdkmas5J3AdGb1rjpWRpH2dhEW8vL9Qn")];
 /// Spl Governance programs pubkey
 pub const SPL_GOVERNANCE: [Pubkey; 22] = [
     pubkey!("gUAedF544JeE6NYbQakQvribHykUNgaPJqcgf3UQVnY"),

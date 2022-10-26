@@ -11,85 +11,86 @@ use diesel::{
     serialize::ToSql,
     sql_types::{Array, Integer, Nullable, Text, Timestamp},
 };
-use sea_query::{Iden, Order, PostgresQueryBuilder, Query};
+use sea_query::{Expr, Iden, Order, PostgresQueryBuilder, Query};
 
 use crate::{
     db::{
         custom_types::{CollectionSort, OrderDirection},
-        models::{CollectionTrend, Nft, NftActivity},
+        models::{DolphinStats as DolphinStatsDB, Nft, NftActivity},
         queries::metadatas::NFT_COLUMNS,
         tables::{current_metadata_owners, metadata_collection_keys, metadata_jsons, metadatas},
         Connection,
     },
     error::Result,
+    prelude::*,
 };
 
 #[derive(Iden)]
-enum CollectionTrends {
+#[allow(missing_docs)]
+enum DolphinStats {
     Table,
-    Collection,
-    FloorPrice,
-    NftCount,
-    #[iden(rename = "_1d_volume")]
-    OneDayVolume,
-    #[iden(rename = "_7d_volume")]
-    SevenDayVolume,
-    #[iden(rename = "_30d_volume")]
-    ThirtyDayVolume,
-    #[iden(rename = "_1d_sales_count")]
-    OneDaySalesCount,
-    #[iden(rename = "_7d_sales_count")]
-    SevenDaySalesCount,
-    #[iden(rename = "_30d_sales_count")]
-    ThirtyDaySalesCount,
-    #[iden(rename = "_prev_1d_volume")]
-    PrevOneDayVolume,
-    #[iden(rename = "_prev_7d_volume")]
-    PrevSevenDayVolume,
-    #[iden(rename = "_prev_30d_volume")]
-    PrevThirtyDayVolume,
-    #[iden(rename = "prev_1d_sales_count")]
-    PrevOneDaySalesCount,
-    #[iden(rename = "prev_7d_sales_count")]
-    PrevSevenDaySalesCount,
-    #[iden(rename = "prev_30d_sales_count")]
-    PrevThirtyDaySalesCount,
-    #[iden(rename = "prev_1d_floor_price")]
-    PrevOneDayFloorPrice,
-    #[iden(rename = "prev_7d_floor_price")]
-    PrevSevenDayFloorPrice,
-    #[iden(rename = "prev_30d_floor_price")]
-    PrevThirtyDayFloorPrice,
-    #[iden(rename = "_1d_volume_change")]
-    OneDayVolumeChange,
-    #[iden(rename = "_7d_volume_change")]
-    SevenDayVolumeChange,
-    #[iden(rename = "_30d_volume_change")]
-    ThirtyDayVolumeChange,
-    #[iden(rename = "_1d_floor_price_change")]
-    OneDayFloorPriceChange,
-    #[iden(rename = "_7d_floor_price_change")]
-    SevenDayFloorPriceChange,
-    #[iden(rename = "_30d_floor_price_change")]
-    ThirtyDayFloorPriceChange,
-    #[iden(rename = "_1d_sales_count_change")]
-    OneDaySalesCountChange,
-    #[iden(rename = "_7d_sales_count_change")]
-    SevenDaySalesCountChange,
-    #[iden(rename = "_30d_sales_count_change")]
-    ThirtyDaySalesCountChange,
-    #[iden(rename = "_1d_marketcap")]
-    OneDayMarketcap,
-    #[iden(rename = "_7d_marketcap")]
-    SevenDayMarketcap,
-    #[iden(rename = "_30d_marketcap")]
-    ThirtyDayMarketcap,
-    #[iden(rename = "_1d_marketcap_change")]
-    OneDayMarketcapChange,
-    #[iden(rename = "_7d_marketcap_change")]
-    SevenDayMarketcapChange,
-    #[iden(rename = "_30d_marketcap_change")]
-    ThirtyDayMarketcapChange,
+    CollectionSymbol,
+    #[iden(rename = "floor_1d")]
+    Floor1d,
+    #[iden(rename = "floor_7d")]
+    Floor7d,
+    #[iden(rename = "floor_30d")]
+    Floor30d,
+    #[iden(rename = "listed_1d")]
+    Listed1d,
+    #[iden(rename = "listed_7d")]
+    Listed7d,
+    #[iden(rename = "listed_30d")]
+    Listed30d,
+    #[iden(rename = "volume_1d")]
+    Volume1d,
+    #[iden(rename = "volume_7d")]
+    Volume7d,
+    #[iden(rename = "volume_30d")]
+    Volume30d,
+    #[iden(rename = "last_floor_1d")]
+    LastFloor1d,
+    #[iden(rename = "last_floor_7d")]
+    LastFloor7d,
+    #[iden(rename = "last_floor_30d")]
+    LastFloor30d,
+    #[iden(rename = "last_listed_1d")]
+    LastListed1d,
+    #[iden(rename = "last_listed_7d")]
+    LastListed7d,
+    #[iden(rename = "last_listed_30d")]
+    LastListed30d,
+    #[iden(rename = "last_volume_1d")]
+    LastVolume1d,
+    #[iden(rename = "last_volume_7d")]
+    LastVolume7d,
+    #[iden(rename = "last_volume_30d")]
+    LastVolume30d,
+    #[iden(rename = "change_floor_1d")]
+    ChangeFloor1d,
+    #[iden(rename = "change_floor_7d")]
+    ChangeFloor7d,
+    #[iden(rename = "change_floor_30d")]
+    ChangeFloor30d,
+    #[iden(rename = "change_volume_1d")]
+    ChangeVolume1d,
+    #[iden(rename = "change_volume_7d")]
+    ChangeVolume7d,
+    #[iden(rename = "change_volume_30d")]
+    ChangeVolume30d,
+    #[iden(rename = "change_listed_1d")]
+    ChangeListed1d,
+    #[iden(rename = "change_listed_7d")]
+    ChangeListed7d,
+    #[iden(rename = "change_listed_30d")]
+    ChangeListed30d,
+}
+
+#[derive(Iden)]
+#[allow(missing_docs)]
+enum Collections {
+    Table,
+    Id,
 }
 
 /// Query collection by address
@@ -510,19 +511,18 @@ pub struct TrendingQueryOptions {
     pub offset: u64,
 }
 
-impl From<CollectionSort> for CollectionTrends {
+impl From<CollectionSort> for DolphinStats {
     fn from(sort: CollectionSort) -> Self {
         match sort {
-            CollectionSort::FloorPrice => CollectionTrends::FloorPrice,
-            CollectionSort::OneDayVolume => CollectionTrends::OneDayVolume,
-            CollectionSort::SevenDayVolume => CollectionTrends::SevenDayVolume,
-            CollectionSort::ThirtyDayVolume => CollectionTrends::ThirtyDayVolume,
-            CollectionSort::OneDaySalesCount => CollectionTrends::OneDaySalesCount,
-            CollectionSort::SevenDaySalesCount => CollectionTrends::SevenDaySalesCount,
-            CollectionSort::ThirtyDaySalesCount => CollectionTrends::ThirtyDaySalesCount,
-            CollectionSort::OneDayMarketcap => CollectionTrends::OneDayMarketcap,
-            CollectionSort::SevenDayMarketcap => CollectionTrends::SevenDayMarketcap,
-            CollectionSort::ThirtyDayMarketcap => CollectionTrends::ThirtyDayMarketcap,
+            CollectionSort::OneDayFloorPrice => DolphinStats::Floor1d,
+            CollectionSort::SevenDayFloorPrice => DolphinStats::Floor7d,
+            CollectionSort::ThirtyDayFloorPrice => DolphinStats::Floor30d,
+            CollectionSort::OneDayVolume => DolphinStats::Volume1d,
+            CollectionSort::SevenDayVolume => DolphinStats::Volume7d,
+            CollectionSort::ThirtyDayVolume => DolphinStats::Volume30d,
+            CollectionSort::OneDayListedCount => DolphinStats::Listed1d,
+            CollectionSort::SevenDayListedCount => DolphinStats::Listed7d,
+            CollectionSort::ThirtyDayListedCount => DolphinStats::Listed30d,
         }
     }
 }
@@ -531,8 +531,7 @@ impl From<CollectionSort> for CollectionTrends {
 ///
 /// # Errors
 /// returns an error when the underlying queries throw an error
-#[allow(clippy::too_many_lines)]
-pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<CollectionTrend>> {
+pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<DolphinStatsDB>> {
     let TrendingQueryOptions {
         sort_by,
         order,
@@ -540,119 +539,50 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Co
         offset,
     } = options;
 
-    let sort_by: CollectionTrends = sort_by.into();
+    let sort_by: DolphinStats = sort_by.into();
 
     let order = order.unwrap_or(Order::Desc);
 
     let query = Query::select()
         .columns(vec![
-            (CollectionTrends::Table, CollectionTrends::Collection),
-            (CollectionTrends::Table, CollectionTrends::FloorPrice),
-            (CollectionTrends::Table, CollectionTrends::NftCount),
-            (CollectionTrends::Table, CollectionTrends::OneDayVolume),
-            (CollectionTrends::Table, CollectionTrends::SevenDayVolume),
-            (CollectionTrends::Table, CollectionTrends::ThirtyDayVolume),
-            (CollectionTrends::Table, CollectionTrends::OneDaySalesCount),
-            (CollectionTrends::Table, CollectionTrends::OneDayMarketcap),
-            (CollectionTrends::Table, CollectionTrends::SevenDayMarketcap),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::ThirtyDayMarketcap,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::OneDayMarketcapChange,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::SevenDayMarketcapChange,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::ThirtyDayMarketcapChange,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::SevenDaySalesCount,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::ThirtyDaySalesCount,
-            ),
-            (CollectionTrends::Table, CollectionTrends::PrevOneDayVolume),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::PrevSevenDayVolume,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::PrevThirtyDayVolume,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::PrevOneDaySalesCount,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::PrevSevenDaySalesCount,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::PrevThirtyDaySalesCount,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::PrevOneDayFloorPrice,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::PrevSevenDayFloorPrice,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::PrevThirtyDayFloorPrice,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::OneDayVolumeChange,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::SevenDayVolumeChange,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::ThirtyDayVolumeChange,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::OneDayFloorPriceChange,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::SevenDayFloorPriceChange,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::ThirtyDayFloorPriceChange,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::OneDaySalesCountChange,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::SevenDaySalesCountChange,
-            ),
-            (
-                CollectionTrends::Table,
-                CollectionTrends::ThirtyDaySalesCountChange,
-            ),
+            (DolphinStats::Table, DolphinStats::CollectionSymbol),
+            (DolphinStats::Table, DolphinStats::Floor1d),
+            (DolphinStats::Table, DolphinStats::Floor7d),
+            (DolphinStats::Table, DolphinStats::Floor30d),
+            (DolphinStats::Table, DolphinStats::Listed1d),
+            (DolphinStats::Table, DolphinStats::Listed7d),
+            (DolphinStats::Table, DolphinStats::Listed30d),
+            (DolphinStats::Table, DolphinStats::Volume1d),
+            (DolphinStats::Table, DolphinStats::Volume7d),
+            (DolphinStats::Table, DolphinStats::Volume30d),
+            (DolphinStats::Table, DolphinStats::LastFloor1d),
+            (DolphinStats::Table, DolphinStats::LastFloor7d),
+            (DolphinStats::Table, DolphinStats::LastFloor30d),
+            (DolphinStats::Table, DolphinStats::LastListed1d),
+            (DolphinStats::Table, DolphinStats::LastListed7d),
+            (DolphinStats::Table, DolphinStats::LastListed30d),
+            (DolphinStats::Table, DolphinStats::LastVolume1d),
+            (DolphinStats::Table, DolphinStats::LastVolume7d),
+            (DolphinStats::Table, DolphinStats::LastVolume30d),
+            (DolphinStats::Table, DolphinStats::ChangeFloor1d),
+            (DolphinStats::Table, DolphinStats::ChangeFloor7d),
+            (DolphinStats::Table, DolphinStats::ChangeFloor30d),
+            (DolphinStats::Table, DolphinStats::ChangeVolume1d),
+            (DolphinStats::Table, DolphinStats::ChangeVolume7d),
+            (DolphinStats::Table, DolphinStats::ChangeVolume30d),
+            (DolphinStats::Table, DolphinStats::ChangeListed1d),
+            (DolphinStats::Table, DolphinStats::ChangeListed7d),
+            (DolphinStats::Table, DolphinStats::ChangeListed30d),
         ])
-        .from(CollectionTrends::Table)
+        .from(DolphinStats::Table)
+        .inner_join(
+            Collections::Table,
+            Expr::tbl(Collections::Table, Collections::Id)
+                .equals(DolphinStats::Table, DolphinStats::CollectionSymbol),
+        )
         .limit(limit)
         .offset(offset)
-        .order_by((CollectionTrends::Table, sort_by), order)
+        .order_by((DolphinStats::Table, sort_by), order)
         .take();
 
     let query = query.to_string(PostgresQueryBuilder);
@@ -660,4 +590,72 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Co
     diesel::sql_query(query)
         .load(conn)
         .context("Failed to load trending collection(s)")
+}
+
+// MoonRank queries
+
+const MR_COLLECTION_ACTIVITES_QUERY: &str = r"
+SELECT listings.id as id, metadata, auction_house, price, listings.created_at, marketplace_program,
+    array[seller] as wallets,
+    array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
+    'listing' as activity_type
+        FROM listings
+        LEFT JOIN twitter_handle_name_services ON(twitter_handle_name_services.wallet_address = listings.seller)
+        INNER JOIN metadatas on (metadatas.address = listings.metadata)
+        INNER JOIN collection_mints ON(collection_mints.mint = metadatas.mint_address)
+        WHERE collection_mints.collection_id = $1
+        AND listings.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
+        AND ('LISTINGS' = ANY($2) OR $2 IS NULL)
+    UNION
+    SELECT purchases.id as id, metadata, auction_house, price, purchases.created_at, marketplace_program,
+    array[seller, buyer] as wallets,
+    array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
+    'purchase' as activity_type
+        FROM purchases
+        LEFT JOIN twitter_handle_name_services sth ON(sth.wallet_address = purchases.seller)
+        LEFT JOIN twitter_handle_name_services bth ON(bth.wallet_address = purchases.buyer)
+        INNER JOIN metadatas on (metadatas.address = purchases.metadata)
+        INNER JOIN collection_mints ON(collection_mints.mint = metadatas.mint_address)
+        WHERE collection_mints.collection_id = $1
+        AND ('PURCHASES' = ANY($2) OR $2 IS NULL)
+    UNION
+    SELECT offers.id as id, metadata, auction_house, price, offers.created_at, marketplace_program,
+    array[buyer] as wallets,
+    array[bth.twitter_handle] as wallet_twitter_handles,
+    'offer' as activity_type
+        FROM offers
+        LEFT JOIN twitter_handle_name_services bth ON(bth.wallet_address = offers.buyer)
+        INNER JOIN metadatas on (metadatas.address = offers.metadata)
+        INNER JOIN collection_mints ON(collection_mints.mint = metadatas.mint_address)
+        WHERE collection_mints.collection_id = $1
+        AND offers.purchase_id IS NULL
+        AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
+        AND ('OFFERS' = ANY($2) OR $2 IS NULL)
+    ORDER BY created_at DESC
+    LIMIT $3
+    OFFSET $4;
+
+ -- $1: id::text
+ -- $2: event_types::text[]
+ -- $3: limit::integer
+ -- $4: offset::integer";
+
+/// Load listing, sales, offers activity for a collection
+///
+/// # Errors
+/// This function fails if the underlying SQL query returns an error
+pub fn mr_collection_activities(
+    conn: &Connection,
+    id: impl ToSql<Text, Pg>,
+    event_types: impl ToSql<Nullable<Array<Text>>, Pg>,
+    limit: impl ToSql<Integer, Pg>,
+    offset: impl ToSql<Integer, Pg>,
+) -> Result<Vec<NftActivity>> {
+    diesel::sql_query(MR_COLLECTION_ACTIVITES_QUERY)
+        .bind(id)
+        .bind(event_types)
+        .bind(limit)
+        .bind(offset)
+        .load(conn)
+        .context("Failed to load collection activities")
 }
