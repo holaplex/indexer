@@ -23,33 +23,7 @@ use crate::db::custom_types::{
     WhitelistMintMode,
 };
 
-/* MPL LISTING REWARDS */
-
-/// A row in the `rewards_purchase_tickets` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
-#[diesel(treat_none_as_null = true)]
-pub struct RewardsPurchaseTicket<'a> {
-    /// The address of this account
-    pub address: Cow<'a, str>,
-    /// reward center associated of the purchase ticket
-    pub reward_center_address: Cow<'a, str>,
-    /// the buyer of the nft
-    pub buyer: Cow<'a, str>,
-    /// the seller of the nft
-    pub seller: Cow<'a, str>,
-    /// the metadata of the nft purchased
-    pub metadata: Cow<'a, str>,
-    /// price of the nft
-    pub price: i64,
-    /// number of tokens sold
-    pub token_size: i64,
-    /// the date and time of the purchase
-    pub created_at: NaiveDateTime,
-    /// The slot number of the most recent update for this account
-    pub slot: i64,
-    /// The write version of the most recent update for this account
-    pub write_version: i64,
-}
+/* HPL LISTING REWARDS */
 
 /// A row in the `reward_centers` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, Associations)]
@@ -79,8 +53,8 @@ pub struct RewardCenter<'a> {
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 pub struct RewardPayout<'a> {
-    /// Purchase ticket pubkey
-    pub purchase_ticket: Cow<'a, str>,
+    /// Purchase id uuid
+    pub purchase_id: Uuid,
     /// metadata address
     pub metadata: Cow<'a, str>,
     /// Reward center address
@@ -149,8 +123,6 @@ pub struct ReadRewardPayout<'a> {
 pub struct RewardsListing<'a> {
     /// addres of listing account
     pub address: Cow<'a, str>,
-    /// track initilization status of account
-    pub is_initialized: bool,
     /// reward center of the listing
     pub reward_center_address: Cow<'a, str>,
     /// wallet selling the nft
@@ -165,10 +137,10 @@ pub struct RewardsListing<'a> {
     pub bump: i16,
     /// date the listing was created
     pub created_at: NaiveDateTime,
-    /// potentially when the listing was canceled
-    pub canceled_at: Option<NaiveDateTime>,
+    /// potentially when the listing was closed
+    pub closed_at: Option<NaiveDateTime>,
     /// potentially purchase associated to the listing
-    pub purchase_ticket: Option<Cow<'a, str>>,
+    pub purchase_id: Option<Uuid>,
     /// The slot number of the most recent update for this account
     pub slot: i64,
     /// The write version of the most recent update for this account
@@ -182,8 +154,6 @@ pub struct RewardsListing<'a> {
 pub struct RewardsOffer<'a> {
     /// address of the offer
     pub address: Cow<'a, str>,
-    /// track initilization status of the offer
-    pub is_initialized: bool,
     /// reward center offer made under
     pub reward_center_address: Cow<'a, str>,
     /// the wallet making the offer
@@ -199,9 +169,9 @@ pub struct RewardsOffer<'a> {
     /// when the offer was submitted
     pub created_at: NaiveDateTime,
     /// when the offer was canceled
-    pub canceled_at: Option<NaiveDateTime>,
+    pub closed_at: Option<NaiveDateTime>,
     /// the purchase associated to the offer in case of a sale
-    pub purchase_ticket: Option<Cow<'a, str>>,
+    pub purchase_id: Option<Uuid>,
     /// The slot number of the most recent update for this account
     pub slot: i64,
     /// The write version of the most recent update for this account
@@ -519,167 +489,112 @@ pub struct NftActivity {
 }
 
 /// A row in the `collection_trends` table
-#[derive(Debug, Clone, Queryable, QueryableByName)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
+#[table_name = "collection_trends"]
 pub struct CollectionTrend {
     /// Collection address or id
-    #[sql_type = "Text"]
     pub collection: String,
-
-    /// Collection floor price
-    #[sql_type = "Numeric"]
-    pub floor_price: BigDecimal,
-
-    /// Number of nfts in the collection
-    #[sql_type = "Int8"]
-    pub nft_count: i64,
-
     /// Collection 1 day volume
-    #[sql_type = "Numeric"]
     #[column_name = "_1d_volume"]
     pub one_day_volume: BigDecimal,
-
     /// Collection 7 days volume
-    #[sql_type = "Numeric"]
     #[column_name = "_7d_volume"]
     pub seven_day_volume: BigDecimal,
-
     /// Collection 30 days volume
-    #[sql_type = "Numeric"]
     #[column_name = "_30d_volume"]
     pub thirty_day_volume: BigDecimal,
-
-    /// Collection 1 day sales count
-    #[sql_type = "Numeric"]
-    #[column_name = "_1d_sales_count"]
-    pub one_day_sales_count: BigDecimal,
-
-    /// Collection 7 days sales count
-    #[sql_type = "Numeric"]
-    #[column_name = "_7d_sales_count"]
-    pub seven_day_sales_count: BigDecimal,
-
-    /// Collection 30 days sales count
-    #[sql_type = "Numeric"]
-    #[column_name = "_30d_sales_count"]
-    pub thirty_day_sales_count: BigDecimal,
-
     /// Collection previous 1 day volume
-    #[sql_type = "Numeric"]
     #[column_name = "_prev_1d_volume"]
     pub prev_one_day_volume: BigDecimal,
-
     /// Collection previous 7 days volume
-    #[sql_type = "Numeric"]
     #[column_name = "_prev_7d_volume"]
     pub prev_seven_day_volume: BigDecimal,
-
     /// Collection previous 30 days volume
-    #[sql_type = "Numeric"]
     #[column_name = "_prev_30d_volume"]
     pub prev_thirty_day_volume: BigDecimal,
-
+    /// Collection 1 day sales count
+    #[column_name = "_1d_sales_count"]
+    pub one_day_sales_count: BigDecimal,
     /// Collection previous 1 day sales count
-    #[sql_type = "Numeric"]
     #[column_name = "prev_1d_sales_count"]
     pub prev_one_day_sales_count: BigDecimal,
-
+    /// Collection 7 days sales count
+    #[column_name = "_7d_sales_count"]
+    pub seven_day_sales_count: BigDecimal,
     /// Collection previous 7 days sales count
-    #[sql_type = "Numeric"]
     #[column_name = "prev_7d_sales_count"]
     pub prev_seven_day_sales_count: BigDecimal,
-
+    /// Collection 30 days sales count
+    #[column_name = "_30d_sales_count"]
+    pub thirty_day_sales_count: BigDecimal,
     /// Collection previous 30 days sales count
-    #[sql_type = "Numeric"]
     #[column_name = "prev_30d_sales_count"]
     pub prev_thirty_day_sales_count: BigDecimal,
-
+    /// Collection floor price
+    pub floor_price: BigDecimal,
     /// Collection previous 1 day floor price
-    #[sql_type = "Numeric"]
     #[column_name = "prev_1d_floor_price"]
     pub prev_one_day_floor_price: BigDecimal,
-
     /// Collection previous 7 days floor price
-    #[sql_type = "Numeric"]
     #[column_name = "prev_7d_floor_price"]
     pub prev_seven_day_floor_price: BigDecimal,
-
     /// Collection previous 30 day floor price
-    #[sql_type = "Numeric"]
     #[column_name = "prev_30d_floor_price"]
     pub prev_thirty_day_floor_price: BigDecimal,
-
     /// Collection 1 day volume change
-    #[sql_type = "BigInt"]
     #[column_name = "_1d_volume_change"]
     pub one_day_volume_change: i64,
-
     /// Collection 7 days volume change
-    #[sql_type = "BigInt"]
     #[column_name = "_7d_volume_change"]
     pub seven_day_volume_change: i64,
-
     /// Collection 30 days volume change
-    #[sql_type = "BigInt"]
     #[column_name = "_30d_volume_change"]
     pub thirty_day_volume_change: i64,
-
     /// Collection 1 day floor price change
-    #[sql_type = "BigInt"]
     #[column_name = "_1d_floor_price_change"]
     pub one_day_floor_price_change: i64,
-
     /// Collection 7 days floor price change
-    #[sql_type = "BigInt"]
     #[column_name = "_7d_floor_price_change"]
     pub seven_day_floor_price_change: i64,
-
     /// Collection 30 day floor price change
-    #[sql_type = "BigInt"]
     #[column_name = "_30d_floor_price_change"]
     pub thirty_day_floor_price_change: i64,
-
     /// Collection 1 day sales count change
-    #[sql_type = "BigInt"]
     #[column_name = "_1d_sales_count_change"]
     pub one_day_sales_count_change: i64,
-
     /// Collection 7 days sales count change
-    #[sql_type = "BigInt"]
     #[column_name = "_7d_sales_count_change"]
     pub seven_day_sales_count_change: i64,
-
     /// Collection 30 days sales count change
-    #[sql_type = "BigInt"]
     #[column_name = "_30d_sales_count_change"]
     pub thirty_day_sales_count_change: i64,
-
     /// Collection 1 day marketcap
-    #[sql_type = "Numeric"]
     #[column_name = "_1d_marketcap"]
     pub one_day_marketcap: BigDecimal,
-
+    /// Collection prev 1 day marketcap
+    #[column_name = "prev_1d_marketcap"]
+    pub prev_one_day_marketcap: BigDecimal,
     /// Collection 7 day marketcap
-    #[sql_type = "Numeric"]
     #[column_name = "_7d_marketcap"]
     pub seven_day_marketcap: BigDecimal,
-
+    /// Collection prev 7 day marketcap
+    #[column_name = "prev_7d_marketcap"]
+    pub prev_seven_day_marketcap: BigDecimal,
     /// Collection 30 day marketcap
-    #[sql_type = "Numeric"]
     #[column_name = "_30d_marketcap"]
     pub thirty_day_marketcap: BigDecimal,
-
+    /// Collection prev 30 day marketcap
+    #[column_name = "prev_30d_marketcap"]
+    pub prev_thirty_day_marketcap: BigDecimal,
+    /// Number of nfts in the collection
+    pub nft_count: i64,
     /// Collection 1 day marketcap
-    #[sql_type = "BigInt"]
     #[column_name = "_1d_marketcap_change"]
     pub one_day_marketcap_change: i64,
-
     /// Collection 7 day marketcap change
-    #[sql_type = "BigInt"]
     #[column_name = "_7d_marketcap_change"]
     pub seven_day_marketcap_change: i64,
-
     /// Collection 30 day marketcap change
-    #[sql_type = "BigInt"]
     #[column_name = "_30d_marketcap_change"]
     pub thirty_day_marketcap_change: i64,
 }
@@ -1483,23 +1398,15 @@ pub struct TwitterHandle<'a> {
 /// A row in a `collected_collections` query of a wallet
 #[derive(Debug, Clone, QueryableByName)]
 pub struct CollectedCollection {
-    /// The collection nft metadadata address
-    #[sql_type = "VarChar"]
-    pub collection_nft_address: String,
+    /// The moonrank collection id
+    #[sql_type = "Text"]
+    pub collection_id: String,
     /// The nfts from this collection owned by the wallet
     #[sql_type = "Int8"]
     pub nfts_owned: i64,
     /// The estimated value of the collection owend by the wallet
     #[sql_type = "Int8"]
     pub estimated_value: i64,
-}
-
-/// A row in a `created_collections` query of a wallet
-#[derive(Debug, Clone, QueryableByName)]
-pub struct CreatedCollection {
-    /// The metadata address for the collection
-    #[sql_type = "VarChar"]
-    pub address: String,
 }
 
 /// A row in the `metadata_collection_keys` table
@@ -2292,6 +2199,24 @@ pub struct EnrichedBondingChange<'a> {
     pub supply_change: i64,
 }
 
+/// A row in the `associated_token_accounts` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct AssociatedTokenAccount<'a> {
+    /// Token account address
+    pub address: Cow<'a, str>,
+    /// The mint associated with this account
+    pub mint: Cow<'a, str>,
+    ///The owner of this account.
+    pub owner: Cow<'a, str>,
+    ///The amount of tokens this account holds.
+    pub amount: i64,
+    /// The slot number of this account's last known update
+    pub slot: i64,
+    /// The write version of this account's last known update
+    pub write_version: i64,
+}
+
 /// A row in the `metadata_owners` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -2624,6 +2549,96 @@ pub struct ExecuteSaleInstruction<'a> {
     /// Solana slot number
     pub slot: i64,
 }
+
+/// A row in the `hpl_reward_center_execute_sale_ins` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+#[table_name = "hpl_reward_center_execute_sale_ins"]
+pub struct HplRewardCenterExecuteSale<'a> {
+    pub buyer: Cow<'a, str>,
+    pub buyer_reward_token_account: Cow<'a, str>,
+    pub seller: Cow<'a, str>,
+    pub seller_reward_token_account: Cow<'a, str>,
+    pub listing: Cow<'a, str>,
+    pub offer: Cow<'a, str>,
+    pub payer: Cow<'a, str>,
+    pub token_account: Cow<'a, str>,
+    pub token_mint: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub treasury_mint: Cow<'a, str>,
+    pub seller_payment_receipt_account: Cow<'a, str>,
+    pub buyer_receipt_token_account: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub escrow_payment_account: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub auction_house_treasury: Cow<'a, str>,
+    pub buyer_trade_state: Cow<'a, str>,
+    pub seller_trade_state: Cow<'a, str>,
+    pub free_trade_state: Cow<'a, str>,
+    pub reward_center: Cow<'a, str>,
+    pub reward_center_reward_token_account: Cow<'a, str>,
+    pub ah_auctioneer_pda: Cow<'a, str>,
+    pub escrow_payment_bump: i16,
+    pub free_trade_state_bump: i16,
+    pub program_as_signer_bump: i16,
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+/// A row in the `hpl_reward_center_close_offer_ins` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+#[table_name = "hpl_reward_center_close_offer_ins"]
+pub struct HplRewardCenterCloseoffer<'a> {
+    pub wallet: Cow<'a, str>,
+    pub offer: Cow<'a, str>,
+    pub treasury_mint: Cow<'a, str>,
+    pub token_account: Cow<'a, str>,
+    pub receipt_account: Cow<'a, str>,
+    pub escrow_payment_account: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub token_mint: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub reward_center: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub trade_state: Cow<'a, str>,
+    pub ah_auctioneer_pda: Cow<'a, str>,
+    pub escrow_payment_bump: i16,
+    pub buyer_price: i64,
+    pub token_size: i64,
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+// A row in the `hpl_reward_center_close_offer_ins` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+#[table_name = "hpl_reward_center_close_listing_ins"]
+pub struct HplRewardCenterCloseListing<'a> {
+    pub wallet: Cow<'a, str>,
+    pub listing: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub token_account: Cow<'a, str>,
+    pub token_mint: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub reward_center: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub trade_state: Cow<'a, str>,
+    pub ah_auctioneer_pda: Cow<'a, str>,
+    pub token_size: i64,
+    pub created_at: NaiveDateTime,
+    /// Solana slot number
+    pub slot: i64,
+}
+
 /// A row in the `cancel_instructions` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -3461,30 +3476,67 @@ pub struct CollectionMintAttribute<'a> {
     pub value_perc: BigDecimal,
 }
 
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, QueryableByName, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "dolphin_stats"]
 #[allow(missing_docs)]
 pub struct DolphinStats<'a> {
+    #[sql_type = "VarChar"]
     pub collection_symbol: Cow<'a, str>,
+    #[sql_type = "BigInt"]
     pub floor_1d: i64,
+    #[sql_type = "BigInt"]
     pub floor_7d: i64,
+    #[sql_type = "BigInt"]
     pub floor_30d: i64,
+    #[sql_type = "BigInt"]
     pub listed_1d: i64,
+    #[sql_type = "BigInt"]
     pub listed_7d: i64,
+    #[sql_type = "BigInt"]
     pub listed_30d: i64,
+    #[sql_type = "BigInt"]
     pub volume_1d: i64,
+    #[sql_type = "BigInt"]
     pub volume_7d: i64,
+    #[sql_type = "BigInt"]
     pub volume_30d: i64,
+    #[sql_type = "BigInt"]
     pub last_floor_1d: i64,
+    #[sql_type = "BigInt"]
     pub last_floor_7d: i64,
+    #[sql_type = "BigInt"]
     pub last_floor_30d: i64,
+    #[sql_type = "BigInt"]
     pub last_listed_1d: i64,
+    #[sql_type = "BigInt"]
     pub last_listed_7d: i64,
+    #[sql_type = "BigInt"]
     pub last_listed_30d: i64,
+    #[sql_type = "BigInt"]
     pub last_volume_1d: i64,
+    #[sql_type = "BigInt"]
     pub last_volume_7d: i64,
+    #[sql_type = "BigInt"]
     pub last_volume_30d: i64,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_floor_1d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_floor_7d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_floor_30d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_volume_1d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_volume_7d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_volume_30d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_listed_1d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_listed_7d: Option<i32>,
+    #[sql_type = "Nullable<Int4>"]
+    pub change_listed_30d: Option<i32>,
 }
 
 #[derive(Debug, Clone, AsChangeset)]
@@ -3498,6 +3550,9 @@ pub struct DolphinStats1D<'a> {
     pub last_floor_1d: i64,
     pub last_listed_1d: i64,
     pub last_volume_1d: i64,
+    pub change_floor_1d: Option<i32>,
+    pub change_volume_1d: Option<i32>,
+    pub change_listed_1d: Option<i32>,
 }
 
 /// A row in a `tokens_distributed` query, representing total $SAUCE tokens distributed between particular dates.

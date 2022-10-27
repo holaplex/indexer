@@ -1,9 +1,14 @@
 use indexer_core::db::{
-    sql_query,
+    queries, sql_query,
     sql_types::{Array, Text},
+    tables::{
+        collections, current_metadata_owners, dolphin_stats, metadata_collection_keys,
+        metadata_jsons, metadatas,
+    },
 };
 use objects::{
-    nft::{Collection, Nft},
+    collection::{Collection, CollectionId, CollectionTrend},
+    nft::{CollectionNFT, Nft},
     store_creator::StoreCreator,
 };
 use scalars::{PublicKey, I64};
@@ -143,11 +148,11 @@ impl From<i64> for CollectionHoldersCount {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Collection>, Option<CollectionNftCount>> for Batcher {
+impl TryBatchFn<PublicKey<CollectionNFT>, Option<CollectionNftCount>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<Collection>],
-    ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionNftCount>> {
+        addresses: &[PublicKey<CollectionNFT>],
+    ) -> TryBatchMap<PublicKey<CollectionNFT>, Option<CollectionNftCount>> {
         let conn = self.db()?;
 
         let rows: Vec<models::CollectionCount> = sql_query(
@@ -174,11 +179,11 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionNftCount>> for Batcher {
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Collection>, Option<CollectionHoldersCount>> for Batcher {
+impl TryBatchFn<PublicKey<CollectionNFT>, Option<CollectionHoldersCount>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<Collection>],
-    ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionHoldersCount>> {
+        addresses: &[PublicKey<CollectionNFT>],
+    ) -> TryBatchMap<PublicKey<CollectionNFT>, Option<CollectionHoldersCount>> {
         let conn = self.db()?;
 
         let rows: Vec<models::CollectionCount> = sql_query(
@@ -218,11 +223,46 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionHoldersCount>> for Batch
 }
 
 #[async_trait]
-impl TryBatchFn<PublicKey<Collection>, Option<CollectionFloorPrice>> for Batcher {
+impl TryBatchFn<PublicKey<Nft>, Option<CollectionNFT>> for Batcher {
     async fn load(
         &mut self,
-        addresses: &[PublicKey<Collection>],
-    ) -> TryBatchMap<PublicKey<Collection>, Option<CollectionFloorPrice>> {
+        addresses: &[PublicKey<Nft>],
+    ) -> TryBatchMap<PublicKey<Nft>, Option<CollectionNFT>> {
+        let conn = self.db()?;
+
+        let rows: Vec<(String, models::Nft)> = metadatas::table
+            .inner_join(
+                metadata_jsons::table.on(metadatas::address.eq(metadata_jsons::metadata_address)),
+            )
+            .inner_join(
+                current_metadata_owners::table
+                    .on(current_metadata_owners::mint_address.eq(metadatas::mint_address)),
+            )
+            .inner_join(
+                metadata_collection_keys::table
+                    .on(metadata_collection_keys::collection_address.eq(metadatas::mint_address)),
+            )
+            .filter(metadata_collection_keys::metadata_address.eq(any(addresses)))
+            .select((
+                metadata_collection_keys::metadata_address,
+                queries::metadatas::NFT_COLUMNS,
+            ))
+            .load(&conn)
+            .context("Failed to load Collection NFTs")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|(addr, nft)| (addr, nft.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<CollectionNFT>, Option<CollectionFloorPrice>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<CollectionNFT>],
+    ) -> TryBatchMap<PublicKey<CollectionNFT>, Option<CollectionFloorPrice>> {
         let conn = self.db()?;
 
         let rows: Vec<models::CollectionFloorPrice> = sql_query(
@@ -251,60 +291,76 @@ impl TryBatchFn<PublicKey<Collection>, Option<CollectionFloorPrice>> for Batcher
     }
 }
 
+// Moon rank dataloader
 #[async_trait]
-impl TryBatchFn<String, Option<Collection>> for Batcher {
-    async fn load(&mut self, identifiers: &[String]) -> TryBatchMap<String, Option<Collection>> {
+impl TryBatchFn<CollectionId, Option<Collection>> for Batcher {
+    async fn load(
+        &mut self,
+        identifiers: &[String],
+    ) -> TryBatchMap<CollectionId, Option<Collection>> {
         let conn = self.db()?;
 
-        let rows: Vec<models::Nft> = sql_query("
-        SELECT
-            metadatas.address,
-            metadatas.name,
-            metadatas.seller_fee_basis_points,
-            metadatas.update_authority_address,
-            metadatas.mint_address,
-            metadatas.primary_sale_happened,
-            metadatas.uri,
-            metadatas.slot,
-            metadata_jsons.description,
-            metadata_jsons.image,
-            metadata_jsons.animation_url,
-            metadata_jsons.external_url,
-            metadata_jsons.category,
-            metadata_jsons.model,
-            current_metadata_owners.token_account_address
-            FROM metadatas
-            INNER JOIN metadata_jsons ON (metadata_jsons.metadata_address = metadatas.address)
-            INNER JOIN current_metadata_owners ON (current_metadata_owners.mint_address = metadatas.mint_address)
-            WHERE metadatas.mint_address = ANY($1)
-        UNION ALL
-        SELECT
-            me_collections.id::text as address,
-            COALESCE(me_collections.name, '') as name,
-            0 as seller_fee_basis_points,
-            '' as update_authority_address,
-            me_collections.id::text as mint_address,
-            false as primary_sale_happened,
-            '' as uri,
-            0 as slot,
-            '' as description,
-            me_collections.image as image,
-            '' as animation_url,
-            '' as external_url,
-            '' as category,
-            '' as model,
-            '' as token_account_address
-            FROM me_collections
-            WHERE id::text = ANY($1);
-    -- $1: identifiers::text[]
-    ")
-        .bind::<Array<Text>, _>(identifiers)
-        .load(&conn)
-        .context("Failed to load floor price for collection")?;
+        let rows: Vec<models::Collection> = collections::table
+            .select(collections::all_columns)
+            .filter(collections::id.eq(any(identifiers)))
+            .load(&conn)
+            .context("failed to load mr collection")?;
 
         Ok(rows
             .into_iter()
-            .map(|a| (a.mint_address.clone(), a.try_into()))
+            .map(|a| (a.id.clone(), a.try_into()))
             .batch(identifiers))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<CollectionId, Option<CollectionHoldersCount>> for Batcher {
+    async fn load(
+        &mut self,
+        ids: &[CollectionId],
+    ) -> TryBatchMap<CollectionId, Option<CollectionHoldersCount>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::CollectionCount> = sql_query(
+            "SELECT  DISTINCT COLLECTION_MINTS.COLLECTION_ID as collection, COUNT(*) OVER () AS count
+            FROM COLLECTION_MINTS
+            INNER JOIN METADATAS ON METADATAS.MINT_ADDRESS = COLLECTION_MINTS.MINT
+            INNER JOIN CURRENT_METADATA_OWNERS ON CURRENT_METADATA_OWNERS.MINT_ADDRESS = METADATAS.MINT_ADDRESS
+            WHERE METADATAS.BURNED_AT IS NULL
+                AND COLLECTION_MINTS.COLLECTION_ID = ANY($1)
+            GROUP BY (COLLECTION_MINTS.COLLECTION_ID, CURRENT_METADATA_OWNERS.OWNER_ADDRESS);
+            -- $1: ids::text[]",
+        )
+        .bind::<Array<Text>, _>(ids)
+        .load(&conn)
+        .context("Failed to load holder count for mr collection")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|models::CollectionCount { collection, count }| {
+                (collection, CollectionHoldersCount::from(count))
+            })
+            .batch(ids))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<String, Option<CollectionTrend>> for Batcher {
+    async fn load(
+        &mut self,
+        collection_symbols: &[String],
+    ) -> TryBatchMap<String, Option<CollectionTrend>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::DolphinStats> = dolphin_stats::table
+            .select(dolphin_stats::all_columns)
+            .filter(dolphin_stats::collection_symbol.eq(any(collection_symbols)))
+            .load(&conn)
+            .context("Failed to load dolphin stats")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|a| (a.collection_symbol.clone(), a.try_into()))
+            .batch(collection_symbols))
     }
 }

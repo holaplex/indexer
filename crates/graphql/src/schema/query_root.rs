@@ -1,3 +1,4 @@
+use enums::{CollectionInterval, CollectionSort, OrderDirection};
 use indexer_core::{
     db::{
         self,
@@ -13,7 +14,7 @@ use objects::{
     bonding_change::EnrichedBondingChange,
     candy_machine::CandyMachine,
     chart::PriceChart,
-    collections::CollectionDocument,
+    collection::{CollectionDocument, CollectionTrend},
     creator::Creator,
     denylist::Denylist,
     feed_event::FeedEvent,
@@ -21,28 +22,26 @@ use objects::{
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
     marketplace::Marketplace,
-    nft::{Collection, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
+    nft::{CollectionNFT, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
     profile::{ProfilesStats, TwitterProfile},
     spl_governance::{
         Governance, Proposal, ProposalV2, Realm, SignatoryRecord, TokenOwnerRecord, VoteRecord,
     },
     storefront::{Storefront, StorefrontColumns},
-    wallet::Wallet,
+    wallet::{AssociatedTokenAccount, Wallet},
 };
 use scalars::{markers::TokenMint, PublicKey};
 use serde_json::Value;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
-    candy_machine_datas, candy_machines, current_metadata_owners, geno_habitat_datas, governances,
-    graph_connections, metadata_jsons, metadatas, realms, signatory_records, store_config_jsons,
-    storefronts, token_owner_records, twitter_handle_name_services, wallet_totals,
+    associated_token_accounts, auction_caches, auction_datas, auction_datas_ext, auction_houses,
+    bid_receipts, candy_machine_datas, candy_machines, current_metadata_owners, geno_habitat_datas,
+    governances, graph_connections, metadata_jsons, metadatas, realms, signatory_records,
+    store_config_jsons, storefronts, token_owner_records, twitter_handle_name_services,
+    wallet_totals,
 };
 
-use super::{
-    enums::{CollectionInterval, CollectionSort, OrderDirection},
-    objects::nft::CollectionTrend,
-    prelude::*,
-};
+use super::prelude::*;
+
 pub struct QueryRoot;
 
 #[derive(GraphQLInputObject, Clone, Debug)]
@@ -577,6 +576,28 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
+    async fn associated_token_accounts(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Token mint addresses")] mints: Vec<PublicKey<TokenMint>>,
+        #[graphql(description = "Query limit")] limit: i32,
+        #[graphql(description = "Query offset")] offset: i32,
+    ) -> FieldResult<Vec<AssociatedTokenAccount>> {
+        let conn = context.shared.db.get()?;
+
+        associated_token_accounts::table
+            .select(associated_token_accounts::all_columns)
+            .filter(associated_token_accounts::mint.eq(any(mints)))
+            .offset(offset.into())
+            .limit(limit.into())
+            .load::<models::AssociatedTokenAccount>(&conn)
+            .context("Failed to load token accounts")?
+            .into_iter()
+            .map(AssociatedTokenAccount::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
     fn listings(&self, context: &AppContext) -> FieldResult<Vec<Listing>> {
         let now = Local::now().naive_utc();
         let conn = context.shared.db.get()?;
@@ -777,16 +798,16 @@ impl QueryRoot {
 
     #[graphql(
         description = "Returns collection data along with collection activities",
-        arguments(address(description = "Collection address"))
+        arguments(id(description = "Collection ID"))
     )]
     async fn collection(
         &self,
         context: &AppContext,
-        address: String,
-    ) -> FieldResult<Option<Collection>> {
+        id: String,
+    ) -> FieldResult<Option<objects::collection::Collection>> {
         context
             .generic_collection_loader
-            .load(address)
+            .load(id)
             .await
             .map_err(Into::into)
     }
@@ -824,28 +845,24 @@ impl QueryRoot {
             (CollectionInterval::Thirty, CollectionSort::Volume) => {
                 db::custom_types::CollectionSort::ThirtyDayVolume
             },
-            (CollectionInterval::One, CollectionSort::NumberSales) => {
-                db::custom_types::CollectionSort::OneDaySalesCount
+            (CollectionInterval::One, CollectionSort::NumberListed) => {
+                db::custom_types::CollectionSort::OneDayListedCount
             },
-            (CollectionInterval::Seven, CollectionSort::NumberSales) => {
-                db::custom_types::CollectionSort::SevenDaySalesCount
+            (CollectionInterval::Seven, CollectionSort::NumberListed) => {
+                db::custom_types::CollectionSort::SevenDayListedCount
             },
-            (CollectionInterval::Thirty, CollectionSort::NumberSales) => {
-                db::custom_types::CollectionSort::ThirtyDaySalesCount
+            (CollectionInterval::Thirty, CollectionSort::NumberListed) => {
+                db::custom_types::CollectionSort::ThirtyDayListedCount
             },
-            (CollectionInterval::One, CollectionSort::Marketcap) => {
-                db::custom_types::CollectionSort::OneDayMarketcap
+            (CollectionInterval::One, CollectionSort::Floor) => {
+                db::custom_types::CollectionSort::OneDayFloorPrice
             },
-            (CollectionInterval::Seven, CollectionSort::Marketcap) => {
-                db::custom_types::CollectionSort::SevenDayMarketcap
+            (CollectionInterval::Seven, CollectionSort::Floor) => {
+                db::custom_types::CollectionSort::SevenDayFloorPrice
             },
-            (CollectionInterval::Thirty, CollectionSort::Marketcap) => {
-                db::custom_types::CollectionSort::ThirtyDayMarketcap
+            (CollectionInterval::Thirty, CollectionSort::Floor) => {
+                db::custom_types::CollectionSort::ThirtyDayFloorPrice
             },
-            (
-                CollectionInterval::One | CollectionInterval::Seven | CollectionInterval::Thirty,
-                CollectionSort::Floor,
-            ) => db::custom_types::CollectionSort::FloorPrice,
         };
 
         let collections = queries::collections::trends(&conn, TrendingQueryOptions {
@@ -890,7 +907,7 @@ impl QueryRoot {
         end_date: DateTime<Utc>,
         limit: i32,
         offset: i32,
-    ) -> FieldResult<Vec<Collection>> {
+    ) -> FieldResult<Vec<CollectionNFT>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let addresses: Option<Vec<String>> = match term {
@@ -959,7 +976,7 @@ impl QueryRoot {
         end_date: DateTime<Utc>,
         limit: i32,
         offset: i32,
-    ) -> FieldResult<Vec<Collection>> {
+    ) -> FieldResult<Vec<CollectionNFT>> {
         let conn = context.shared.db.get().context("failed to connect to db")?;
 
         let addresses: Option<Vec<String>> = match term {

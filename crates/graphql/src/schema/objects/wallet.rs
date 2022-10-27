@@ -6,12 +6,13 @@ use indexer_core::{
 };
 use objects::{
     auction_house::AuctionHouse,
+    collection::Collection,
     listing::Bid,
-    nft::{Collection, Nft, NftCreator},
+    nft::{Nft, NftCreator},
     profile::TwitterProfile,
 };
-use scalars::{PublicKey, U64};
-use tables::{bids, graph_connections, wallet_total_rewards};
+use scalars::{markers::TokenMint, PublicKey, U64};
+use tables::{associated_token_accounts, bids, graph_connections, wallet_total_rewards};
 
 use super::{ah_offer::Offer, prelude::*, reward_center::RewardCenter};
 use crate::schema::enums::{NftSort, OfferType, OrderDirection};
@@ -131,7 +132,7 @@ impl WalletNftCount {
 
 #[derive(Debug, Clone)]
 pub struct CollectedCollection {
-    metadata_address: PublicKey<Nft>,
+    collection_id: String,
     nfts_owned: i32,
     estimated_value: U64,
 }
@@ -141,13 +142,13 @@ impl TryFrom<models::CollectedCollection> for CollectedCollection {
 
     fn try_from(
         models::CollectedCollection {
-            collection_nft_address,
+            collection_id,
             nfts_owned,
             estimated_value,
         }: models::CollectedCollection,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            metadata_address: collection_nft_address.into(),
+            collection_id,
             nfts_owned: nfts_owned.try_into()?,
             estimated_value: estimated_value.try_into()?,
         })
@@ -157,10 +158,9 @@ impl TryFrom<models::CollectedCollection> for CollectedCollection {
 #[graphql_object(Context = AppContext)]
 impl CollectedCollection {
     async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        ctx.nft_loader
-            .load(self.metadata_address.clone())
+        ctx.generic_collection_loader
+            .load(self.collection_id.clone())
             .await
-            .map(|op| op.map(Into::into))
             .map_err(Into::into)
     }
 
@@ -170,30 +170,6 @@ impl CollectedCollection {
 
     fn estimated_value(&self) -> U64 {
         self.estimated_value
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct CreatedCollection {
-    address: PublicKey<Nft>,
-}
-
-impl From<models::CreatedCollection> for CreatedCollection {
-    fn from(models::CreatedCollection { address }: models::CreatedCollection) -> Self {
-        Self {
-            address: address.into(),
-        }
-    }
-}
-
-#[graphql_object(Context = AppContext)]
-impl CreatedCollection {
-    async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        ctx.nft_loader
-            .load(self.address.clone())
-            .await
-            .map(|op| op.map(Into::into))
-            .map_err(Into::into)
     }
 }
 
@@ -332,21 +308,34 @@ impl Wallet {
             .map_err(Into::into)
     }
 
-    pub fn collected_collections(&self, ctx: &AppContext) -> FieldResult<Vec<CollectedCollection>> {
+    pub fn associated_token_accounts(
+        &self,
+        ctx: &AppContext,
+        mint_address: Option<PublicKey<TokenMint>>,
+    ) -> FieldResult<Vec<AssociatedTokenAccount>> {
         let conn = ctx.shared.db.get()?;
 
-        let collections = queries::wallet::collected_collections(&conn, &self.address)?;
-        collections
+        let mut query = associated_token_accounts::table.into_boxed();
+        if let Some(mint_address) = mint_address {
+            query = query.filter(associated_token_accounts::mint.eq(mint_address));
+        }
+        let accts: Vec<models::AssociatedTokenAccount> = query
+            .select(associated_token_accounts::all_columns)
+            .filter(associated_token_accounts::owner.eq(&self.address))
+            .load(&conn)
+            .context("Failed to load token accounts")?;
+
+        accts
             .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
 
-    pub fn created_collections(&self, ctx: &AppContext) -> FieldResult<Vec<CreatedCollection>> {
+    pub fn collected_collections(&self, ctx: &AppContext) -> FieldResult<Vec<CollectedCollection>> {
         let conn = ctx.shared.db.get()?;
 
-        let collections = queries::wallet::created_collections(&conn, &self.address)?;
+        let collections = queries::wallet::collected_collections(&conn, &self.address)?;
         collections
             .into_iter()
             .map(TryInto::try_into)
@@ -483,5 +472,33 @@ impl ConnectionCounts {
             .context("Failed to count to_connections")?;
 
         Ok(count.try_into()?)
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct AssociatedTokenAccount {
+    pub address: PublicKey<AssociatedTokenAccount>,
+    pub mint: PublicKey<TokenMint>,
+    pub owner: PublicKey<Wallet>,
+    pub amount: U64,
+}
+
+impl<'a> TryFrom<models::AssociatedTokenAccount<'a>> for AssociatedTokenAccount {
+    type Error = std::num::TryFromIntError;
+    fn try_from(
+        models::AssociatedTokenAccount {
+            address,
+            mint,
+            owner,
+            amount,
+            ..
+        }: models::AssociatedTokenAccount,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            address: address.into(),
+            mint: mint.into(),
+            owner: owner.into(),
+            amount: amount.try_into().unwrap_or_default(),
+        })
     }
 }

@@ -35,7 +35,6 @@ pub(crate) async fn process(
 ) -> Result<()> {
     let row = DbRewardsOffer {
         address: Owned(bs58::encode(key).into_string()),
-        is_initialized: account_data.is_initialized,
         reward_center_address: Owned(bs58::encode(account_data.reward_center).into_string()),
         buyer: Owned(bs58::encode(account_data.buyer).into_string()),
         metadata: Owned(bs58::encode(account_data.metadata).into_string()),
@@ -48,11 +47,8 @@ pub(crate) async fn process(
             .try_into()
             .context("Token size is too big to store")?,
         created_at: util::unix_timestamp(account_data.created_at)?,
-        canceled_at: account_data
-            .canceled_at
-            .map(util::unix_timestamp)
-            .transpose()?,
-        purchase_ticket: account_data.purchase_ticket.map(|p| Owned(p.to_string())),
+        closed_at: None,
+        purchase_id: None,
         bump: account_data.bump.try_into()?,
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
@@ -140,7 +136,7 @@ pub(crate) async fn process(
                     token_size: row.token_size,
                     trade_state_bump: trade_state_bump.try_into()?,
                     created_at: row.created_at,
-                    canceled_at: row.canceled_at,
+                    canceled_at: None,
                     slot: row.slot,
                     write_version: Some(row.write_version),
                     expiry: None,
@@ -157,7 +153,7 @@ pub(crate) async fn process(
 
                 let offer_id = mutations::offer::insert(db, &offer)?;
 
-                if offer_exists || row.purchase_ticket.is_some() {
+                if offer_exists {
                     return Ok(());
                 }
 

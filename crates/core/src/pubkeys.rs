@@ -22,8 +22,8 @@ pub static METAPLEX: Pubkey = pubkey!("p1exdMJcjVao65QdewkaZRUnU6VPSXhus9n2GzWfh
 pub static TOKEN: Pubkey = pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 /// MPL auction house program key
 pub static AUCTION_HOUSE: Pubkey = pubkey!("hausS13jsjafwWwGqZTUQRmWyvyxn9EQpqMwV1PBBmk");
-/// MPL reward center program key
-pub static REWARD_CENTER: Pubkey = pubkey!("rwdLstiU8aJU1DPdoPtocaNKApMhCFdCg283hz8dd3u");
+/// HPL reward center program key
+pub static REWARD_CENTER: Pubkey = pubkey!("RwDDvPp7ta9qqUwxbBfShsNreBaSsKvFcHzMxfBC3Ki");
 /// Metaplex candy machine program key
 pub static CANDY_MACHINE: Pubkey = pubkey!("cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ");
 /// HPL graph program key
@@ -56,6 +56,8 @@ pub static CARDINAL_TWITTER_NAMESPACE: Pubkey =
     pubkey!("2zwXjjGEUrFMyE2CF2Ju4CJwMzwdbBMYnF2boEzgPhGu");
 /// `OpenSea` Auction house program pubkey
 pub static OPENSEA_AUCTION_HOUSE: Pubkey = pubkey!("3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y");
+/// Mint addresses of token accounts to index
+pub const TOKEN_MINTS: [Pubkey; 1] = [pubkey!("FpRTwmoN3dprxdkmas5J3AdGb1rjpWRpH2dhEW8vL9Qn")];
 /// Spl Governance programs pubkey
 pub const SPL_GOVERNANCE: [Pubkey; 22] = [
     pubkey!("gUAedF544JeE6NYbQakQvribHykUNgaPJqcgf3UQVnY"),

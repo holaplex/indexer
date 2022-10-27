@@ -1,0 +1,10 @@
+alter table dolphin_stats 
+  drop column change_floor_1d,
+  drop column change_floor_7d,
+  drop column change_floor_30d,
+  drop column change_volume_1d,
+  drop column change_volume_7d,
+  drop column change_volume_30d,
+  drop column change_listed_1d,
+  drop column change_listed_7d,
+  drop column change_listed_30d;
