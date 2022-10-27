@@ -58,6 +58,26 @@ impl TryBatchFn<PublicKey<TokenMint>, Option<Collection>> for Batcher {
 }
 
 #[async_trait]
+impl TryBatchFn<PublicKey<TokenMint>, Option<i64>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<TokenMint>],
+    ) -> TryBatchMap<PublicKey<TokenMint>, Option<i64>> {
+        let conn = self.db()?;
+
+        let rows: Vec<(String, i64)> = collection_mints::table
+            .filter(collection_mints::mint.eq(any(addresses)))
+            .select((collection_mints::mint, collection_mints::rank))
+            .load(&conn)
+            .context("Failed to load NFT moonrank rank(s)")?;
+
+        Ok(rows
+            .into_iter()
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
 impl TryBatchFn<PublicKey<Nft>, Vec<NftCreator>> for Batcher {
     async fn load(
         &mut self,

@@ -550,6 +550,13 @@ If no value is provided, it will return XSmall")))]
             Ok(None)
         }
     }
+
+    pub async fn moonrank_rank(&self, ctx: &AppContext) -> FieldResult<Option<i64>> {
+        ctx.nft_moonrank_rank_loader
+            .load(self.mint_address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 #[derive(Debug, Clone)]
