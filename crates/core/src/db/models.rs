@@ -3501,17 +3501,17 @@ pub struct DolphinStats1D<'a> {
 }
 
 /// A row in a `tokens_distributed` query, representing total $SAUCE tokens distributed between particular dates.
-#[derive(Debug, Clone, Queryable, QueryableByName)]
+#[derive(Debug, Clone, Copy, Queryable, QueryableByName)]
 pub struct TokensDistributed {
     /// Total tokens distributed
-    #[sql_type = "Numeric"]
-    pub tokens_distributed: BigDecimal,
+    #[sql_type = "BigInt"]
+    pub tokens_distributed: i64,
 }
 
 /// Auction House Volume
-#[derive(Debug, Clone, Queryable, QueryableByName)]
+#[derive(Debug, Clone, Copy, Queryable, QueryableByName)]
 pub struct AuctionHouseVolume {
     /// Auction House Volume
-    #[sql_type = "Numeric"]
-    pub volume: BigDecimal,
+    #[sql_type = "BigInt"]
+    pub volume: i64,
 }

@@ -116,13 +116,12 @@ impl RewardCenter {
         end_date: Option<DateTime<Utc>>,
     ) -> FieldResult<Option<U64>> {
         let conn = context.shared.db.get()?;
-        let start_date = start_date.unwrap_or_default();
-        let end_date = end_date.unwrap_or(Utc::now());
+
         let result = queries::reward_centers::tokens_distributed(
             &conn,
             &self.address,
-            start_date.naive_utc(),
-            end_date.naive_utc(),
+            start_date.map(|v| v.naive_utc()),
+            end_date.map(|v| v.naive_utc()),
         )?;
 
         Ok(result

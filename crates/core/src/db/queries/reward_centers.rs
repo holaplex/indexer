@@ -4,7 +4,7 @@ use diesel::{
     expression::{AsExpression, NonAggregate},
     pg::Pg,
     query_builder::{QueryFragment, QueryId},
-    sql_types::{Integer, Text, Timestamp},
+    sql_types::{Integer, Nullable, Text, Timestamp},
     types::ToSql,
     AppearsOnTable,
 };
@@ -74,8 +74,8 @@ const TOKENS_DISTRIBUTED_QUERY: &str = r"
 SELECT COALESCE(SUM(reward_payouts.seller_reward + reward_payouts.seller_reward), 0) as tokens_distributed
     FROM reward_payouts
     WHERE reward_payouts.reward_center = $1
-    AND reward_payouts.created_at >= $2
-    AND reward_payouts.created_at <= $3
+    AND ($2 is null or reward_payouts.created_at >= $2)
+    AND ($3 is null or reward_payouts.created_at <= $3)
 ;
 
 -- $1: address::text
@@ -89,13 +89,13 @@ SELECT COALESCE(SUM(reward_payouts.seller_reward + reward_payouts.seller_reward)
 pub fn tokens_distributed(
     conn: &Connection,
     address: impl ToSql<Text, Pg>,
-    start_date: NaiveDateTime,
-    end_date: NaiveDateTime,
+    start_date: Option<NaiveDateTime>,
+    end_date: Option<NaiveDateTime>,
 ) -> Result<Vec<TokensDistributed>> {
     diesel::sql_query(TOKENS_DISTRIBUTED_QUERY)
         .bind(address)
-        .bind::<Timestamp, _>(start_date)
-        .bind::<Timestamp, _>(end_date)
+        .bind::<Nullable<Timestamp>, _>(start_date)
+        .bind::<Nullable<Timestamp>, _>(end_date)
         .load(conn)
         .context("Failed to load tokens distributed")
 }
