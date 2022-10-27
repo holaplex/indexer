@@ -1,4 +1,4 @@
-#![allow(clippy::pedantic, clippy::cargo)]
+#![allow(clippy::pedantic, clippy::cargo, missing_docs, unused)]
 
 use std::{borrow::Borrow, sync::Arc};
 
@@ -48,7 +48,7 @@ fn collections_endpoint() -> String {
     format!("{}/collections/", V3_BASE)
 }
 
-fn market_stats_endpoint<T: TimeZone>(
+pub fn market_stats_endpoint<T: TimeZone>(
     symbol: impl std::fmt::Display,
     start: DateTime<T>,
     end: DateTime<T>,
@@ -77,13 +77,13 @@ fn market_stats_endpoint<T: TimeZone>(
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(untagged)]
-enum Response<T> {
+pub enum Response<T> {
     Error { error: serde_json::Value },
     Success(T),
 }
 
 impl<T> Response<T> {
-    fn into_inner<'a>(self, url: impl FnOnce() -> &'a Url) -> Result<T> {
+    pub fn into_inner<'a>(self, url: impl FnOnce() -> &'a Url) -> Result<T> {
         match self {
             Self::Error { error } => Err(anyhow!(
                 "API call for {:?} returned error: {:?}",
@@ -95,11 +95,11 @@ impl<T> Response<T> {
     }
 }
 
-type CollectionsResponse = Response<Vec<Collection>>;
+pub type CollectionsResponse = Response<Vec<Collection>>;
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct Collection {
+pub struct Collection {
     symbol: Option<String>,
     #[allow(unused)]
     name: Option<String>,
@@ -118,30 +118,30 @@ struct Collection {
 
 #[derive(Debug, serde::Deserialize)]
 #[allow(unused)]
-struct CollectionLinks {
+pub struct CollectionLinks {
     website: Option<String>,
     discord: Option<String>,
     twitter: Option<String>,
 }
 
-type MarketStatsResponse = Response<MarketStats>;
+pub type MarketStatsResponse = Response<MarketStats>;
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct MarketStats {
-    floor_data: Vec<Datapoint>,
-    listed_data: Vec<Datapoint>,
+pub struct MarketStats {
+    pub floor_data: Vec<Datapoint>,
+    pub listed_data: Vec<Datapoint>,
     #[deprecated = "Use volume_data_all"]
     #[allow(unused)]
-    volume_data: Vec<Datapoint>,
-    holder_data: Vec<Datapoint>,
-    volume_data_all: Vec<Datapoint>,
+    pub volume_data: Vec<Datapoint>,
+    pub holder_data: Vec<Datapoint>,
+    pub volume_data_all: Vec<Datapoint>,
 }
 
-type Datapoint = (u64, Number);
+pub type Datapoint = (u64, Number);
 
 #[derive(Debug, Clone, Copy)]
-struct Stats<T> {
+pub struct Stats<T> {
     curr_1d: T,
     curr_7d: T,
     curr_30d: T,

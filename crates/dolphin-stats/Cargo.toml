@@ -4,9 +4,13 @@ version = "0.0.0"
 edition = "2021"
 publish = false
 
+[lib]
+name = "dolphin_stats"
+path = "src/lib.rs"
+
 [[bin]]
 name = "dolphin-stats"
-path = "main.rs"
+path = "src/main.rs"
 
 [dependencies]
 futures-util = "0.3.24"
