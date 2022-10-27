@@ -1,4 +1,4 @@
-use dolphin_stats::main::{market_stats_endpoint, MarketStats, MarketStatsResponse};
+use dolphin_stats::{market_stats_endpoint, MarketStats, MarketStatsResponse};
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     db::{
