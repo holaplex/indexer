@@ -517,8 +517,15 @@ If no value is provided, it will return XSmall")))]
             .map_err(Into::into)
     }
 
-    pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
-        ctx.nft_collection_loader
+    pub async fn collection(&self, ctx: &AppContext) -> FieldResult<Option<CollectionNFT>> {
+        ctx.metaplex_certified_collection_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn moonrank_collection(&self, ctx: &AppContext) -> FieldResult<Option<Collection>> {
+        ctx.nft_moonrank_collection_loader
             .load(self.mint_address.clone().into())
             .await
             .map_err(Into::into)
@@ -542,6 +549,14 @@ If no value is provided, it will return XSmall")))]
         } else {
             Ok(None)
         }
+    }
+
+    pub async fn moonrank_rank(&self, ctx: &AppContext) -> FieldResult<Option<scalars::I64>> {
+        Ok(ctx
+            .nft_moonrank_rank_loader
+            .load(self.mint_address.clone().into())
+            .await?
+            .map(|dataloaders::nft::MoonrankRank(rank)| rank))
     }
 }
 

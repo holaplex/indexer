@@ -28,5 +28,6 @@ features = ["search-dispatch"]
 [dependencies.indexer-rabbitmq]
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
-tag = "v0.6.1"
+# tag = "v0.6.1" # TODO
+rev = "4d30ed8"
 version = "=0.3.1"

@@ -28,15 +28,16 @@ use objects::{
         Governance, Proposal, ProposalV2, Realm, SignatoryRecord, TokenOwnerRecord, VoteRecord,
     },
     storefront::{Storefront, StorefrontColumns},
-    wallet::Wallet,
+    wallet::{AssociatedTokenAccount, Wallet},
 };
 use scalars::{markers::TokenMint, PublicKey};
 use serde_json::Value;
 use tables::{
-    auction_caches, auction_datas, auction_datas_ext, auction_houses, bid_receipts,
-    candy_machine_datas, candy_machines, current_metadata_owners, geno_habitat_datas, governances,
-    graph_connections, metadata_jsons, metadatas, realms, signatory_records, store_config_jsons,
-    storefronts, token_owner_records, twitter_handle_name_services, wallet_totals,
+    associated_token_accounts, auction_caches, auction_datas, auction_datas_ext, auction_houses,
+    bid_receipts, candy_machine_datas, candy_machines, current_metadata_owners, geno_habitat_datas,
+    governances, graph_connections, metadata_jsons, metadatas, realms, signatory_records,
+    store_config_jsons, storefronts, token_owner_records, twitter_handle_name_services,
+    wallet_totals,
 };
 
 use super::prelude::*;
@@ -572,6 +573,28 @@ impl QueryRoot {
 
         futures_util::future::try_join_all(addresses.into_iter().map(|a| context.wallet(a)))
             .await
+            .map_err(Into::into)
+    }
+
+    async fn associated_token_accounts(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Token mint addresses")] mints: Vec<PublicKey<TokenMint>>,
+        #[graphql(description = "Query limit")] limit: i32,
+        #[graphql(description = "Query offset")] offset: i32,
+    ) -> FieldResult<Vec<AssociatedTokenAccount>> {
+        let conn = context.shared.db.get()?;
+
+        associated_token_accounts::table
+            .select(associated_token_accounts::all_columns)
+            .filter(associated_token_accounts::mint.eq(any(mints)))
+            .offset(offset.into())
+            .limit(limit.into())
+            .load::<models::AssociatedTokenAccount>(&conn)
+            .context("Failed to load token accounts")?
+            .into_iter()
+            .map(AssociatedTokenAccount::try_from)
+            .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
 

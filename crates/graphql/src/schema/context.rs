@@ -1,5 +1,6 @@
 use dataloaders::{
     collection::{CollectionFloorPrice, CollectionHoldersCount, CollectionNftCount},
+    nft::MoonrankRank,
     Batcher, Loader, TwitterBatcher,
 };
 use indexer_core::uuid::Uuid;
@@ -87,7 +88,9 @@ pub struct AppContext {
     pub nft_activities_loader: Loader<PublicKey<Nft>, Vec<NftActivity>>,
     pub nft_attributes_loader: Loader<PublicKey<Nft>, Vec<NftAttribute>>,
     pub nft_by_mint_loader: Loader<PublicKey<TokenMint>, Option<Nft>>,
-    pub nft_collection_loader: Loader<PublicKey<TokenMint>, Option<Collection>>,
+    pub nft_moonrank_collection_loader: Loader<PublicKey<TokenMint>, Option<Collection>>,
+    pub nft_moonrank_rank_loader: Loader<PublicKey<TokenMint>, Option<MoonrankRank>>,
+    pub metaplex_certified_collection_loader: Loader<PublicKey<Nft>, Option<CollectionNFT>>,
     pub generic_collection_loader:
         Loader<objects::collection::CollectionId, Option<objects::collection::Collection>>,
     pub nft_creators_loader: Loader<PublicKey<Nft>, Vec<NftCreator>>,
@@ -167,8 +170,10 @@ impl AppContext {
             nft_activities_loader: Loader::new(batcher.clone()),
             nft_attributes_loader: Loader::new(batcher.clone()),
             nft_by_mint_loader: Loader::new(batcher.clone()),
-            nft_collection_loader: Loader::new(batcher.clone()),
+            nft_moonrank_collection_loader: Loader::new(batcher.clone()),
+            nft_moonrank_rank_loader: Loader::new(batcher.clone()),
             generic_collection_loader: Loader::new(batcher.clone()),
+            metaplex_certified_collection_loader: Loader::new(batcher.clone()),
             nft_creators_loader: Loader::new(batcher.clone()),
             nft_files_loader: Loader::new(batcher.clone()),
             nft_loader: Loader::new(batcher.clone()),

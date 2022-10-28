@@ -12,6 +12,7 @@ use tables::{
 };
 
 use super::prelude::*;
+use crate::schema::scalars::I64;
 
 #[async_trait]
 impl TryBatchFn<PublicKey<Nft>, Vec<NftAttribute>> for Batcher {
@@ -53,6 +54,37 @@ impl TryBatchFn<PublicKey<TokenMint>, Option<Collection>> for Batcher {
         Ok(rows
             .into_iter()
             .map(|(addr, collection)| (addr, collection.try_into()))
+            .batch(addresses))
+    }
+}
+
+#[derive(Debug, Clone)]
+#[repr(transparent)]
+pub struct MoonrankRank(pub I64);
+
+impl From<i64> for MoonrankRank {
+    fn from(value: i64) -> Self {
+        Self(value.into())
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<TokenMint>, Option<MoonrankRank>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<TokenMint>],
+    ) -> TryBatchMap<PublicKey<TokenMint>, Option<MoonrankRank>> {
+        let conn = self.db()?;
+
+        let rows: Vec<(String, i64)> = collection_mints::table
+            .filter(collection_mints::mint.eq(any(addresses)))
+            .select((collection_mints::mint, collection_mints::rank))
+            .load(&conn)
+            .context("Failed to load NFT moonrank rank(s)")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|(mint, rank)| (mint, MoonrankRank::from(rank)))
             .batch(addresses))
     }
 }

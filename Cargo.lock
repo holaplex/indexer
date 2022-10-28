@@ -3084,6 +3084,7 @@ dependencies = [
  "derive_more",
  "futures-util",
  "holaplex-indexer-core",
+ "holaplex-indexer-dolphin-stats",
  "itertools",
  "juniper",
  "md5",
@@ -3114,7 +3115,7 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-rabbitmq"
 version = "0.3.1"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.6.1#28e4e67db5256191f116243694d57bc1067038cf"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?rev=4d30ed8#4d30ed8821e9bd9adca35755213864686820cc9d"
 dependencies = [
  "clap 3.1.12",
  "futures-util",
@@ -3142,9 +3143,9 @@ dependencies = [
 
 [[package]]
 name = "hpl-reward-center"
-version = "0.1.0"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c274dc207b9c61d7c3518aca58eb2270f427d2b11236146e0008ecb6a4b7aaa0"
+checksum = "d2667aa13aa62d7e8b1d2f67cd1ad7274a9737f51d35885064c74d2fbb11aaac"
 dependencies = [
  "anchor-lang 0.24.2",
  "anchor-spl 0.24.2",

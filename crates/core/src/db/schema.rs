@@ -3,6 +3,21 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
 
+    associated_token_accounts (address) {
+        address -> Varchar,
+        mint -> Varchar,
+        owner -> Varchar,
+        amount -> Int8,
+        slot -> Int8,
+        write_version -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
+
     attributes (id) {
         metadata_address -> Varchar,
         value -> Nullable<Text>,
@@ -941,6 +956,98 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
 
+    hpl_reward_center_close_listing_ins (id) {
+        id -> Uuid,
+        wallet -> Varchar,
+        listing -> Varchar,
+        metadata -> Varchar,
+        token_account -> Varchar,
+        token_mint -> Varchar,
+        authority -> Varchar,
+        reward_center -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        trade_state -> Varchar,
+        ah_auctioneer_pda -> Varchar,
+        token_size -> Int8,
+        created_at -> Timestamp,
+        slot -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
+
+    hpl_reward_center_close_offer_ins (id) {
+        id -> Uuid,
+        wallet -> Varchar,
+        offer -> Varchar,
+        treasury_mint -> Varchar,
+        token_account -> Varchar,
+        receipt_account -> Varchar,
+        escrow_payment_account -> Varchar,
+        metadata -> Varchar,
+        token_mint -> Varchar,
+        authority -> Varchar,
+        reward_center -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        trade_state -> Varchar,
+        ah_auctioneer_pda -> Varchar,
+        escrow_payment_bump -> Int2,
+        buyer_price -> Int8,
+        token_size -> Int8,
+        created_at -> Timestamp,
+        slot -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
+
+    hpl_reward_center_execute_sale_ins (id) {
+        id -> Uuid,
+        buyer -> Varchar,
+        buyer_reward_token_account -> Varchar,
+        seller -> Varchar,
+        seller_reward_token_account -> Varchar,
+        listing -> Varchar,
+        offer -> Varchar,
+        payer -> Varchar,
+        token_account -> Varchar,
+        token_mint -> Varchar,
+        metadata -> Varchar,
+        treasury_mint -> Varchar,
+        seller_payment_receipt_account -> Varchar,
+        buyer_receipt_token_account -> Varchar,
+        authority -> Varchar,
+        escrow_payment_account -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        auction_house_treasury -> Varchar,
+        buyer_trade_state -> Varchar,
+        seller_trade_state -> Varchar,
+        free_trade_state -> Varchar,
+        reward_center -> Varchar,
+        reward_center_reward_token_account -> Varchar,
+        ah_auctioneer_pda -> Varchar,
+        escrow_payment_bump -> Int2,
+        free_trade_state_bump -> Int2,
+        program_as_signer_bump -> Int2,
+        created_at -> Timestamp,
+        slot -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
+
     ins_buffer_bundle_ins_keys (instruction_buffer_address, program_id, pubkey) {
         instruction_buffer_address -> Varchar,
         program_id -> Varchar,
@@ -1692,8 +1799,7 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
 
-    reward_payouts (purchase_ticket) {
-        purchase_ticket -> Varchar,
+    reward_payouts (purchase_id) {
         metadata -> Varchar,
         reward_center -> Varchar,
         buyer -> Varchar,
@@ -1703,6 +1809,7 @@ table! {
         created_at -> Timestamp,
         slot -> Int8,
         write_version -> Int8,
+        purchase_id -> Uuid,
     }
 }
 
@@ -1713,7 +1820,6 @@ table! {
 
     rewards_listings (address) {
         address -> Varchar,
-        is_initialized -> Bool,
         reward_center_address -> Varchar,
         seller -> Varchar,
         metadata -> Varchar,
@@ -1721,10 +1827,10 @@ table! {
         token_size -> Int8,
         bump -> Int2,
         created_at -> Timestamp,
-        canceled_at -> Nullable<Timestamp>,
-        purchase_ticket -> Nullable<Varchar>,
+        closed_at -> Nullable<Timestamp>,
         slot -> Int8,
         write_version -> Int8,
+        purchase_id -> Nullable<Uuid>,
     }
 }
 
@@ -1735,7 +1841,6 @@ table! {
 
     rewards_offers (address) {
         address -> Varchar,
-        is_initialized -> Bool,
         reward_center_address -> Varchar,
         buyer -> Varchar,
         metadata -> Varchar,
@@ -1743,29 +1848,10 @@ table! {
         token_size -> Int8,
         bump -> Int2,
         created_at -> Timestamp,
-        canceled_at -> Nullable<Timestamp>,
-        purchase_ticket -> Nullable<Varchar>,
+        closed_at -> Nullable<Timestamp>,
         slot -> Int8,
         write_version -> Int8,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-
-    rewards_purchase_tickets (address) {
-        address -> Varchar,
-        reward_center_address -> Varchar,
-        buyer -> Varchar,
-        seller -> Varchar,
-        metadata -> Varchar,
-        price -> Int8,
-        token_size -> Int8,
-        created_at -> Timestamp,
-        slot -> Int8,
-        write_version -> Int8,
+        purchase_id -> Nullable<Uuid>,
     }
 }
 
@@ -2201,6 +2287,7 @@ joinable!(purchase_events -> feed_events (feed_event_id));
 joinable!(realm_configs -> realms (realm_address));
 
 allow_tables_to_appear_in_same_query!(
+    associated_token_accounts,
     attributes,
     auction_caches,
     auction_datas,
@@ -2250,6 +2337,9 @@ allow_tables_to_appear_in_same_query!(
     governances,
     governors,
     graph_connections,
+    hpl_reward_center_close_listing_ins,
+    hpl_reward_center_close_offer_ins,
+    hpl_reward_center_execute_sale_ins,
     ins_buffer_bundle_ins_keys,
     ins_buffer_bundle_instructions,
     ins_buffer_bundles,
@@ -2297,7 +2387,6 @@ allow_tables_to_appear_in_same_query!(
     reward_payouts,
     rewards_listings,
     rewards_offers,
-    rewards_purchase_tickets,
     sell_instructions,
     signatory_records,
     smart_wallet_owners,
