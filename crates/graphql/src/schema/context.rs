@@ -1,5 +1,6 @@
 use dataloaders::{
     collection::{CollectionFloorPrice, CollectionHoldersCount, CollectionNftCount},
+    nft::MoonrankRank,
     Batcher, Loader, TwitterBatcher,
 };
 use indexer_core::uuid::Uuid;
@@ -37,7 +38,7 @@ use scalars::{
     PublicKey,
 };
 
-use super::{dataloaders::nft::MoonrankRank, prelude::*};
+use super::prelude::*;
 
 #[derive(Clone)]
 pub struct AppContext {
