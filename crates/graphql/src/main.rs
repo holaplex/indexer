@@ -53,6 +53,9 @@ struct Opts {
     #[clap(long, env)]
     solana_endpoint: String,
 
+    #[clap(long, env)]
+    dolphin_key: String,
+
     #[clap(long, env, use_value_delimiter(true))]
     follow_wallets_exclusions: Vec<String>,
 
@@ -85,11 +88,13 @@ pub(crate) struct SharedData {
     pub twitter_bearer_token: String,
     pub search: meilisearch::client::Client,
     pub rpc: RpcClient,
+    pub http: reqwest::Client,
     pub follow_wallets_exclusions: Vec<String>,
     pub featured_listings_auction_houses: Vec<String>,
     pub featured_listings_seller_exclusions: Vec<String>,
     pub marketplaces_store_address_exclusions: Vec<String>,
     pub pre_query_search_limit: usize,
+    pub dolphin_key: String,
 }
 
 #[allow(clippy::unused_async)]
@@ -169,6 +174,7 @@ fn main() {
             asset_proxy,
             search,
             solana_endpoint,
+            dolphin_key,
             follow_wallets_exclusions,
             featured_listings_auction_houses,
             featured_listings_seller_exclusions,
@@ -198,11 +204,13 @@ fn main() {
             twitter_bearer_token,
             search,
             rpc,
+            http: reqwest::Client::new(),
             follow_wallets_exclusions,
             featured_listings_auction_houses,
             featured_listings_seller_exclusions,
             marketplaces_store_address_exclusions,
             pre_query_search_limit,
+            dolphin_key,
         });
 
         let version_extension = "/v1";
