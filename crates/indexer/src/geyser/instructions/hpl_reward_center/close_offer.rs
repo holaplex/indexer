@@ -25,43 +25,43 @@ pub(crate) async fn process(
     let trade_state = accts[12].clone();
     let closed_at = Some(Utc::now().naive_utc());
     let slot: i64 = slot.try_into()?;
-
-    let row = HplRewardCenterCloseoffer {
-        wallet: Owned(accts[0].clone()),
-        offer: Owned(accts[1].clone()),
-        treasury_mint: Owned(accts[2].clone()),
-        token_account: Owned(accts[3].clone()),
-        receipt_account: Owned(accts[4].clone()),
-        escrow_payment_account: Owned(accts[5].clone()),
-        metadata: Owned(accts[6].clone()),
-        token_mint: Owned(accts[7].clone()),
-        authority: Owned(accts[8].clone()),
-        reward_center: Owned(accts[9].clone()),
-        auction_house: Owned(accts[10].clone()),
-        auction_house_fee_account: Owned(accts[11].clone()),
-        trade_state: Owned(accts[12].clone()),
-        ah_auctioneer_pda: Owned(accts[13].clone()),
-        escrow_payment_bump: params.escrow_payment_bump.try_into()?,
-        buyer_price: params.buyer_price.try_into()?,
-        token_size: params.token_size.try_into()?,
-        created_at: Utc::now().naive_utc(),
-        slot,
-    };
+    let escrow_payment_bump = params.escrow_payment_bump.try_into()?;
 
     client
         .db()
         .run(move |db| {
-            insert_into(hpl_reward_center_close_offer_ins::table)
-                .values(&row)
-                .execute(db)
-        })
-        .await
-        .context("failed to insert reward center close offer instruction ")?;
+            let (token_size, buyer_price) = rewards_offers::table
+                .select((rewards_offers::token_size, rewards_offers::price))
+                .filter(rewards_offers::address.eq(offer_address.clone()))
+                .first(db)?;
 
-    client
-        .db()
-        .run(move |db| {
+            let row = HplRewardCenterCloseoffer {
+                wallet: Owned(accts[0].clone()),
+                offer: Owned(accts[1].clone()),
+                treasury_mint: Owned(accts[2].clone()),
+                token_account: Owned(accts[3].clone()),
+                receipt_account: Owned(accts[4].clone()),
+                escrow_payment_account: Owned(accts[5].clone()),
+                metadata: Owned(accts[6].clone()),
+                token_mint: Owned(accts[7].clone()),
+                authority: Owned(accts[8].clone()),
+                reward_center: Owned(accts[9].clone()),
+                auction_house: Owned(accts[10].clone()),
+                auction_house_fee_account: Owned(accts[11].clone()),
+                trade_state: Owned(accts[12].clone()),
+                ah_auctioneer_pda: Owned(accts[13].clone()),
+                escrow_payment_bump,
+                buyer_price,
+                token_size,
+                created_at: Utc::now().naive_utc(),
+                slot,
+            };
+
             db.build_transaction().read_write().run(|| {
+                insert_into(hpl_reward_center_close_offer_ins::table)
+                    .values(&row)
+                    .execute(db)?;
+
                 update(rewards_offers::table.filter(rewards_offers::address.eq(offer_address)))
                     .set((
                         rewards_offers::closed_at.eq(closed_at),
