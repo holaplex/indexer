@@ -37,7 +37,7 @@ use scalars::{
     PublicKey,
 };
 
-use super::prelude::*;
+use super::{dataloaders::nft::MoonrankRank, prelude::*};
 
 #[derive(Clone)]
 pub struct AppContext {
@@ -88,7 +88,7 @@ pub struct AppContext {
     pub nft_attributes_loader: Loader<PublicKey<Nft>, Vec<NftAttribute>>,
     pub nft_by_mint_loader: Loader<PublicKey<TokenMint>, Option<Nft>>,
     pub nft_moonrank_collection_loader: Loader<PublicKey<TokenMint>, Option<Collection>>,
-    pub nft_moonrank_rank_loader: Loader<PublicKey<TokenMint>, Option<i64>>,
+    pub nft_moonrank_rank_loader: Loader<PublicKey<TokenMint>, Option<MoonrankRank>>,
     pub metaplex_certified_collection_loader: Loader<PublicKey<Nft>, Option<CollectionNFT>>,
     pub generic_collection_loader:
         Loader<objects::collection::CollectionId, Option<objects::collection::Collection>>,

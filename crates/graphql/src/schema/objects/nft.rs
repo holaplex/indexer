@@ -551,11 +551,12 @@ If no value is provided, it will return XSmall")))]
         }
     }
 
-    pub async fn moonrank_rank(&self, ctx: &AppContext) -> FieldResult<Option<i64>> {
-        ctx.nft_moonrank_rank_loader
+    pub async fn moonrank_rank(&self, ctx: &AppContext) -> FieldResult<Option<scalars::I64>> {
+        Ok(ctx
+            .nft_moonrank_rank_loader
             .load(self.mint_address.clone().into())
-            .await
-            .map_err(Into::into)
+            .await?
+            .map(|dataloaders::nft::MoonrankRank(rank)| rank))
     }
 }
 
