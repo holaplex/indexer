@@ -6,7 +6,6 @@ use indexer_core::{
         tables::{attributes, collection_mints, metadatas},
     },
     pubkeys,
-    util::unix_timestamp_unsigned,
 };
 use objects::attributes::AttributeGroup;
 use reqwest::Url;
@@ -347,10 +346,10 @@ pub struct Datapoint {
 }
 
 impl From<&(u64, serde_json::Number)> for Datapoint {
-    fn from(d: &(u64, serde_json::Number)) -> Self {
+    fn from(&(ts, ref num): &(u64, serde_json::Number)) -> Self {
         Self {
-            timestamp: DateTime::from_utc(unix_timestamp_unsigned(d.0).unwrap_or_default(), Utc),
-            value: d.1.as_u64().unwrap_or_default().into(),
+            timestamp: dolphin_stats::get_datapoint_timestamp(ts).unwrap_or_default(),
+            value: num.as_u64().unwrap_or_default().into(),
         }
     }
 }
