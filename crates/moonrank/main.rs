@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use futures_util::StreamExt;
-use indexer::{prelude::*, search_dispatch};
+use indexer::search_dispatch;
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, AssetProxyArgs},
     clap,
@@ -15,6 +15,7 @@ use indexer_core::{
         Pool,
     },
     num_cpus,
+    prelude::*,
     util::unix_timestamp_unsigned,
 };
 use indexer_rabbitmq::{search_indexer, suffix::Suffix};
