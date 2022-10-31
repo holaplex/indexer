@@ -21,6 +21,9 @@ asset-cdn = [
   "assets",
   "md5",
 ]
+chrono-serde = [
+  "chrono/serde",
+]
 db = [
   "diesel",
   "diesel_migrations",
