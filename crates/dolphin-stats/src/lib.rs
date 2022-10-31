@@ -214,6 +214,19 @@ pub fn check_int<M: FnOnce() -> D, D: std::fmt::Display>(num: &Number, msg: M) -
     int_error(num, msg)
 }
 
+pub fn get_datapoint_timestamp(ts: u64) -> Option<DateTime<Utc>> {
+    const SPLIT: u64 = 1_000;
+    let secs = ts / SPLIT;
+    let micros = ts % SPLIT;
+
+    let secs = secs.try_into().ok()?;
+    let micros = micros.try_into().ok()?;
+
+    let ts = NaiveDateTime::from_timestamp_opt(secs, micros)?;
+
+    Some(DateTime::from_utc(ts, Utc))
+}
+
 pub fn check_stats<N: IntoIterator>(
     nums: N,
     msg: impl std::fmt::Display,
@@ -266,15 +279,7 @@ where
             msg, sym
         );
 
-        const SPLIT: u64 = 1_000;
-        let secs = ts / SPLIT;
-        let micros = ts % SPLIT;
-
-        if let Some(ts) = secs
-            .try_into()
-            .ok()
-            .and_then(|s| NaiveDateTime::from_timestamp_opt(s, micros.try_into().ok()?))
-        {
+        if let Some(ts) = get_datapoint_timestamp(ts) {
             write!(s, "{}", ts).unwrap();
         } else {
             write!(s, "UNIX timestamp {}", ts).unwrap();
@@ -298,15 +303,7 @@ where
     int_error(&num, || {
         let mut s = "datapoint at ".to_owned();
 
-        const SPLIT: u64 = 1_000;
-        let secs = ts / SPLIT;
-        let micros = ts % SPLIT;
-
-        if let Some(ts) = secs
-            .try_into()
-            .ok()
-            .and_then(|s| NaiveDateTime::from_timestamp_opt(s, micros.try_into().ok()?))
-        {
+        if let Some(ts) = get_datapoint_timestamp(ts) {
             write!(s, "{}", ts).unwrap();
         } else {
             write!(s, "UNIX timestamp {}", ts).unwrap();
