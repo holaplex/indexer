@@ -488,6 +488,26 @@ pub struct NftActivity {
     pub activity_type: String,
 }
 
+/// Last sold date and price of an nft
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct LastSale {
+    /// Nft metadata
+    #[sql_type = "VarChar"]
+    pub metadata: String,
+
+    /// Purchase id of last sale
+    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
+    pub purchase_id: Option<Uuid>,
+
+    /// The price of sale
+    #[sql_type = "Nullable<Int8>"]
+    pub price: Option<i64>,
+
+    /// Sale created time
+    #[sql_type = "Nullable<Timestamp>"]
+    pub created_at: Option<NaiveDateTime>,
+}
+
 /// A row in the `collection_trends` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
 #[table_name = "collection_trends"]
