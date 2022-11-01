@@ -1,5 +1,5 @@
 use indexer_core::{
-    bigdecimal::BigDecimal,
+    bigdecimal::{BigDecimal, ToPrimitive, Zero},
     db::queries::{self, metadatas::WalletNftOptions},
     pubkeys,
     uuid::Uuid,
@@ -430,7 +430,7 @@ impl Wallet {
     ) -> FieldResult<U64> {
         let db_conn = ctx.shared.db.get()?;
 
-        let wallet_total_rewards = wallet_total_rewards::table
+        let wallet_total_reward = wallet_total_rewards::table
             .select(wallet_total_rewards::total_reward)
             .filter(
                 wallet_total_rewards::reward_center_address
@@ -438,9 +438,14 @@ impl Wallet {
                     .and(wallet_total_rewards::wallet_address.eq(&self.address)),
             )
             .first::<BigDecimal>(&db_conn)
-            .context("Failed to load total rewards")?;
+            .context("Failed to load total rewards");
 
-        Ok(wallet_total_rewards.try_into().unwrap_or_default())
+        let wallet_total_reward = match wallet_total_reward {
+            Ok(result) => result,
+            Err(_) => BigDecimal::zero(),
+        };
+
+        Ok(wallet_total_reward.to_u64().unwrap_or_default().into())
     }
 }
 
