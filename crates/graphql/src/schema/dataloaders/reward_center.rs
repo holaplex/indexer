@@ -15,6 +15,7 @@ impl TryBatchFn<PublicKey<AuctionHouse>, Option<RewardCenter>> for Batcher {
         let conn = self.db()?;
 
         let rows: Vec<models::RewardCenter> = reward_centers::table
+            .select(reward_centers::all_columns)
             .filter(reward_centers::auction_house.eq(any(addresses)))
             .load(&conn)
             .context("Failed to load reward center")?;
