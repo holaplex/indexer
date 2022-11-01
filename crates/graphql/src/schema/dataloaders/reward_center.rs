@@ -22,7 +22,7 @@ impl TryBatchFn<PublicKey<AuctionHouse>, Option<RewardCenter>> for Batcher {
 
         Ok(rows
             .into_iter()
-            .map(|h| (h.address.clone(), h.try_into()))
+            .map(|h| (h.auction_house.clone(), h.try_into()))
             .batch(addresses))
     }
 }
