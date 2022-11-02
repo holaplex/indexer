@@ -135,6 +135,10 @@ struct Opts {
     #[clap(long, env)]
     moonrank_endpoint: String,
 
+    /// MoonRank Authorization token
+    #[clap(long, env)]
+    moonrank_auth: String,
+
     #[clap(flatten)]
     search: search_dispatch::Args,
 
@@ -174,6 +178,7 @@ async fn process() -> Result<()> {
 
     let Opts {
         moonrank_endpoint,
+        moonrank_auth,
         search,
         db,
         amqp_url,
@@ -208,6 +213,7 @@ async fn process() -> Result<()> {
 
     let collections = http
         .get(collection_list)
+        .header("mr-api-pubkey", moonrank_auth.clone())
         .send()
         .await?
         .json::<Vec<Data>>()
@@ -218,6 +224,7 @@ async fn process() -> Result<()> {
     futures_util::stream::iter(collections.into_iter().map(|data| {
         tokio::spawn(upsert_collection_data(
             moonrank_endpoint.clone(),
+            moonrank_auth.clone(),
             data,
             pool.clone(),
             http.clone(),
@@ -232,6 +239,7 @@ async fn process() -> Result<()> {
 
 async fn upsert_collection_data(
     endpoint: String,
+    auth: String,
     json: Data,
     pool: Pool,
     http: reqwest::Client,
@@ -291,7 +299,13 @@ async fn upsert_collection_data(
         .join("../mints/")?
         .join(&collection_id)?;
 
-    let bytes = http.get(collection_mints).send().await?.bytes().await?;
+    let bytes = http
+        .get(collection_mints)
+        .header("mr-api-pubkey", auth)
+        .send()
+        .await?
+        .bytes()
+        .await?;
 
     let mints_json: CollectionMints = serde_json::from_slice(&bytes)?;
 
