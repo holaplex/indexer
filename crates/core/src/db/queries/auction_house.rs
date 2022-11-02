@@ -2,7 +2,7 @@
 
 use diesel::{
     pg::Pg,
-    sql_types::{Text, Timestamp},
+    sql_types::{Nullable, Text, Timestamp},
     types::ToSql,
 };
 
@@ -18,8 +18,8 @@ SELECT COALESCE(SUM(purchase_price), 0) as volume
     INNER JOIN auction_houses ah
         on (p.auction_house = ah.address)
     WHERE p.auction_house = $1
-    AND p.created_at >= $2
-    AND p.created_at <= $3
+    AND (p.created_at >= $2 OR $2 is null)
+    AND (p.created_at <= $3 OR $3 is null)
 ;
 
 -- $1: address::text
@@ -33,13 +33,13 @@ SELECT COALESCE(SUM(purchase_price), 0) as volume
 pub fn volume(
     conn: &Connection,
     address: impl ToSql<Text, Pg>,
-    start_date: NaiveDateTime,
-    end_date: NaiveDateTime,
+    start_date: Option<NaiveDateTime>,
+    end_date: Option<NaiveDateTime>,
 ) -> Result<Vec<AuctionHouseVolume>> {
     diesel::sql_query(VOLUME_QUERY)
         .bind(address)
-        .bind::<Timestamp, _>(start_date)
-        .bind::<Timestamp, _>(end_date)
+        .bind::<Nullable<Timestamp>, _>(start_date)
+        .bind::<Nullable<Timestamp>, _>(end_date)
         .load(conn)
         .context("Failed to load volume for auction house")
 }
