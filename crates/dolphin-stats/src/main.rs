@@ -305,16 +305,16 @@ fn main() {
                             let MarketStats {
                                 floor_data,
                                 listed_data,
-                                volume_data: _,
+                                volume_data,
                                 holder_data,
-                                volume_data_all,
+                                volume_data_all:_,
                             } = json;
 
                             check_stats(&floor_data, "floor data", &s)?;
                             check_stats(&listed_data, "listed data", &s)?;
                             // check_stats(&volume_data, "volume data", &s)?;
                             check_stats(&holder_data, "holder data", &s)?;
-                            check_stats(&volume_data_all, "delta volume data", &s)?;
+                            check_stats(&volume_data, "delta volume data", &s)?;
 
                             let floor = split_stats(split_info, floor_data, |f| {
                                 f.iter()
@@ -347,7 +347,7 @@ fn main() {
                             })?;
 
                             let volume =
-                                split_stats(split_info, volume_data_all, |f| {
+                                split_stats(split_info, volume_data, |f| {
                                     f.iter()
                                         .try_fold(None::<u64>, |s, (_, n)| {
                                             let n = n
