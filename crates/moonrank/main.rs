@@ -219,9 +219,7 @@ async fn process() -> Result<()> {
         .json::<Vec<Data>>()
         .await?;
 
-    dispatch_documents(collections.clone(), search, asset_proxy).await?;
-
-    futures_util::stream::iter(collections.into_iter().map(|data| {
+    futures_util::stream::iter(collections.clone().into_iter().map(|data| {
         tokio::spawn(upsert_collection_data(
             moonrank_endpoint.clone(),
             moonrank_auth.clone(),
@@ -233,6 +231,8 @@ async fn process() -> Result<()> {
     .buffer_unordered(num_cpus::get())
     .collect::<Vec<_>>()
     .await;
+
+    dispatch_documents(collections, search, asset_proxy).await?;
 
     Ok(())
 }
@@ -328,6 +328,12 @@ async fn upsert_collection_data(
             .set(&values)
             .execute(&conn)?;
 
+        delete(
+            collection_mint_attributes::table
+                .filter(collection_mint_attributes::mint.eq(mint.mint.to_string())),
+        )
+        .execute(&conn)?;
+
         for attribute in mint.rank_explain {
             let row = CollectionMintAttribute {
                 mint: Owned(mint.mint.clone().to_string()),
@@ -335,12 +341,6 @@ async fn upsert_collection_data(
                 value: Owned(attribute.value.to_string()),
                 value_perc: attribute.value_perc.try_into()?,
             };
-
-            delete(
-                collection_mint_attributes::table
-                    .filter(collection_mint_attributes::mint.eq(mint.mint.to_string())),
-            )
-            .execute(&conn)?;
 
             insert_into(collection_mint_attributes::table)
                 .values(&row)
