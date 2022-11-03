@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use futures_util::StreamExt;
-use indexer::{prelude::*, search_dispatch};
+use indexer::search_dispatch;
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, AssetProxyArgs},
     clap,
@@ -15,6 +15,7 @@ use indexer_core::{
         Pool,
     },
     num_cpus,
+    prelude::*,
     util::unix_timestamp_unsigned,
 };
 use indexer_rabbitmq::{search_indexer, suffix::Suffix};
@@ -134,6 +135,10 @@ struct Opts {
     #[clap(long, env)]
     moonrank_endpoint: String,
 
+    /// MoonRank Authorization token
+    #[clap(long, env)]
+    moonrank_auth: String,
+
     #[clap(flatten)]
     search: search_dispatch::Args,
 
@@ -173,6 +178,7 @@ async fn process() -> Result<()> {
 
     let Opts {
         moonrank_endpoint,
+        moonrank_auth,
         search,
         db,
         amqp_url,
@@ -207,16 +213,16 @@ async fn process() -> Result<()> {
 
     let collections = http
         .get(collection_list)
+        .header("mr-api-pubkey", moonrank_auth.clone())
         .send()
         .await?
         .json::<Vec<Data>>()
         .await?;
 
-    dispatch_documents(collections.clone(), search, asset_proxy).await?;
-
-    futures_util::stream::iter(collections.into_iter().map(|data| {
+    futures_util::stream::iter(collections.clone().into_iter().map(|data| {
         tokio::spawn(upsert_collection_data(
             moonrank_endpoint.clone(),
+            moonrank_auth.clone(),
             data,
             pool.clone(),
             http.clone(),
@@ -226,11 +232,14 @@ async fn process() -> Result<()> {
     .collect::<Vec<_>>()
     .await;
 
+    dispatch_documents(collections, search, asset_proxy).await?;
+
     Ok(())
 }
 
 async fn upsert_collection_data(
     endpoint: String,
+    auth: String,
     json: Data,
     pool: Pool,
     http: reqwest::Client,
@@ -290,7 +299,13 @@ async fn upsert_collection_data(
         .join("../mints/")?
         .join(&collection_id)?;
 
-    let bytes = http.get(collection_mints).send().await?.bytes().await?;
+    let bytes = http
+        .get(collection_mints)
+        .header("mr-api-pubkey", auth)
+        .send()
+        .await?
+        .bytes()
+        .await?;
 
     let mints_json: CollectionMints = serde_json::from_slice(&bytes)?;
 
@@ -313,6 +328,12 @@ async fn upsert_collection_data(
             .set(&values)
             .execute(&conn)?;
 
+        delete(
+            collection_mint_attributes::table
+                .filter(collection_mint_attributes::mint.eq(mint.mint.to_string())),
+        )
+        .execute(&conn)?;
+
         for attribute in mint.rank_explain {
             let row = CollectionMintAttribute {
                 mint: Owned(mint.mint.clone().to_string()),
@@ -320,12 +341,6 @@ async fn upsert_collection_data(
                 value: Owned(attribute.value.to_string()),
                 value_perc: attribute.value_perc.try_into()?,
             };
-
-            delete(
-                collection_mint_attributes::table
-                    .filter(collection_mint_attributes::mint.eq(mint.mint.to_string())),
-            )
-            .execute(&conn)?;
 
             insert_into(collection_mint_attributes::table)
                 .values(&row)

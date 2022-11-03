@@ -1,10 +1,10 @@
-#![allow(clippy::pedantic, clippy::cargo)]
+#![allow(clippy::pedantic, clippy::cargo, missing_docs)]
 
-use std::{borrow::Borrow, sync::Arc};
+use std::sync::Arc;
 
+use holaplex_indexer_dolphin_stats::*;
 use indexer_core::{
-    chrono::{DateTime, Duration},
-    clap,
+    chrono::Duration,
     clap::Parser,
     db,
     db::{
@@ -18,319 +18,7 @@ use indexer_core::{
     url::Url,
     util,
 };
-use serde_json::Number;
 use tokio::sync::Semaphore;
-
-#[derive(Debug, Parser)]
-struct Opts {
-    /// Dolphin API key
-    #[clap(long, env)]
-    dolphin_key: String,
-
-    /// Maximum number of concurrent requests
-    #[clap(short, long, env, default_value_t = 192)]
-    jobs: usize,
-
-    /// Request 60 days of data to compute all statistics
-    ///
-    /// By default only two days are requested to update the day-over-day values
-    #[clap(short, long, env)]
-    full: bool,
-
-    #[clap(flatten)]
-    db: db::ConnectArgs,
-}
-
-const V3_BASE: &str = "https://app.getdolphin.io/apiv3";
-
-#[inline]
-fn collections_endpoint() -> String {
-    format!("{}/collections/", V3_BASE)
-}
-
-fn market_stats_endpoint<T: TimeZone>(
-    symbol: impl std::fmt::Display,
-    start: DateTime<T>,
-    end: DateTime<T>,
-) -> Result<Url> {
-    let url = format!(
-        "{}/collections/marketStats/&symbol={}&timestamp_from={}&timestamp_to={}",
-        V3_BASE,
-        percent_encoding::utf8_percent_encode(
-            &symbol.to_string(),
-            percent_encoding::NON_ALPHANUMERIC
-        ),
-        percent_encoding::utf8_percent_encode(
-            &start.timestamp().to_string(),
-            percent_encoding::NON_ALPHANUMERIC
-        ),
-        percent_encoding::utf8_percent_encode(
-            &end.timestamp().to_string(),
-            percent_encoding::NON_ALPHANUMERIC
-        ),
-    );
-
-    debug!("Market stats URL: {:?}", url);
-
-    url.parse().map_err(Into::into)
-}
-
-#[derive(Debug, serde::Deserialize)]
-#[serde(untagged)]
-enum Response<T> {
-    Error { error: serde_json::Value },
-    Success(T),
-}
-
-impl<T> Response<T> {
-    fn into_inner<'a>(self, url: impl FnOnce() -> &'a Url) -> Result<T> {
-        match self {
-            Self::Error { error } => Err(anyhow!(
-                "API call for {:?} returned error: {:?}",
-                url().as_str(),
-                error
-            )),
-            Self::Success(s) => Ok(s),
-        }
-    }
-}
-
-type CollectionsResponse = Response<Vec<Collection>>;
-
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct Collection {
-    symbol: Option<String>,
-    #[allow(unused)]
-    name: Option<String>,
-    #[allow(unused)]
-    description: Option<String>,
-    #[allow(unused)]
-    image: Option<String>,
-    supply: Option<Number>,
-    floor: Option<Number>,
-    listed: Option<Number>,
-    #[serde(rename = "volumeAll")]
-    volume_all: Option<Number>,
-    #[allow(unused)]
-    external_links: CollectionLinks,
-}
-
-#[derive(Debug, serde::Deserialize)]
-#[allow(unused)]
-struct CollectionLinks {
-    website: Option<String>,
-    discord: Option<String>,
-    twitter: Option<String>,
-}
-
-type MarketStatsResponse = Response<MarketStats>;
-
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct MarketStats {
-    floor_data: Vec<Datapoint>,
-    listed_data: Vec<Datapoint>,
-    #[deprecated = "Use volume_data_all"]
-    #[allow(unused)]
-    volume_data: Vec<Datapoint>,
-    holder_data: Vec<Datapoint>,
-    volume_data_all: Vec<Datapoint>,
-}
-
-type Datapoint = (u64, Number);
-
-#[derive(Debug, Clone, Copy)]
-struct Stats<T> {
-    curr_1d: T,
-    curr_7d: T,
-    curr_30d: T,
-    last_1d: T,
-    last_7d: T,
-    last_30d: T,
-}
-
-#[inline]
-// Panics if your NFT price activity occurred before Jan 1 1970.  lol.
-fn get_split(now: DateTime<Utc>, offset: Duration) -> u64 {
-    (now - offset).timestamp_millis().try_into().unwrap()
-}
-
-#[inline]
-fn slice_stats(stats: &[Datapoint], start: u64, mid: u64) -> (&[Datapoint], &[Datapoint]) {
-    let start_i = stats.partition_point(|(t, _)| *t < start);
-    let mid_i = stats.partition_point(|(t, _)| *t < mid);
-
-    debug_assert!(start_i <= mid_i);
-
-    stats[start_i..].split_at(mid_i - start_i)
-}
-
-fn split_stats<T, E: Into<Error>>(
-    inf: &Stats<u64>,
-    stats: impl AsRef<[Datapoint]>,
-    then: impl Fn(&[Datapoint]) -> Result<T, E>,
-) -> Result<Stats<T>> {
-    let stats = stats.as_ref();
-
-    let (last_1d, curr_1d) = slice_stats(stats, inf.last_1d, inf.curr_1d);
-    let (last_7d, curr_7d) = slice_stats(stats, inf.last_7d, inf.curr_7d);
-    let (last_30d, curr_30d) = slice_stats(stats, inf.last_30d, inf.curr_30d);
-
-    Ok(Stats {
-        curr_1d: then(curr_1d).map_err(Into::into)?,
-        curr_7d: then(curr_7d).map_err(Into::into)?,
-        curr_30d: then(curr_30d).map_err(Into::into)?,
-        last_1d: then(last_1d).map_err(Into::into)?,
-        last_7d: then(last_7d).map_err(Into::into)?,
-        last_30d: then(last_30d).map_err(Into::into)?,
-    })
-}
-
-#[inline]
-fn calc_percent_change(current: i64, previous: i64) -> Option<i32> {
-    if previous == 0 {
-        return None;
-    }
-
-    let current = current as f64;
-    let previous = previous as f64;
-
-    let numerator = current - previous;
-
-    let percentage_change = (numerator / previous.abs()) * 100.0;
-
-    Some(percentage_change.floor() as i32)
-}
-
-#[inline]
-fn is_int(n: &Number) -> bool {
-    n.is_i64() || n.is_u64()
-}
-
-#[inline]
-fn int_error<M: FnOnce() -> D, D: std::fmt::Display>(num: &Number, msg: M) -> Result<()> {
-    Err(anyhow!("Non-integer {:?} found in {}", num, msg()))
-}
-
-#[inline]
-fn check_int<M: FnOnce() -> D, D: std::fmt::Display>(num: &Number, msg: M) -> Result<()> {
-    if is_int(num) {
-        return Ok(());
-    }
-
-    int_error(num, msg)
-}
-
-fn check_stats<N: IntoIterator>(
-    nums: N,
-    msg: impl std::fmt::Display,
-    sym: impl std::fmt::Debug,
-) -> Result<()>
-where
-    N::Item: Borrow<(u64, Number)>,
-{
-    use std::fmt::Write;
-
-    let mut first_err = None;
-    let mut first_dup = None;
-    let mut last_err = None;
-    let mut last_ts = None;
-    let mut err_count = 0_u64;
-    let mut dup_count = 0_u64;
-    for pair in nums {
-        let (ts, num) = pair.borrow();
-
-        if last_ts.as_ref().map_or(false, |l| l > ts) {
-            panic!("Stats array for {} of {:?} was not sorted!", msg, sym);
-        }
-
-        if last_ts.as_ref().map_or(false, |l| l == ts) {
-            if first_dup.is_some() {
-                dup_count += 1;
-            } else {
-                first_dup = Some(*ts);
-            }
-        }
-
-        last_ts = Some(*ts);
-
-        if last_err.as_ref().map_or(false, |l| l == num) || is_int(num) {
-            continue;
-        }
-
-        last_err = Some(num.clone());
-
-        if first_err.is_some() {
-            err_count += 1;
-        } else {
-            first_err = Some((*ts, num.clone()));
-        }
-    }
-
-    if let Some(ts) = first_dup {
-        let mut s = format!(
-            "Stats array for {} of {:?} has duplicate datapoint at ",
-            msg, sym
-        );
-
-        const SPLIT: u64 = 1_000;
-        let secs = ts / SPLIT;
-        let micros = ts % SPLIT;
-
-        if let Some(ts) = secs
-            .try_into()
-            .ok()
-            .and_then(|s| NaiveDateTime::from_timestamp_opt(s, micros.try_into().ok()?))
-        {
-            write!(s, "{}", ts).unwrap();
-        } else {
-            write!(s, "UNIX timestamp {}", ts).unwrap();
-        }
-
-        s.push('!');
-
-        if dup_count != 0 {
-            write!(s, " (plus {} more)", dup_count).unwrap();
-        }
-
-        warn!("{}", s);
-    }
-
-    let (ts, num) = if let Some(pair) = first_err {
-        pair
-    } else {
-        return Ok(());
-    };
-
-    int_error(&num, || {
-        let mut s = "datapoint at ".to_owned();
-
-        const SPLIT: u64 = 1_000;
-        let secs = ts / SPLIT;
-        let micros = ts % SPLIT;
-
-        if let Some(ts) = secs
-            .try_into()
-            .ok()
-            .and_then(|s| NaiveDateTime::from_timestamp_opt(s, micros.try_into().ok()?))
-        {
-            write!(s, "{}", ts).unwrap();
-        } else {
-            write!(s, "UNIX timestamp {}", ts).unwrap();
-        }
-
-        write!(s, " for {} of collection {:?}", msg, sym).unwrap();
-
-        if err_count != 0 {
-            write!(s, " (plus {} more)", err_count).unwrap();
-        }
-
-        s
-    })?;
-
-    Ok(())
-}
 
 fn main() {
     indexer_core::run(|| {
@@ -617,16 +305,16 @@ fn main() {
                             let MarketStats {
                                 floor_data,
                                 listed_data,
-                                volume_data: _,
+                                volume_data,
                                 holder_data,
-                                volume_data_all,
+                                volume_data_all:_,
                             } = json;
 
                             check_stats(&floor_data, "floor data", &s)?;
                             check_stats(&listed_data, "listed data", &s)?;
                             // check_stats(&volume_data, "volume data", &s)?;
                             check_stats(&holder_data, "holder data", &s)?;
-                            check_stats(&volume_data_all, "delta volume data", &s)?;
+                            check_stats(&volume_data, "delta volume data", &s)?;
 
                             let floor = split_stats(split_info, floor_data, |f| {
                                 f.iter()
@@ -659,7 +347,7 @@ fn main() {
                             })?;
 
                             let volume =
-                                split_stats(split_info, volume_data_all, |f| {
+                                split_stats(split_info, volume_data, |f| {
                                     f.iter()
                                         .try_fold(None::<u64>, |s, (_, n)| {
                                             let n = n

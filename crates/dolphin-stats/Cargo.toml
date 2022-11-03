@@ -6,7 +6,7 @@ publish = false
 
 [[bin]]
 name = "dolphin-stats"
-path = "main.rs"
+path = "src/main.rs"
 
 [dependencies]
 futures-util = "0.3.24"

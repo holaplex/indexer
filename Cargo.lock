@@ -3084,6 +3084,7 @@ dependencies = [
  "derive_more",
  "futures-util",
  "holaplex-indexer-core",
+ "holaplex-indexer-dolphin-stats",
  "itertools",
  "juniper",
  "md5",
@@ -3142,9 +3143,9 @@ dependencies = [
 
 [[package]]
 name = "hpl-reward-center"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "add7c02891c5262965ef4b779d64a38dd602911d154c394541a49b681e06c077"
+checksum = "d2667aa13aa62d7e8b1d2f67cd1ad7274a9737f51d35885064c74d2fbb11aaac"
 dependencies = [
  "anchor-lang 0.24.2",
  "anchor-spl 0.24.2",

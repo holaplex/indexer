@@ -36,3 +36,8 @@ package = "holaplex-indexer-core"
 version = "=0.1.0"
 path = "../core"
 features = ["meilisearch"]
+
+[dependencies.dolphin-stats]
+package = "holaplex-indexer-dolphin-stats"
+version = "=0.0.0"
+path = "../dolphin-stats"

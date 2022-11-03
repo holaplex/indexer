@@ -1,3 +1,4 @@
+use dolphin_stats::{market_stats_endpoint, MarketStats, MarketStatsResponse};
 use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     db::{
@@ -298,6 +299,66 @@ impl Collection {
             .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
+
+    pub async fn timeseries(
+        &self,
+        ctx: &AppContext,
+        start_time: DateTime<Utc>,
+        end_time: DateTime<Utc>,
+    ) -> FieldResult<Timeseries> {
+        let http = &ctx.shared.http;
+        let dolphin_key = &ctx.shared.dolphin_key;
+        let url = market_stats_endpoint(&self.id, start_time, end_time)?;
+
+        let json = http
+            .get(url.clone())
+            .header("Authorization", dolphin_key)
+            .header("Content-Type", "application/json")
+            .send()
+            .await?
+            .json::<MarketStatsResponse>()
+            .await?
+            .into_inner(|| &url)?;
+
+        let MarketStats {
+            floor_data,
+            listed_data,
+            holder_data,
+            ..
+        } = json;
+
+        let floor_price = floor_data.iter().map(Into::into).collect();
+        let listed_count = listed_data.iter().map(Into::into).collect();
+        let holder_count = holder_data.iter().map(Into::into).collect();
+
+        Ok(Timeseries {
+            floor_price,
+            listed_count,
+            holder_count,
+        })
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct Datapoint {
+    pub timestamp: DateTime<Utc>,
+    pub value: U64,
+}
+
+impl From<&(u64, serde_json::Number)> for Datapoint {
+    fn from(&(ts, ref num): &(u64, serde_json::Number)) -> Self {
+        Self {
+            timestamp: dolphin_stats::get_datapoint_timestamp(ts).unwrap_or_default(),
+            value: num.as_u64().unwrap_or_default().into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, GraphQLObject)]
+pub struct Timeseries {
+    pub floor_price: Vec<Datapoint>,
+    pub listed_count: Vec<Datapoint>,
+    pub holder_count: Vec<Datapoint>,
 }
 
 // TODO: use collection identifier for the data loader instead of string
