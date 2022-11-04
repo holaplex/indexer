@@ -307,7 +307,7 @@ fn main() {
                                 listed_data,
                                 volume_data,
                                 holder_data,
-                                volume_data_all:_,
+                                volume_data_all: _,
                             } = json;
 
                             check_stats(&floor_data, "floor data", &s)?;
