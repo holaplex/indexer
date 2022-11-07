@@ -11,12 +11,15 @@ use crate::prelude::*;
 pub enum MessageId {
     /// A refresh of a cache table
     RefreshTable(String),
+    /// A reindex of a slot
+    ReindexSlot(u64),
 }
 
 impl fmt::Display for MessageId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::RefreshTable(n) => write!(f, "refresh of cached table {n}"),
+            Self::ReindexSlot(s) => write!(f, "reindex of slot {s}"),
         }
     }
 }
@@ -28,10 +31,12 @@ impl fmt::Display for MessageId {
 pub async fn process_message(msg: Message) -> MessageResult<MessageId> {
     let id = match msg {
         Message::RefreshTable(ref n) => MessageId::RefreshTable(n.clone()),
+        Message::ReindexSlot(i) => MessageId::ReindexSlot(i),
     };
 
     match msg {
         Message::RefreshTable(n) => process_refresh(n).await,
+        Message::ReindexSlot(s) => process_reindex_slot(s).await,
     }
     .map_err(|e| MessageError::new(e, id))
 }
@@ -43,4 +48,10 @@ async fn process_refresh(name: String) -> Result<()> {
     todo!("Not yet implemented!");
 
     std::future::ready(Ok(())).await
+}
+
+async fn process_reindex_slot(id: u64) -> Result<()> {
+    debug!("Reindexing slot {:?}", id);
+
+    Ok(())
 }

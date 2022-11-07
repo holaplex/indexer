@@ -30,5 +30,6 @@ features = ["search-dispatch"]
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
 # tag = "v0.6.1" # TODO
-rev = "57f6b14"
+# rev = "57f6b14" # TODO 2
+branch = "ryans/reindex-slot-job"
 version = "=0.3.1"

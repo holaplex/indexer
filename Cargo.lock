@@ -3148,7 +3148,7 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-rabbitmq"
 version = "0.3.1"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?rev=57f6b14#57f6b1457967e70f0ae9a1c82de82ca632165eec"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?branch=ryans/reindex-slot-job#fb96ee244c023e3c3dfcbc44dd9c07a4ee957f63"
 dependencies = [
  "futures-util",
  "lapin",
