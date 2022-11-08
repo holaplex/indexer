@@ -84,7 +84,7 @@ fn main() {
                     let ignore_on_startup = ignore_on_startup.clone();
 
                     async move {
-                        holaplex_indexer::geyser::process_message(m, &*client, ignore_on_startup)
+                        holaplex_indexer::geyser::process_message(m, &client, ignore_on_startup)
                             .await
                     }
                 },

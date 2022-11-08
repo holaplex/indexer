@@ -308,11 +308,10 @@ impl Client {
                 );
 
                 if dry_run {
-                    info!("Upsert to {:?} of {:#?}", idx, serde_json::to_value(&docs));
+                    info!("Upsert to {:?} of {:#?}", idx, serde_json::to_value(docs));
                 } else {
                     let meili = meili.clone();
-                    futures
-                        .push(async move { meili.index(idx).add_or_replace(&*docs, None).await });
+                    futures.push(async move { meili.index(idx).add_or_replace(docs, None).await });
                 }
             }
 

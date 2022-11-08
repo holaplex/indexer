@@ -49,7 +49,7 @@ fn main() {
                 StdDuration::from_millis(500),
                 move |m| {
                     let client = client.clone();
-                    async move { holaplex_indexer::search::process_message(m, &*client).await }
+                    async move { holaplex_indexer::search::process_message(m, &client).await }
                 },
             )
             .await;

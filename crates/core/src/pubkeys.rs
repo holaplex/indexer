@@ -109,7 +109,7 @@ pub fn find_store_indexer(store: impl Borrow<Pubkey>, index: u64) -> (Pubkey, u8
             &METAPLEX.to_bytes(),
             &store.borrow().to_bytes(),
             "index".as_bytes(),
-            format!("{}", index).as_bytes(),
+            format!("{index}").as_bytes(),
         ],
         &METAPLEX,
     )

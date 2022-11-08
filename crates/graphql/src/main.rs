@@ -1,7 +1,7 @@
 //! GraphQL server to read from `holaplex-indexer`
 
 #![deny(
-    clippy::disallowed_method,
+    clippy::disallowed_methods,
     clippy::suspicious,
     clippy::style,
     missing_debug_implementations,
@@ -130,8 +130,8 @@ async fn graphql(
     info!(
         "host={:?}, remote_addr={:?}, peer_addr={:?}",
         conn.host(),
-        conn.realip_remote_addr().unwrap_or(&String::new()),
-        conn.peer_addr().unwrap_or(&String::new())
+        conn.realip_remote_addr().unwrap_or(""),
+        conn.peer_addr().unwrap_or("")
     );
     if duration > Duration::milliseconds(5000) {
         #[derive(serde::Deserialize)]
@@ -185,7 +185,7 @@ fn main() {
         let (addr,) = server.into_parts();
         info!("Listening on {}", addr);
 
-        let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
+        let twitter_bearer_token = twitter_bearer_token.unwrap_or_default();
 
         // TODO: db_ty indicates if any actions that mutate the database can be run
         let db::ConnectResult {

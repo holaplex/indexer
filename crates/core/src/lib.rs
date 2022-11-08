@@ -1,7 +1,7 @@
 //! Core components for the `holaplex-indexer` family of crates.
 
 #![deny(
-    clippy::disallowed_method,
+    clippy::disallowed_methods,
     clippy::suspicious,
     clippy::style,
     missing_debug_implementations,
@@ -126,7 +126,7 @@ pub fn run(main: impl FnOnce() -> Result<()>) -> ! {
     .try_for_each(|p| {
         dotenv(p)
             .map(|_| ())
-            .with_context(|| format!("Failed to load .env file {:?}", p))
+            .with_context(|| format!("Failed to load .env file {p:?}"))
     })
     .expect("Failed to load .env files");
 

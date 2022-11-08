@@ -1,3 +1,14 @@
+//! Utility for manually dispatching indexer job messages
+
+#![deny(
+    clippy::disallowed_methods,
+    clippy::suspicious,
+    clippy::style,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
+#![warn(clippy::pedantic, clippy::cargo, missing_docs)]
+
 use indexer_core::{clap, clap::Parser, prelude::*};
 use indexer_rabbitmq::{
     job_runner::{self, Message},

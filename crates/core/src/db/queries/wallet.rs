@@ -132,7 +132,7 @@ pub fn offers(
         .bind(offset)
         .load(conn)
         .context("Failed to load wallet offers");
-    println!("Query Result: {:?}", result);
+    println!("Query Result: {result:?}");
     result
 }
 

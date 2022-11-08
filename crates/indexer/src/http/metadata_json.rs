@@ -117,6 +117,7 @@ struct FetchJsonExtra {
     raw: Value,
 }
 
+#[allow(clippy::large_enum_variant)]
 enum MetadataJsonResult {
     Full(MetadataJson),
     Minimal {
@@ -162,8 +163,7 @@ async fn fetch_json(
     let raw =
         serde_json::from_slice(&bytes).context("Metadata JSON response was not valid JSON")?;
 
-    let full_err;
-    match serde_json::from_slice(&bytes) {
+    let full_err = match serde_json::from_slice(&bytes) {
         Ok(f) => return Ok((MetadataJsonResult::Full(f), FetchJsonExtra { url, raw })),
         Err(e) => {
             trace!(
@@ -171,7 +171,7 @@ async fn fetch_json(
                 url.as_str(),
                 e
             );
-            full_err = e;
+            e
         },
     };
 
@@ -395,7 +395,7 @@ async fn process_minimal(
         external_url: to_opt_string(&external_url),
         category: to_opt_string(&category),
         raw_content: Owned(raw),
-        model: Some(Owned(format!("minimal ({})", full_err))),
+        model: Some(Owned(format!("minimal ({full_err})"))),
         fetch_uri: Owned(url.to_string()),
         slot,
         write_version,
@@ -424,7 +424,7 @@ fn process_files(
     files: Option<Vec<File>>,
     slot_info: SlotInfo,
 ) -> Result<()> {
-    for File { uri, ty } in files.unwrap_or_else(Vec::new) {
+    for File { uri, ty } in files.unwrap_or_default() {
         let (uri, ty) = if let Some(v) = uri.zip(ty) {
             v
         } else {
@@ -473,7 +473,7 @@ fn process_attributes(
         delete(attributes::table.filter(attributes::metadata_address.eq(addr))).execute(db)?;
     }
 
-    for Attribute { trait_type, value } in attributes.unwrap_or_else(Vec::new) {
+    for Attribute { trait_type, value } in attributes.unwrap_or_default() {
         let row = MetadataAttributeWrite {
             metadata_address: Borrowed(addr),
             trait_type: trait_type.map(Owned),

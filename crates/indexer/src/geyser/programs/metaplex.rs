@@ -77,7 +77,7 @@ async fn process_auction_cache(client: &Client, update: AccountUpdate) -> Result
 }
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
-    let first_byte = update.data[0] as u8;
+    let first_byte = update.data[0];
 
     assert_eq!(MPL_STORE, STORE);
     assert_eq!(MPL_WHITELISTED_CREATOR, WHITELISTED_CREATOR);

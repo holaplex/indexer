@@ -2025,7 +2025,7 @@ pub struct SmartWalletOwner<'a> {
     pub smart_wallet_address: Cow<'a, str>,
     /// Owners of the [SmartWallet].
     pub owner_address: Cow<'a, str>,
-    /// Position of owner in vec<Owners Pubkey>
+    /// Position of owner in `Vec<Owners Pubkey>`
     pub index: i64,
 }
 

@@ -170,7 +170,7 @@ impl Client {
 
         trace!(
             "Dispatching {} to Dialect at {:?}",
-            serde_json::to_string_pretty(&msg).unwrap_or_else(|e| format!("{:?}", e)),
+            serde_json::to_string_pretty(&msg).unwrap_or_else(|e| format!("{e:?}")),
             endpoint
         );
 

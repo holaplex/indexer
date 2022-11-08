@@ -300,7 +300,7 @@ mod cdn {
             (None, None, _) => Ok(None),
             (Some((txid, path)), None, _)
             | (Some((txid, path)), Some(_), Some(AssetHint::Arweave)) => {
-                let txid = base64::encode_config(&txid.0, base64::URL_SAFE_NO_PAD);
+                let txid = base64::encode_config(txid.0, base64::URL_SAFE_NO_PAD);
 
                 format_impl(
                     args,
