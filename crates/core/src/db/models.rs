@@ -2810,8 +2810,9 @@ pub struct Offer<'a> {
 }
 
 /// A row in the `purchases` table
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
 #[diesel(treat_none_as_null = true)]
+#[table_name = "purchases"]
 pub struct Purchase<'a> {
     /// Random Uuid primary key from offers table
     /// Optional so that it can be generated randomly when other fields are inserted into table

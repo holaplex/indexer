@@ -9,6 +9,7 @@ use indexer_core::{
 };
 use objects::{
     ah_listing::AhListing,
+    ah_purchase::Purchase,
     auction_house::AuctionHouse,
     bid_receipt::BidReceipt,
     bonding_change::EnrichedBondingChange,
@@ -624,6 +625,35 @@ impl QueryRoot {
 
         rows.into_iter()
             .map(|l| Listing::new(l, now))
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    async fn purchases(
+        &self,
+        context: &AppContext,
+        #[graphql(description = "Auction House addresses")] auction_houses: Option<
+            Vec<PublicKey<AuctionHouse>>,
+        >,
+        #[graphql(description = "Marketplace Program addresses")] marketplace_programs: Option<
+            Vec<String>,
+        >,
+        #[graphql(description = "Query limit")] limit: i32,
+        #[graphql(description = "Query offset")] offset: i32,
+    ) -> FieldResult<Vec<Purchase>> {
+        let conn = context.shared.db.get()?;
+
+        let feed_events = queries::purchases::list(
+            &conn,
+            limit.try_into()?,
+            offset.try_into()?,
+            auction_houses.map(|h| h.into_iter().map(Into::into).collect()),
+            marketplace_programs,
+        )?;
+
+        feed_events
+            .into_iter()
+            .map(TryInto::try_into)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
