@@ -704,6 +704,7 @@ pub fn wallet_nfts<O: Into<Value>>(
     let current_time = Utc::now().naive_utc();
 
     let mut query = Query::select()
+        .distinct_on([(Metadatas::Table, Metadatas::Address),])
         .columns(vec![
             (Metadatas::Table, Metadatas::Address),
             (Metadatas::Table, Metadatas::Name),
