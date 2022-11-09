@@ -1,3 +1,4 @@
+use enums::{NftSort, OfferType, OrderDirection};
 use indexer_core::{
     bigdecimal::{BigDecimal, ToPrimitive, Zero},
     db::queries::{self, metadatas::WalletNftOptions},
@@ -15,10 +16,6 @@ use scalars::{markers::TokenMint, PublicKey, U64};
 use tables::{associated_token_accounts, bids, graph_connections, wallet_total_rewards};
 
 use super::{ah_offer::Offer, prelude::*, reward_center::RewardCenter};
-use crate::schema::{
-    enums::{NftSort, OfferType, OrderDirection},
-    scalars::I64,
-};
 
 #[derive(Debug, Clone)]
 pub struct Wallet {
@@ -430,7 +427,7 @@ impl Wallet {
         &self,
         ctx: &AppContext,
         reward_center: PublicKey<RewardCenter>,
-    ) -> FieldResult<I64> {
+    ) -> FieldResult<U64> {
         let db_conn = ctx.shared.db.get()?;
 
         let wallet_total_reward = wallet_total_rewards::table
@@ -441,9 +438,12 @@ impl Wallet {
                     .and(wallet_total_rewards::wallet_address.eq(&self.address)),
             )
             .first::<BigDecimal>(&db_conn)
+            .optional()
+            .transpose()
+            .unwrap_or_else(|| Ok(BigDecimal::zero()))
             .unwrap_or_else(|_| BigDecimal::zero());
 
-        Ok(wallet_total_reward.to_i64().unwrap_or_default().into())
+        Ok(wallet_total_reward.to_u64().unwrap_or_default().into())
     }
 }
 
