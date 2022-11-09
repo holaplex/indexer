@@ -4,31 +4,34 @@ use holaplex_indexer::geyser::{Client, ClientArgs, IgnoreType};
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::{geyser, http_indexer, search_indexer, suffix::Suffix};
 
+/// Indexer worker for receiving Geyser messages
 #[derive(Debug, clap::Args)]
+#[group(skip)]
+#[command(name = "holaplex-indexer-geyser", version, long_about = None)]
 struct Args {
     /// The address of an AMQP server to connect to
-    #[clap(long, env)]
+    #[arg(long, env)]
     amqp_url: String,
 
     /// The network to listen to events for
-    #[clap(long, env)]
+    #[arg(long, env)]
     network: geyser::Network,
 
     /// The startup type of events to listen for
-    #[clap(long, env, default_value_t = geyser::StartupType::Normal)]
+    #[arg(long, env, default_value_t = geyser::StartupType::Normal)]
     startup: geyser::StartupType,
 
     /// List of topics or programs to ignore on startup
     ///
     /// For example, `metadata,candy-machine` will ignore the Metaplex metadata
     /// and candy machine programs.
-    #[clap(long, env, use_value_delimiter(true))]
+    #[arg(long, env, use_value_delimiter(true))]
     ignore_on_startup: Option<Vec<IgnoreType>>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     queue_suffix: Suffix,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     client: ClientArgs,
 }
 

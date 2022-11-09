@@ -16,16 +16,17 @@ use indexer_rabbitmq::{
 };
 
 #[derive(Debug, Parser)]
+#[command(about, version, long_about = None)]
 struct Opts {
     /// The address of an AMQP server to connect to
-    #[clap(long, env)]
+    #[arg(long, env)]
     amqp_url: String,
 
     /// The ID of the indexer sending events to listen for
-    #[clap(long, env)]
+    #[arg(long, env)]
     sender: String,
 
-    #[clap(subcommand)]
+    #[command(subcommand)]
     cmd: Command,
 }
 
@@ -33,7 +34,7 @@ struct Opts {
 enum Command {
     RefreshTable {
         /// The name of the table to request a data refresh for
-        #[clap(env)]
+        #[arg(env)]
         name: String,
     },
 }

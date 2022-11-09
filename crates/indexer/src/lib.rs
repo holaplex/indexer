@@ -61,18 +61,18 @@ mod runtime {
     #[derive(Debug, Parser)]
     struct Opts<T: Debug + Args> {
         /// The number of threads to use.  Defaults to available core count.
-        #[clap(short = 'j', env)]
+        #[arg(short = 'j', env)]
         thread_count: Option<usize>,
 
         /// Pass this flag to enable automatically migrating the database upon
         /// connecting.
-        #[clap(long, short, env)]
+        #[arg(long, short, env)]
         migrate_db: bool,
 
-        #[clap(flatten)]
+        #[command(flatten)]
         db: db::ConnectArgs,
 
-        #[clap(flatten)]
+        #[command(flatten)]
         extra: T,
     }
 

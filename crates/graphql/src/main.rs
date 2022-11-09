@@ -34,41 +34,42 @@ use crate::schema::{AppContext, Schema};
 mod schema;
 
 #[derive(Debug, Parser)]
+#[command(about, version, long_about = None)]
 struct Opts {
-    #[clap(flatten)]
+    #[command(flatten)]
     server: ServerOpts,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     db: db::ConnectArgs,
 
-    #[clap(long, env)]
+    #[arg(long, env)]
     twitter_bearer_token: Option<String>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     asset_proxy: AssetProxyArgs,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     search: meilisearch::Args,
 
-    #[clap(long, env)]
+    #[arg(long, env)]
     solana_endpoint: String,
 
-    #[clap(long, env)]
+    #[arg(long, env)]
     dolphin_key: String,
 
-    #[clap(long, env, use_value_delimiter(true))]
+    #[arg(long, env, use_value_delimiter(true))]
     follow_wallets_exclusions: Vec<String>,
 
-    #[clap(long, env, use_value_delimiter(true))]
+    #[arg(long, env, use_value_delimiter(true))]
     featured_listings_auction_houses: Vec<String>,
 
-    #[clap(long, env, use_value_delimiter(true))]
+    #[arg(long, env, use_value_delimiter(true))]
     featured_listings_seller_exclusions: Vec<String>,
 
-    #[clap(long, env, use_value_delimiter(true))]
+    #[arg(long, env, use_value_delimiter(true))]
     marketplaces_store_address_exclusions: Vec<String>,
 
-    #[clap(long, env)]
+    #[arg(long, env)]
     pre_query_search_limit: usize,
 }
 

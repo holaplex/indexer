@@ -23,15 +23,16 @@ use solana_client::{
 };
 
 #[derive(Debug, Parser)]
+#[command(about, version, long_about = None)]
 struct Opts {
     /// Solana RPC endpoint
-    #[clap(long, env)]
+    #[arg(long, env)]
     solana_endpoint: String,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     db: db::ConnectArgs,
 
-    #[clap(env)]
+    #[arg(env)]
     batch_size: u32,
 }
 

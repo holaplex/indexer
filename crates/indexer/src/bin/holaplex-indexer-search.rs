@@ -2,20 +2,23 @@ use holaplex_indexer::search::{Client, ClientArgs};
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::search_indexer;
 
-#[derive(Debug, clap::Parser)]
+/// Indexer worker for upserting documents to search indices
+#[derive(Debug, clap::Args)]
+#[group(skip)]
+#[command(name = "holaplex-indexer-search", version, long_about = None)]
 struct Args {
     /// The address of an AMQP server to connect to
-    #[clap(long, env)]
+    #[arg(long, env)]
     amqp_url: String,
 
     /// The ID of the indexer sending events to listen for
-    #[clap(long, env)]
+    #[arg(long, env)]
     sender: String,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     queue_suffix: indexer_rabbitmq::suffix::Suffix,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     client: ClientArgs,
 }
 

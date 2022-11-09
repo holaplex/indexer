@@ -3149,7 +3149,7 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-rabbitmq"
 version = "0.3.1"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?branch=ryans/update-deps#3134a55e8654f4fb3b85b1f0efd5d9c28baf53a2"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?branch=ryans/update-deps#443cc1396752fbfd1e7bc1d6005edc87970c3f34"
 dependencies = [
  "clap 4.0.22",
  "futures-util",

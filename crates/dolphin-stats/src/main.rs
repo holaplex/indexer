@@ -36,22 +36,23 @@ use serde_json::Number;
 use tokio::sync::Semaphore;
 
 #[derive(Debug, Parser)]
+#[command(about, version, long_about = None)]
 struct Opts {
     /// Dolphin API key
-    #[clap(long, env)]
+    #[arg(long, env)]
     dolphin_key: String,
 
     /// Maximum number of concurrent requests
-    #[clap(short, long, env, default_value_t = 192)]
+    #[arg(short, long, env, default_value_t = 192)]
     jobs: usize,
 
     /// Request 60 days of data to compute all statistics
     ///
     /// By default only two days are requested to update the day-over-day values
-    #[clap(short, long, env)]
+    #[arg(short, long, env)]
     full: bool,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     db: db::ConnectArgs,
 }
 
