@@ -952,21 +952,19 @@ pub fn mr_collection_nfts<O: Into<Value>>(
             let alias = format!("attributes_{}", trait_type);
             let alias: DynIden = SeaRc::new(Alias::new(&alias));
 
-            query.join_lateral(
-                JoinType::LeftJoin,
-                Query::select()
-                    .from(Attributes::Table)
-                    .column((Attributes::Table, Attributes::MetadataAddress))
-                    .cond_where(
-                        Condition::all()
-                            .add(Expr::col(Attributes::TraitType).eq(trait_type))
-                            .add(Expr::col(Attributes::Value).is_in(values)),
-                    )
-                    .take(),
-                alias.clone(),
-                Expr::tbl(alias, Attributes::MetadataAddress)
-                    .equals(Metadatas::Table, Metadatas::Address),
-            );
+            query
+                .join_as(
+                    JoinType::InnerJoin,
+                    Attributes::Table,
+                    alias.clone(),
+                    Expr::tbl(alias.clone(), Attributes::MetadataAddress)
+                        .equals(Metadatas::Table, Metadatas::Address),
+                )
+                .cond_where(
+                    Condition::all()
+                        .add(Expr::col((alias.clone(), Attributes::TraitType)).eq(trait_type))
+                        .add(Expr::col((alias, Attributes::Value)).is_in(values)),
+                );
         }
     }
 
