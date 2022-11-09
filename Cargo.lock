@@ -3016,6 +3016,7 @@ dependencies = [
  "serde",
  "serde_json",
  "smart-wallet 0.10.1",
+ "solana-client",
  "solana-program",
  "solana-sdk",
  "spl-token",

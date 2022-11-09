@@ -1,3 +1,4 @@
+use holaplex_indexer::jobs::{Client, ClientArgs};
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::job_runner;
 
@@ -16,6 +17,9 @@ struct Args {
 
     #[command(flatten)]
     queue_suffix: indexer_core::queue_suffix::QueueSuffix,
+
+    #[command(flatten)]
+    client: ClientArgs,
 }
 
 fn main() {
@@ -24,6 +28,7 @@ fn main() {
              amqp_url,
              sender,
              queue_suffix,
+             client,
          },
          params,
          _db| async move {
@@ -34,13 +39,19 @@ fn main() {
                 .await
                 .context("Failed to create queue consumer")?;
 
+            let client = Client::new_rc(client);
+
             holaplex_indexer::amqp_consume(
                 &params,
                 conn,
                 consumer,
                 queue_type,
                 StdDuration::from_secs(120),
-                move |m| async move { holaplex_indexer::jobs::process_message(m).await },
+                move |m| {
+                    let client = client.clone();
+
+                    async move { holaplex_indexer::jobs::process_message(&client, m).await }
+                },
             )
             .await
         },

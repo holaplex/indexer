@@ -5,6 +5,7 @@ use indexer_rabbitmq::{http_indexer, search_indexer};
 
 use crate::{db::Pool, prelude::*, reqwest, search_dispatch};
 
+#[derive(Debug)]
 struct HttpProducers {
     metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
     store_config: http_indexer::Producer<http_indexer::StoreConfig>,
@@ -36,9 +37,8 @@ enum DialectEvent {
     },
 }
 
-// RpcClient doesn't implement Debug for some reason
-#[allow(missing_debug_implementations)]
 /// Wrapper for handling networking logic
+#[derive(Debug)]
 pub struct Client {
     db: Pool,
     http: reqwest::Client,
