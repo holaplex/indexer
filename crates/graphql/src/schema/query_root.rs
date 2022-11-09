@@ -629,7 +629,7 @@ impl QueryRoot {
             .map_err(Into::into)
     }
 
-    async fn purchases(
+    fn purchases(
         &self,
         context: &AppContext,
         #[graphql(description = "Auction House addresses")] auction_houses: Option<
