@@ -92,16 +92,16 @@ name = "holaplex-indexer-search"
 required-features = ["search"]
 
 [dependencies]
-async-trait = "0.1.52"
+async-trait = "0.1.58"
 bs58 = "0.4.0"
-crossbeam = { version = "0.8.1", optional = true }
-futures-util = "0.3.21"
+crossbeam = { version = "0.8.2", optional = true }
+futures-util = "0.3.25"
 hostname = "0.3.1"
-serde = { version = "1.0.133", features = ["derive"] }
+serde = { version = "1.0.147", features = ["derive"] }
 solana-program = "~1.9.28"
 strum = { version = "0.24.1", features = ["derive"] }
-thiserror = "1.0.30"
-tokio = { version = "1.13.0", features = ["macros", "rt", "rt-multi-thread", "signal", "sync"] }
+thiserror = "1.0.37"
+tokio = { version = "1.14.0", features = ["macros", "rt", "rt-multi-thread", "signal", "sync"] }
 tokio-executor-trait = "2.1.0"
 tokio-reactor-trait = "1.1.0"
 
@@ -131,9 +131,9 @@ tribeca-govern = { package = "govern", version = "0.5.5", features = ["no-entryp
 tribeca-locked-voter = { package = "locked-voter", version = "0.5.5", features = ["no-entrypoint"], optional = true }
 
 # HTTP indexer
-cid = { version = "0.7.0", optional = true }
-reqwest = { version = "0.11.6", features = ["json", "gzip", "brotli", "deflate"], optional = true }
-serde_json = { version = "1.0.79", optional = true }
+cid = { version = "0.8.6", optional = true }
+reqwest = { version = "0.11.12", features = ["json", "gzip", "brotli", "deflate"], optional = true }
+serde_json = { version = "1.0.87", optional = true }
 
 [dependencies.mpl-metaplex]
 git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
@@ -150,7 +150,8 @@ optional = true
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
 # tag = "v0.6.1" # TODO
-rev = "df6c247"
+# rev = "df6c247" # TODO 2
+branch = "ryans/update-deps"
 version = "=0.3.1"
 
 # Workspace dependencies

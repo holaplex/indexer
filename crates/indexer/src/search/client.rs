@@ -8,7 +8,7 @@ use indexer_core::{
     meilisearch::{
         self,
         client::Client as MeiliClient,
-        tasks::{DocumentAddition, ProcessedTask, Task, TaskType},
+        tasks::{DocumentAdditionOrUpdate, SucceededTask, Task, TaskType},
     },
     util,
 };
@@ -154,9 +154,10 @@ impl Client {
             .context("Failed to get Meilisearch task list")?;
 
         let mut set: BinaryHeap<_> = tasks
+            .results
             .into_iter()
             .filter_map(|task| {
-                let ProcessedTask {
+                let SucceededTask {
                     duration,
                     finished_at,
                     update_type,
@@ -168,9 +169,9 @@ impl Client {
 
                 // Reject outliers or non-upsert tasks
                 let count = match update_type {
-                    TaskType::DocumentAddition {
+                    TaskType::DocumentAdditionOrUpdate {
                         details:
-                            Some(DocumentAddition {
+                            Some(DocumentAdditionOrUpdate {
                                 indexed_documents: Some(count),
                                 ..
                             }),

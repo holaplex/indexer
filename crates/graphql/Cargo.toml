@@ -16,19 +16,19 @@ categories = ["cryptocurrency::cryptocurrencies", "web-programming"]
 [dependencies]
 actix-cors = "0.6.0-beta.8"
 actix-web = "4.0.0-beta.21"
-async-trait = "0.1"
-dataloader = "0.14.0"
+async-trait = "0.1.58"
+dataloader = "0.16.0"
 derive_more = "0.99.17"
-futures-util = "0.3.21"
-itertools = "0.10.2"
+futures-util = "0.3.25"
+itertools = "0.10.5"
 juniper = "0.15.10"
 md5 = "0.7.0"
-percent-encoding = "2.1.0"
-reqwest = { version = "0.11.6", features = ["json"] }
-serde = { version = "1.0.130", features = ["derive"] }
-serde_json = "1.0.70"
+percent-encoding = "2.2.0"
+reqwest = { version = "0.11.12", features = ["json"] }
+serde = { version = "1.0.147", features = ["derive"] }
+serde_json = "1.0.87"
 solana-client = "~1.9.28"
-thiserror = "1.0.30"
+thiserror = "1.0.37"
 tokio = { version = "1.14.1", default-features = false }
 
 [dependencies.indexer-core]

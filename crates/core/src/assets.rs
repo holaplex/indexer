@@ -167,7 +167,7 @@ impl<'a> AssetIdentifier<'a> {
 
     fn fingerprint_ipfs(cid: &Cid, path: &str) -> Vec<u8> {
         if path.is_empty() {
-            use cid::multihash::StatefulHasher;
+            use cid::multihash::Hasher;
 
             let mut h = cid::multihash::Sha2_256::default();
 
@@ -184,7 +184,7 @@ impl<'a> AssetIdentifier<'a> {
         if path.is_empty() {
             Cow::Borrowed(&txid.0)
         } else {
-            use cid::multihash::StatefulHasher;
+            use cid::multihash::Hasher;
 
             let mut h = cid::multihash::Sha2_256::default();
 
@@ -196,7 +196,7 @@ impl<'a> AssetIdentifier<'a> {
     }
 
     fn fingerprint_indeterminate(url: &Url) -> Vec<u8> {
-        use cid::multihash::StatefulHasher;
+        use cid::multihash::Hasher;
 
         let mut h = cid::multihash::Sha3_256::default();
 
