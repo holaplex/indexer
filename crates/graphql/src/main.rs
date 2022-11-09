@@ -1,7 +1,7 @@
 //! GraphQL server to read from `holaplex-indexer`
 
 #![deny(
-    clippy::disallowed_method,
+    clippy::disallowed_methods,
     clippy::suspicious,
     clippy::style,
     missing_debug_implementations,
@@ -34,41 +34,42 @@ use crate::schema::{AppContext, Schema};
 mod schema;
 
 #[derive(Debug, Parser)]
+#[command(about, version, long_about = None)]
 struct Opts {
-    #[clap(flatten)]
+    #[command(flatten)]
     server: ServerOpts,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     db: db::ConnectArgs,
 
-    #[clap(long, env)]
+    #[arg(long, env)]
     twitter_bearer_token: Option<String>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     asset_proxy: AssetProxyArgs,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     search: meilisearch::Args,
 
-    #[clap(long, env)]
+    #[arg(long, env)]
     solana_endpoint: String,
 
-    #[clap(long, env)]
+    #[arg(long, env)]
     dolphin_key: String,
 
-    #[clap(long, env, use_value_delimiter(true))]
+    #[arg(long, env, use_value_delimiter(true))]
     follow_wallets_exclusions: Vec<String>,
 
-    #[clap(long, env, use_value_delimiter(true))]
+    #[arg(long, env, use_value_delimiter(true))]
     featured_listings_auction_houses: Vec<String>,
 
-    #[clap(long, env, use_value_delimiter(true))]
+    #[arg(long, env, use_value_delimiter(true))]
     featured_listings_seller_exclusions: Vec<String>,
 
-    #[clap(long, env, use_value_delimiter(true))]
+    #[arg(long, env, use_value_delimiter(true))]
     marketplaces_store_address_exclusions: Vec<String>,
 
-    #[clap(long, env)]
+    #[arg(long, env)]
     pre_query_search_limit: usize,
 }
 
@@ -130,8 +131,8 @@ async fn graphql(
     info!(
         "host={:?}, remote_addr={:?}, peer_addr={:?}",
         conn.host(),
-        conn.realip_remote_addr().unwrap_or(&String::new()),
-        conn.peer_addr().unwrap_or(&String::new())
+        conn.realip_remote_addr().unwrap_or(""),
+        conn.peer_addr().unwrap_or("")
     );
     if duration > Duration::milliseconds(5000) {
         #[derive(serde::Deserialize)]
@@ -185,7 +186,7 @@ fn main() {
         let (addr,) = server.into_parts();
         info!("Listening on {}", addr);
 
-        let twitter_bearer_token = twitter_bearer_token.unwrap_or_else(String::new);
+        let twitter_bearer_token = twitter_bearer_token.unwrap_or_default();
 
         // TODO: db_ty indicates if any actions that mutate the database can be run
         let db::ConnectResult {

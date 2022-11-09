@@ -404,7 +404,7 @@ pub fn list<O: Clone + Into<Value>>(
 
     if let Some(attributes) = attributes {
         for AttributeFilter { trait_type, values } in attributes {
-            let alias = format!("attributes_{}", trait_type);
+            let alias = format!("attributes_{trait_type}");
             let alias: DynIden = SeaRc::new(Alias::new(&alias));
 
             query.join_lateral(
@@ -648,7 +648,7 @@ pub fn collection_nfts<O: Into<Value>>(
 
     if let Some(attributes) = attributes {
         for AttributeFilter { trait_type, values } in attributes {
-            let alias = format!("attributes_{}", trait_type);
+            let alias = format!("attributes_{trait_type}");
             let alias: DynIden = SeaRc::new(Alias::new(&alias));
 
             query.join_lateral(
@@ -949,7 +949,7 @@ pub fn mr_collection_nfts<O: Into<Value>>(
 
     if let Some(attributes) = attributes {
         for AttributeFilter { trait_type, values } in attributes {
-            let alias = format!("attributes_{}", trait_type);
+            let alias = format!("attributes_{trait_type}");
             let alias: DynIden = SeaRc::new(Alias::new(&alias));
 
             query

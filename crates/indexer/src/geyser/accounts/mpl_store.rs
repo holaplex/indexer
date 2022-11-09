@@ -79,7 +79,7 @@ pub(crate) async fn process_whitelisted_creator(
 }
 
 pub(crate) async fn process(client: &Client, key: Pubkey, store: Store) -> Result<()> {
-    let (config_address, _bump) = find_store_config(&key);
+    let (config_address, _bump) = find_store_config(key);
 
     let row = DbStore {
         address: Owned(bs58::encode(key).into_string()),

@@ -498,7 +498,7 @@ pub fn collection_activities(
         .context("Failed to load collection activities")
 }
 
-/// Input parameters for the [`trending`] query.
+/// Input parameters for the `trending` query.
 #[derive(Debug)]
 pub struct TrendingQueryOptions {
     /// Sort by Price or Listed at

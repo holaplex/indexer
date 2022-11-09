@@ -308,7 +308,7 @@ impl Collection {
     ) -> FieldResult<Timeseries> {
         let http = &ctx.shared.http;
         let dolphin_key = &ctx.shared.dolphin_key;
-        let url = market_stats_endpoint(&self.id, start_time, end_time)?;
+        let url = market_stats_endpoint(&self.id, &start_time, &end_time)?;
 
         let json = http
             .get(url.clone())

@@ -1,3 +1,14 @@
+//! Utility for manually dispatching indexer job messages
+
+#![deny(
+    clippy::disallowed_methods,
+    clippy::suspicious,
+    clippy::style,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
+#![warn(clippy::pedantic, clippy::cargo, missing_docs)]
+
 use indexer_core::{clap, clap::Parser, prelude::*};
 use indexer_rabbitmq::{
     job_runner::{self, Message},
@@ -5,16 +16,17 @@ use indexer_rabbitmq::{
 };
 
 #[derive(Debug, Parser)]
+#[command(about, version, long_about = None)]
 struct Opts {
     /// The address of an AMQP server to connect to
-    #[clap(long, env)]
+    #[arg(long, env)]
     amqp_url: String,
 
     /// The ID of the indexer sending events to listen for
-    #[clap(long, env)]
+    #[arg(long, env)]
     sender: String,
 
-    #[clap(subcommand)]
+    #[command(subcommand)]
     cmd: Command,
 }
 
@@ -22,7 +34,7 @@ struct Opts {
 enum Command {
     RefreshTable {
         /// The name of the table to request a data refresh for
-        #[clap(env)]
+        #[arg(env)]
         name: String,
     },
 }

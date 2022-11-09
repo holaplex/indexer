@@ -32,7 +32,7 @@ impl fmt::Display for MessageId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Upsert => write!(f, "document upsert"),
-            Self::IndirectMetadata(k) => write!(f, "indirect upsert of metadata at {}", k),
+            Self::IndirectMetadata(k) => write!(f, "indirect upsert of metadata at {k}"),
         }
     }
 }

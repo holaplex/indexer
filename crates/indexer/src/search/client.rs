@@ -8,7 +8,7 @@ use indexer_core::{
     meilisearch::{
         self,
         client::Client as MeiliClient,
-        tasks::{DocumentAddition, ProcessedTask, Task, TaskType},
+        tasks::{DocumentAdditionOrUpdate, SucceededTask, Task, TaskType},
     },
     util,
 };
@@ -20,25 +20,26 @@ use tokio::{
 use crate::{db::Pool, prelude::*};
 
 /// Common arguments for internal search indexer usage
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, clap::Args)]
+#[group(skip)]
 pub struct Args {
     /// Maximum number of documents to cache for upsert for a single index
-    #[clap(long, env, default_value_t = 1000)]
+    #[arg(long, env, default_value_t = 1000)]
     upsert_batch: usize,
 
     /// Sample size to use when approximating upsert interval from completed
     /// tasks
-    #[clap(long, env, default_value_t = 30)]
+    #[arg(long, env, default_value_t = 30)]
     upsert_interval_sample_size: usize,
 
     /// Don't perform any upserts, just print what would be upserted
-    #[clap(long, short = 'n', env)]
+    #[arg(long, short = 'n', env)]
     dry_run: bool,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     meili: meilisearch::Args,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     asset_proxy: AssetProxyArgs,
 }
 
@@ -154,9 +155,10 @@ impl Client {
             .context("Failed to get Meilisearch task list")?;
 
         let mut set: BinaryHeap<_> = tasks
+            .results
             .into_iter()
             .filter_map(|task| {
-                let ProcessedTask {
+                let SucceededTask {
                     duration,
                     finished_at,
                     update_type,
@@ -168,9 +170,9 @@ impl Client {
 
                 // Reject outliers or non-upsert tasks
                 let count = match update_type {
-                    TaskType::DocumentAddition {
+                    TaskType::DocumentAdditionOrUpdate {
                         details:
-                            Some(DocumentAddition {
+                            Some(DocumentAdditionOrUpdate {
                                 indexed_documents: Some(count),
                                 ..
                             }),
@@ -308,11 +310,10 @@ impl Client {
                 );
 
                 if dry_run {
-                    info!("Upsert to {:?} of {:#?}", idx, serde_json::to_value(&docs));
+                    info!("Upsert to {:?} of {:#?}", idx, serde_json::to_value(docs));
                 } else {
                     let meili = meili.clone();
-                    futures
-                        .push(async move { meili.index(idx).add_or_replace(&*docs, None).await });
+                    futures.push(async move { meili.index(idx).add_or_replace(docs, None).await });
                 }
             }
 

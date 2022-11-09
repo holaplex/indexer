@@ -1,4 +1,13 @@
-#![allow(clippy::pedantic, clippy::cargo)]
+//! Collection data scraper using the Moonrank API
+
+#![deny(
+    clippy::disallowed_methods,
+    clippy::suspicious,
+    clippy::style,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
+#![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
 use std::collections::HashMap;
 
@@ -130,33 +139,34 @@ struct Attribute {
 }
 
 #[derive(Debug, Parser)]
+#[command(about, version, long_about = None)]
 struct Opts {
     /// MoonRank RPC endpoint
-    #[clap(long, env)]
+    #[arg(long, env)]
     moonrank_endpoint: String,
 
     /// MoonRank Authorization token
-    #[clap(long, env)]
+    #[arg(long, env)]
     moonrank_auth: String,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     search: search_dispatch::Args,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     db: db::ConnectArgs,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     asset_proxy: AssetProxyArgs,
 
     /// The address of an AMQP server to connect to
-    #[clap(long, env)]
+    #[arg(long, env)]
     amqp_url: String,
 
     /// The ID of the indexer sending events to listen for
-    #[clap(long, env)]
+    #[arg(long, env)]
     sender: String,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     queue_suffix: Suffix,
 }
 

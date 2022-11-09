@@ -59,7 +59,7 @@ pub fn parse_cm_config_lines(
             let config_line = ConfigLine::deserialize(
                 &mut &data[config_line_byte_offset..config_line_byte_offset + CONFIG_LINE_SIZE],
             )
-            .with_context(|| format!("Failed to deserialize config line at index {}", idx))?;
+            .with_context(|| format!("Failed to deserialize config line at index {idx}"))?;
 
             let taken_bitmask_byte_offset = idx / 8;
             let taken_bitmask_bit_offset = 7 - (idx % 8);
@@ -121,12 +121,12 @@ mod tests {
         path.extend(["tests", "data"]);
         path.push(filename);
 
-        println!("Loading: {:?}", path);
+        println!("Loading: {path:?}");
 
-        let mut f = fs::File::open(&path).with_context(|| format!("Failed to open {:?}", path))?;
+        let mut f = fs::File::open(&path).with_context(|| format!("Failed to open {path:?}"))?;
         let mut buffer = vec![];
         f.read_to_end(&mut buffer)
-            .with_context(|| format!("Failed to read {:?}", path))?;
+            .with_context(|| format!("Failed to read {path:?}"))?;
 
         Ok(buffer)
     }
@@ -146,10 +146,10 @@ mod tests {
         ];
 
         for filename in filenames {
-            println!("Reading Candy Machine {:?}", filename);
+            println!("Reading Candy Machine {filename:?}");
             let data = load_account_dump(filename).unwrap();
             let cm = CandyMachine::try_deserialize(&mut data.as_slice()).unwrap();
-            println!("Candy Machine: {}", filename);
+            println!("Candy Machine: {filename}");
             let avail = usize::try_from(cm.data.items_available).unwrap();
             let results = parse_cm_config_lines(&data, avail).unwrap();
 

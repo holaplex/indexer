@@ -110,7 +110,7 @@ async fn process_master_edition_v2(client: &Client, update: AccountUpdate) -> Re
 }
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
-    let first_byte = update.data.get(0).copied();
+    let first_byte = update.data.first().copied();
 
     match first_byte {
         None => Ok(()),

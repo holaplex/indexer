@@ -40,9 +40,9 @@ pub enum MessageId {
 impl fmt::Display for MessageId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::AccountUpdate(k) => write!(f, "account update for {}", k),
-            Self::Instruction(p) => write!(f, "instruction from program {}", p),
-            &Self::SlotStatus(s) => write!(f, "status update for slot {}", s),
+            Self::AccountUpdate(k) => write!(f, "account update for {k}"),
+            Self::Instruction(p) => write!(f, "instruction from program {p}"),
+            &Self::SlotStatus(s) => write!(f, "status update for slot {s}"),
         }
     }
 }
