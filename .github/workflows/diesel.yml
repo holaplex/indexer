@@ -28,7 +28,7 @@ jobs:
 
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2021-11-09
+          toolchain: nightly-2022-11-08
           components: cargo, rustc
           profile: minimal
 
