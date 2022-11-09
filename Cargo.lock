@@ -1523,7 +1523,7 @@ dependencies = [
  "rand 0.7.3",
  "serde",
  "serde_json",
- "uuid 0.8.2",
+ "uuid",
 ]
 
 [[package]]
@@ -2325,7 +2325,7 @@ dependencies = [
  "pq-sys",
  "r2d2",
  "serde_json",
- "uuid 0.8.2",
+ "uuid",
 ]
 
 [[package]]
@@ -2483,9 +2483,6 @@ name = "either"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90e5c1c8368803113bf0c9584fc495a58b86dc8a29edbf8fe877d21d9507e797"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "encode_unicode"
@@ -3079,7 +3076,7 @@ dependencies = [
  "solana-program",
  "strum",
  "url",
- "uuid 0.8.2",
+ "uuid",
 ]
 
 [[package]]
@@ -3487,7 +3484,7 @@ dependencies = [
  "smartstring",
  "static_assertions",
  "url",
- "uuid 0.8.2",
+ "uuid",
 ]
 
 [[package]]
@@ -3730,12 +3727,11 @@ checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
 
 [[package]]
 name = "meilisearch-sdk"
-version = "0.20.1"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c0fab01f198149ac68362c48d2b332d3b0ce0a0241765fb430ea443c5d361e2"
+checksum = "e980fc979f653877693451f5b31d065a6f607c45988ac117a8316c90f73c7cdc"
 dependencies = [
  "async-trait",
- "either",
  "futures",
  "isahc",
  "iso8601-duration",
@@ -3745,11 +3741,9 @@ dependencies = [
  "serde",
  "serde_json",
  "time 0.3.17",
- "uuid 1.2.1",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "yaup",
 ]
 
 [[package]]
@@ -6632,15 +6626,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
 
 [[package]]
-name = "uuid"
-version = "1.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "feb41e78f93363bb2df8b0e86a2ca30eed7806ea16ea0c790d757cf93f79be83"
-dependencies = [
- "getrandom 0.2.8",
-]
-
-[[package]]
 name = "value-bag"
 version = "1.0.0-alpha.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7002,16 +6987,6 @@ name = "yasna"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "346d34a236c9d3e5f3b9b74563f238f955bbd05fa0b8b4efa53c130c43982f4c"
-
-[[package]]
-name = "yaup"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a59e7d27bed43f7c37c25df5192ea9d435a8092a902e02203359ac9ce3e429d9"
-dependencies = [
- "serde",
- "url",
-]
 
 [[package]]
 name = "zeroize"
