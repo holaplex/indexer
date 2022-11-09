@@ -32,10 +32,17 @@ struct Opts {
 
 #[derive(Debug, clap::Subcommand)]
 enum Command {
+    /// Request a refresh of a table of cached data
     RefreshTable {
         /// The name of the table to request a data refresh for
         #[arg(env)]
         name: String,
+    },
+    /// Request a re-indexing of transactions from a block
+    ReindexBlock {
+        /// The slot number of the block to reindex
+        #[arg(env)]
+        slot: u64,
     },
 }
 
@@ -82,6 +89,7 @@ fn main() {
 
             match cmd {
                 Command::RefreshTable { name } => producer.write(Message::RefreshTable(name)).await,
+                Command::ReindexBlock { slot } => producer.write(Message::ReindexSlot(slot)).await,
             }
             .context("Failed to send requested message")?;
 
