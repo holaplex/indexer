@@ -348,9 +348,8 @@ impl LastSale {
     }
 
     pub async fn purchase(&self, ctx: &AppContext) -> FieldResult<Option<Purchase>> {
-        let purchase_id = match self.purchase_id {
-            Some(ref t) => *t,
-            None => return Ok(None),
+        let Some(purchase_id) = self.purchase_id else {
+            return Ok(None);
         };
         ctx.purchase_loader
             .load(purchase_id)
