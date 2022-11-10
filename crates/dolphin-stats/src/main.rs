@@ -17,7 +17,6 @@ use holaplex_indexer_dolphin_stats::{
 };
 use indexer_core::{
     self,
-    bigdecimal::BigDecimal,
     chrono::{DateTime, Duration},
     clap,
     clap::Parser,
@@ -103,40 +102,6 @@ fn split_stats<T, E: Into<Error>>(
         last_1d: then(last_1d).map_err(Into::into)?,
         last_7d: then(last_7d).map_err(Into::into)?,
         last_30d: then(last_30d).map_err(Into::into)?,
-    })
-}
-
-fn calculate_volume(
-    minuend: Option<&(u64, Number)>,
-    subtrahend: Option<&(u64, Number)>,
-) -> Result<BigDecimal> {
-    Ok((minuend
-        .context("failed to get datapoint")?
-        .1
-        .as_u64()
-        .context("volume too large")?
-        - subtrahend
-            .context("failed to get datapoint")?
-            .1
-            .as_u64()
-            .context("volume too large")?)
-    .try_into()?)
-}
-
-fn split_volume(inf: &Stats<u64>, stats: impl AsRef<[Datapoint]>) -> Result<Stats<BigDecimal>> {
-    let stats = stats.as_ref();
-
-    let (last_1d, curr_1d) = slice_stats(stats, inf.last_1d, inf.curr_1d);
-    let (last_7d, curr_7d) = slice_stats(stats, inf.last_7d, inf.curr_7d);
-    let (last_30d, curr_30d) = slice_stats(stats, inf.last_30d, inf.curr_30d);
-
-    Ok(Stats {
-        curr_1d: calculate_volume(curr_1d.last(), last_1d.last())?,
-        curr_7d: calculate_volume(curr_7d.last(), last_7d.last())?,
-        curr_30d: calculate_volume(curr_30d.last(), last_30d.last())?,
-        last_1d: calculate_volume(last_1d.last(), last_1d.first())?,
-        last_7d: calculate_volume(last_7d.last(), last_7d.first())?,
-        last_30d: calculate_volume(last_30d.last(), last_30d.first())?,
     })
 }
 
@@ -541,8 +506,24 @@ mod insert {
         })
         .with_context(|| format!("Error while processing listed data for {sym:?}"))?;
 
-        let volume =
-            crate::split_volume(split_info, volume_data).context("failed to get volume data")?;
+        let volume = split_stats(split_info, volume_data, |f| {
+            f.first()
+                .zip(f.last())
+                .map_or(Ok(0), |((_, first), (_, last))| {
+                    let first = first
+                        .as_u64()
+                        .ok_or_else(|| anyhow!("Invalid number {:?}", first))?;
+                    let last = last
+                        .as_u64()
+                        .ok_or_else(|| anyhow!("Invalid number {:?}", last))?;
+
+                    last.checked_sub(first).ok_or_else(|| {
+                        anyhow!("Overflow when calculating {:?} - {:?}", last, first)
+                    })
+                })?
+                .try_into()
+                .context("Value was too big to store")
+        })?;
 
         tokio::task::spawn_blocking(move || {
             if full {

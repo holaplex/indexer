@@ -15,10 +15,7 @@ impl<S: ScalarValue> GraphQLScalar for Numeric {
 
     fn from_input_value(v: &InputValue) -> Option<Numeric> {
         v.as_string_value()
-            .and_then(|v| match BigDecimal::from_str(v) {
-                Ok(bd) => Some(Numeric(bd)),
-                Err(_) => None,
-            })
+            .and_then(|v| BigDecimal::from_str(v).ok().map(Numeric))
     }
 
     fn from_str<'a>(v: ScalarToken<'a>) -> ParseScalarResult<'a, S> {
