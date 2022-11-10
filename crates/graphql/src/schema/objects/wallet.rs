@@ -1,6 +1,6 @@
 use enums::{NftSort, OfferType, OrderDirection};
 use indexer_core::{
-    bigdecimal::{BigDecimal, ToPrimitive, Zero},
+    bigdecimal::{BigDecimal, ToPrimitive},
     db::queries::{self, metadatas::WalletNftOptions},
     pubkeys,
     uuid::Uuid,
@@ -439,9 +439,8 @@ impl Wallet {
             )
             .first::<BigDecimal>(&db_conn)
             .optional()
-            .transpose()
-            .unwrap_or_else(|| Ok(BigDecimal::zero()))
-            .unwrap_or_else(|_| BigDecimal::zero());
+            .context("Failed to get wallet total reward")?
+            .unwrap_or_default();
 
         Ok(wallet_total_reward.to_u64().unwrap_or_default().into())
     }
