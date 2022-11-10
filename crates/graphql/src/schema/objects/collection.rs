@@ -374,15 +374,15 @@ pub struct CollectionTrend {
     pub volume_1d: Numeric,
     pub volume_7d: Numeric,
     pub volume_30d: Numeric,
-    pub listed_1d: Numeric,
-    pub listed_7d: Numeric,
-    pub listed_30d: Numeric,
+    pub listed_1d: I64,
+    pub listed_7d: I64,
+    pub listed_30d: I64,
     pub last_volume_1d: Numeric,
     pub last_volume_7d: Numeric,
     pub last_volume_30d: Numeric,
-    pub last_listed_1d: Numeric,
-    pub last_listed_7d: Numeric,
-    pub last_listed_30d: Numeric,
+    pub last_listed_1d: I64,
+    pub last_listed_7d: I64,
+    pub last_listed_30d: I64,
     pub last_floor_1d: Numeric,
     pub last_floor_7d: Numeric,
     pub last_floor_30d: Numeric,
@@ -491,27 +491,27 @@ impl CollectionTrend {
         &self.volume_30d
     }
 
-    pub fn listed_1d(&self) -> &Numeric {
+    pub fn listed_1d(&self) -> &I64 {
         &self.listed_1d
     }
 
-    pub fn listed_7d(&self) -> &Numeric {
+    pub fn listed_7d(&self) -> &I64 {
         &self.listed_7d
     }
 
-    pub fn listed_30d(&self) -> &Numeric {
+    pub fn listed_30d(&self) -> &I64 {
         &self.listed_30d
     }
 
-    pub fn last_listed_1d(&self) -> &Numeric {
+    pub fn last_listed_1d(&self) -> &I64 {
         &self.last_listed_1d
     }
 
-    pub fn last_listed_7d(&self) -> &Numeric {
+    pub fn last_listed_7d(&self) -> &I64 {
         &self.last_listed_7d
     }
 
-    pub fn last_listed_30d(&self) -> &Numeric {
+    pub fn last_listed_30d(&self) -> &I64 {
         &self.last_listed_30d
     }
 

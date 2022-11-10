@@ -316,6 +316,23 @@ mod insert {
         Some(percentage_change.to_f64().unwrap_or_default().floor() as i32)
     }
 
+    #[inline]
+    #[must_use]
+    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+    pub fn calc_listed_percent_change(current: i64, previous: i64) -> Option<i32> {
+        if previous == 0 {
+            return None;
+        }
+
+        let current = current as f64;
+        let previous = previous as f64;
+
+        let numerator = current - previous;
+        let percentage_change = (numerator / previous.abs()) * 100.0;
+
+        Some(percentage_change.floor() as i32)
+    }
+
     pub(super) struct Shared {
         pub sem: Semaphore,
         pub dolphin_key: String,
@@ -327,7 +344,7 @@ mod insert {
         sym: &str,
         Shared { pool, .. }: &Shared,
         floor: Stats<BigDecimal>,
-        listed: Stats<BigDecimal>,
+        listed: Stats<i64>,
         volume: Stats<BigDecimal>,
     ) -> Result<()> {
         let conn = pool.get()?;
@@ -361,18 +378,18 @@ mod insert {
             floor_1d: floor_1d.clone(),
             floor_7d: floor_7d.clone(),
             floor_30d: floor_30d.clone(),
-            listed_1d: listed_1d.clone(),
-            listed_7d: listed_7d.clone(),
-            listed_30d: listed_30d.clone(),
+            listed_1d,
+            listed_7d,
+            listed_30d,
             volume_1d: volume_1d.clone(),
             volume_7d: volume_7d.clone(),
             volume_30d: volume_30d.clone(),
             last_floor_1d: last_floor_1d.clone(),
             last_floor_7d: last_floor_7d.clone(),
             last_floor_30d: last_floor_30d.clone(),
-            last_listed_1d: last_listed_1d.clone(),
-            last_listed_7d: last_listed_7d.clone(),
-            last_listed_30d: last_listed_30d.clone(),
+            last_listed_1d,
+            last_listed_7d,
+            last_listed_30d,
             last_volume_1d: last_volume_1d.clone(),
             last_volume_7d: last_volume_7d.clone(),
             last_volume_30d: last_volume_30d.clone(),
@@ -382,9 +399,9 @@ mod insert {
             change_volume_1d: calc_percent_change(&volume_1d, &last_volume_1d),
             change_volume_7d: calc_percent_change(&volume_7d, &last_volume_7d),
             change_volume_30d: calc_percent_change(&volume_30d, &last_volume_30d),
-            change_listed_1d: calc_percent_change(&listed_1d, &last_listed_1d),
-            change_listed_7d: calc_percent_change(&listed_7d, &last_listed_7d),
-            change_listed_30d: calc_percent_change(&listed_30d, &last_listed_30d),
+            change_listed_1d: calc_listed_percent_change(listed_1d, last_listed_1d),
+            change_listed_7d: calc_listed_percent_change(listed_7d, last_listed_7d),
+            change_listed_30d: calc_listed_percent_change(listed_30d, last_listed_30d),
         };
 
         insert_into(dolphin_stats::table)
@@ -402,7 +419,7 @@ mod insert {
         sym: &str,
         Shared { pool, .. }: &Shared,
         floor: Stats<BigDecimal>,
-        listed: Stats<BigDecimal>,
+        listed: Stats<i64>,
         volume: Stats<BigDecimal>,
     ) -> Result<()> {
         let conn = pool.get()?;
@@ -425,14 +442,14 @@ mod insert {
         let row = DolphinStats1D {
             collection_symbol: Borrowed(sym),
             floor_1d: floor_1d.clone(),
-            listed_1d: listed_1d.clone(),
+            listed_1d,
             volume_1d: volume_1d.clone(),
             last_floor_1d: last_floor_1d.clone(),
-            last_listed_1d: last_listed_1d.clone(),
+            last_listed_1d,
             last_volume_1d: last_volume_1d.clone(),
             change_floor_1d: calc_percent_change(&floor_1d, &last_floor_1d),
             change_volume_1d: calc_percent_change(&volume_1d, &last_volume_1d),
-            change_listed_1d: calc_percent_change(&listed_1d, &last_listed_1d),
+            change_listed_1d: calc_listed_percent_change(listed_1d, last_listed_1d),
         };
 
         update(dolphin_stats::table.filter(dolphin_stats::collection_symbol.eq(sym)))
