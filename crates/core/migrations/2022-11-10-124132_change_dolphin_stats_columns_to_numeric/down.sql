@@ -1,0 +1,12 @@
+alter table dolphin_stats alter column floor_1d type bigint,
+alter column floor_7d type bigint,
+alter column floor_30d type bigint,
+alter column volume_1d type bigint,
+alter column volume_7d type bigint,
+alter column volume_30d type bigint,
+alter column last_floor_1d type bigint,
+alter column last_floor_7d type bigint,
+alter column last_floor_30d type bigint,
+alter column last_volume_1d type bigint,
+alter column last_volume_7d type bigint,
+alter column last_volume_30d type bigint;

@@ -16,7 +16,7 @@ use super::{nft::Nft, prelude::*};
 use crate::schema::{
     enums::{NftSort, OrderDirection},
     query_root::AttributeFilter,
-    scalars::{I64, U64},
+    scalars::{Numeric, I64, U64},
 };
 
 #[derive(Debug, Clone, GraphQLObject)]
@@ -368,24 +368,24 @@ pub struct CollectionIdentifier(pub String);
 #[derive(Debug, Clone)]
 pub struct CollectionTrend {
     pub collection: String,
-    pub floor_1d: U64,
-    pub floor_7d: U64,
-    pub floor_30d: U64,
-    pub volume_1d: U64,
-    pub volume_7d: U64,
-    pub volume_30d: U64,
-    pub listed_1d: i32,
-    pub listed_7d: i32,
-    pub listed_30d: i32,
-    pub last_volume_1d: U64,
-    pub last_volume_7d: U64,
-    pub last_volume_30d: U64,
-    pub last_listed_1d: i32,
-    pub last_listed_7d: i32,
-    pub last_listed_30d: i32,
-    pub last_floor_1d: U64,
-    pub last_floor_7d: U64,
-    pub last_floor_30d: U64,
+    pub floor_1d: Numeric,
+    pub floor_7d: Numeric,
+    pub floor_30d: Numeric,
+    pub volume_1d: Numeric,
+    pub volume_7d: Numeric,
+    pub volume_30d: Numeric,
+    pub listed_1d: I64,
+    pub listed_7d: I64,
+    pub listed_30d: I64,
+    pub last_volume_1d: Numeric,
+    pub last_volume_7d: Numeric,
+    pub last_volume_30d: Numeric,
+    pub last_listed_1d: I64,
+    pub last_listed_7d: I64,
+    pub last_listed_30d: I64,
+    pub last_floor_1d: Numeric,
+    pub last_floor_7d: Numeric,
+    pub last_floor_30d: Numeric,
     pub change_volume_1d: Option<i32>,
     pub change_volume_7d: Option<i32>,
     pub change_volume_30d: Option<i32>,
@@ -434,24 +434,24 @@ impl<'a> TryFrom<models::DolphinStats<'a>> for CollectionTrend {
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             collection: collection_symbol.into_owned(),
-            floor_1d: floor_1d.try_into()?,
-            floor_7d: floor_7d.try_into()?,
-            floor_30d: floor_30d.try_into()?,
-            volume_1d: volume_1d.try_into()?,
-            volume_7d: volume_7d.try_into()?,
-            volume_30d: volume_30d.try_into()?,
-            listed_1d: listed_1d.try_into()?,
-            listed_7d: listed_7d.try_into()?,
-            listed_30d: listed_30d.try_into()?,
-            last_volume_1d: last_volume_1d.try_into()?,
-            last_volume_7d: last_volume_7d.try_into()?,
-            last_volume_30d: last_volume_30d.try_into()?,
-            last_listed_1d: last_listed_1d.try_into()?,
-            last_listed_7d: last_listed_7d.try_into()?,
-            last_listed_30d: last_listed_30d.try_into()?,
-            last_floor_1d: last_floor_1d.try_into()?,
-            last_floor_7d: last_floor_7d.try_into()?,
-            last_floor_30d: last_floor_30d.try_into()?,
+            floor_1d: floor_1d.into(),
+            floor_7d: floor_7d.into(),
+            floor_30d: floor_30d.into(),
+            volume_1d: volume_1d.into(),
+            volume_7d: volume_7d.into(),
+            volume_30d: volume_30d.into(),
+            listed_1d: listed_1d.into(),
+            listed_7d: listed_7d.into(),
+            listed_30d: listed_30d.into(),
+            last_volume_1d: last_volume_1d.into(),
+            last_volume_7d: last_volume_7d.into(),
+            last_volume_30d: last_volume_30d.into(),
+            last_listed_1d: last_listed_1d.into(),
+            last_listed_7d: last_listed_7d.into(),
+            last_listed_30d: last_listed_30d.into(),
+            last_floor_1d: last_floor_1d.into(),
+            last_floor_7d: last_floor_7d.into(),
+            last_floor_30d: last_floor_30d.into(),
             change_volume_1d: change_volume_1d.map(Into::into),
             change_volume_7d: change_volume_7d.map(Into::into),
             change_volume_30d: change_volume_30d.map(Into::into),
@@ -467,76 +467,76 @@ impl<'a> TryFrom<models::DolphinStats<'a>> for CollectionTrend {
 
 #[graphql_object(Context = AppContext)]
 impl CollectionTrend {
-    pub fn floor_1d(&self) -> U64 {
-        self.floor_1d
+    pub fn floor_1d(&self) -> &Numeric {
+        &self.floor_1d
     }
 
-    pub fn floor_7d(&self) -> U64 {
-        self.floor_7d
+    pub fn floor_7d(&self) -> &Numeric {
+        &self.floor_7d
     }
 
-    pub fn floor_30d(&self) -> U64 {
-        self.floor_30d
+    pub fn floor_30d(&self) -> &Numeric {
+        &self.floor_30d
     }
 
-    pub fn volume_1d(&self) -> U64 {
-        self.volume_1d
+    pub fn volume_1d(&self) -> &Numeric {
+        &self.volume_1d
     }
 
-    pub fn volume_7d(&self) -> U64 {
-        self.volume_7d
+    pub fn volume_7d(&self) -> &Numeric {
+        &self.volume_7d
     }
 
-    pub fn volume_30d(&self) -> U64 {
-        self.volume_30d
+    pub fn volume_30d(&self) -> &Numeric {
+        &self.volume_30d
     }
 
-    pub fn listed_1d(&self) -> i32 {
-        self.listed_1d
+    pub fn listed_1d(&self) -> &I64 {
+        &self.listed_1d
     }
 
-    pub fn listed_7d(&self) -> i32 {
-        self.listed_7d
+    pub fn listed_7d(&self) -> &I64 {
+        &self.listed_7d
     }
 
-    pub fn listed_30d(&self) -> i32 {
-        self.listed_30d
+    pub fn listed_30d(&self) -> &I64 {
+        &self.listed_30d
     }
 
-    pub fn last_listed_1d(&self) -> i32 {
-        self.last_listed_1d
+    pub fn last_listed_1d(&self) -> &I64 {
+        &self.last_listed_1d
     }
 
-    pub fn last_listed_7d(&self) -> i32 {
-        self.last_listed_7d
+    pub fn last_listed_7d(&self) -> &I64 {
+        &self.last_listed_7d
     }
 
-    pub fn last_listed_30d(&self) -> i32 {
-        self.last_listed_30d
+    pub fn last_listed_30d(&self) -> &I64 {
+        &self.last_listed_30d
     }
 
-    pub fn last_volume_1d(&self) -> U64 {
-        self.last_volume_1d
+    pub fn last_volume_1d(&self) -> &Numeric {
+        &self.last_volume_1d
     }
 
-    pub fn last_volume_7d(&self) -> U64 {
-        self.last_volume_7d
+    pub fn last_volume_7d(&self) -> &Numeric {
+        &self.last_volume_7d
     }
 
-    pub fn last_volume_30d(&self) -> U64 {
-        self.last_volume_30d
+    pub fn last_volume_30d(&self) -> &Numeric {
+        &self.last_volume_30d
     }
 
-    pub fn last_floor_1d(&self) -> U64 {
-        self.last_floor_1d
+    pub fn last_floor_1d(&self) -> &Numeric {
+        &self.last_floor_1d
     }
 
-    pub fn last_floor_7d(&self) -> U64 {
-        self.last_floor_7d
+    pub fn last_floor_7d(&self) -> &Numeric {
+        &self.last_floor_7d
     }
 
-    pub fn last_floor_30d(&self) -> U64 {
-        self.last_floor_30d
+    pub fn last_floor_30d(&self) -> &Numeric {
+        &self.last_floor_30d
     }
 
     pub fn change_floor_1d(&self) -> Option<i32> {

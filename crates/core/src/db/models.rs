@@ -3503,42 +3503,42 @@ pub struct CollectionMintAttribute<'a> {
 pub struct DolphinStats<'a> {
     #[sql_type = "VarChar"]
     pub collection_symbol: Cow<'a, str>,
-    #[sql_type = "BigInt"]
-    pub floor_1d: i64,
-    #[sql_type = "BigInt"]
-    pub floor_7d: i64,
-    #[sql_type = "BigInt"]
-    pub floor_30d: i64,
+    #[sql_type = "Numeric"]
+    pub floor_1d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub floor_7d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub floor_30d: BigDecimal,
     #[sql_type = "BigInt"]
     pub listed_1d: i64,
     #[sql_type = "BigInt"]
     pub listed_7d: i64,
     #[sql_type = "BigInt"]
     pub listed_30d: i64,
-    #[sql_type = "BigInt"]
-    pub volume_1d: i64,
-    #[sql_type = "BigInt"]
-    pub volume_7d: i64,
-    #[sql_type = "BigInt"]
-    pub volume_30d: i64,
-    #[sql_type = "BigInt"]
-    pub last_floor_1d: i64,
-    #[sql_type = "BigInt"]
-    pub last_floor_7d: i64,
-    #[sql_type = "BigInt"]
-    pub last_floor_30d: i64,
+    #[sql_type = "Numeric"]
+    pub volume_1d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub volume_7d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub volume_30d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub last_floor_1d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub last_floor_7d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub last_floor_30d: BigDecimal,
     #[sql_type = "BigInt"]
     pub last_listed_1d: i64,
     #[sql_type = "BigInt"]
     pub last_listed_7d: i64,
     #[sql_type = "BigInt"]
     pub last_listed_30d: i64,
-    #[sql_type = "BigInt"]
-    pub last_volume_1d: i64,
-    #[sql_type = "BigInt"]
-    pub last_volume_7d: i64,
-    #[sql_type = "BigInt"]
-    pub last_volume_30d: i64,
+    #[sql_type = "Numeric"]
+    pub last_volume_1d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub last_volume_7d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub last_volume_30d: BigDecimal,
     #[sql_type = "Nullable<Int4>"]
     pub change_floor_1d: Option<i32>,
     #[sql_type = "Nullable<Int4>"]
@@ -3564,12 +3564,12 @@ pub struct DolphinStats<'a> {
 #[allow(missing_docs)]
 pub struct DolphinStats1D<'a> {
     pub collection_symbol: Cow<'a, str>,
-    pub floor_1d: i64,
+    pub floor_1d: BigDecimal,
     pub listed_1d: i64,
-    pub volume_1d: i64,
-    pub last_floor_1d: i64,
+    pub volume_1d: BigDecimal,
+    pub last_floor_1d: BigDecimal,
     pub last_listed_1d: i64,
-    pub last_volume_1d: i64,
+    pub last_volume_1d: BigDecimal,
     pub change_floor_1d: Option<i32>,
     pub change_volume_1d: Option<i32>,
     pub change_listed_1d: Option<i32>,
