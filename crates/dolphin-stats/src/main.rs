@@ -328,6 +328,7 @@ mod insert {
         let previous = previous as f64;
 
         let numerator = current - previous;
+        
         let percentage_change = (numerator / previous.abs()) * 100.0;
 
         Some(percentage_change.floor() as i32)

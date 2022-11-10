@@ -7,7 +7,7 @@ use super::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Numeric(pub BigDecimal);
 
-#[graphql_scalar(description = "MyBigDecimal")]
+#[graphql_scalar(description = "Numeric data type")]
 impl<S: ScalarValue> GraphQLScalar for Numeric {
     fn resolve(&self) -> Value {
         Value::scalar(self.0.to_string())
