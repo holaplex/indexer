@@ -17,6 +17,7 @@ use holaplex_indexer_dolphin_stats::{
 };
 use indexer_core::{
     self,
+    bigdecimal::BigDecimal,
     chrono::{DateTime, Duration},
     clap,
     clap::Parser,
@@ -102,6 +103,40 @@ fn split_stats<T, E: Into<Error>>(
         last_1d: then(last_1d).map_err(Into::into)?,
         last_7d: then(last_7d).map_err(Into::into)?,
         last_30d: then(last_30d).map_err(Into::into)?,
+    })
+}
+
+fn calculate_volume(
+    minuend: Option<&(u64, Number)>,
+    subtrahend: Option<&(u64, Number)>,
+) -> Result<BigDecimal> {
+    Ok((minuend
+        .context("failed to get datapoint")?
+        .1
+        .as_u64()
+        .context("volume too large")?
+        - subtrahend
+            .context("failed to get datapoint")?
+            .1
+            .as_u64()
+            .context("volume too large")?)
+    .try_into()?)
+}
+
+fn split_volume(inf: &Stats<u64>, stats: impl AsRef<[Datapoint]>) -> Result<Stats<BigDecimal>> {
+    let stats = stats.as_ref();
+
+    let (last_1d, curr_1d) = slice_stats(stats, inf.last_1d, inf.curr_1d);
+    let (last_7d, curr_7d) = slice_stats(stats, inf.last_7d, inf.curr_7d);
+    let (last_30d, curr_30d) = slice_stats(stats, inf.last_30d, inf.curr_30d);
+
+    Ok(Stats {
+        curr_1d: calculate_volume(curr_1d.last(), last_1d.last())?,
+        curr_7d: calculate_volume(curr_7d.last(), last_7d.last())?,
+        curr_30d: calculate_volume(curr_30d.last(), last_30d.last())?,
+        last_1d: calculate_volume(last_1d.last(), last_1d.first())?,
+        last_7d: calculate_volume(last_7d.last(), last_7d.first())?,
+        last_30d: calculate_volume(last_30d.last(), last_30d.first())?,
     })
 }
 
@@ -256,6 +291,7 @@ fn check_collections(json: &[Collection]) {
 
 mod insert {
     use holaplex_indexer_dolphin_stats::{MarketStats, MarketStatsResponse};
+    use indexer_core::bigdecimal::{BigDecimal, ToPrimitive};
 
     use super::{
         anyhow, check_stats, debug, dolphin_stats, indexer_core, insert, insert_into,
@@ -267,19 +303,17 @@ mod insert {
     #[inline]
     #[must_use]
     #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
-    fn calc_percent_change(current: i64, previous: i64) -> Option<i32> {
-        if previous == 0 {
+    pub fn calc_percent_change(current: &BigDecimal, previous: &BigDecimal) -> Option<i32> {
+        if *previous == 0.into() {
             return None;
         }
 
-        let current = current as f64;
-        let previous = previous as f64;
+        let numerator = current - previous.clone();
 
-        let numerator = current - previous;
+        let percentage_change: BigDecimal =
+            (numerator / previous.abs()) * <u16 as std::convert::Into<BigDecimal>>::into(100);
 
-        let percentage_change = (numerator / previous.abs()) * 100.0;
-
-        Some(percentage_change.floor() as i32)
+        Some(percentage_change.to_f64().unwrap_or_default().floor() as i32)
     }
 
     pub(super) struct Shared {
@@ -292,9 +326,9 @@ mod insert {
     fn full(
         sym: &str,
         Shared { pool, .. }: &Shared,
-        floor: Stats<i64>,
-        listed: Stats<i64>,
-        volume: Stats<i64>,
+        floor: Stats<BigDecimal>,
+        listed: Stats<BigDecimal>,
+        volume: Stats<BigDecimal>,
     ) -> Result<()> {
         let conn = pool.get()?;
         let Stats {
@@ -324,33 +358,33 @@ mod insert {
 
         let row = DolphinStats {
             collection_symbol: Borrowed(sym),
-            floor_1d,
-            floor_7d,
-            floor_30d,
-            listed_1d,
-            listed_7d,
-            listed_30d,
-            volume_1d,
-            volume_7d,
-            volume_30d,
-            last_floor_1d,
-            last_floor_7d,
-            last_floor_30d,
-            last_listed_1d,
-            last_listed_7d,
-            last_listed_30d,
-            last_volume_1d,
-            last_volume_7d,
-            last_volume_30d,
-            change_floor_1d: calc_percent_change(floor_1d, last_floor_1d),
-            change_floor_7d: calc_percent_change(floor_7d, last_floor_7d),
-            change_floor_30d: calc_percent_change(floor_30d, last_floor_30d),
-            change_volume_1d: calc_percent_change(volume_1d, last_volume_1d),
-            change_volume_7d: calc_percent_change(volume_7d, last_volume_7d),
-            change_volume_30d: calc_percent_change(volume_30d, last_volume_30d),
-            change_listed_1d: calc_percent_change(listed_1d, last_listed_1d),
-            change_listed_7d: calc_percent_change(listed_7d, last_listed_7d),
-            change_listed_30d: calc_percent_change(listed_30d, last_listed_30d),
+            floor_1d: floor_1d.clone(),
+            floor_7d: floor_7d.clone(),
+            floor_30d: floor_30d.clone(),
+            listed_1d: listed_1d.clone(),
+            listed_7d: listed_7d.clone(),
+            listed_30d: listed_30d.clone(),
+            volume_1d: volume_1d.clone(),
+            volume_7d: volume_7d.clone(),
+            volume_30d: volume_30d.clone(),
+            last_floor_1d: last_floor_1d.clone(),
+            last_floor_7d: last_floor_7d.clone(),
+            last_floor_30d: last_floor_30d.clone(),
+            last_listed_1d: last_listed_1d.clone(),
+            last_listed_7d: last_listed_7d.clone(),
+            last_listed_30d: last_listed_30d.clone(),
+            last_volume_1d: last_volume_1d.clone(),
+            last_volume_7d: last_volume_7d.clone(),
+            last_volume_30d: last_volume_30d.clone(),
+            change_floor_1d: calc_percent_change(&floor_1d, &last_floor_1d),
+            change_floor_7d: calc_percent_change(&floor_7d, &last_floor_7d),
+            change_floor_30d: calc_percent_change(&floor_30d, &last_floor_30d),
+            change_volume_1d: calc_percent_change(&volume_1d, &last_volume_1d),
+            change_volume_7d: calc_percent_change(&volume_7d, &last_volume_7d),
+            change_volume_30d: calc_percent_change(&volume_30d, &last_volume_30d),
+            change_listed_1d: calc_percent_change(&listed_1d, &last_listed_1d),
+            change_listed_7d: calc_percent_change(&listed_7d, &last_listed_7d),
+            change_listed_30d: calc_percent_change(&listed_30d, &last_listed_30d),
         };
 
         insert_into(dolphin_stats::table)
@@ -367,9 +401,9 @@ mod insert {
     fn one_day(
         sym: &str,
         Shared { pool, .. }: &Shared,
-        floor: Stats<i64>,
-        listed: Stats<i64>,
-        volume: Stats<i64>,
+        floor: Stats<BigDecimal>,
+        listed: Stats<BigDecimal>,
+        volume: Stats<BigDecimal>,
     ) -> Result<()> {
         let conn = pool.get()?;
         let Stats {
@@ -390,15 +424,15 @@ mod insert {
 
         let row = DolphinStats1D {
             collection_symbol: Borrowed(sym),
-            floor_1d,
-            listed_1d,
-            volume_1d,
-            last_floor_1d,
-            last_listed_1d,
-            last_volume_1d,
-            change_floor_1d: calc_percent_change(floor_1d, last_floor_1d),
-            change_volume_1d: calc_percent_change(volume_1d, last_volume_1d),
-            change_listed_1d: calc_percent_change(listed_1d, last_listed_1d),
+            floor_1d: floor_1d.clone(),
+            listed_1d: listed_1d.clone(),
+            volume_1d: volume_1d.clone(),
+            last_floor_1d: last_floor_1d.clone(),
+            last_listed_1d: last_listed_1d.clone(),
+            last_volume_1d: last_volume_1d.clone(),
+            change_floor_1d: calc_percent_change(&floor_1d, &last_floor_1d),
+            change_volume_1d: calc_percent_change(&volume_1d, &last_volume_1d),
+            change_listed_1d: calc_percent_change(&listed_1d, &last_listed_1d),
         };
 
         update(dolphin_stats::table.filter(dolphin_stats::collection_symbol.eq(sym)))
@@ -489,25 +523,8 @@ mod insert {
         })
         .with_context(|| format!("Error while processing listed data for {sym:?}"))?;
 
-        let volume = split_stats(split_info, volume_data, |f| {
-            f.iter()
-                .try_fold(None::<u64>, |s, (_, n)| {
-                    let n = n
-                        .as_u64()
-                        .ok_or_else(|| anyhow!("Invalid number {:?}", n))?;
-
-                    let next = s.map_or(Ok(n), |s| {
-                        s.checked_add(n)
-                            .ok_or_else(|| anyhow!("Overflow when calculationg {:?} + {:?}", s, n))
-                    })?;
-
-                    Result::<_>::Ok(Some(next))
-                })?
-                .unwrap_or(0)
-                .try_into()
-                .context("Value was too big to store")
-        })
-        .with_context(|| format!("Error while processing volume data for {sym:?}"))?;
+        let volume =
+            crate::split_volume(split_info, volume_data).context("failed to get volume data")?;
 
         tokio::task::spawn_blocking(move || {
             if full {

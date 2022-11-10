@@ -1,4 +1,5 @@
 mod bigint;
+mod numeric;
 mod public_key;
 
 pub(self) mod prelude {
@@ -15,4 +16,5 @@ pub mod markers {
 }
 
 pub use bigint::{I64, U64};
+pub use numeric::Numeric;
 pub use public_key::PublicKey;
