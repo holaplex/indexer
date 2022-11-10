@@ -70,7 +70,7 @@ enum Listings {
     Expiry,
 }
 
-/// Input parameters for the [`collection_nfts`] query.
+/// Input parameters for the `collection_nfts` query.
 #[derive(Debug)]
 pub struct CollectionListedNftOptions {
     /// Collection address

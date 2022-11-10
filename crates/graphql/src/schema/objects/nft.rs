@@ -927,7 +927,7 @@ pub struct CollectionTrend {
     pub thirty_day_marketcap_change: i32,
 }
 
-impl<'a> TryFrom<models::CollectionTrend> for CollectionTrend {
+impl TryFrom<models::CollectionTrend> for CollectionTrend {
     type Error = std::num::TryFromIntError;
 
     fn try_from(
