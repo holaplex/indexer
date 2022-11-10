@@ -2,24 +2,27 @@ use holaplex_indexer::http::{Client, ClientArgs};
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::{http_indexer, search_indexer, suffix::Suffix};
 
+/// Indexer worker for sending off-chain HTTP requests
 #[derive(Debug, clap::Args)]
+#[group(skip)]
+#[command(name = "holaplex-indexer-http", version, long_about = None)]
 struct Args {
     /// The address of an AMQP server to connect to
-    #[clap(long, env)]
+    #[arg(long, env)]
     amqp_url: String,
 
     /// The ID of the indexer sending events to listen for
-    #[clap(long, env)]
+    #[arg(long, env)]
     sender: String,
 
     /// The entity type to listen to events for
-    #[clap(long, env)]
+    #[arg(long, env)]
     entity: http_indexer::EntityId,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     queue_suffix: Suffix,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     client: ClientArgs,
 }
 

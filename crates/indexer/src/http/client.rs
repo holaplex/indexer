@@ -8,15 +8,16 @@ use crate::{db::Pool, prelude::*, reqwest, search_dispatch};
 /// Common arguments for internal HTTP indexer usage
 #[derive(Debug, clap::Args)]
 #[allow(missing_copy_implementations)]
+#[group(skip)]
 pub struct Args {
-    #[clap(flatten)]
+    #[command(flatten)]
     asset_proxy: AssetProxyArgs,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     search: search_dispatch::Args,
 
     /// HTTP request timeout, in seconds
-    #[clap(long, env = "HTTP_INDEXER_TIMEOUT")]
+    #[arg(long, env = "HTTP_INDEXER_TIMEOUT")]
     timeout: f64,
 }
 

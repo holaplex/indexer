@@ -1,8 +1,9 @@
 use holaplex_indexer_core::{clap, clap::Parser, db, prelude::*};
 
 #[derive(Debug, Parser)]
+#[command(about, version, long_about = None)]
 struct Opts {
-    #[clap(flatten)]
+    #[command(flatten)]
     db: db::ConnectArgs,
 }
 

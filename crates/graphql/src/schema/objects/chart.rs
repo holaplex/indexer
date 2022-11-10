@@ -18,7 +18,7 @@ pub struct PricePoint {
     pub date: DateTime<Utc>,
 }
 
-impl<'a> TryFrom<models::PricePoint> for PricePoint {
+impl TryFrom<models::PricePoint> for PricePoint {
     type Error = std::num::TryFromIntError;
 
     fn try_from(

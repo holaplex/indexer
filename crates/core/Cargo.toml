@@ -21,6 +21,9 @@ asset-cdn = [
   "assets",
   "md5",
 ]
+chrono-serde = [
+  "chrono/serde",
+]
 db = [
   "diesel",
   "diesel_migrations",
@@ -36,29 +39,29 @@ required-features = ["db"]
 
 [dependencies]
 # Basic utilities
-anyhow = "1.0.45"
-base64 = "0.13.0"
+anyhow = "1.0.66"
+base64 = "0.13.1"
 bigdecimal = "0.1.0"
 chrono = "0.4.22"
-clap = { version = "3.0.7", features = ["derive", "env"] }
+clap = { version = "4.0.22", features = ["derive", "env"] }
 dotenv = "0.15.0"
-env_logger = "0.9.0"
-log = "0.4.14"
+env_logger = "0.9.3"
+log = "0.4.17"
 meilisearch-sdk = { version = "0.17.0", optional = true }
-num_cpus = "1.13.1"
-rand = "0.8.4"
-serde = { version = "1.0.136", features = ["derive"], optional = true }
-serde_json = "1.0.70"
-sea-query = { version = "0.24.6", features = ["with-chrono"] }
+num_cpus = "1.14.0"
+rand = "0.8.5"
+serde = { version = "1.0.147", features = ["derive"], optional = true }
+serde_json = "1.0.87"
+sea-query = { version = "0.27.1", features = ["with-chrono"] }
 sea-query-derive = "0.2.0"
 sea-query-attr = "0.1.1"
-sea-query-driver = "0.1.1"
-strum = { version = "0.24.0", features = ["derive"] }
+sea-query-driver = "0.2.2"
+strum = { version = "0.24.1", features = ["derive"] }
 uuid = "0.8.2"
 
 # Fast hash tables
-ahash = "0.7.6"
-dashmap = "4.0.2"
+ahash = "0.8.1"
+dashmap = "5.4.0"
 
 # ORM
 diesel = { version = "1.4.8", features = ["postgres", "r2d2", "uuidv07", "chrono", "serde_json", "64-column-tables", "numeric"], optional = true }
@@ -69,6 +72,6 @@ diesel_full_text_search = { version = "1.0.1", git = "https://github.com/diesel-
 solana-program = { version = "1.9.4", optional = true }
 
 # Asset id
-cid = { version = "0.7.0", optional = true }
-url = "2.2.2"
+cid = { version = "0.8.6", optional = true }
+url = "2.3.1"
 md5 = { version = "0.7.0", optional = true }

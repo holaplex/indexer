@@ -1,4 +1,13 @@
-#![allow(clippy::pedantic, clippy::cargo)]
+//! Reindexing utility for burned NFTs
+
+#![deny(
+    clippy::disallowed_methods,
+    clippy::suspicious,
+    clippy::style,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
+#![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
 use indexer::prelude::*;
 use indexer_core::{
@@ -14,16 +23,17 @@ use solana_client::{
 };
 
 #[derive(Debug, Parser)]
+#[command(about, version, long_about = None)]
 struct Opts {
     /// Solana RPC endpoint
-    #[clap(long, env)]
+    #[arg(long, env)]
     solana_endpoint: String,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     db: db::ConnectArgs,
 
-    #[clap(env)]
-    batch_size: i64,
+    #[arg(env)]
+    batch_size: u32,
 }
 
 fn main() {
@@ -37,7 +47,7 @@ fn main() {
             batch_size,
         } = opts;
 
-        let client = RpcClient::new(&solana_endpoint);
+        let client = RpcClient::new(solana_endpoint);
 
         let db::ConnectResult {
             pool,
@@ -55,11 +65,15 @@ fn main() {
 
         debug!("Total unburned count: {}", total_count);
 
-        for i in (0..total_count).step_by(batch_size as usize) {
+        for i in (0..total_count).step_by(
+            batch_size
+                .try_into()
+                .with_context(|| anyhow!("Batch size {batch_size} is too large!"))?,
+        ) {
             let addresses = metadatas::table
                 .filter(metadatas::burned_at.is_null())
                 .offset(i)
-                .limit(batch_size)
+                .limit(batch_size.into())
                 .order_by(metadatas::slot.asc())
                 .select(metadatas::mint_address)
                 .load(&conn)

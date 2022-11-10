@@ -1,4 +1,13 @@
-#![allow(clippy::pedantic, clippy::cargo)]
+//! Small base58 conversion utility
+
+#![deny(
+    clippy::disallowed_methods,
+    clippy::suspicious,
+    clippy::style,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
+#![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
 use std::{
     borrow::Cow,
@@ -9,16 +18,17 @@ use bs58::{decode, encode};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
+#[command(about, version, long_about = None)]
 struct Opts {
     /// Disable stripping a final `\n` off of STDIN
-    #[clap(long, short = 'S')]
+    #[arg(long, short = 'S')]
     no_strip: bool,
 
     /// Use hexadecimal instead of raw binary
-    #[clap(long, short = 'x')]
+    #[arg(long, short = 'x')]
     hex: bool,
 
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: Command,
 }
 

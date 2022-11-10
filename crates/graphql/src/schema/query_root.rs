@@ -331,15 +331,11 @@ impl QueryRoot {
         }
         let conn = context.shared.db.get().context("failed to connect to db")?;
         let from: Vec<String> = from
-            .unwrap_or_else(Vec::new)
+            .unwrap_or_default()
             .into_iter()
             .map(Into::into)
             .collect();
-        let to: Vec<String> = to
-            .unwrap_or_else(Vec::new)
-            .into_iter()
-            .map(Into::into)
-            .collect();
+        let to: Vec<String> = to.unwrap_or_default().into_iter().map(Into::into).collect();
 
         let rows = queries::graph_connection::connections(&conn, from, to, limit, offset)?;
 
