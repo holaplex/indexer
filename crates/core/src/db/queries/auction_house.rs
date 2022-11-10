@@ -1,4 +1,4 @@
-//! Query utilities for ``auction_house``
+//! Query utilities for `auction_house`
 
 use diesel::{
     pg::Pg,
@@ -8,7 +8,6 @@ use diesel::{
 
 use crate::{
     db::{models::AuctionHouseVolume, Connection},
-    error::Result,
     prelude::*,
 };
 

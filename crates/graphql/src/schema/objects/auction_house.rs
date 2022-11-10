@@ -3,9 +3,9 @@ use indexer_core::{
     db::{models, queries},
 };
 use objects::{reward_center::RewardCenter, stats::MintStats};
+use scalars::{PublicKey, U64};
 
 use super::prelude::*;
-use crate::schema::scalars::{PublicKey, U64};
 
 #[derive(Debug, Clone)]
 /// A Metaplex auction house
