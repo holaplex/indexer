@@ -159,7 +159,9 @@ impl AuctionHouse {
             .into_iter()
             .next()
             .map(|models::AuctionHouseVolume { volume }| {
-                volume.to_u64().unwrap_or_default().into()
-            }))
+                volume.to_u64().context("Volume was too big to store")
+            })
+            .transpose()?
+            .map(Into::into))
     }
 }
