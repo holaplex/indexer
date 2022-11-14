@@ -9,6 +9,7 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 #![feature(bound_map, iter_intersperse)]
+#![recursion_limit = "256"]
 
 // TODO: #[macro_use] is somewhat deprecated, but diesel still relies on it
 #[cfg(feature = "db")]

@@ -254,17 +254,29 @@ impl Collection {
     pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
         let conn = context.shared.db.get()?;
 
-        let metadata_attributes: Vec<models::MetadataAttribute> = attributes::table
-            .inner_join(metadatas::table.on(attributes::metadata_address.eq(metadatas::address)))
-            .inner_join(
-                collection_mints::table.on(metadatas::mint_address.eq(collection_mints::mint)),
-            )
-            .filter(collection_mints::collection_id.eq(&self.id))
-            .select(attributes::all_columns)
-            .load(&conn)
-            .context("Failed to load metadata attributes")?;
+        // let group : Vec<models::AttributeGroup> = attribute_groups::table.filter(attribute_group::collection_id.eq(self.id))
+        // .select(attribute_groups::all_columns)
+        // .load(&conn)?;
 
-        services::attributes::group(metadata_attributes)
+        let variants: Vec<models::AttributeGroupVariant> = attribute_group_variants::table
+            .filter(attribute_group_variants::collection_id.eq(self.id.clone()))
+            .select(attribute_group_variants::all_columns)
+            .load(&conn)
+            .context("failed to get attribute groups")?;
+
+        Ok(Vec::new())
+
+        // let metadata_attributes: Vec<models::MetadataAttribute> = attributes::table
+        //     .inner_join(metadatas::table.on(attributes::metadata_address.eq(metadatas::address)))
+        //     .inner_join(
+        //         collection_mints::table.on(metadatas::mint_address.eq(collection_mints::mint)),
+        //     )
+        //     .filter(collection_mints::collection_id.eq(&self.id))
+        //     .select(attributes::all_columns)
+        //     .load(&conn)
+        //     .context("Failed to load metadata attributes")?;
+
+        // services::attributes::group(metadata_attributes)
     }
 
     #[graphql(

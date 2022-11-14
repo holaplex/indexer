@@ -19,8 +19,12 @@ use indexer_core::{
     clap::Parser,
     db::{
         self, delete, insert_into,
-        models::{Collection as DbCollection, CollectionMint, CollectionMintAttribute},
-        tables::{collection_mint_attributes, collection_mints, collections},
+        models::{self, Collection as DbCollection, CollectionMint, CollectionMintAttribute},
+        select,
+        tables::{
+            attribute_group_variants, attribute_groups, collection_mint_attributes,
+            collection_mints, collections,
+        },
         Pool,
     },
     num_cpus,
@@ -345,9 +349,72 @@ async fn upsert_collection_data(
         .execute(&conn)?;
 
         for attribute in mint.rank_explain {
+            let collection_id = values.collection_id.clone();
+
+            let total_seen: i64 = attribute.total_seen.try_into()?;
+            let times_seen: i64 = attribute.times_seen.try_into()?;
+
+            let attribute_group_exists = select(exists(
+                attribute_groups::table.filter(
+                    attribute_groups::collection_id
+                        .eq(collection_id.clone())
+                        .and(attribute_groups::trait_type.eq(attribute.attribute.clone()))
+                        .and(attribute_groups::total_count.eq(total_seen)),
+                ),
+            ))
+            .get_result::<bool>(&conn)?;
+
+            let attribute_group_variant_exists = select(exists(
+                attribute_group_variants::table.filter(
+                    attribute_group_variants::collection_id
+                        .eq(collection_id.clone())
+                        .and(attribute_group_variants::trait_type.eq(attribute.attribute.clone()))
+                        .and(attribute_group_variants::count.eq(times_seen)),
+                ),
+            ))
+            .get_result::<bool>(&conn)?;
+
+            if !attribute_group_exists {
+                let attribute_group = models::AttributeGroup {
+                    collection_id: collection_id.clone(),
+                    trait_type: Owned(attribute.attribute.clone()),
+                    total_count: attribute.total_seen.try_into()?,
+                };
+
+                insert_into(attribute_groups::table)
+                    .values(attribute_group.clone())
+                    .on_conflict((
+                        attribute_groups::collection_id,
+                        attribute_groups::trait_type,
+                    ))
+                    .do_update()
+                    .set(attribute_group)
+                    .execute(&conn)?;
+            }
+
+            if !attribute_group_variant_exists {
+                let attribute_group_variant = models::AttributeGroupVariant {
+                    collection_id: collection_id.clone(),
+                    trait_type: Owned(attribute.attribute.clone()),
+                    value: Owned(attribute.value.clone()),
+                    count: attribute.times_seen.try_into()?,
+                };
+
+                insert_into(attribute_group_variants::table)
+                    .values(attribute_group_variant.clone())
+                    .on_conflict((
+                        attribute_group_variants::collection_id,
+                        attribute_group_variants::trait_type,
+                        attribute_group_variants::value,
+                    ))
+                    .do_update()
+                    .set(attribute_group_variant)
+                    .execute(&conn)?;
+            }
+
             let row = CollectionMintAttribute {
                 mint: Owned(mint.mint.clone().to_string()),
-                attribute: Owned(attribute.attribute.to_string()),
+                attribute: Owned(attribute.attribute.clone()),
                 value: Owned(attribute.value.to_string()),
                 value_perc: attribute.value_perc.try_into()?,
             };

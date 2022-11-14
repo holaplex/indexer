@@ -3574,3 +3574,22 @@ pub struct DolphinStats1D<'a> {
     pub change_volume_1d: Option<i32>,
     pub change_listed_1d: Option<i32>,
 }
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[table_name = "attribute_groups"]
+#[allow(missing_docs)]
+pub struct AttributeGroup<'a> {
+    pub collection_id: Cow<'a, str>,
+    pub trait_type: Cow<'a, str>,
+    pub total_count: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[table_name = "attribute_group_variants"]
+#[allow(missing_docs)]
+pub struct AttributeGroupVariant<'a> {
+    pub collection_id: Cow<'a, str>,
+    pub trait_type: Cow<'a, str>,
+    pub value: Cow<'a, str>,
+    pub count: i64,
+}
