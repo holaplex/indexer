@@ -149,8 +149,8 @@ struct Opts {
     #[arg(long, env)]
     moonrank_auth: String,
 
-    #[arg(short, long, env, default_value_t = 32)]
-    threads: usize,
+    #[arg(long, short = 'j', env, default_value_t = 32)]
+    jobs: usize,
 
     #[command(flatten)]
     search: search_dispatch::Args,
@@ -181,7 +181,7 @@ fn main() {
 
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
-            .worker_threads(opts.threads)
+            .worker_threads(opts.jobs)
             .build()?;
 
         runtime.block_on(process(opts))
@@ -192,7 +192,7 @@ async fn process(opts: Opts) -> Result<()> {
     let Opts {
         moonrank_endpoint,
         moonrank_auth,
-        threads,
+        jobs,
         search,
         db,
         amqp_url,
@@ -242,7 +242,7 @@ async fn process(opts: Opts) -> Result<()> {
             http.clone(),
         ))
     }))
-    .buffer_unordered(threads)
+    .buffer_unordered(jobs)
     .collect::<Vec<_>>()
     .await;
 
