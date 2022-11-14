@@ -13,6 +13,7 @@ pub mod markers {
     pub struct TokenMint;
     pub struct GovernedAccount;
     pub struct GovernanceDelegate;
+    pub struct ProgramId;
 }
 
 pub use bigint::{I64, U64};
