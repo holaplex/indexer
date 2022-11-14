@@ -3,7 +3,7 @@ use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     db::{
         queries::{self, metadatas::CollectionNftOptions},
-        tables::{attributes, collection_mints, metadatas},
+        tables::attribute_groups,
     },
     pubkeys,
 };
@@ -254,17 +254,13 @@ impl Collection {
     pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
         let conn = context.shared.db.get()?;
 
-        let metadata_attributes: Vec<models::MetadataAttribute> = attributes::table
-            .inner_join(metadatas::table.on(attributes::metadata_address.eq(metadatas::address)))
-            .inner_join(
-                collection_mints::table.on(metadatas::mint_address.eq(collection_mints::mint)),
-            )
-            .filter(collection_mints::collection_id.eq(&self.id))
-            .select(attributes::all_columns)
+        let variants: Vec<models::AttributeGroup> = attribute_groups::table
+            .filter(attribute_groups::collection_id.eq(self.id.clone()))
+            .select(attribute_groups::all_columns)
             .load(&conn)
-            .context("Failed to load metadata attributes")?;
+            .context("failed to get attribute groups")?;
 
-        services::attributes::group(metadata_attributes)
+        services::attributes::group(variants)
     }
 
     #[graphql(
