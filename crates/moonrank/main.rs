@@ -24,7 +24,6 @@ use indexer_core::{
         tables::{attribute_groups, collection_mint_attributes, collection_mints, collections},
         Pool, PooledConnection,
     },
-    num_cpus,
     prelude::*,
     util::unix_timestamp_unsigned,
 };
@@ -150,6 +149,9 @@ struct Opts {
     #[arg(long, env)]
     moonrank_auth: String,
 
+    #[arg(short, long, env, default_value_t = 32)]
+    threads: usize,
+
     #[command(flatten)]
     search: search_dispatch::Args,
 
@@ -173,23 +175,24 @@ struct Opts {
 
 fn main() {
     indexer_core::run(|| {
+        let opts = Opts::parse();
+
+        debug!("{:#?}", opts);
+
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
-            .worker_threads(num_cpus::get())
+            .worker_threads(opts.threads)
             .build()?;
 
-        runtime.block_on(process())
+        runtime.block_on(process(opts))
     });
 }
 
-async fn process() -> Result<()> {
-    let opts = Opts::parse();
-
-    debug!("{:#?}", opts);
-
+async fn process(opts: Opts) -> Result<()> {
     let Opts {
         moonrank_endpoint,
         moonrank_auth,
+        threads,
         search,
         db,
         amqp_url,
@@ -239,7 +242,7 @@ async fn process() -> Result<()> {
             http.clone(),
         ))
     }))
-    .buffer_unordered(num_cpus::get())
+    .buffer_unordered(threads)
     .collect::<Vec<_>>()
     .await;
 
