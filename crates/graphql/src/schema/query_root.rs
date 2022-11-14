@@ -1451,8 +1451,8 @@ impl QueryRoot {
         #[graphql(description = "Filter on Community mints")] community_mints: Option<
             Vec<PublicKey<TokenMint>>,
         >,
-        limit: i32,
-        offset: i32,
+        #[graphql(description = "Limit for query")] limit: Option<i32>,
+        #[graphql(description = "Offset for query")] offset: Option<i32>,
     ) -> FieldResult<Vec<Realm>> {
         let conn = context.shared.db.get()?;
 
@@ -1467,8 +1467,8 @@ impl QueryRoot {
         }
 
         query
-            .limit(limit.try_into()?)
-            .offset(offset.try_into()?)
+            .limit(limit.unwrap_or(25).into())
+            .offset(offset.unwrap_or(0).into())
             .load::<models::Realm>(&conn)
             .context("Failed to load spl governance realms.")?
             .into_iter()
