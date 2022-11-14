@@ -6,3 +6,4 @@ create table attribute_groups(
     primary key (collection_id, trait_type, value)
 );
 
+create index on attribute_groups (collection_id);
