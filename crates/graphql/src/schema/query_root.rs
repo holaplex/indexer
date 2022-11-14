@@ -1451,14 +1451,9 @@ impl QueryRoot {
         #[graphql(description = "Filter on Community mints")] community_mints: Option<
             Vec<PublicKey<TokenMint>>,
         >,
+        limit: i32,
+        offset: i32,
     ) -> FieldResult<Vec<Realm>> {
-        if addresses.is_none() && community_mints.is_none() {
-            return Err(FieldError::new(
-                "You must supply atleast one filter",
-                graphql_value!({ "Filters": "addresses: Vec<PublicKey<Realm>>, communityMints: Vec<PublicKey<TokenMint>>" }),
-            ));
-        }
-
         let conn = context.shared.db.get()?;
 
         let mut query = realms::table.select(realms::all_columns).into_boxed();
@@ -1472,6 +1467,8 @@ impl QueryRoot {
         }
 
         query
+            .limit(limit.try_into()?)
+            .offset(offset.try_into()?)
             .load::<models::Realm>(&conn)
             .context("Failed to load spl governance realms.")?
             .into_iter()

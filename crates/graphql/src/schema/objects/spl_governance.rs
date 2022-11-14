@@ -8,7 +8,7 @@ use indexer_core::{
 };
 use objects::wallet::Wallet;
 use scalars::{
-    markers::{GovernanceDelegate, GovernedAccount, TokenMint},
+    markers::{GovernanceDelegate, GovernedAccount, ProgramId, TokenMint},
     PublicKey, I64, U64,
 };
 
@@ -251,6 +251,7 @@ pub struct Realm {
     pub voting_proposal_count: i32,
     pub authority: Option<PublicKey<Wallet>>,
     pub name: String,
+    pub program_id: Option<PublicKey<ProgramId>>,
 }
 
 #[graphql_object(Context = AppContext)]
@@ -280,6 +281,10 @@ impl Realm {
         &self.name
     }
 
+    pub fn program_id(&self) -> &Option<PublicKey<ProgramId>> {
+        &self.program_id
+    }
+
     pub async fn realm_config(&self, ctx: &AppContext) -> FieldResult<Option<RealmConfig>> {
         ctx.spl_realm_config_loader
             .load(self.address.clone())
@@ -298,6 +303,7 @@ impl<'a> TryFrom<models::Realm<'a>> for Realm {
             voting_proposal_count,
             authority,
             name,
+            program_id,
             ..
         }: models::Realm,
     ) -> Result<Self, Self::Error> {
@@ -308,6 +314,7 @@ impl<'a> TryFrom<models::Realm<'a>> for Realm {
             voting_proposal_count: voting_proposal_count.try_into()?,
             authority: authority.map(Into::into),
             name: name.to_string(),
+            program_id: program_id.map(Into::into),
         })
     }
 }
