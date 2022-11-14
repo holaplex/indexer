@@ -1425,8 +1425,8 @@ pub struct CollectedCollection {
     #[sql_type = "Int8"]
     pub nfts_owned: i64,
     /// The estimated value of the collection owend by the wallet
-    #[sql_type = "Int8"]
-    pub estimated_value: i64,
+    #[sql_type = "Numeric"]
+    pub estimated_value: BigDecimal,
 }
 
 /// A row in the `metadata_collection_keys` table
