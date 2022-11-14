@@ -6,8 +6,8 @@ use indexer_core::{
         sql_query,
         sql_types::Text,
         tables::{
-            attributes, auction_houses, bid_receipts, listing_receipts, listings,
-            metadata_collection_keys, metadata_jsons, metadatas,
+            auction_houses, bid_receipts, listing_receipts, listings, metadata_collection_keys,
+            metadata_jsons, metadatas,
         },
     },
     pubkeys,
@@ -16,12 +16,11 @@ use indexer_core::{
     uuid::Uuid,
 };
 use objects::{
-    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, attributes::AttributeGroup,
-    auction_house::AuctionHouse, collection::Collection, profile::TwitterProfile, wallet::Wallet,
+    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
+    collection::Collection, profile::TwitterProfile, wallet::Wallet,
 };
 use scalars::{PublicKey, U64};
 use serde_json::Value;
-use services;
 
 use super::prelude::*;
 use crate::schema::{
@@ -629,23 +628,6 @@ impl From<Nft> for CollectionNFT {
 impl CollectionNFT {
     fn nft(&self) -> &Nft {
         &self.0
-    }
-
-    pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
-        let conn = context.shared.db.get()?;
-
-        let metadata_attributes: Vec<models::MetadataAttribute> =
-            attributes::table
-                .inner_join(metadata_collection_keys::table.on(
-                    attributes::metadata_address.eq(metadata_collection_keys::metadata_address),
-                ))
-                .filter(metadata_collection_keys::collection_address.eq(&self.0.mint_address))
-                .filter(metadata_collection_keys::verified.eq(true))
-                .select(attributes::all_columns)
-                .load(&conn)
-                .context("Failed to load metadata attributes")?;
-
-        services::attributes::group(metadata_attributes)
     }
 
     pub async fn nfts(

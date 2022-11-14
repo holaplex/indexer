@@ -5,7 +5,7 @@ use objects::{
 };
 use scalars::PublicKey;
 use services;
-use tables::{attributes, metadata_creators};
+use tables::{attribute_groups, collection_mints, metadata_creators, metadatas};
 
 use super::prelude::*;
 
@@ -77,18 +77,26 @@ impl Creator {
     pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
         let conn = context.shared.db.get()?;
 
-        let metadata_attributes: Vec<models::MetadataAttribute> = attributes::table
+        let collection_id: String = metadata_creators::table
             .inner_join(
-                metadata_creators::table
-                    .on(attributes::metadata_address.eq(metadata_creators::metadata_address)),
+                metadatas::table.on(metadatas::address.eq(metadata_creators::metadata_address)),
             )
-            .filter(metadata_creators::creator_address.eq(&self.address))
+            .inner_join(
+                collection_mints::table.on(metadatas::mint_address.eq(collection_mints::mint)),
+            )
+            .filter(metadata_creators::creator_address.eq(self.address.clone()))
             .filter(metadata_creators::verified.eq(true))
-            .select(attributes::all_columns)
-            .load(&conn)
-            .context("Failed to load metadata attributes")?;
+            .select(collection_mints::collection_id)
+            .first(&conn)
+            .context("Failed to load collection id")?;
 
-        services::attributes::group(metadata_attributes)
+        let attribute_groups: Vec<models::AttributeGroup> = attribute_groups::table
+            .filter(attribute_groups::collection_id.eq(collection_id))
+            .select(attribute_groups::all_columns)
+            .load(&conn)
+            .context("Failed to load metadata attribute group")?;
+
+        services::attributes::group(attribute_groups)
     }
 
     pub async fn profile(&self, ctx: &AppContext) -> FieldResult<Option<TwitterProfile>> {
