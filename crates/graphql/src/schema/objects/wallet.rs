@@ -12,7 +12,7 @@ use objects::{
     nft::{Nft, NftCreator},
     profile::TwitterProfile,
 };
-use scalars::{markers::TokenMint, PublicKey, U64};
+use scalars::{markers::TokenMint, Numeric, PublicKey, U64};
 use tables::{associated_token_accounts, bids, graph_connections, wallet_total_rewards};
 
 use super::{ah_offer::Offer, prelude::*, reward_center::RewardCenter};
@@ -134,7 +134,7 @@ impl WalletNftCount {
 pub struct CollectedCollection {
     collection_id: String,
     nfts_owned: i32,
-    estimated_value: U64,
+    estimated_value: Numeric,
 }
 
 impl TryFrom<models::CollectedCollection> for CollectedCollection {
@@ -150,7 +150,7 @@ impl TryFrom<models::CollectedCollection> for CollectedCollection {
         Ok(Self {
             collection_id,
             nfts_owned: nfts_owned.try_into()?,
-            estimated_value: estimated_value.try_into()?,
+            estimated_value: estimated_value.into(),
         })
     }
 }
@@ -168,8 +168,8 @@ impl CollectedCollection {
         self.nfts_owned
     }
 
-    fn estimated_value(&self) -> U64 {
-        self.estimated_value
+    fn estimated_value(&self) -> &Numeric {
+        &self.estimated_value
     }
 }
 
