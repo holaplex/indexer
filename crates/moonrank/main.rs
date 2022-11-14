@@ -22,7 +22,7 @@ use indexer_core::{
         models::{self, Collection as DbCollection, CollectionMint, CollectionMintAttribute},
         select,
         tables::{attribute_groups, collection_mint_attributes, collection_mints, collections},
-        Pool,
+        Pool, PooledConnection,
     },
     num_cpus,
     prelude::*,
@@ -248,7 +248,6 @@ async fn process() -> Result<()> {
     Ok(())
 }
 
-#[allow(clippy::too_many_lines)]
 async fn upsert_collection_data(
     endpoint: String,
     auth: String,
@@ -323,22 +322,8 @@ async fn upsert_collection_data(
 
     for mint in mints_json.mints {
         let collection_id = collection_id.clone();
-        let values = CollectionMint {
-            collection_id: Owned(collection_id),
-            mint: Owned(mint.mint.clone().to_string()),
-            name: Owned(mint.name),
-            image: Owned(mint.image),
-            created_at: unix_timestamp_unsigned(mint.created)?,
-            rank: mint.rank.try_into()?,
-            rarity: mint.rarity.try_into()?,
-        };
 
-        insert_into(collection_mints::table)
-            .values(&values)
-            .on_conflict((collection_mints::collection_id, collection_mints::mint))
-            .do_update()
-            .set(&values)
-            .execute(&conn)?;
+        upsert_collection_mints(&conn, collection_id.clone(), mint.clone())?;
 
         delete(
             collection_mint_attributes::table
@@ -347,39 +332,7 @@ async fn upsert_collection_data(
         .execute(&conn)?;
 
         for attribute in mint.rank_explain {
-            let collection_id = values.collection_id.clone();
-
-            let times_seen: i64 = attribute.times_seen.try_into()?;
-
-            let attribute_group_variant_exists = select(exists(
-                attribute_groups::table.filter(
-                    attribute_groups::collection_id
-                        .eq(collection_id.clone())
-                        .and(attribute_groups::trait_type.eq(attribute.attribute.clone()))
-                        .and(attribute_groups::count.eq(times_seen)),
-                ),
-            ))
-            .get_result::<bool>(&conn)?;
-
-            if !attribute_group_variant_exists {
-                let attribute_group_variant = models::AttributeGroup {
-                    collection_id: collection_id.clone(),
-                    trait_type: Owned(attribute.attribute.clone()),
-                    value: Owned(attribute.value.clone()),
-                    count: attribute.times_seen.try_into()?,
-                };
-
-                insert_into(attribute_groups::table)
-                    .values(attribute_group_variant.clone())
-                    .on_conflict((
-                        attribute_groups::collection_id,
-                        attribute_groups::trait_type,
-                        attribute_groups::value,
-                    ))
-                    .do_update()
-                    .set(attribute_group_variant)
-                    .execute(&conn)?;
-            }
+            upsert_attribute_groups(&conn, collection_id.clone(), &attribute)?;
 
             let row = CollectionMintAttribute {
                 mint: Owned(mint.mint.clone().to_string()),
@@ -393,6 +346,72 @@ async fn upsert_collection_data(
                 .on_conflict_do_nothing()
                 .execute(&conn)?;
         }
+    }
+
+    Ok(())
+}
+
+fn upsert_collection_mints(
+    conn: &PooledConnection,
+    collection_id: String,
+    mint: Mint,
+) -> Result<()> {
+    let values = CollectionMint {
+        collection_id: Owned(collection_id),
+        mint: Owned(mint.mint),
+        name: Owned(mint.name),
+        image: Owned(mint.image),
+        created_at: unix_timestamp_unsigned(mint.created)?,
+        rank: mint.rank.try_into()?,
+        rarity: mint.rarity.try_into()?,
+    };
+
+    insert_into(collection_mints::table)
+        .values(&values)
+        .on_conflict((collection_mints::collection_id, collection_mints::mint))
+        .do_update()
+        .set(&values)
+        .execute(conn)
+        .context("failed to upsert collection mint")?;
+
+    Ok(())
+}
+
+fn upsert_attribute_groups(
+    conn: &PooledConnection,
+    collection_id: String,
+    attribute: &Attribute,
+) -> Result<()> {
+    let times_seen: i64 = attribute.times_seen.try_into()?;
+
+    let attribute_group_exists = select(exists(
+        attribute_groups::table.filter(
+            attribute_groups::collection_id
+                .eq(collection_id.clone())
+                .and(attribute_groups::trait_type.eq(attribute.attribute.clone()))
+                .and(attribute_groups::count.eq(times_seen)),
+        ),
+    ))
+    .get_result::<bool>(conn)?;
+
+    if !attribute_group_exists {
+        let attribute_group = models::AttributeGroup {
+            collection_id: Owned(collection_id),
+            trait_type: Owned(attribute.attribute.clone()),
+            value: Owned(attribute.value.clone()),
+            count: attribute.times_seen.try_into()?,
+        };
+
+        insert_into(attribute_groups::table)
+            .values(attribute_group.clone())
+            .on_conflict((
+                attribute_groups::collection_id,
+                attribute_groups::trait_type,
+                attribute_groups::value,
+            ))
+            .do_update()
+            .set(attribute_group)
+            .execute(conn)?;
     }
 
     Ok(())
