@@ -3486,16 +3486,6 @@ pub struct CollectionMint<'a> {
     pub rarity: BigDecimal,
 }
 
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
-#[diesel(treat_none_as_null = true)]
-#[allow(missing_docs)]
-pub struct CollectionMintAttribute<'a> {
-    pub mint: Cow<'a, str>,
-    pub attribute: Cow<'a, str>,
-    pub value: Cow<'a, str>,
-    pub value_perc: BigDecimal,
-}
-
 #[derive(Debug, Clone, Queryable, QueryableByName, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "dolphin_stats"]

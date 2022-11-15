@@ -18,9 +18,9 @@ use indexer_core::{
     clap,
     clap::Parser,
     db::{
-        self, delete, insert_into,
-        models::{self, Collection as DbCollection, CollectionMint, CollectionMintAttribute},
-        tables::{attribute_groups, collection_mint_attributes, collection_mints, collections},
+        self, insert_into,
+        models::{self, Collection as DbCollection, CollectionMint},
+        tables::{attribute_groups, collection_mints, collections},
         Pool, PooledConnection,
     },
     prelude::*,
@@ -327,26 +327,8 @@ async fn upsert_collection_data(
 
         upsert_collection_mints(&conn, collection_id.clone(), mint.clone())?;
 
-        delete(
-            collection_mint_attributes::table
-                .filter(collection_mint_attributes::mint.eq(mint.mint.to_string())),
-        )
-        .execute(&conn)?;
-
         for attribute in mint.rank_explain {
             upsert_attribute_groups(&conn, collection_id.clone(), &attribute)?;
-
-            let row = CollectionMintAttribute {
-                mint: Owned(mint.mint.clone().to_string()),
-                attribute: Owned(attribute.attribute.clone()),
-                value: Owned(attribute.value.to_string()),
-                value_perc: attribute.value_perc.try_into()?,
-            };
-
-            insert_into(collection_mint_attributes::table)
-                .values(&row)
-                .on_conflict_do_nothing()
-                .execute(&conn)?;
         }
     }
 

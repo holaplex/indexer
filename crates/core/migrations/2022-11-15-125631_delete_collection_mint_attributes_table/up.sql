@@ -1,0 +1,1 @@
+drop table collection_mint_attributes;
