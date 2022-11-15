@@ -20,7 +20,6 @@ use indexer_core::{
     db::{
         self, delete, insert_into,
         models::{self, Collection as DbCollection, CollectionMint, CollectionMintAttribute},
-        select,
         tables::{attribute_groups, collection_mint_attributes, collection_mints, collections},
         Pool, PooledConnection,
     },
@@ -385,37 +384,23 @@ fn upsert_attribute_groups(
     collection_id: String,
     attribute: &Attribute,
 ) -> Result<()> {
-    let times_seen: i64 = attribute.times_seen.try_into()?;
+    let attribute_group = models::AttributeGroup {
+        collection_id: Owned(collection_id),
+        trait_type: Owned(attribute.attribute.clone()),
+        value: Owned(attribute.value.clone()),
+        count: attribute.times_seen.try_into()?,
+    };
 
-    let attribute_group_exists = select(exists(
-        attribute_groups::table.filter(
-            attribute_groups::collection_id
-                .eq(collection_id.clone())
-                .and(attribute_groups::trait_type.eq(attribute.attribute.clone()))
-                .and(attribute_groups::count.eq(times_seen)),
-        ),
-    ))
-    .get_result::<bool>(conn)?;
-
-    if !attribute_group_exists {
-        let attribute_group = models::AttributeGroup {
-            collection_id: Owned(collection_id),
-            trait_type: Owned(attribute.attribute.clone()),
-            value: Owned(attribute.value.clone()),
-            count: attribute.times_seen.try_into()?,
-        };
-
-        insert_into(attribute_groups::table)
-            .values(attribute_group.clone())
-            .on_conflict((
-                attribute_groups::collection_id,
-                attribute_groups::trait_type,
-                attribute_groups::value,
-            ))
-            .do_update()
-            .set(attribute_group)
-            .execute(conn)?;
-    }
+    insert_into(attribute_groups::table)
+        .values(attribute_group.clone())
+        .on_conflict((
+            attribute_groups::collection_id,
+            attribute_groups::trait_type,
+            attribute_groups::value,
+        ))
+        .do_update()
+        .set(attribute_group)
+        .execute(conn)?;
 
     Ok(())
 }
