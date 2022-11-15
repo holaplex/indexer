@@ -149,7 +149,7 @@ struct Opts {
     #[arg(long, env)]
     moonrank_auth: String,
 
-    #[arg(long, short = 'j', env, default_value_t = 32)]
+    #[arg(long, short = 'j', env, default_value_t = 16)]
     jobs: usize,
 
     #[command(flatten)]
