@@ -1,1 +1,1 @@
-drop table collection_mint_attributes;
+drop table if exists collection_mint_attributes;
