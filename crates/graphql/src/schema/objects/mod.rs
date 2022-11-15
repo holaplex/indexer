@@ -21,6 +21,7 @@ pub mod profile;
 pub mod purchase_receipt;
 pub mod reward_center;
 pub mod reward_payout;
+pub mod solana_network;
 pub mod spl_governance;
 pub mod stats;
 pub mod store_creator;

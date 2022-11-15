@@ -57,6 +57,9 @@ struct Opts {
     #[arg(long, env)]
     dolphin_key: String,
 
+    #[arg(long, env)]
+    coingecko_endpoint: String,
+
     #[arg(long, env, use_value_delimiter(true))]
     follow_wallets_exclusions: Vec<String>,
 
@@ -96,6 +99,7 @@ pub(crate) struct SharedData {
     pub marketplaces_store_address_exclusions: Vec<String>,
     pub pre_query_search_limit: usize,
     pub dolphin_key: String,
+    pub coingecko_endpoint: String,
 }
 
 #[allow(clippy::unused_async)]
@@ -176,6 +180,7 @@ fn main() {
             search,
             solana_endpoint,
             dolphin_key,
+            coingecko_endpoint,
             follow_wallets_exclusions,
             featured_listings_auction_houses,
             featured_listings_seller_exclusions,
@@ -212,6 +217,7 @@ fn main() {
             marketplaces_store_address_exclusions,
             pre_query_search_limit,
             dolphin_key,
+            coingecko_endpoint,
         });
 
         let version_extension = "/v1";

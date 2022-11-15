@@ -24,6 +24,7 @@ use objects::{
     marketplace::Marketplace,
     nft::{CollectionNFT, MetadataJson, Nft, NftActivity, NftCount, NftCreator, NftsStats},
     profile::{ProfilesStats, TwitterProfile},
+    solana_network::SolanaNetwork,
     spl_governance::{
         Governance, Proposal, ProposalV2, Realm, SignatoryRecord, TokenOwnerRecord, VoteRecord,
     },
@@ -1475,6 +1476,10 @@ impl QueryRoot {
             .map(Realm::try_from)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
+    }
+
+    fn solana_network() -> SolanaNetwork {
+        SolanaNetwork
     }
 
     fn denylist() -> Denylist {
