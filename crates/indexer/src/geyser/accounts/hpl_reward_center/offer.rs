@@ -19,7 +19,7 @@ use indexer_core::{
     pubkeys, util,
     uuid::Uuid,
 };
-use mpl_auction_house::pda::find_auctioneer_trade_state_address;
+use mpl_auction_house::pda::find_public_bid_trade_state_address;
 use solana_program::pubkey::Pubkey;
 
 use super::super::Client;
@@ -97,12 +97,12 @@ pub(crate) async fn process(
                     .filter(metadatas::address.eq(row.metadata.clone()))
                     .first::<CurrentMetadataOwner>(db)?;
 
-                let (trade_state, trade_state_bump) = find_auctioneer_trade_state_address(
+                let (trade_state, trade_state_bump) = find_public_bid_trade_state_address(
                     &account_data.buyer,
                     &Pubkey::from_str(&auction_houses.address)?,
-                    &Pubkey::from_str(&current_metadata_owner.token_account_address)?,
                     &Pubkey::from_str(&auction_houses.treasury_mint)?,
                     &Pubkey::from_str(&current_metadata_owner.mint_address)?,
+                    account_data.price,
                     account_data.token_size,
                 );
 
