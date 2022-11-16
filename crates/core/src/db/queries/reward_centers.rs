@@ -36,10 +36,10 @@ where
 }
 
 const PAYOUTS_QUERY: &str = r"
-SELECT purchase_ticket, metadata, reward_center, buyer, buyer_reward, seller, seller_reward,
-created_at, slot, write_version,
+SELECT purchase_id, metadata, reward_center, buyer, buyer_reward, seller, seller_reward,
+created_at, reward_payouts.slot as slot, reward_payouts.write_version as write_version,
 bth.twitter_handle as buyer_twitter_handle,
-sth.twitter_handle as seller_twitter_handle,
+sth.twitter_handle as seller_twitter_handle
     FROM reward_payouts
     LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = reward_payouts.buyer)
     LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = reward_payouts.seller)

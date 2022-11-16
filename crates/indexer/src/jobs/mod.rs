@@ -16,7 +16,7 @@ pub enum MessageId {
 impl fmt::Display for MessageId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::RefreshTable(n) => write!(f, "refresh of cached table {}", n),
+            Self::RefreshTable(n) => write!(f, "refresh of cached table {n}"),
         }
     }
 }
@@ -36,8 +36,11 @@ pub async fn process_message(msg: Message) -> MessageResult<MessageId> {
     .map_err(|e| MessageError::new(e, id))
 }
 
+#[allow(unreachable_code)]
 async fn process_refresh(name: String) -> Result<()> {
     debug!("Refreshing table {:?}", name);
 
-    Ok(())
+    todo!("Not yet implemented!");
+
+    std::future::ready(Ok(())).await
 }

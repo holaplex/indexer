@@ -12,16 +12,17 @@ struct HttpProducers {
 
 /// Common arguments for Geyser indexer usage
 #[derive(Debug, clap::Args)]
+#[group(skip)]
 pub struct Args {
     /// Dialect API endpoint
-    #[clap(long, env, requires("dialect-api-key"))]
+    #[arg(long, env, requires("dialect_api_key"))]
     dialect_api_endpoint: Option<String>,
 
     /// Dialect API key
-    #[clap(long, env, requires("dialect-api-endpoint"))]
+    #[arg(long, env, requires("dialect_api_endpoint"))]
     dialect_api_key: Option<String>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     search: search_dispatch::Args,
 }
 
@@ -170,7 +171,7 @@ impl Client {
 
         trace!(
             "Dispatching {} to Dialect at {:?}",
-            serde_json::to_string_pretty(&msg).unwrap_or_else(|e| format!("{:?}", e)),
+            serde_json::to_string_pretty(&msg).unwrap_or_else(|e| format!("{e:?}")),
             endpoint
         );
 

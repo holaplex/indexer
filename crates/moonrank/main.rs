@@ -1,4 +1,13 @@
-#![allow(clippy::pedantic, clippy::cargo)]
+//! Collection data scraper using the Moonrank API
+
+#![deny(
+    clippy::disallowed_methods,
+    clippy::suspicious,
+    clippy::style,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
+#![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
 use std::collections::HashMap;
 
@@ -9,12 +18,11 @@ use indexer_core::{
     clap,
     clap::Parser,
     db::{
-        self, delete, insert_into,
-        models::{Collection as DbCollection, CollectionMint, CollectionMintAttribute},
-        tables::{collection_mint_attributes, collection_mints, collections},
-        Pool,
+        self, insert_into,
+        models::{self, Collection as DbCollection, CollectionMint},
+        tables::{attribute_groups, collection_mints, collections},
+        Pool, PooledConnection,
     },
-    num_cpus,
     prelude::*,
     util::unix_timestamp_unsigned,
 };
@@ -130,55 +138,60 @@ struct Attribute {
 }
 
 #[derive(Debug, Parser)]
+#[command(about, version, long_about = None)]
 struct Opts {
     /// MoonRank RPC endpoint
-    #[clap(long, env)]
+    #[arg(long, env)]
     moonrank_endpoint: String,
 
     /// MoonRank Authorization token
-    #[clap(long, env)]
+    #[arg(long, env)]
     moonrank_auth: String,
 
-    #[clap(flatten)]
+    #[arg(long, short = 'j', env, default_value_t = 16)]
+    jobs: usize,
+
+    #[command(flatten)]
     search: search_dispatch::Args,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     db: db::ConnectArgs,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     asset_proxy: AssetProxyArgs,
 
     /// The address of an AMQP server to connect to
-    #[clap(long, env)]
+    #[arg(long, env)]
     amqp_url: String,
 
     /// The ID of the indexer sending events to listen for
-    #[clap(long, env)]
+    #[arg(long, env)]
     sender: String,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     queue_suffix: Suffix,
 }
 
 fn main() {
     indexer_core::run(|| {
+        let opts = Opts::parse();
+
+        debug!("{:#?}", opts);
+
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
-            .worker_threads(num_cpus::get())
+            .worker_threads(opts.jobs)
             .build()?;
 
-        runtime.block_on(process())
+        runtime.block_on(process(opts))
     });
 }
 
-async fn process() -> Result<()> {
-    let opts = Opts::parse();
-
-    debug!("{:#?}", opts);
-
+async fn process(opts: Opts) -> Result<()> {
     let Opts {
         moonrank_endpoint,
         moonrank_auth,
+        jobs,
         search,
         db,
         amqp_url,
@@ -228,7 +241,7 @@ async fn process() -> Result<()> {
             http.clone(),
         ))
     }))
-    .buffer_unordered(num_cpus::get())
+    .buffer_unordered(jobs)
     .collect::<Vec<_>>()
     .await;
 
@@ -311,43 +324,65 @@ async fn upsert_collection_data(
 
     for mint in mints_json.mints {
         let collection_id = collection_id.clone();
-        let values = CollectionMint {
-            collection_id: Owned(collection_id),
-            mint: Owned(mint.mint.clone().to_string()),
-            name: Owned(mint.name),
-            image: Owned(mint.image),
-            created_at: unix_timestamp_unsigned(mint.created)?,
-            rank: mint.rank.try_into()?,
-            rarity: mint.rarity.try_into()?,
-        };
 
-        insert_into(collection_mints::table)
-            .values(&values)
-            .on_conflict((collection_mints::collection_id, collection_mints::mint))
-            .do_update()
-            .set(&values)
-            .execute(&conn)?;
-
-        delete(
-            collection_mint_attributes::table
-                .filter(collection_mint_attributes::mint.eq(mint.mint.to_string())),
-        )
-        .execute(&conn)?;
+        upsert_collection_mints(&conn, collection_id.clone(), mint.clone())?;
 
         for attribute in mint.rank_explain {
-            let row = CollectionMintAttribute {
-                mint: Owned(mint.mint.clone().to_string()),
-                attribute: Owned(attribute.attribute.to_string()),
-                value: Owned(attribute.value.to_string()),
-                value_perc: attribute.value_perc.try_into()?,
-            };
-
-            insert_into(collection_mint_attributes::table)
-                .values(&row)
-                .on_conflict_do_nothing()
-                .execute(&conn)?;
+            upsert_attribute_groups(&conn, collection_id.clone(), &attribute)?;
         }
     }
+
+    Ok(())
+}
+
+fn upsert_collection_mints(
+    conn: &PooledConnection,
+    collection_id: String,
+    mint: Mint,
+) -> Result<()> {
+    let values = CollectionMint {
+        collection_id: Owned(collection_id),
+        mint: Owned(mint.mint),
+        name: Owned(mint.name),
+        image: Owned(mint.image),
+        created_at: unix_timestamp_unsigned(mint.created)?,
+        rank: mint.rank.try_into()?,
+        rarity: mint.rarity.try_into()?,
+    };
+
+    insert_into(collection_mints::table)
+        .values(&values)
+        .on_conflict((collection_mints::collection_id, collection_mints::mint))
+        .do_update()
+        .set(&values)
+        .execute(conn)
+        .context("failed to upsert collection mint")?;
+
+    Ok(())
+}
+
+fn upsert_attribute_groups(
+    conn: &PooledConnection,
+    collection_id: String,
+    attribute: &Attribute,
+) -> Result<()> {
+    let attribute_group = models::AttributeGroup {
+        collection_id: Owned(collection_id),
+        trait_type: Owned(attribute.attribute.clone()),
+        value: Owned(attribute.value.clone()),
+        count: attribute.times_seen.try_into()?,
+    };
+
+    insert_into(attribute_groups::table)
+        .values(attribute_group.clone())
+        .on_conflict((
+            attribute_groups::collection_id,
+            attribute_groups::trait_type,
+            attribute_groups::value,
+        ))
+        .do_update()
+        .set(attribute_group)
+        .execute(conn)?;
 
     Ok(())
 }

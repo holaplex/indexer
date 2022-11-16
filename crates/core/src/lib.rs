@@ -1,7 +1,7 @@
 //! Core components for the `holaplex-indexer` family of crates.
 
 #![deny(
-    clippy::disallowed_method,
+    clippy::disallowed_methods,
     clippy::suspicious,
     clippy::style,
     missing_debug_implementations,
@@ -9,6 +9,7 @@
 )]
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 #![feature(bound_map, iter_intersperse)]
+#![recursion_limit = "256"]
 
 // TODO: #[macro_use] is somewhat deprecated, but diesel still relies on it
 #[cfg(feature = "db")]
@@ -85,11 +86,11 @@ fn dotenv(name: impl AsRef<Path>) -> Result<Option<PathBuf>, dotenv::Error> {
 #[derive(Debug, Clone, Copy, clap::Args)]
 pub struct ServerOpts {
     /// The address to bind to
-    #[clap(long = "addr", default_value = "0.0.0.0:3000", env)]
+    #[arg(long = "addr", default_value = "0.0.0.0:3000", env)]
     address: SocketAddr,
 
     /// Overrides the port of the provided binding address
-    #[clap(short, long, env)]
+    #[arg(short, long, env)]
     port: Option<u16>,
 }
 
@@ -126,7 +127,7 @@ pub fn run(main: impl FnOnce() -> Result<()>) -> ! {
     .try_for_each(|p| {
         dotenv(p)
             .map(|_| ())
-            .with_context(|| format!("Failed to load .env file {:?}", p))
+            .with_context(|| format!("Failed to load .env file {p:?}"))
     })
     .expect("Failed to load .env files");
 

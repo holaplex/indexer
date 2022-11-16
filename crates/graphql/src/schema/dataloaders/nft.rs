@@ -1,4 +1,4 @@
-use indexer_core::db::queries;
+use indexer_core::db::{queries, tables::last_sold_metadatas};
 use objects::{
     collection::Collection,
     listing_receipt::ListingReceipt,
@@ -12,7 +12,7 @@ use tables::{
 };
 
 use super::prelude::*;
-use crate::schema::scalars::I64;
+use crate::schema::{objects::nft::LastSale, scalars::I64};
 
 #[async_trait]
 impl TryBatchFn<PublicKey<Nft>, Vec<NftAttribute>> for Batcher {
@@ -85,6 +85,27 @@ impl TryBatchFn<PublicKey<TokenMint>, Option<MoonrankRank>> for Batcher {
         Ok(rows
             .into_iter()
             .map(|(mint, rank)| (mint, MoonrankRank::from(rank)))
+            .batch(addresses))
+    }
+}
+
+#[async_trait]
+impl TryBatchFn<PublicKey<Nft>, Option<LastSale>> for Batcher {
+    async fn load(
+        &mut self,
+        addresses: &[PublicKey<Nft>],
+    ) -> TryBatchMap<PublicKey<Nft>, Option<LastSale>> {
+        let conn = self.db()?;
+
+        let rows: Vec<models::LastSale> = last_sold_metadatas::table
+            .filter(last_sold_metadatas::metadata.eq(any(addresses)))
+            .select(last_sold_metadatas::all_columns)
+            .load(&conn)
+            .context("Failed to load NFT's last sale")?;
+
+        Ok(rows
+            .into_iter()
+            .map(|last_sale| (last_sale.metadata.clone(), last_sale.try_into()))
             .batch(addresses))
     }
 }

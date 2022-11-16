@@ -120,6 +120,8 @@ All services will need to be configured to run with the same settings that the
 Geyser plugin was configured with, otherwise they will receive no messages or
 simply fail to start.
 
+i.e :  if your  geyser config json has `"network": "mainnet"` and `"startup": null`, then the exchange name will be `mainnet.startup-all.accounts` and to connect to it you'll need to pass `--network mainnet` `--startup all` to the geyser-consumer binary (or put `NETWORK=mainnet` and `STARTUP=all` in `.env.local`)
+
 ## Running the GraphQL Server
 
 ### Configuration

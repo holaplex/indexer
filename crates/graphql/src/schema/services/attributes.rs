@@ -7,39 +7,35 @@ use objects::attributes::{AttributeGroup, AttributeVariant};
 use super::prelude::*;
 
 /// groups metadata attributes into attribute groups
-pub fn group(
-    metadata_attributes: Vec<models::MetadataAttribute>,
-) -> FieldResult<Vec<AttributeGroup>> {
+pub fn group(metadata_attributes: Vec<models::AttributeGroup>) -> FieldResult<Vec<AttributeGroup>> {
     Ok(metadata_attributes
         .into_iter()
         .try_fold(
             HashMap::new(),
             |mut groups,
-             models::MetadataAttribute {
-                 trait_type, value, ..
+             models::AttributeGroup {
+                 trait_type,
+                 value,
+                 count,
+                 ..
              }| {
-                *groups
-                    .entry(
-                        trait_type
-                            .ok_or_else(|| anyhow!("Missing trait type from attribute"))?
-                            .into_owned(),
-                    )
+                groups
+                    .entry(trait_type)
                     .or_insert_with(HashMap::new)
                     .entry(value)
-                    .or_insert(0) += 1;
+                    .or_insert(count);
 
                 Result::<_>::Ok(groups)
             },
         )?
         .into_iter()
         .map(|(name, vars)| AttributeGroup {
-            name,
+            name: name.to_string(),
             variants: vars
                 .into_iter()
-                .map(|(name, count)| {
-                    let name = name.map_or_else(String::new, Cow::into_owned);
-
-                    AttributeVariant { name, count }
+                .map(|(name, count)| AttributeVariant {
+                    name: name.to_string(),
+                    count: count.try_into().unwrap_or_default(),
                 })
                 .sorted()
                 .collect(),

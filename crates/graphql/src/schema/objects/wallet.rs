@@ -1,5 +1,6 @@
+use enums::{NftSort, OfferType, OrderDirection};
 use indexer_core::{
-    bigdecimal::BigDecimal,
+    bigdecimal::{BigDecimal, ToPrimitive},
     db::queries::{self, metadatas::WalletNftOptions},
     pubkeys,
     uuid::Uuid,
@@ -11,11 +12,10 @@ use objects::{
     nft::{Nft, NftCreator},
     profile::TwitterProfile,
 };
-use scalars::{markers::TokenMint, PublicKey, U64};
+use scalars::{markers::TokenMint, Numeric, PublicKey, U64};
 use tables::{associated_token_accounts, bids, graph_connections, wallet_total_rewards};
 
 use super::{ah_offer::Offer, prelude::*, reward_center::RewardCenter};
-use crate::schema::enums::{NftSort, OfferType, OrderDirection};
 
 #[derive(Debug, Clone)]
 pub struct Wallet {
@@ -134,7 +134,7 @@ impl WalletNftCount {
 pub struct CollectedCollection {
     collection_id: String,
     nfts_owned: i32,
-    estimated_value: U64,
+    estimated_value: Numeric,
 }
 
 impl TryFrom<models::CollectedCollection> for CollectedCollection {
@@ -150,7 +150,7 @@ impl TryFrom<models::CollectedCollection> for CollectedCollection {
         Ok(Self {
             collection_id,
             nfts_owned: nfts_owned.try_into()?,
-            estimated_value: estimated_value.try_into()?,
+            estimated_value: estimated_value.into(),
         })
     }
 }
@@ -168,8 +168,8 @@ impl CollectedCollection {
         self.nfts_owned
     }
 
-    fn estimated_value(&self) -> U64 {
-        self.estimated_value
+    fn estimated_value(&self) -> &Numeric {
+        &self.estimated_value
     }
 }
 
@@ -430,7 +430,7 @@ impl Wallet {
     ) -> FieldResult<U64> {
         let db_conn = ctx.shared.db.get()?;
 
-        let wallet_total_rewards = wallet_total_rewards::table
+        let wallet_total_reward = wallet_total_rewards::table
             .select(wallet_total_rewards::total_reward)
             .filter(
                 wallet_total_rewards::reward_center_address
@@ -438,9 +438,11 @@ impl Wallet {
                     .and(wallet_total_rewards::wallet_address.eq(&self.address)),
             )
             .first::<BigDecimal>(&db_conn)
-            .context("Failed to load total rewards")?;
+            .optional()
+            .context("Failed to get wallet total reward")?
+            .unwrap_or_default();
 
-        Ok(wallet_total_rewards.try_into().unwrap_or_default())
+        Ok(wallet_total_reward.to_u64().unwrap_or_default().into())
     }
 }
 
