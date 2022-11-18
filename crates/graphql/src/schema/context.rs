@@ -38,7 +38,7 @@ use scalars::{
     PublicKey,
 };
 
-use super::prelude::*;
+use super::{objects::nft::LastSale, prelude::*};
 
 #[derive(Clone)]
 pub struct AppContext {
@@ -90,6 +90,7 @@ pub struct AppContext {
     pub nft_by_mint_loader: Loader<PublicKey<TokenMint>, Option<Nft>>,
     pub nft_moonrank_collection_loader: Loader<PublicKey<TokenMint>, Option<Collection>>,
     pub nft_moonrank_rank_loader: Loader<PublicKey<TokenMint>, Option<MoonrankRank>>,
+    pub nft_last_sale_loader: Loader<PublicKey<Nft>, Option<LastSale>>,
     pub metaplex_certified_collection_loader: Loader<PublicKey<Nft>, Option<CollectionNFT>>,
     pub generic_collection_loader:
         Loader<objects::collection::CollectionId, Option<objects::collection::Collection>>,
@@ -172,6 +173,7 @@ impl AppContext {
             nft_by_mint_loader: Loader::new(batcher.clone()),
             nft_moonrank_collection_loader: Loader::new(batcher.clone()),
             nft_moonrank_rank_loader: Loader::new(batcher.clone()),
+            nft_last_sale_loader: Loader::new(batcher.clone()),
             generic_collection_loader: Loader::new(batcher.clone()),
             metaplex_certified_collection_loader: Loader::new(batcher.clone()),
             nft_creators_loader: Loader::new(batcher.clone()),

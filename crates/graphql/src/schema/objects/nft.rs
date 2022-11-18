@@ -6,8 +6,8 @@ use indexer_core::{
         sql_query,
         sql_types::Text,
         tables::{
-            attributes, auction_houses, bid_receipts, listing_receipts, listings,
-            metadata_collection_keys, metadata_jsons, metadatas,
+            auction_houses, bid_receipts, listing_receipts, listings, metadata_collection_keys,
+            metadata_jsons, metadatas,
         },
     },
     pubkeys,
@@ -16,12 +16,11 @@ use indexer_core::{
     uuid::Uuid,
 };
 use objects::{
-    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, attributes::AttributeGroup,
-    auction_house::AuctionHouse, collection::Collection, profile::TwitterProfile, wallet::Wallet,
+    ah_listing::AhListing, ah_offer::Offer, ah_purchase::Purchase, auction_house::AuctionHouse,
+    collection::Collection, profile::TwitterProfile, wallet::Wallet,
 };
 use scalars::{PublicKey, U64};
 use serde_json::Value;
-use services;
 
 use super::prelude::*;
 use crate::schema::{
@@ -310,6 +309,55 @@ impl NftActivity {
 }
 
 #[derive(Debug, Clone)]
+pub struct LastSale {
+    pub metadata: String,
+    pub purchase_id: Option<Uuid>,
+    pub price: Option<U64>,
+    pub created_at: Option<DateTime<Utc>>,
+}
+
+impl TryFrom<models::LastSale> for LastSale {
+    type Error = std::num::TryFromIntError;
+
+    fn try_from(
+        models::LastSale {
+            metadata,
+            purchase_id,
+            price,
+            created_at,
+        }: models::LastSale,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            metadata,
+            purchase_id,
+            price: price.map(U64::try_from).transpose()?,
+            created_at: created_at.map(|c| DateTime::from_utc(c, Utc)),
+        })
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl LastSale {
+    pub fn price(&self) -> Option<U64> {
+        self.price
+    }
+
+    pub fn created_at(&self) -> Option<DateTime<Utc>> {
+        self.created_at
+    }
+
+    pub async fn purchase(&self, ctx: &AppContext) -> FieldResult<Option<Purchase>> {
+        let Some(purchase_id) = self.purchase_id else {
+            return Ok(None);
+        };
+        ctx.purchase_loader
+            .load(purchase_id)
+            .await
+            .map_err(Into::into)
+    }
+}
+
+#[derive(Debug, Clone)]
 /// An NFT
 pub struct Nft {
     pub address: String,
@@ -360,11 +408,11 @@ impl TryFrom<models::Nft> for Nft {
             primary_sale_happened,
             update_authority_address,
             uri,
-            description: description.unwrap_or_else(String::new),
-            image: image.unwrap_or_else(String::new),
+            description: description.unwrap_or_default(),
+            image: image.unwrap_or_default(),
             animation_url,
             external_url,
-            category: category.unwrap_or_else(String::new),
+            category: category.unwrap_or_default(),
             model,
             slot: slot.map(TryInto::try_into).transpose()?,
         })
@@ -558,6 +606,13 @@ If no value is provided, it will return XSmall")))]
             .await?
             .map(|dataloaders::nft::MoonrankRank(rank)| rank))
     }
+
+    pub async fn last_sale(&self, ctx: &AppContext) -> FieldResult<Option<LastSale>> {
+        ctx.nft_last_sale_loader
+            .load(self.address.clone().into())
+            .await
+            .map_err(Into::into)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -573,23 +628,6 @@ impl From<Nft> for CollectionNFT {
 impl CollectionNFT {
     fn nft(&self) -> &Nft {
         &self.0
-    }
-
-    pub fn attribute_groups(&self, context: &AppContext) -> FieldResult<Vec<AttributeGroup>> {
-        let conn = context.shared.db.get()?;
-
-        let metadata_attributes: Vec<models::MetadataAttribute> =
-            attributes::table
-                .inner_join(metadata_collection_keys::table.on(
-                    attributes::metadata_address.eq(metadata_collection_keys::metadata_address),
-                ))
-                .filter(metadata_collection_keys::collection_address.eq(&self.0.mint_address))
-                .filter(metadata_collection_keys::verified.eq(true))
-                .select(attributes::all_columns)
-                .load(&conn)
-                .context("Failed to load metadata attributes")?;
-
-        services::attributes::group(metadata_attributes)
     }
 
     pub async fn nfts(

@@ -488,6 +488,26 @@ pub struct NftActivity {
     pub activity_type: String,
 }
 
+/// Last sold date and price of an nft
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct LastSale {
+    /// Nft metadata
+    #[sql_type = "VarChar"]
+    pub metadata: String,
+
+    /// Purchase id of last sale
+    #[sql_type = "Nullable<diesel::sql_types::Uuid>"]
+    pub purchase_id: Option<Uuid>,
+
+    /// The price of sale
+    #[sql_type = "Nullable<Int8>"]
+    pub price: Option<i64>,
+
+    /// Sale created time
+    #[sql_type = "Nullable<Timestamp>"]
+    pub created_at: Option<NaiveDateTime>,
+}
+
 /// A row in the `collection_trends` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset, QueryableByName)]
 #[table_name = "collection_trends"]
@@ -1405,8 +1425,8 @@ pub struct CollectedCollection {
     #[sql_type = "Int8"]
     pub nfts_owned: i64,
     /// The estimated value of the collection owend by the wallet
-    #[sql_type = "Int8"]
-    pub estimated_value: i64,
+    #[sql_type = "Numeric"]
+    pub estimated_value: BigDecimal,
 }
 
 /// A row in the `metadata_collection_keys` table
@@ -2025,7 +2045,7 @@ pub struct SmartWalletOwner<'a> {
     pub smart_wallet_address: Cow<'a, str>,
     /// Owners of the [SmartWallet].
     pub owner_address: Cow<'a, str>,
-    /// Position of owner in vec<Owners Pubkey>
+    /// Position of owner in `Vec<Owners Pubkey>`
     pub index: i64,
 }
 
@@ -3466,16 +3486,6 @@ pub struct CollectionMint<'a> {
     pub rarity: BigDecimal,
 }
 
-#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
-#[diesel(treat_none_as_null = true)]
-#[allow(missing_docs)]
-pub struct CollectionMintAttribute<'a> {
-    pub mint: Cow<'a, str>,
-    pub attribute: Cow<'a, str>,
-    pub value: Cow<'a, str>,
-    pub value_perc: BigDecimal,
-}
-
 #[derive(Debug, Clone, Queryable, QueryableByName, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[table_name = "dolphin_stats"]
@@ -3483,42 +3493,42 @@ pub struct CollectionMintAttribute<'a> {
 pub struct DolphinStats<'a> {
     #[sql_type = "VarChar"]
     pub collection_symbol: Cow<'a, str>,
-    #[sql_type = "BigInt"]
-    pub floor_1d: i64,
-    #[sql_type = "BigInt"]
-    pub floor_7d: i64,
-    #[sql_type = "BigInt"]
-    pub floor_30d: i64,
+    #[sql_type = "Numeric"]
+    pub floor_1d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub floor_7d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub floor_30d: BigDecimal,
     #[sql_type = "BigInt"]
     pub listed_1d: i64,
     #[sql_type = "BigInt"]
     pub listed_7d: i64,
     #[sql_type = "BigInt"]
     pub listed_30d: i64,
-    #[sql_type = "BigInt"]
-    pub volume_1d: i64,
-    #[sql_type = "BigInt"]
-    pub volume_7d: i64,
-    #[sql_type = "BigInt"]
-    pub volume_30d: i64,
-    #[sql_type = "BigInt"]
-    pub last_floor_1d: i64,
-    #[sql_type = "BigInt"]
-    pub last_floor_7d: i64,
-    #[sql_type = "BigInt"]
-    pub last_floor_30d: i64,
+    #[sql_type = "Numeric"]
+    pub volume_1d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub volume_7d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub volume_30d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub last_floor_1d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub last_floor_7d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub last_floor_30d: BigDecimal,
     #[sql_type = "BigInt"]
     pub last_listed_1d: i64,
     #[sql_type = "BigInt"]
     pub last_listed_7d: i64,
     #[sql_type = "BigInt"]
     pub last_listed_30d: i64,
-    #[sql_type = "BigInt"]
-    pub last_volume_1d: i64,
-    #[sql_type = "BigInt"]
-    pub last_volume_7d: i64,
-    #[sql_type = "BigInt"]
-    pub last_volume_30d: i64,
+    #[sql_type = "Numeric"]
+    pub last_volume_1d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub last_volume_7d: BigDecimal,
+    #[sql_type = "Numeric"]
+    pub last_volume_30d: BigDecimal,
     #[sql_type = "Nullable<Int4>"]
     pub change_floor_1d: Option<i32>,
     #[sql_type = "Nullable<Int4>"]
@@ -3544,13 +3554,23 @@ pub struct DolphinStats<'a> {
 #[allow(missing_docs)]
 pub struct DolphinStats1D<'a> {
     pub collection_symbol: Cow<'a, str>,
-    pub floor_1d: i64,
+    pub floor_1d: BigDecimal,
     pub listed_1d: i64,
-    pub volume_1d: i64,
-    pub last_floor_1d: i64,
+    pub volume_1d: BigDecimal,
+    pub last_floor_1d: BigDecimal,
     pub last_listed_1d: i64,
-    pub last_volume_1d: i64,
+    pub last_volume_1d: BigDecimal,
     pub change_floor_1d: Option<i32>,
     pub change_volume_1d: Option<i32>,
     pub change_listed_1d: Option<i32>,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[table_name = "attribute_groups"]
+#[allow(missing_docs)]
+pub struct AttributeGroup<'a> {
+    pub collection_id: Cow<'a, str>,
+    pub trait_type: Cow<'a, str>,
+    pub value: Cow<'a, str>,
+    pub count: i64,
 }

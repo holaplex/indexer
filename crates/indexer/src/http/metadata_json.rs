@@ -117,6 +117,7 @@ struct FetchJsonExtra {
     raw: Value,
 }
 
+#[allow(clippy::large_enum_variant)]
 enum MetadataJsonResult {
     Full(MetadataJson),
     Minimal {
@@ -162,8 +163,7 @@ async fn fetch_json(
     let raw =
         serde_json::from_slice(&bytes).context("Metadata JSON response was not valid JSON")?;
 
-    let full_err;
-    match serde_json::from_slice(&bytes) {
+    let full_err = match serde_json::from_slice(&bytes) {
         Ok(f) => return Ok((MetadataJsonResult::Full(f), FetchJsonExtra { url, raw })),
         Err(e) => {
             trace!(
@@ -171,7 +171,7 @@ async fn fetch_json(
                 url.as_str(),
                 e
             );
-            full_err = e;
+            e
         },
     };
 
@@ -282,10 +282,6 @@ async fn process_full(
         slot_info,
     }: MetadataJsonParams<'_>,
 ) -> Result<()> {
-    dispatch_metadata_document(client, false, addr.clone())
-        .await
-        .context("Failed to dispatch upsert metadata document job")?;
-
     let MetadataJson {
         name,
         description,
@@ -324,29 +320,36 @@ async fn process_full(
 
     client
         .db()
-        .run(move |db| {
-            insert_into(metadata_jsons::table)
-                .values(&row)
-                .on_conflict(metadata_jsons::metadata_address)
-                .do_update()
-                .set(&row)
-                .execute(db)
-                .context("Failed to insert metadata")?;
+        .run({
+            let addr = addr.clone();
+            move |db| {
+                insert_into(metadata_jsons::table)
+                    .values(&row)
+                    .on_conflict(metadata_jsons::metadata_address)
+                    .do_update()
+                    .set(&row)
+                    .execute(db)
+                    .context("Failed to insert metadata")?;
 
-            // TODO: if the row updates the following functions do not clear the
-            //       previous rows from the old metadata JSON:
+                // TODO: if the row updates the following functions do not clear the
+                //       previous rows from the old metadata JSON:
 
-            process_files(db, &addr, files, slot_info)?;
-            process_attributes(
-                db,
-                &addr,
-                first_verified_creator.as_deref(),
-                json.attributes,
-                slot_info,
-            )?;
-            process_collection(db, &addr, json.collection, slot_info)
+                process_files(db, &addr, files, slot_info)?;
+                process_attributes(
+                    db,
+                    &addr,
+                    first_verified_creator.as_deref(),
+                    json.attributes,
+                    slot_info,
+                )?;
+                process_collection(db, &addr, json.collection, slot_info)
+            }
         })
+        .await?;
+
+    dispatch_metadata_document(client, false, addr.clone())
         .await
+        .context("Failed to dispatch upsert metadata document job")
 }
 
 async fn process_minimal(
@@ -370,10 +373,6 @@ async fn process_minimal(
         })
     }
 
-    dispatch_metadata_document(client, false, addr.clone())
-        .await
-        .context("Failed to dispatch upsert metadata document job")?;
-
     let MetadataJsonMinimal {
         name,
         description,
@@ -395,7 +394,7 @@ async fn process_minimal(
         external_url: to_opt_string(&external_url),
         category: to_opt_string(&category),
         raw_content: Owned(raw),
-        model: Some(Owned(format!("minimal ({})", full_err))),
+        model: Some(Owned(format!("minimal ({full_err})"))),
         fetch_uri: Owned(url.to_string()),
         slot,
         write_version,
@@ -415,7 +414,9 @@ async fn process_minimal(
         .await
         .context("Failed to insert minimal metadata")?;
 
-    Ok(())
+    dispatch_metadata_document(client, false, addr)
+        .await
+        .context("Failed to dispatch upsert metadata document job")
 }
 
 fn process_files(
@@ -424,7 +425,7 @@ fn process_files(
     files: Option<Vec<File>>,
     slot_info: SlotInfo,
 ) -> Result<()> {
-    for File { uri, ty } in files.unwrap_or_else(Vec::new) {
+    for File { uri, ty } in files.unwrap_or_default() {
         let (uri, ty) = if let Some(v) = uri.zip(ty) {
             v
         } else {
@@ -473,7 +474,7 @@ fn process_attributes(
         delete(attributes::table.filter(attributes::metadata_address.eq(addr))).execute(db)?;
     }
 
-    for Attribute { trait_type, value } in attributes.unwrap_or_else(Vec::new) {
+    for Attribute { trait_type, value } in attributes.unwrap_or_default() {
         let row = MetadataAttributeWrite {
             metadata_address: Borrowed(addr),
             trait_type: trait_type.map(Owned),

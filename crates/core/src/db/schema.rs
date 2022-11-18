@@ -18,6 +18,19 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
 
+    attribute_groups (collection_id, trait_type, value) {
+        collection_id -> Text,
+        trait_type -> Text,
+        value -> Text,
+        count -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
+
     attributes (id) {
         metadata_address -> Varchar,
         value -> Nullable<Text>,
@@ -513,19 +526,6 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
 
-    collection_mint_attributes (mint, attribute, value) {
-        mint -> Varchar,
-        attribute -> Text,
-        value -> Text,
-        value_perc -> Numeric,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-
     collection_mints (collection_id, mint) {
         collection_id -> Text,
         mint -> Varchar,
@@ -660,24 +660,24 @@ table! {
 
     dolphin_stats (collection_symbol) {
         collection_symbol -> Text,
-        floor_1d -> Int8,
-        floor_7d -> Int8,
-        floor_30d -> Int8,
+        floor_1d -> Numeric,
+        floor_7d -> Numeric,
+        floor_30d -> Numeric,
         listed_1d -> Int8,
         listed_7d -> Int8,
         listed_30d -> Int8,
-        volume_1d -> Int8,
-        volume_7d -> Int8,
-        volume_30d -> Int8,
-        last_floor_1d -> Int8,
-        last_floor_7d -> Int8,
-        last_floor_30d -> Int8,
+        volume_1d -> Numeric,
+        volume_7d -> Numeric,
+        volume_30d -> Numeric,
+        last_floor_1d -> Numeric,
+        last_floor_7d -> Numeric,
+        last_floor_30d -> Numeric,
         last_listed_1d -> Int8,
         last_listed_7d -> Int8,
         last_listed_30d -> Int8,
-        last_volume_1d -> Int8,
-        last_volume_7d -> Int8,
-        last_volume_30d -> Int8,
+        last_volume_1d -> Numeric,
+        last_volume_7d -> Numeric,
+        last_volume_30d -> Numeric,
         change_floor_1d -> Nullable<Int4>,
         change_floor_7d -> Nullable<Int4>,
         change_floor_30d -> Nullable<Int4>,
@@ -2288,6 +2288,7 @@ joinable!(realm_configs -> realms (realm_address));
 
 allow_tables_to_appear_in_same_query!(
     associated_token_accounts,
+    attribute_groups,
     attributes,
     auction_caches,
     auction_datas,
@@ -2315,7 +2316,6 @@ allow_tables_to_appear_in_same_query!(
     cardinal_token_manager_invalidators,
     cardinal_token_managers,
     cardinal_use_invalidators,
-    collection_mint_attributes,
     collection_mints,
     collection_stats,
     collection_trends,

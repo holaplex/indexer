@@ -34,17 +34,18 @@ pub struct MRCollectionDocument {
 }
 
 /// Arguments to build the ``search_dispatch`` client
-#[derive(Debug, Clone, clap::Parser)]
+#[derive(Debug, Clone, clap::Args)]
+#[group(skip)]
 pub struct Args {
     /// Pass this flag to run backfill search upsert jobs
     ///
     /// Be aware that this can have severe performance implications.
-    #[clap(long, env)]
+    #[arg(long, env)]
     backfill_search: bool,
 
     /// Meilisearch arguments
     /// Contains Key and URL
-    #[clap(flatten)]
+    #[command(flatten)]
     search: meilisearch::Args,
 }
 

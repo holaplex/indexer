@@ -13,7 +13,7 @@ pub fn duration_hhmmssfff(duration: chrono::Duration) -> String {
 
     let h = duration.num_hours();
     if h > 0 {
-        write!(out, "{:02}:", h).unwrap();
+        write!(out, "{h:02}:").unwrap();
     }
 
     write!(

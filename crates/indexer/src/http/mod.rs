@@ -23,8 +23,8 @@ pub enum MessageId {
 impl fmt::Display for MessageId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::MetadataJson(k) => write!(f, "JSON for metadata account {}", k),
-            Self::StoreConfig(k) => write!(f, "store config at {}", k),
+            Self::MetadataJson(k) => write!(f, "JSON for metadata account {k}"),
+            Self::StoreConfig(k) => write!(f, "store config at {k}"),
         }
     }
 }

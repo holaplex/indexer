@@ -16,7 +16,7 @@ fn to_bytes<T: std::fmt::Display, W: Write, N: FnOnce(&T) -> bool>(
 ) -> serialize::Result {
     use diesel::serialize::IsNull;
 
-    out.write_fmt(format_args!("{}", val))?;
+    out.write_fmt(format_args!("{val}"))?;
 
     Ok(if is_null(val) {
         IsNull::Yes

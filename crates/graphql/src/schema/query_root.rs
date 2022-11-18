@@ -331,15 +331,11 @@ impl QueryRoot {
         }
         let conn = context.shared.db.get().context("failed to connect to db")?;
         let from: Vec<String> = from
-            .unwrap_or_else(Vec::new)
+            .unwrap_or_default()
             .into_iter()
             .map(Into::into)
             .collect();
-        let to: Vec<String> = to
-            .unwrap_or_else(Vec::new)
-            .into_iter()
-            .map(Into::into)
-            .collect();
+        let to: Vec<String> = to.unwrap_or_default().into_iter().map(Into::into).collect();
 
         let rows = queries::graph_connection::connections(&conn, from, to, limit, offset)?;
 
@@ -1455,14 +1451,9 @@ impl QueryRoot {
         #[graphql(description = "Filter on Community mints")] community_mints: Option<
             Vec<PublicKey<TokenMint>>,
         >,
+        #[graphql(description = "Limit for query")] limit: Option<i32>,
+        #[graphql(description = "Offset for query")] offset: Option<i32>,
     ) -> FieldResult<Vec<Realm>> {
-        if addresses.is_none() && community_mints.is_none() {
-            return Err(FieldError::new(
-                "You must supply atleast one filter",
-                graphql_value!({ "Filters": "addresses: Vec<PublicKey<Realm>>, communityMints: Vec<PublicKey<TokenMint>>" }),
-            ));
-        }
-
         let conn = context.shared.db.get()?;
 
         let mut query = realms::table.select(realms::all_columns).into_boxed();
@@ -1476,6 +1467,8 @@ impl QueryRoot {
         }
 
         query
+            .limit(limit.unwrap_or(25).into())
+            .offset(offset.unwrap_or(0).into())
             .load::<models::Realm>(&conn)
             .context("Failed to load spl governance realms.")?
             .into_iter()

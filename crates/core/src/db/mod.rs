@@ -96,18 +96,18 @@ impl fmt::Debug for ConnectResult {
 #[derive(Debug, clap::Args)]
 pub struct ConnectArgs {
     /// Connection string for a read-only database
-    #[clap(long, env, conflicts_with("database-write-url"))]
+    #[arg(long, env, conflicts_with("database_write_url"))]
     database_read_url: Option<String>,
 
     /// Connection string for a writable database
-    #[clap(long, env, conflicts_with("database-read-url"))]
+    #[arg(long, env, conflicts_with("database_read_url"))]
     database_write_url: Option<String>,
 
     /// Fallback database connection string
-    #[clap(
+    #[arg(
         long,
         env,
-        required_unless_present_any(["database-read-url", "database-write-url"])
+        required_unless_present_any(["database_read_url", "database_write_url"])
     )]
     database_url: Option<String>,
 }
