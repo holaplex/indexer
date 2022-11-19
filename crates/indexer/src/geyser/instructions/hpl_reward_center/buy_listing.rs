@@ -6,13 +6,13 @@ use indexer_core::{
         custom_types::PayoutOperationEnum,
         insert_into,
         models::{
-            FeedEventWallet, HplRewardCenterExecuteSale, Purchase, PurchaseEvent,
-            RewardCenter as DbRewardCenter, RewardPayout,
+            BuyListing, FeedEventWallet, Purchase, PurchaseEvent, RewardCenter as DbRewardCenter,
+            RewardPayout,
         },
         on_constraint, select,
         tables::{
-            feed_event_wallets, feed_events, hpl_reward_center_execute_sale_ins, listings, offers,
-            purchase_events, purchases, reward_centers, reward_payouts, rewards_listings,
+            buy_listing_ins, feed_event_wallets, feed_events, listings, offers, purchase_events,
+            purchases, reward_centers, reward_payouts, rewards_listings,
         },
         update,
     },
@@ -26,23 +26,25 @@ use crate::prelude::*;
 #[allow(clippy::pedantic)]
 pub(crate) async fn process(
     client: &Client,
+    tx_signature: String,
     data: &[u8],
     accounts: &[Pubkey],
     slot: u64,
 ) -> Result<()> {
-    let params = hpl_reward_center::execute_sale::ExecuteSaleParams::try_from_slice(data)
-        .context("failed to deserialize")?;
+    let params = hpl_reward_center::offers::accept::AcceptOfferParams::try_from_slice(data)
+        .context("failed to deserialize accept offer params")?;
 
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
-    let row = HplRewardCenterExecuteSale {
+    let row = BuyListing {
+        tx_signature: Owned(tx_signature),
         buyer: Owned(accts[0].clone()),
-        buyer_reward_token_account: Owned(accts[1].clone()),
-        seller: Owned(accts[2].clone()),
-        seller_reward_token_account: Owned(accts[3].clone()),
-        listing: Owned(accts[4].clone()),
-        offer: Owned(accts[5].clone()),
-        payer: Owned(accts[6].clone()),
+        payment_account: Owned(accts[1].clone()),
+        transfer_authority: Owned(accts[2].clone()),
+        buyer_reward_token_account: Owned(accts[3].clone()),
+        seller: Owned(accts[4].clone()),
+        seller_reward_token_account: Owned(accts[5].clone()),
+        listing: Owned(accts[6].clone()),
         token_account: Owned(accts[7].clone()),
         token_mint: Owned(accts[8].clone()),
         metadata: Owned(accts[9].clone()),
@@ -56,14 +58,17 @@ pub(crate) async fn process(
         auction_house_treasury: Owned(accts[17].clone()),
         buyer_trade_state: Owned(accts[18].clone()),
         seller_trade_state: Owned(accts[19].clone()),
-        free_trade_state: Owned(accts[20].clone()),
+        free_seller_trade_state: Owned(accts[20].clone()),
         reward_center: Owned(accts[21].clone()),
         reward_center_reward_token_account: Owned(accts[22].clone()),
         ah_auctioneer_pda: Owned(accts[23].clone()),
+        auction_house_program: Owned(accts[25].clone()),
+        token_program: Owned(accts[26].clone()),
+        buyer_trade_state_bump: params.buyer_trade_state_bump.try_into()?,
         escrow_payment_bump: params.escrow_payment_bump.try_into()?,
         free_trade_state_bump: params.free_trade_state_bump.try_into()?,
+        seller_trade_state_bump: params.seller_trade_state_bump.try_into()?,
         program_as_signer_bump: params.program_as_signer_bump.try_into()?,
-        created_at: Utc::now().naive_utc(),
         slot: slot.try_into()?,
     };
 
@@ -80,7 +85,7 @@ pub(crate) async fn process(
             }
         })
         .await
-        .context("failed to load rewards listing!")?;
+        .context("failed to load reward listing!")?;
 
     if let Some((token_size, price)) = listing {
         upsert_into_purchases_table(
@@ -94,7 +99,7 @@ pub(crate) async fn process(
                 metadata: row.metadata.clone(),
                 token_size,
                 price,
-                created_at: row.created_at,
+                created_at: Utc::now().naive_utc(),
                 slot: row.slot,
                 write_version: None,
             },
@@ -108,13 +113,9 @@ pub(crate) async fn process(
 
     client
         .db()
-        .run(move |db| {
-            insert_into(hpl_reward_center_execute_sale_ins::table)
-                .values(&row)
-                .execute(db)
-        })
+        .run(move |db| insert_into(buy_listing_ins::table).values(&row).execute(db))
         .await
-        .context("failed to insert reward center execute sale instruction ")?;
+        .context("failed to insert reward center accept offer instruction ")?;
     Ok(())
 }
 
