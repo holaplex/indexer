@@ -1,12 +1,12 @@
 ALTER TABLE listings
     ADD COLUMN active bool not null GENERATED ALWAYS AS 
-    (purchase_id is not null or canceled_at is not null) 
+    (purchase_id is  null and canceled_at is  null) 
 	STORED;
 
 
 ALTER TABLE offers
     ADD COLUMN active bool not null GENERATED ALWAYS AS 
-    (purchase_id is not null or canceled_at is not null) 
+    (purchase_id is  null and canceled_at is  null) 
 	STORED;
 
 
