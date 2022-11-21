@@ -1,5 +1,5 @@
 use indexer_core::db::{
-    insert_into,
+    delete, insert_into,
     models::HplRewardCenterCloseListing,
     tables::{hpl_reward_center_close_listing_ins, listings, rewards_listings},
     update,
@@ -67,9 +67,7 @@ pub(crate) async fn process(
                 ))
                 .execute(db)?;
 
-                update(listings::table.filter(listings::trade_state.eq(trade_state)))
-                    .set((listings::canceled_at.eq(closed_at), listings::slot.eq(slot)))
-                    .execute(db)
+                delete(listings::table.filter(listings::trade_state.eq(trade_state))).execute(db)
             })
         })
         .await

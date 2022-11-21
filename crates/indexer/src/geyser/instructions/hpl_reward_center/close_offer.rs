@@ -1,7 +1,7 @@
 use borsh::BorshDeserialize;
 use hpl_reward_center::offers::close::CloseOfferParams;
 use indexer_core::db::{
-    insert_into,
+    delete, insert_into,
     models::HplRewardCenterCloseoffer,
     tables::{hpl_reward_center_close_offer_ins, offers, rewards_offers},
     update,
@@ -78,9 +78,7 @@ pub(crate) async fn process(
                     ))
                     .execute(db)?;
 
-                update(offers::table.filter(offers::trade_state.eq(trade_state)))
-                    .set((offers::canceled_at.eq(closed_at), offers::slot.eq(slot)))
-                    .execute(db)
+                delete(offers::table.filter(offers::trade_state.eq(trade_state))).execute(db)
             })
         })
         .await
