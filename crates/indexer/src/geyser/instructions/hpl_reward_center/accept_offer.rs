@@ -91,8 +91,8 @@ pub(crate) async fn process(
                 slot: row.slot,
                 write_version: None,
             },
-            accts[13].clone(),
-            accts[14].clone(),
+            row.buyer_trade_state.to_string(),
+            row.seller_trade_state.to_string(),
             row.reward_center.to_string(),
         )
         .await
