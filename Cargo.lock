@@ -3017,6 +3017,7 @@ dependencies = [
  "serde_json",
  "smart-wallet 0.10.1",
  "solana-program",
+ "solana-sdk",
  "spl-token",
  "spl-token-bonding",
  "strum",
@@ -3174,9 +3175,9 @@ dependencies = [
 
 [[package]]
 name = "hpl-reward-center"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2667aa13aa62d7e8b1d2f67cd1ad7274a9737f51d35885064c74d2fbb11aaac"
+checksum = "b8104bfa8b63bc24b4f298db1af432839e1f368f448efd2bfb7a283c16cff3fe"
 dependencies = [
  "anchor-lang 0.24.2",
  "anchor-spl 0.24.2",

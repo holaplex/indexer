@@ -3,6 +3,46 @@ table! {
     use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
     use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
 
+    accept_offer_ins (tx_signature) {
+        tx_signature -> Text,
+        buyer -> Varchar,
+        buyer_reward_token_account -> Varchar,
+        seller -> Varchar,
+        seller_reward_token_account -> Varchar,
+        offer -> Varchar,
+        token_account -> Varchar,
+        token_mint -> Varchar,
+        metadata -> Varchar,
+        treasury_mint -> Varchar,
+        seller_payment_receipt_account -> Varchar,
+        buyer_receipt_token_account -> Varchar,
+        authority -> Varchar,
+        escrow_payment_account -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        auction_house_treasury -> Varchar,
+        buyer_trade_state -> Varchar,
+        seller_trade_state -> Varchar,
+        free_seller_trade_state -> Varchar,
+        reward_center -> Varchar,
+        reward_center_reward_token_account -> Varchar,
+        ah_auctioneer_pda -> Varchar,
+        auction_house_program -> Varchar,
+        token_program -> Varchar,
+        escrow_payment_bump -> Int2,
+        free_trade_state_bump -> Int2,
+        program_as_signer_bump -> Int2,
+        seller_trade_state_bump -> Int2,
+        buyer_trade_state_bump -> Int2,
+        slot -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
+
     associated_token_accounts (address) {
         address -> Varchar,
         mint -> Varchar,
@@ -189,6 +229,48 @@ table! {
         buyer_price -> Int8,
         token_size -> Int8,
         created_at -> Timestamp,
+        slot -> Int8,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
+    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
+
+    buy_listing_ins (tx_signature) {
+        tx_signature -> Text,
+        buyer -> Varchar,
+        payment_account -> Varchar,
+        transfer_authority -> Varchar,
+        buyer_reward_token_account -> Varchar,
+        seller -> Varchar,
+        seller_reward_token_account -> Varchar,
+        listing -> Varchar,
+        token_account -> Varchar,
+        token_mint -> Varchar,
+        metadata -> Varchar,
+        treasury_mint -> Varchar,
+        seller_payment_receipt_account -> Varchar,
+        buyer_receipt_token_account -> Varchar,
+        authority -> Varchar,
+        escrow_payment_account -> Varchar,
+        auction_house -> Varchar,
+        auction_house_fee_account -> Varchar,
+        auction_house_treasury -> Varchar,
+        buyer_trade_state -> Varchar,
+        seller_trade_state -> Varchar,
+        free_seller_trade_state -> Varchar,
+        reward_center -> Varchar,
+        reward_center_reward_token_account -> Varchar,
+        ah_auctioneer_pda -> Varchar,
+        auction_house_program -> Varchar,
+        token_program -> Varchar,
+        buyer_trade_state_bump -> Int2,
+        escrow_payment_bump -> Int2,
+        free_trade_state_bump -> Int2,
+        seller_trade_state_bump -> Int2,
+        program_as_signer_bump -> Int2,
         slot -> Int8,
     }
 }
@@ -999,45 +1081,6 @@ table! {
         escrow_payment_bump -> Int2,
         buyer_price -> Int8,
         token_size -> Int8,
-        created_at -> Timestamp,
-        slot -> Int8,
-    }
-}
-
-table! {
-    use diesel::sql_types::*;
-    use diesel_full_text_search::{TsVector as Tsvector, TsQuery as Tsquery};
-    use crate::db::custom_types::{ListingEventLifecycle as Listingeventlifecycle, Mode, ProposalState as Proposalstate, InstructionExecutionFlags as Instructionexecutionflags, ProposalVoteType as Proposalvotetype, OptionVoteResult as Optionvoteresult, MintMaxVoteType as Mintmaxvotetype, VoteTipping as Votetipping, VoteWeightV1 as Voteweightv1, VoteRecordV2Vote as Vote_record_v2_vote, VoteThresholdType as Votethresholdtype, GovernanceAccountType as Governanceaccounttype, TransactionExecutionStatus as Transactionexecutionstatus, OfferEventLifecycle as Offereventlifecycle, SettingType as Settingtype, TokenStandard as Token_standard, PayoutOperation as Payout_operation, };
-
-    hpl_reward_center_execute_sale_ins (id) {
-        id -> Uuid,
-        buyer -> Varchar,
-        buyer_reward_token_account -> Varchar,
-        seller -> Varchar,
-        seller_reward_token_account -> Varchar,
-        listing -> Varchar,
-        offer -> Varchar,
-        payer -> Varchar,
-        token_account -> Varchar,
-        token_mint -> Varchar,
-        metadata -> Varchar,
-        treasury_mint -> Varchar,
-        seller_payment_receipt_account -> Varchar,
-        buyer_receipt_token_account -> Varchar,
-        authority -> Varchar,
-        escrow_payment_account -> Varchar,
-        auction_house -> Varchar,
-        auction_house_fee_account -> Varchar,
-        auction_house_treasury -> Varchar,
-        buyer_trade_state -> Varchar,
-        seller_trade_state -> Varchar,
-        free_trade_state -> Varchar,
-        reward_center -> Varchar,
-        reward_center_reward_token_account -> Varchar,
-        ah_auctioneer_pda -> Varchar,
-        escrow_payment_bump -> Int2,
-        free_trade_state_bump -> Int2,
-        program_as_signer_bump -> Int2,
         created_at -> Timestamp,
         slot -> Int8,
     }
@@ -2287,6 +2330,7 @@ joinable!(purchase_events -> feed_events (feed_event_id));
 joinable!(realm_configs -> realms (realm_address));
 
 allow_tables_to_appear_in_same_query!(
+    accept_offer_ins,
     associated_token_accounts,
     attribute_groups,
     attributes,
@@ -2298,6 +2342,7 @@ allow_tables_to_appear_in_same_query!(
     bids,
     bonding_changes,
     buy_instructions,
+    buy_listing_ins,
     cancel_instructions,
     candy_machine_collection_pdas,
     candy_machine_config_lines,
@@ -2339,7 +2384,6 @@ allow_tables_to_appear_in_same_query!(
     graph_connections,
     hpl_reward_center_close_listing_ins,
     hpl_reward_center_close_offer_ins,
-    hpl_reward_center_execute_sale_ins,
     ins_buffer_bundle_ins_keys,
     ins_buffer_bundle_instructions,
     ins_buffer_bundles,

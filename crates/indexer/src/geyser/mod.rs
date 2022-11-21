@@ -142,8 +142,14 @@ pub async fn process_message<H: std::hash::BuildHasher>(
                 .await
         },
         Message::InstructionNotify(ins) if ins.program == pubkeys::REWARD_CENTER => {
-            programs::reward_center::process_instruction(client, &ins.data, &ins.accounts, ins.slot)
-                .await
+            programs::reward_center::process_instruction(
+                client,
+                ins.txn_signature,
+                &ins.data,
+                &ins.accounts,
+                ins.slot,
+            )
+            .await
         },
         Message::InstructionNotify(ins) if ins.program == pubkeys::ME_HAUS => {
             programs::magic_eden_haus::process_instruction(
