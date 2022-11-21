@@ -2,7 +2,6 @@ use indexer_core::db::{
     delete, insert_into,
     models::HplRewardCenterCloseListing,
     tables::{hpl_reward_center_close_listing_ins, listings, rewards_listings},
-    update,
 };
 use solana_program::pubkey::Pubkey;
 
@@ -18,7 +17,6 @@ pub(crate) async fn process(
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
     let listing_address = accts[1].clone();
     let trade_state = accts[9].clone();
-    let closed_at = Some(Utc::now().naive_utc());
     let slot: i64 = slot.try_into()?;
 
     client
@@ -58,13 +56,9 @@ pub(crate) async fn process(
         .db()
         .run(move |db| {
             db.build_transaction().read_write().run(|| {
-                update(
+                delete(
                     rewards_listings::table.filter(rewards_listings::address.eq(listing_address)),
                 )
-                .set((
-                    rewards_listings::closed_at.eq(closed_at),
-                    rewards_listings::slot.eq(slot),
-                ))
                 .execute(db)?;
 
                 delete(listings::table.filter(listings::trade_state.eq(trade_state))).execute(db)
