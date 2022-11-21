@@ -31,8 +31,8 @@ pub(crate) async fn process(
     accounts: &[Pubkey],
     slot: u64,
 ) -> Result<()> {
-    let params = hpl_reward_center::offers::accept::AcceptOfferParams::try_from_slice(data)
-        .context("failed to deserialize accept offer params")?;
+    let params = hpl_reward_center::listings::buy::BuyListingParams::try_from_slice(data)
+        .context("failed to deserialize buy listing params")?;
 
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
