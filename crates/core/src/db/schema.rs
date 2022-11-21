@@ -1231,6 +1231,7 @@ table! {
         write_version -> Nullable<Int8>,
         marketplace_program -> Varchar,
         expiry -> Nullable<Timestamp>,
+        active -> Bool,
     }
 }
 
@@ -1459,6 +1460,7 @@ table! {
         write_version -> Nullable<Int8>,
         marketplace_program -> Varchar,
         expiry -> Nullable<Timestamp>,
+        active -> Bool,
     }
 }
 
