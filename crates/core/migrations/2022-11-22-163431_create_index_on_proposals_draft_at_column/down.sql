@@ -1,0 +1,2 @@
+drop index proposals_v1_draft_at_idx;
+drop index proposals_v2_draft_at_idx;
