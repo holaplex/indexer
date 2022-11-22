@@ -19,7 +19,7 @@ futures-util = "0.3.25"
 [dependencies.indexer-core]
 package = "holaplex-indexer-core"
 path = "../core"
-features = ["chrono-serde"]
+features = ["chrono-serde", "indexer-rabbitmq"]
 
 [dependencies.indexer]
 package = "holaplex-indexer"
