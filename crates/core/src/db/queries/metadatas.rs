@@ -872,7 +872,7 @@ pub fn mr_collection_nfts<O: Into<Value>>(
 
     let current_time = Utc::now().naive_utc();
 
-    let order = order.unwrap_or(Order::Desc);
+    let order = order.unwrap_or(Order::Asc);
 
     let mut query = Query::select()
         .columns(vec![
