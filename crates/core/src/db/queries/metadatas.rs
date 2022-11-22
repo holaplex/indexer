@@ -6,8 +6,8 @@ use diesel::{
     sql_types::{Array, Text},
 };
 use sea_query::{
-    Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc,
-    Value,
+    Alias, Condition, DynIden, Expr, Iden, JoinType, NullOrdering, Order, OrderedStatement,
+    PostgresQueryBuilder, Query, SeaRc, Value,
 };
 use uuid::Uuid;
 
@@ -778,7 +778,11 @@ pub fn wallet_nfts<O: Into<Value>>(
         )
         .limit(limit)
         .offset(offset)
-        .order_by((Listings::Table, sort_unwrap), order_unwrap)
+        .order_by_with_nulls(
+            (Listings::Table, sort_unwrap),
+            order_unwrap,
+            NullOrdering::Last,
+        )
         .take();
 
     if let Some(collections) = collections {
