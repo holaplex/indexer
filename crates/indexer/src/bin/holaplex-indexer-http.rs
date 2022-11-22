@@ -20,7 +20,7 @@ struct Args {
     entity: http_indexer::EntityId,
 
     #[command(flatten)]
-    queue_suffix: Suffix,
+    queue_suffix: indexer_core::queue_suffix::QueueSuffix,
 
     #[command(flatten)]
     client: ClientArgs,
@@ -53,6 +53,7 @@ async fn run<E: Send + holaplex_indexer::http::Process + 'static>(
         client,
     } = args;
 
+    let queue_suffix = queue_suffix.into();
     let receiver = match queue_suffix {
         Suffix::Debug(ref s) => s.clone(),
         _ => sender.clone(),

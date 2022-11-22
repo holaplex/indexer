@@ -16,7 +16,7 @@ struct Args {
     sender: String,
 
     #[command(flatten)]
-    queue_suffix: indexer_rabbitmq::suffix::Suffix,
+    queue_suffix: indexer_core::queue_suffix::QueueSuffix,
 
     #[command(flatten)]
     client: ClientArgs,
@@ -34,7 +34,7 @@ fn main() {
          db| async move {
             let conn = holaplex_indexer::amqp_connect(amqp_url, env!("CARGO_BIN_NAME")).await?;
 
-            let queue_type = search_indexer::QueueType::new(&sender, &queue_suffix)?;
+            let queue_type = search_indexer::QueueType::new(&sender, &queue_suffix.into())?;
             let consumer =
                 search_indexer::Consumer::new(&conn, queue_type.clone(), "search-consumer")
                     .await

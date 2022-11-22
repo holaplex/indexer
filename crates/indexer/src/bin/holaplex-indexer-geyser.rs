@@ -29,7 +29,7 @@ struct Args {
     ignore_on_startup: Option<Vec<IgnoreType>>,
 
     #[command(flatten)]
-    queue_suffix: Suffix,
+    queue_suffix: indexer_core::queue_suffix::QueueSuffix,
 
     #[command(flatten)]
     client: ClientArgs,
@@ -47,6 +47,7 @@ fn main() {
          },
          params,
          db| async move {
+            let queue_suffix = queue_suffix.into();
             let receiver = match queue_suffix {
                 Suffix::Debug(ref s) => s.clone(),
                 _ => network.to_string(),

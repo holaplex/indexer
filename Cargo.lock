@@ -3063,6 +3063,7 @@ dependencies = [
  "diesel_migrations",
  "dotenv",
  "env_logger",
+ "holaplex-indexer-rabbitmq",
  "log",
  "md5",
  "meilisearch-sdk",
@@ -3147,9 +3148,8 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-rabbitmq"
 version = "0.3.1"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?rev=110ef54#110ef54eb4c0f8c167b9f26b898023274d8d4dd3"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?rev=57f6b14#57f6b1457967e70f0ae9a1c82de82ca632165eec"
 dependencies = [
- "clap 4.0.22",
  "futures-util",
  "lapin",
  "log",
