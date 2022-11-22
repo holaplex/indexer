@@ -699,7 +699,7 @@ pub fn wallet_nfts<O: Into<Value>>(
 
     let sort_unwrap = sort_by.map_or(Listings::Price, Into::into);
 
-    let order_unwrap = order.unwrap_or(Order::Desc);
+    let order_unwrap = order.unwrap_or(Order::Asc);
 
     let current_time = Utc::now().naive_utc();
 
