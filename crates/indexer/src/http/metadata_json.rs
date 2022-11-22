@@ -211,7 +211,7 @@ async fn try_locate_json(
 
     for (fingerprint, hint) in id.fingerprints_hinted() {
         let url = if let Some(hint) = hint {
-            proxy_url_hinted(client.proxy_args(), id, hint, None)
+            proxy_url_hinted(client.proxy_args(), id, Some(hint), None)
                 .map(|u| u.unwrap_or_else(|| unreachable!()))
         } else if FETCH_NON_PERMAWEB {
             Ok(proxy_non_permaweb_url(client.proxy_args(), id.url.clone())?)

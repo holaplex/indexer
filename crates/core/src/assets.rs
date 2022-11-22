@@ -250,12 +250,12 @@ mod cdn {
     fn format_impl<'p, 'q>(
         args: &AssetProxyArgs,
         id: &AssetIdentifier,
-        hint: AssetHint,
+        hint: Option<AssetHint>,
         path: impl IntoIterator<Item = &'p str>,
         query: impl IntoIterator<Item = (&'q str, &'q str)>,
     ) -> Result<Url> {
         let rem = md5::compute(
-            id.fingerprint(Some(hint), false)
+            id.fingerprint(hint, true)
                 .unwrap_or_else(|| unreachable!())
                 .as_ref(),
         )[0]
@@ -297,7 +297,19 @@ mod cdn {
                 warn!("Ambiguous asset ID {:?} encountered", id);
                 Ok(None)
             },
-            (None, None, _) => Ok(None),
+            (None, None, _) => {
+                    format_impl(
+                    args,
+                    id,
+                    None,
+                    Vec::new(),
+                    query.into_iter().chain(if id.url.host().is_none() {
+                        None
+                    } else {
+                        Some(("url", id.url.as_str()))
+                    })
+                    ).map(Some)
+            },
             (Some((txid, path)), None, _)
             | (Some((txid, path)), Some(_), Some(AssetHint::Arweave)) => {
                 let txid = base64::encode_config(txid.0, base64::URL_SAFE_NO_PAD);
@@ -305,7 +317,7 @@ mod cdn {
                 format_impl(
                     args,
                     id,
-                    AssetHint::Arweave,
+                    Some(AssetHint::Arweave),
                     ["arweave", &txid],
                     query.into_iter().chain(if path.is_empty() {
                         None
@@ -321,7 +333,7 @@ mod cdn {
                 format_impl(
                     args,
                     id,
-                    AssetHint::Ipfs,
+                    Some(AssetHint::Ipfs),
                     ["ipfs", &cid],
                     query.into_iter().chain(if path.is_empty() {
                         None
