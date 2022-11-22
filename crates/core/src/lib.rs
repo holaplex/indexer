@@ -37,6 +37,8 @@ pub mod hash;
 pub mod meilisearch;
 #[cfg(feature = "solana")]
 pub mod pubkeys;
+#[cfg(feature = "indexer-rabbitmq")]
+pub mod queue_suffix;
 pub mod util;
 
 /// Commonly used utilities
