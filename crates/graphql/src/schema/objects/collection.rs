@@ -325,12 +325,12 @@ impl Collection {
 
         let floor_price = floor_data.iter().map(Into::into).collect();
         let listed_count = listed_data.iter().map(Into::into).collect();
-        let holder_count = holder_data.iter().map(Into::into).collect();
+        let holder_count_data = holder_data.iter().map(Into::into).collect();
 
         Ok(Timeseries {
             floor_price,
             listed_count,
-            holder_count,
+            holder_count_data,
         })
     }
 }
@@ -354,7 +354,7 @@ impl From<&(u64, serde_json::Number)> for Datapoint {
 pub struct Timeseries {
     pub floor_price: Vec<Datapoint>,
     pub listed_count: Vec<Datapoint>,
-    pub holder_count: Vec<Datapoint>,
+    pub holder_count_data: Vec<Datapoint>,
 }
 
 // TODO: use collection identifier for the data loader instead of string
