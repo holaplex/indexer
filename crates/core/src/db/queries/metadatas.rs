@@ -872,7 +872,7 @@ pub fn mr_collection_nfts<O: Into<Value>>(
 
     let current_time = Utc::now().naive_utc();
 
-    let order = order.unwrap_or(Order::Desc);
+    let order = order.unwrap_or(Order::Asc);
 
     let mut query = Query::select()
         .columns(vec![
@@ -948,7 +948,7 @@ pub fn mr_collection_nfts<O: Into<Value>>(
         )
         .limit(limit)
         .offset(offset)
-        .order_by((Listings::Table, sort_by), order)
+        .order_by_with_nulls((Listings::Table, sort_by), order, NullOrdering::Last)
         .take();
 
     if let Some(attributes) = attributes {
