@@ -42,7 +42,7 @@ pub(crate) async fn process(
             Result::<_>::Ok(())
         })
         .await
-        .context("failed to update rewards listing closed at or general listing canceled at")?;
+        .context("failed to delete reward listing")?;
 
     client
         .db()

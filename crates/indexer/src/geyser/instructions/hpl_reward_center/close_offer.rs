@@ -27,29 +27,32 @@ pub(crate) async fn process(
 
     client
         .db()
-        .run(move |db| {
-            delete(
-                rewards_offers::table.filter(
-                    rewards_offers::address
-                        .eq(offer_address)
-                        .and(rewards_offers::slot.lt(slot)),
-                ),
-            )
-            .execute(db)?;
+        .run({
+            let offer_address = offer_address.clone();
+            move |db| {
+                delete(
+                    rewards_offers::table.filter(
+                        rewards_offers::address
+                            .eq(offer_address)
+                            .and(rewards_offers::slot.lt(slot)),
+                    ),
+                )
+                .execute(db)?;
 
-            delete(
-                offers::table.filter(
-                    offers::trade_state
-                        .eq(trade_state)
-                        .and(offers::slot.lt(slot)),
-                ),
-            )
-            .execute(db)?;
+                delete(
+                    offers::table.filter(
+                        offers::trade_state
+                            .eq(trade_state)
+                            .and(offers::slot.lt(slot)),
+                    ),
+                )
+                .execute(db)?;
 
-            Result::<_>::Ok(())
+                Result::<_>::Ok(())
+            }
         })
         .await
-        .context("failed to update rewards offer closed at or general offer canceled at")?;
+        .context("failed to delete reward offer")?;
 
     client
         .db()
