@@ -22,6 +22,31 @@ pub(crate) async fn process(
     client
         .db()
         .run(move |db| {
+            delete(
+                rewards_listings::table.filter(
+                    rewards_listings::address
+                        .eq(listing_address)
+                        .and(rewards_listings::slot.lt(slot)),
+                ),
+            )
+            .execute(db)?;
+
+            delete(
+                listings::table.filter(
+                    listings::trade_state
+                        .eq(trade_state)
+                        .and(listings::slot.lt(slot)),
+                ),
+            )
+            .execute(db)?;
+            Result::<_>::Ok(())
+        })
+        .await
+        .context("failed to update rewards listing closed at or general listing canceled at")?;
+
+    client
+        .db()
+        .run(move |db| {
             let token_size = rewards_listings::table
                 .select(rewards_listings::token_size)
                 .filter(rewards_listings::address.eq(accts[1].clone()))
@@ -51,21 +76,6 @@ pub(crate) async fn process(
         })
         .await
         .context("failed to insert reward center close listing instruction ")?;
-
-    client
-        .db()
-        .run(move |db| {
-            db.build_transaction().read_write().run(|| {
-                delete(
-                    rewards_listings::table.filter(rewards_listings::address.eq(listing_address)),
-                )
-                .execute(db)?;
-
-                delete(listings::table.filter(listings::trade_state.eq(trade_state))).execute(db)
-            })
-        })
-        .await
-        .context("failed to update rewards listing closed at or general listing canceled at")?;
 
     Ok(())
 }

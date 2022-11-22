@@ -27,6 +27,32 @@ pub(crate) async fn process(
 
     client
         .db()
+        .run(move |db| {
+            delete(
+                rewards_offers::table.filter(
+                    rewards_offers::address
+                        .eq(offer_address)
+                        .and(rewards_offers::slot.lt(slot)),
+                ),
+            )
+            .execute(db)?;
+
+            delete(
+                offers::table.filter(
+                    offers::trade_state
+                        .eq(trade_state)
+                        .and(offers::slot.lt(slot)),
+                ),
+            )
+            .execute(db)?;
+
+            Result::<_>::Ok(())
+        })
+        .await
+        .context("failed to update rewards offer closed at or general offer canceled at")?;
+
+    client
+        .db()
         .run({
             let offer_address = offer_address.clone();
             move |db| {
@@ -64,19 +90,6 @@ pub(crate) async fn process(
         })
         .await
         .context("failed to insert reward center close offer instruction ")?;
-
-    client
-        .db()
-        .run(move |db| {
-            db.build_transaction().read_write().run(|| {
-                delete(rewards_offers::table.filter(rewards_offers::address.eq(offer_address)))
-                    .execute(db)?;
-
-                delete(offers::table.filter(offers::trade_state.eq(trade_state))).execute(db)
-            })
-        })
-        .await
-        .context("failed to update rewards offer closed at or general offer canceled at")?;
 
     Ok(())
 }
