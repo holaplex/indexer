@@ -948,7 +948,7 @@ pub fn mr_collection_nfts<O: Into<Value>>(
         )
         .limit(limit)
         .offset(offset)
-        .order_by((Listings::Table, sort_by), order)
+        .order_by_with_nulls((Listings::Table, sort_by), order, NullOrdering::Last)
         .take();
 
     if let Some(attributes) = attributes {
