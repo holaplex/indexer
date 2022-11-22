@@ -297,19 +297,18 @@ mod cdn {
                 warn!("Ambiguous asset ID {:?} encountered", id);
                 Ok(None)
             },
-            (None, None, _) => {
-                    format_impl(
-                    args,
-                    id,
-                    None,
-                    Vec::new(),
-                    query.into_iter().chain(if id.url.host().is_none() {
-                        None
-                    } else {
-                        Some(("url", id.url.as_str()))
-                    })
-                    ).map(Some)
-            },
+            (None, None, _) => format_impl(
+                args,
+                id,
+                None,
+                Vec::new(),
+                query.into_iter().chain(if id.url.host().is_none() {
+                    None
+                } else {
+                    Some(("url", id.url.as_str()))
+                }),
+            )
+            .map(Some),
             (Some((txid, path)), None, _)
             | (Some((txid, path)), Some(_), Some(AssetHint::Arweave)) => {
                 let txid = base64::encode_config(txid.0, base64::URL_SAFE_NO_PAD);
