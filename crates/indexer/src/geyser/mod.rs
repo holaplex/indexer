@@ -178,7 +178,13 @@ pub async fn process_message<H: std::hash::BuildHasher>(
             );
             Ok(())
         },
-        Message::InstructionNotify { .. } => Ok(()),
+        Message::InstructionNotify(ins) => {
+            debug!(
+                "Unhandled instruction notify for program {}",
+                bs58::encode(ins.program).into_string()
+            );
+            Ok(())
+        },
     }
     .map_err(|e| MessageError::new(e, id))
 }
