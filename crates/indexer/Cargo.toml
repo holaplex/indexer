@@ -165,3 +165,4 @@ optional = true
 package = "holaplex-indexer-core"
 version = "=0.1.0"
 path = "../core"
+features = ["indexer-rabbitmq"]
