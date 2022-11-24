@@ -108,12 +108,6 @@ pub struct ReadRewardPayout<'a> {
     /// The timestamp when the reward payout was created.
     #[sql_type = "Timestamp"]
     pub created_at: NaiveDateTime,
-    /// The slot number of the most recent update for this account
-    #[sql_type = "Int8"]
-    pub slot: i64,
-    /// The write version of the most recent update for this account
-    #[sql_type = "Int8"]
-    pub write_version: i64,
 }
 
 /// A row in the `rewards listings` table

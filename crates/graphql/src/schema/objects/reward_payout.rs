@@ -13,8 +13,6 @@ pub struct RewardPayout {
     pub seller: Wallet,
     pub seller_reward: U64,
     pub created_at: NaiveDateTime,
-    pub slot: U64,
-    pub write_version: U64,
 }
 
 impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
@@ -32,8 +30,6 @@ impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
             seller_twitter_handle,
             seller_reward,
             created_at,
-            slot,
-            write_version,
         }: models::ReadRewardPayout,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -45,8 +41,6 @@ impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
             seller: Wallet::new(seller.into(), seller_twitter_handle),
             seller_reward: seller_reward.try_into().unwrap_or_default(),
             created_at,
-            slot: slot.try_into()?,
-            write_version: write_version.try_into()?,
         })
     }
 }
@@ -87,13 +81,5 @@ impl RewardPayout {
 
     pub fn created_at(&self) -> NaiveDateTime {
         self.created_at
-    }
-
-    pub fn slot(&self) -> U64 {
-        self.slot
-    }
-
-    pub fn write_version(&self) -> U64 {
-        self.write_version
     }
 }
