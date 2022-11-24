@@ -1,11 +1,11 @@
-use indexer_core::db::models;
+use indexer_core::{db::models, uuid::Uuid};
 
 use super::{nft::Nft, prelude::*, reward_center::RewardCenter, wallet::Wallet};
 use crate::schema::scalars::{PublicKey, U64};
 
 #[derive(Debug, Clone)]
 pub struct RewardPayout {
-    pub purchase_id: String,
+    pub purchase_id: Uuid,
     pub nft_address: PublicKey<Nft>,
     pub reward_center: PublicKey<RewardCenter>,
     pub buyer: Wallet,
@@ -37,7 +37,7 @@ impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
         }: models::ReadRewardPayout,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            purchase_id: purchase_id.into(),
+            purchase_id,
             nft_address: metadata.into(),
             reward_center: reward_center.into(),
             buyer: Wallet::new(buyer.into(), buyer_twitter_handle),
@@ -53,7 +53,7 @@ impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
 
 #[graphql_object(Context = AppContext)]
 impl RewardPayout {
-    pub fn purchase_id(&self) -> &str {
+    pub fn purchase_id(&self) -> &Uuid {
         &self.purchase_id
     }
 

@@ -79,8 +79,8 @@ pub struct RewardPayout<'a> {
 #[diesel(treat_none_as_null = true)]
 pub struct ReadRewardPayout<'a> {
     /// Purchase ticket pubkey
-    #[sql_type = "VarChar"]
-    pub purchase_id: Cow<'a, str>,
+    #[sql_type = "diesel::sql_types::Uuid"]
+    pub purchase_id: Uuid,
     /// metadata address
     #[sql_type = "VarChar"]
     pub metadata: Cow<'a, str>,
