@@ -3341,6 +3341,8 @@ pub struct SplGovernanceProposal {
     pub start_voting_at: Option<NaiveDateTime>,
     #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
     pub max_voting_time: Option<i64>,
+    #[sql_type = "Nullable<VarChar>"]
+    pub program_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]

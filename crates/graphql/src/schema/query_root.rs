@@ -1343,18 +1343,22 @@ impl QueryRoot {
         #[graphql(description = "Filter on spl governance")] governances: Option<
             Vec<PublicKey<Governance>>,
         >,
+        start_timestamp: Option<DateTime<Utc>>,
+        end_timestamp: Option<DateTime<Utc>>,
+        #[graphql(description = "Limit for query")] limit: Option<i32>,
+        #[graphql(description = "Offset for query")] offset: Option<i32>,
     ) -> FieldResult<Vec<Proposal>> {
-        if addresses.is_none() && governances.is_none() {
-            return Err(FieldError::new(
-                "You must supply atleast one filter",
-                graphql_value!({ "Filters": "addresses: Vec<PublicKey<Proposal>>, governances: Vec<PublicKey<Governance>>" }),
-            ));
-        }
-
         let conn = context.shared.db.get()?;
 
-        let proposals: Vec<models::SplGovernanceProposal> =
-            queries::spl_governance::proposals(&conn, addresses, governances)?;
+        let proposals: Vec<models::SplGovernanceProposal> = queries::spl_governance::proposals(
+            &conn,
+            addresses,
+            governances,
+            start_timestamp.map(|t| t.naive_utc()),
+            end_timestamp.map(|t| t.naive_utc()),
+            limit.unwrap_or(25),
+            offset.unwrap_or(0),
+        )?;
 
         proposals
             .into_iter()
