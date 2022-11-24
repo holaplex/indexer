@@ -1,11 +1,11 @@
-use indexer_core::db::models;
+use indexer_core::{db::models, uuid::Uuid};
 
 use super::{nft::Nft, prelude::*, reward_center::RewardCenter, wallet::Wallet};
 use crate::schema::scalars::{PublicKey, U64};
 
 #[derive(Debug, Clone)]
 pub struct RewardPayout {
-    pub purchase_ticket: String,
+    pub purchase_id: Uuid,
     pub nft_address: PublicKey<Nft>,
     pub reward_center: PublicKey<RewardCenter>,
     pub buyer: Wallet,
@@ -13,8 +13,6 @@ pub struct RewardPayout {
     pub seller: Wallet,
     pub seller_reward: U64,
     pub created_at: NaiveDateTime,
-    pub slot: U64,
-    pub write_version: U64,
 }
 
 impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
@@ -22,7 +20,7 @@ impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
 
     fn try_from(
         models::ReadRewardPayout {
-            purchase_ticket,
+            purchase_id,
             metadata,
             reward_center,
             buyer,
@@ -32,12 +30,10 @@ impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
             seller_twitter_handle,
             seller_reward,
             created_at,
-            slot,
-            write_version,
         }: models::ReadRewardPayout,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            purchase_ticket: purchase_ticket.into(),
+            purchase_id,
             nft_address: metadata.into(),
             reward_center: reward_center.into(),
             buyer: Wallet::new(buyer.into(), buyer_twitter_handle),
@@ -45,16 +41,14 @@ impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
             seller: Wallet::new(seller.into(), seller_twitter_handle),
             seller_reward: seller_reward.try_into().unwrap_or_default(),
             created_at,
-            slot: slot.try_into()?,
-            write_version: write_version.try_into()?,
         })
     }
 }
 
 #[graphql_object(Context = AppContext)]
 impl RewardPayout {
-    pub fn purchase_ticket(&self) -> &str {
-        &self.purchase_ticket
+    pub fn purchase_id(&self) -> &Uuid {
+        &self.purchase_id
     }
 
     pub async fn nft(&self, context: &AppContext) -> FieldResult<Option<Nft>> {
@@ -87,13 +81,5 @@ impl RewardPayout {
 
     pub fn created_at(&self) -> NaiveDateTime {
         self.created_at
-    }
-
-    pub fn slot(&self) -> U64 {
-        self.slot
-    }
-
-    pub fn write_version(&self) -> U64 {
-        self.write_version
     }
 }

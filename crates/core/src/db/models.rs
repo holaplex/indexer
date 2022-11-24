@@ -79,8 +79,8 @@ pub struct RewardPayout<'a> {
 #[diesel(treat_none_as_null = true)]
 pub struct ReadRewardPayout<'a> {
     /// Purchase ticket pubkey
-    #[sql_type = "VarChar"]
-    pub purchase_ticket: Cow<'a, str>,
+    #[sql_type = "diesel::sql_types::Uuid"]
+    pub purchase_id: Uuid,
     /// metadata address
     #[sql_type = "VarChar"]
     pub metadata: Cow<'a, str>,
@@ -108,12 +108,6 @@ pub struct ReadRewardPayout<'a> {
     /// The timestamp when the reward payout was created.
     #[sql_type = "Timestamp"]
     pub created_at: NaiveDateTime,
-    /// The slot number of the most recent update for this account
-    #[sql_type = "Int8"]
-    pub slot: i64,
-    /// The write version of the most recent update for this account
-    #[sql_type = "Int8"]
-    pub write_version: i64,
 }
 
 /// A row in the `rewards listings` table
