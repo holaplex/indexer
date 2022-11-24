@@ -5,7 +5,7 @@ use crate::schema::scalars::{PublicKey, U64};
 
 #[derive(Debug, Clone)]
 pub struct RewardPayout {
-    pub purchase_ticket: String,
+    pub purchase_id: String,
     pub nft_address: PublicKey<Nft>,
     pub reward_center: PublicKey<RewardCenter>,
     pub buyer: Wallet,
@@ -22,7 +22,7 @@ impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
 
     fn try_from(
         models::ReadRewardPayout {
-            purchase_ticket,
+            purchase_id,
             metadata,
             reward_center,
             buyer,
@@ -37,7 +37,7 @@ impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
         }: models::ReadRewardPayout,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            purchase_ticket: purchase_ticket.into(),
+            purchase_id: purchase_id.into(),
             nft_address: metadata.into(),
             reward_center: reward_center.into(),
             buyer: Wallet::new(buyer.into(), buyer_twitter_handle),
@@ -53,8 +53,8 @@ impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
 
 #[graphql_object(Context = AppContext)]
 impl RewardPayout {
-    pub fn purchase_ticket(&self) -> &str {
-        &self.purchase_ticket
+    pub fn purchase_id(&self) -> &str {
+        &self.purchase_id
     }
 
     pub async fn nft(&self, context: &AppContext) -> FieldResult<Option<Nft>> {

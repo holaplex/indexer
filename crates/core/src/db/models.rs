@@ -80,7 +80,7 @@ pub struct RewardPayout<'a> {
 pub struct ReadRewardPayout<'a> {
     /// Purchase ticket pubkey
     #[sql_type = "VarChar"]
-    pub purchase_ticket: Cow<'a, str>,
+    pub purchase_id: Cow<'a, str>,
     /// metadata address
     #[sql_type = "VarChar"]
     pub metadata: Cow<'a, str>,
