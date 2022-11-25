@@ -83,7 +83,7 @@ pub(crate) async fn process(
                 buyer: row.buyer.clone(),
                 seller: row.seller.clone(),
                 auction_house: row.auction_house.clone(),
-                marketplace_program: Owned(pubkeys::AUCTION_HOUSE.to_string()),
+                marketplace_program: Owned(pubkeys::REWARD_CENTER.to_string()),
                 metadata: row.metadata.clone(),
                 token_size,
                 price,
