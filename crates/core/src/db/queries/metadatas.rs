@@ -812,7 +812,7 @@ SELECT listings.id as id, metadata, auction_house, price, auction_house, created
         FROM listings
         LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
         WHERE metadata = ANY($1) and auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
-    UNION
+    UNION ALL
     SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[seller, buyer] as wallets,
     array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
@@ -821,7 +821,7 @@ SELECT listings.id as id, metadata, auction_house, price, auction_house, created
         LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchases.seller)
         LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
         WHERE metadata = ANY($1)
-    UNION
+    UNION ALL
     SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[buyer] as wallets,
     array[bth.twitter_handle] as wallet_twitter_handles,

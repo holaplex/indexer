@@ -606,7 +606,7 @@ SELECT listings.id as id, metadata, auction_house, price, listings.created_at, m
         WHERE collection_mints.collection_id = $1
         AND listings.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
         AND ('LISTINGS' = ANY($2) OR $2 IS NULL)
-    UNION
+    UNION ALL
     SELECT purchases.id as id, metadata, auction_house, price, purchases.created_at, marketplace_program,
     array[seller, buyer] as wallets,
     array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
@@ -618,7 +618,7 @@ SELECT listings.id as id, metadata, auction_house, price, listings.created_at, m
         INNER JOIN collection_mints ON(collection_mints.mint = metadatas.mint_address)
         WHERE collection_mints.collection_id = $1
         AND ('PURCHASES' = ANY($2) OR $2 IS NULL)
-    UNION
+    UNION ALL
     SELECT offers.id as id, metadata, auction_house, price, offers.created_at, marketplace_program,
     array[buyer] as wallets,
     array[bth.twitter_handle] as wallet_twitter_handles,

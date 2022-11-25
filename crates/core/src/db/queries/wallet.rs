@@ -25,7 +25,7 @@ array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
     AND canceled_at IS NULL
     AND listings.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
     AND ('LISTINGS' = ANY($2) OR $2 IS NULL)
-UNION
+UNION ALL
 SELECT purchases.id as id, metadata, price, auction_house, created_at, marketplace_program,
 array[seller, buyer] as wallets,
 array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
@@ -35,7 +35,7 @@ array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
     LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
     WHERE buyer = $1
     AND ('PURCHASES' = ANY($2) OR $2 IS NULL)
-UNION
+UNION ALL
 SELECT purchases.id as id, metadata, price, auction_house, created_at, marketplace_program,
 array[seller, buyer] as wallets,
 array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
@@ -45,7 +45,7 @@ array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
     LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
     WHERE seller = $1
     AND ('SALES' = ANY($2) OR $2 IS NULL)
-UNION
+UNION ALL
 SELECT offers.id as id, metadata, price, auction_house, created_at, marketplace_program,
 array[buyer] as wallets,
 array[bth.twitter_handle] as wallet_twitter_handles,
@@ -94,7 +94,7 @@ FROM offers
     AND offers.purchase_id IS NULL
     AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
     AND ('OFFER_PLACED' = $2 OR $2 IS NULL)
-UNION
+UNION ALL
 SELECT offers.id as id,  metadata, price, auction_house, created_at, marketplace_program,
 buyer, trade_state, token_account, purchase_id,
 token_size, trade_state_bump, canceled_at, write_version, expiry, offers.slot as slot
