@@ -157,6 +157,13 @@ pub(crate) async fn process(
                     return Ok(());
                 }
 
+                mutations::collection_activity::offer(
+                    db,
+                    offer_id,
+                    &offer.clone(),
+                    "OFFER_CREATED",
+                )?;
+
                 db.build_transaction().read_write().run(|| {
                     let metadata_owner: String =
                         current_metadata_owners::table

@@ -3614,3 +3614,18 @@ pub struct AttributeGroup<'a> {
     pub value: Cow<'a, str>,
     pub count: i64,
 }
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[table_name = "collection_activities"]
+#[allow(missing_docs)]
+pub struct CollectionActivity<'a> {
+    pub id: Uuid,
+    pub metadata: Cow<'a, str>,
+    pub price: i64,
+    pub auction_house: Cow<'a, str>,
+    pub created_at: NaiveDateTime,
+    pub marketplace_program: Cow<'a, str>,
+    pub wallets: Vec<Cow<'a, str>>,
+    pub collection_id: Cow<'a, str>,
+    pub activity_type: Cow<'a, str>,
+}

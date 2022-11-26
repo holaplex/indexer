@@ -7,7 +7,7 @@ use indexer_core::{
             ListingReceipt as DbListingReceipt, Offer, OfferEvent, Purchase, PurchaseEvent,
             PurchaseReceipt as DbPurchaseReceipt,
         },
-        on_constraint, select,
+        mutations, select,
         tables::{
             bid_receipts, current_metadata_owners, feed_event_wallets, feed_events, listing_events,
             listing_receipts, listings, metadatas, offer_events, offers, purchase_events,
@@ -86,17 +86,18 @@ pub(crate) async fn process_listing_receipt(
                 expiry: None,
             };
 
-            let listing_id = insert_into(listings::table)
-                .values(&values)
-                .on_conflict(on_constraint("listings_unique_fields"))
-                .do_update()
-                .set(&values)
-                .returning(listings::id)
-                .get_result::<Uuid>(db)?;
+            let listing_id = mutations::listing::insert(db, &values)?;
 
             if listing_exists || row.purchase_receipt.is_some() {
                 return Ok(());
             }
+
+            mutations::collection_activity::listing(
+                db,
+                listing_id,
+                &values.clone(),
+                "LISTING_CREATED",
+            )?;
 
             db.build_transaction().read_write().run(|| {
                 let feed_event_id = insert_into(feed_events::table)
@@ -187,11 +188,11 @@ pub(crate) async fn process_purchase_receipt(
         .await
         .context("failed to check if purchase receipt exists!")?;
 
-    let purchase_id = upsert_into_purchases_table(client, row.clone()).await?;
-
     if purchase_exists {
         return Ok(());
     }
+
+    let purchase_id = upsert_into_purchases_table(client, row.clone()).await?;
 
     client
         .db()
@@ -293,13 +294,13 @@ pub(crate) async fn process_bid_receipt(
         .await
         .context("failed to insert bid reciept")?;
 
-    let offer_id = upsert_into_offers_table(client, row.clone())
-        .await
-        .context("failed to insert offer")?;
-
     if offer_exists || row.purchase_receipt.is_some() {
         return Ok(());
     }
+
+    let offer_id = upsert_into_offers_table(client, row.clone())
+        .await
+        .context("failed to insert offer")?;
 
     let offer_event = client
         .db()
@@ -383,14 +384,13 @@ async fn upsert_into_offers_table<'a>(client: &Client, row: DbBidReceipt<'static
         .db()
         .run({
             move |db| {
-                let offer_id = insert_into(offers::table)
-                    .values(&values)
-                    .on_conflict(on_constraint("offers_unique_fields"))
-                    .do_update()
-                    .set(&values)
-                    .returning(offers::id)
-                    .get_result::<Uuid>(db)?;
-
+                let offer_id = mutations::offer::insert(db, &values)?;
+                mutations::collection_activity::offer(
+                    db,
+                    offer_id,
+                    &values.clone(),
+                    "OFFER_CREATED",
+                )?;
                 Result::<_>::Ok(offer_id)
             }
         })
@@ -417,17 +417,18 @@ async fn upsert_into_purchases_table<'a>(
         slot: row.slot,
         write_version: Some(row.write_version),
     };
+
     let purchase_id = client
         .db()
         .run({
             move |db| {
-                let purchase_id = insert_into(purchases::table)
-                    .values(&row)
-                    .on_conflict(on_constraint("purchases_unique_fields"))
-                    .do_update()
-                    .set(&row)
-                    .returning(purchases::id)
-                    .get_result::<Uuid>(db)?;
+                let purchase_id = mutations::purchase::insert(db, &row)?;
+                mutations::collection_activity::purchase(
+                    db,
+                    purchase_id,
+                    &row.clone(),
+                    "PURCHASE",
+                )?;
 
                 update(
                     offers::table.filter(

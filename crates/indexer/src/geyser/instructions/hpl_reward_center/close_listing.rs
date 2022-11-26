@@ -1,6 +1,7 @@
 use indexer_core::db::{
     delete, insert_into,
-    models::HplRewardCenterCloseListing,
+    models::{HplRewardCenterCloseListing, Listing},
+    mutations::collection_activity,
     tables::{hpl_reward_center_close_listing_ins, listings, rewards_listings},
 };
 use solana_program::pubkey::Pubkey;
@@ -31,14 +32,26 @@ pub(crate) async fn process(
             )
             .execute(db)?;
 
-            delete(
+            let listing = delete(
                 listings::table.filter(
                     listings::trade_state
                         .eq(trade_state)
                         .and(listings::slot.lt(slot)),
                 ),
             )
-            .execute(db)?;
+            .returning(listings::all_columns)
+            .get_result::<Listing>(db)
+            .optional()?;
+
+            if let Some(listing) = listing {
+                collection_activity::listing(
+                    db,
+                    listing.id.unwrap(),
+                    &listing.clone(),
+                    "LISTING_CANCELED",
+                )?;
+            }
+
             Result::<_>::Ok(())
         })
         .await

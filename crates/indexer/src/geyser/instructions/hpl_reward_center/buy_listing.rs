@@ -9,7 +9,9 @@ use indexer_core::{
             BuyListing, FeedEventWallet, Purchase, PurchaseEvent, RewardCenter as DbRewardCenter,
             RewardPayout,
         },
-        on_constraint, select,
+        mutations,
+        mutations::collection_activity,
+        select,
         tables::{
             buy_listing_ins, feed_event_wallets, feed_events, listings, offers, purchase_events,
             purchases, reward_centers, reward_payouts, rewards_listings,
@@ -143,13 +145,7 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
             ))
             .get_result::<bool>(db)?;
 
-            let purchase_id = insert_into(purchases::table)
-                .values(&data)
-                .on_conflict(on_constraint("purchases_unique_fields"))
-                .do_update()
-                .set(&data)
-                .returning(purchases::id)
-                .get_result::<Uuid>(db)?;
+            let purchase_id = mutations::purchase::insert(db, &data)?;
 
             update(
                 listings::table.filter(
@@ -176,6 +172,8 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
             if purchase_exists {
                 return Ok(());
             }
+
+            collection_activity::purchase(db, purchase_id, &data.clone(), "PURCHASE")?;
 
             let reward_center = reward_centers::table
                 .select(reward_centers::all_columns)

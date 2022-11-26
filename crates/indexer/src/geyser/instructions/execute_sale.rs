@@ -3,7 +3,7 @@ use indexer_core::{
     db::{
         insert_into,
         models::{ExecuteSaleInstruction, FeedEventWallet, Purchase, PurchaseEvent},
-        on_constraint, select,
+        mutations, select,
         tables::{
             execute_sale_instructions, feed_event_wallets, feed_events, listings, offers,
             purchase_events, purchases,
@@ -116,13 +116,7 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
             ))
             .get_result::<bool>(db)?;
 
-            let purchase_id = insert_into(purchases::table)
-                .values(&data)
-                .on_conflict(on_constraint("purchases_unique_fields"))
-                .do_update()
-                .set(&data)
-                .returning(purchases::id)
-                .get_result::<Uuid>(db)?;
+            let purchase_id = mutations::purchase::insert(db, &data)?;
 
             update(
                 listings::table.filter(
@@ -149,6 +143,8 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
             if purchase_exists {
                 return Ok(());
             }
+
+            mutations::collection_activity::purchase(db, purchase_id, &data.clone(), "PURCHASE")?;
 
             db.build_transaction().read_write().run(|| {
                 let feed_event_id = insert_into(feed_events::table)

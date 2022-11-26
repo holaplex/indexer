@@ -2,7 +2,8 @@ use borsh::BorshDeserialize;
 use hpl_reward_center::offers::close::CloseOfferParams;
 use indexer_core::db::{
     delete, insert_into,
-    models::HplRewardCenterCloseoffer,
+    models::{HplRewardCenterCloseoffer, Offer},
+    mutations::collection_activity,
     tables::{hpl_reward_center_close_offer_ins, offers, rewards_offers},
 };
 use solana_program::pubkey::Pubkey;
@@ -39,14 +40,25 @@ pub(crate) async fn process(
                 )
                 .execute(db)?;
 
-                delete(
+                let offer = delete(
                     offers::table.filter(
                         offers::trade_state
                             .eq(trade_state)
                             .and(offers::slot.lt(slot)),
                     ),
                 )
-                .execute(db)?;
+                .returning(offers::all_columns)
+                .get_result::<Offer>(db)
+                .optional()?;
+
+                if let Some(offer) = offer {
+                    collection_activity::offer(
+                        db,
+                        offer.id.unwrap(),
+                        &offer.clone(),
+                        "OFFER_CANCELED",
+                    )?;
+                }
 
                 Result::<_>::Ok(())
             }

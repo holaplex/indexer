@@ -146,7 +146,7 @@ pub(crate) async fn process(
                     listings::table.filter(
                         listings::trade_state
                             .eq(trade_state.to_string())
-                            .and(listings::metadata.eq(row.metadata)),
+                            .and(listings::metadata.eq(row.metadata.clone())),
                     ),
                 ))
                 .get_result::<bool>(db)?;
@@ -156,6 +156,13 @@ pub(crate) async fn process(
                 if listing_exists {
                     return Ok(());
                 }
+
+                mutations::collection_activity::listing(
+                    db,
+                    listing_id,
+                    &listing.clone(),
+                    "LISTING_CREATED",
+                )?;
 
                 db.build_transaction().read_write().run(|| {
                     let feed_event_id = insert_into(feed_events::table)

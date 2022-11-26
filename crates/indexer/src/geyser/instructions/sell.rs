@@ -4,7 +4,7 @@ use indexer_core::{
         custom_types::ListingEventLifecycleEnum,
         insert_into,
         models::{FeedEventWallet, Listing, ListingEvent, SellInstruction},
-        on_constraint, select,
+        mutations, select,
         tables::{
             feed_event_wallets, feed_events, listing_events, listings, purchases, sell_instructions,
         },
@@ -126,17 +126,18 @@ pub async fn upsert_into_listings_table<'a>(client: &Client, row: Listing<'stati
             ))
             .get_result::<bool>(db)?;
 
-            let listing_id = insert_into(listings::table)
-                .values(&row)
-                .on_conflict(on_constraint("listings_unique_fields"))
-                .do_update()
-                .set(&row)
-                .returning(listings::id)
-                .get_result::<Uuid>(db)?;
+            let listing_id = mutations::listing::insert(db, &row)?;
 
             if listing_exists {
                 return Ok(());
             }
+
+            mutations::collection_activity::listing(
+                db,
+                listing_id,
+                &row.clone(),
+                "LISTING_CREATED",
+            )?;
 
             db.build_transaction().read_write().run(|| {
                 let feed_event_id = insert_into(feed_events::table)
