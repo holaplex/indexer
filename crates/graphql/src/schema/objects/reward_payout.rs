@@ -1,7 +1,8 @@
 use indexer_core::{db::models, uuid::Uuid};
 
-use super::{nft::Nft, prelude::*, reward_center::RewardCenter, wallet::Wallet};
-use crate::schema::scalars::{PublicKey, U64};
+use super::prelude::*;
+use objects::{nft::Nft, reward_center::RewardCenter, wallet::Wallet, ah_purchase::Purchase};
+use scalars::{PublicKey, U64};
 
 #[derive(Debug, Clone)]
 pub struct RewardPayout {
@@ -12,7 +13,7 @@ pub struct RewardPayout {
     pub buyer_reward: U64,
     pub seller: Wallet,
     pub seller_reward: U64,
-    pub created_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
 }
 
 impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
@@ -40,7 +41,7 @@ impl<'a> TryFrom<models::ReadRewardPayout<'a>> for RewardPayout {
             buyer_reward: buyer_reward.try_into().unwrap_or_default(),
             seller: Wallet::new(seller.into(), seller_twitter_handle),
             seller_reward: seller_reward.try_into().unwrap_or_default(),
-            created_at,
+            created_at: DateTime::from_utc(created_at, Utc),
         })
     }
 }
@@ -55,6 +56,14 @@ impl RewardPayout {
         context
             .nft_loader
             .load(self.nft_address.clone())
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn purchase(&self, context: &AppContext) -> FieldResult<Option<Purchase>> {
+        context
+            .purchase_loader
+            .load(self.purchase_id.clone())
             .await
             .map_err(Into::into)
     }
@@ -79,7 +88,7 @@ impl RewardPayout {
         self.seller_reward
     }
 
-    pub fn created_at(&self) -> NaiveDateTime {
+    pub fn created_at(&self) -> DateTime<Utc> {
         self.created_at
     }
 }
