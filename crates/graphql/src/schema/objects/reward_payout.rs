@@ -1,8 +1,8 @@
 use indexer_core::{db::models, uuid::Uuid};
+use objects::{ah_purchase::Purchase, nft::Nft, reward_center::RewardCenter, wallet::Wallet};
+use scalars::{PublicKey, U64};
 
 use super::prelude::*;
-use objects::{nft::Nft, reward_center::RewardCenter, wallet::Wallet, ah_purchase::Purchase};
-use scalars::{PublicKey, U64};
 
 #[derive(Debug, Clone)]
 pub struct RewardPayout {
