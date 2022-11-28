@@ -260,6 +260,10 @@ impl TryBatchFn<PublicKey<Proposal>, Option<Proposal>> for Batcher {
             &conn,
             addresses,
             Option::<Vec<PublicKey<Governance>>>::None,
+            Option::<NaiveDateTime>::None,
+            Option::<NaiveDateTime>::None,
+            i32::MAX - 1,
+            0,
         )?;
 
         Ok(proposals

@@ -79,8 +79,8 @@ pub struct RewardPayout<'a> {
 #[diesel(treat_none_as_null = true)]
 pub struct ReadRewardPayout<'a> {
     /// Purchase ticket pubkey
-    #[sql_type = "VarChar"]
-    pub purchase_ticket: Cow<'a, str>,
+    #[sql_type = "diesel::sql_types::Uuid"]
+    pub purchase_id: Uuid,
     /// metadata address
     #[sql_type = "VarChar"]
     pub metadata: Cow<'a, str>,
@@ -108,12 +108,6 @@ pub struct ReadRewardPayout<'a> {
     /// The timestamp when the reward payout was created.
     #[sql_type = "Timestamp"]
     pub created_at: NaiveDateTime,
-    /// The slot number of the most recent update for this account
-    #[sql_type = "Int8"]
-    pub slot: i64,
-    /// The write version of the most recent update for this account
-    #[sql_type = "Int8"]
-    pub write_version: i64,
 }
 
 /// A row in the `rewards listings` table
@@ -2570,19 +2564,18 @@ pub struct ExecuteSaleInstruction<'a> {
     pub slot: i64,
 }
 
-/// A row in the `hpl_reward_center_execute_sale_ins` table
+/// A row in the `accept_offer_ins` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
 #[allow(missing_docs)]
-#[table_name = "hpl_reward_center_execute_sale_ins"]
-pub struct HplRewardCenterExecuteSale<'a> {
+#[table_name = "accept_offer_ins"]
+pub struct AcceptOffer<'a> {
+    pub tx_signature: Cow<'a, str>,
     pub buyer: Cow<'a, str>,
     pub buyer_reward_token_account: Cow<'a, str>,
     pub seller: Cow<'a, str>,
     pub seller_reward_token_account: Cow<'a, str>,
-    pub listing: Cow<'a, str>,
     pub offer: Cow<'a, str>,
-    pub payer: Cow<'a, str>,
     pub token_account: Cow<'a, str>,
     pub token_mint: Cow<'a, str>,
     pub metadata: Cow<'a, str>,
@@ -2596,14 +2589,59 @@ pub struct HplRewardCenterExecuteSale<'a> {
     pub auction_house_treasury: Cow<'a, str>,
     pub buyer_trade_state: Cow<'a, str>,
     pub seller_trade_state: Cow<'a, str>,
-    pub free_trade_state: Cow<'a, str>,
+    pub free_seller_trade_state: Cow<'a, str>,
     pub reward_center: Cow<'a, str>,
     pub reward_center_reward_token_account: Cow<'a, str>,
     pub ah_auctioneer_pda: Cow<'a, str>,
+    pub auction_house_program: Cow<'a, str>,
+    pub token_program: Cow<'a, str>,
     pub escrow_payment_bump: i16,
     pub free_trade_state_bump: i16,
     pub program_as_signer_bump: i16,
-    pub created_at: NaiveDateTime,
+    pub seller_trade_state_bump: i16,
+    pub buyer_trade_state_bump: i16,
+    /// Solana slot number
+    pub slot: i64,
+}
+
+/// A row in the `buy_listing_ins` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+#[allow(missing_docs)]
+#[table_name = "buy_listing_ins"]
+pub struct BuyListing<'a> {
+    pub tx_signature: Cow<'a, str>,
+    pub buyer: Cow<'a, str>,
+    pub payment_account: Cow<'a, str>,
+    pub transfer_authority: Cow<'a, str>,
+    pub buyer_reward_token_account: Cow<'a, str>,
+    pub seller: Cow<'a, str>,
+    pub seller_reward_token_account: Cow<'a, str>,
+    pub listing: Cow<'a, str>,
+    pub token_account: Cow<'a, str>,
+    pub token_mint: Cow<'a, str>,
+    pub metadata: Cow<'a, str>,
+    pub treasury_mint: Cow<'a, str>,
+    pub seller_payment_receipt_account: Cow<'a, str>,
+    pub buyer_receipt_token_account: Cow<'a, str>,
+    pub authority: Cow<'a, str>,
+    pub escrow_payment_account: Cow<'a, str>,
+    pub auction_house: Cow<'a, str>,
+    pub auction_house_fee_account: Cow<'a, str>,
+    pub auction_house_treasury: Cow<'a, str>,
+    pub buyer_trade_state: Cow<'a, str>,
+    pub seller_trade_state: Cow<'a, str>,
+    pub free_seller_trade_state: Cow<'a, str>,
+    pub reward_center: Cow<'a, str>,
+    pub reward_center_reward_token_account: Cow<'a, str>,
+    pub ah_auctioneer_pda: Cow<'a, str>,
+    pub auction_house_program: Cow<'a, str>,
+    pub token_program: Cow<'a, str>,
+    pub buyer_trade_state_bump: i16,
+    pub escrow_payment_bump: i16,
+    pub free_trade_state_bump: i16,
+    pub seller_trade_state_bump: i16,
+    pub program_as_signer_bump: i16,
     /// Solana slot number
     pub slot: i64,
 }
@@ -3297,6 +3335,8 @@ pub struct SplGovernanceProposal {
     pub start_voting_at: Option<NaiveDateTime>,
     #[sql_type = "Nullable<diesel::sql_types::BigInt>"]
     pub max_voting_time: Option<i64>,
+    #[sql_type = "Nullable<VarChar>"]
+    pub program_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]

@@ -3,8 +3,8 @@
 use anyhow::Context;
 use diesel::{
     pg::Pg,
-    sql_types::{Array, Bool, Nullable, Text},
-    types::ToSql,
+    sql_types::{Array, Bool, Nullable, Text, Timestamp},
+    types::{Int4, ToSql},
     RunQueryDsl,
 };
 
@@ -58,24 +58,42 @@ pub fn vote_records(
 }
 
 const PROPOSALS_QUERY: &str = r"
-select 	address, account_type, governance, governing_token_mint, state, token_owner_record, signatories_count,
+select address, account_type, governance, governing_token_mint, state, token_owner_record, signatories_count,
 		signatories_signed_off_count, yes_votes_count, no_votes_count, instructions_executed_count,
-		instructions_count, instructions_next_index, null as vote_type, null as deny_vote_weight, null as veto_vote_weight,
-		null as abstain_vote_weight, null as start_voting_at, draft_at, signing_off_at, voting_at, null as voting_at_slot,
-		voting_completed_at, executing_at, closed_at, execution_flags, max_vote_weight, null as max_voting_time,
-		vote_threshold_type, vote_threshold_percentage, name, description_link
-from proposals_v1
-where (address = any($1) or $1 is null) and (governance = any($2) or $2 is null)
-union all
-select 	address, account_type, governance, governing_token_mint, state, token_owner_record, signatories_count,
-		signatories_signed_off_count, null as yes_votes_count, null as no_votes_count, null as instructions_executed_count,
-		null as instructions_count, null as instructions_next_index, vote_type, deny_vote_weight, veto_vote_weight, abstain_vote_weight,
-		start_voting_at, draft_at, signing_off_at, voting_at, voting_at_slot, voting_completed_at, executing_at, closed_at, execution_flags,
-		max_vote_weight, max_voting_time, vote_threshold_type, vote_threshold_percentage, name, description_link
-from proposals_v2
-where (address = any($1) or $1 is null) and (governance = any($2) or $2 is null);
+		instructions_count, instructions_next_index,  vote_type,  deny_vote_weight, veto_vote_weight,
+		 abstain_vote_weight, start_voting_at, draft_at, signing_off_at, voting_at, voting_at_slot,
+		voting_completed_at, executing_at, closed_at, execution_flags, max_vote_weight, max_voting_time,
+		vote_threshold_type, vote_threshold_percentage, name, description_link, program_id
+from (
+		(select 	address, account_type, governance, governing_token_mint, state, token_owner_record, signatories_count,
+				signatories_signed_off_count, yes_votes_count, no_votes_count, instructions_executed_count,
+				instructions_count, instructions_next_index, null as vote_type, null as deny_vote_weight, null as veto_vote_weight,
+				null as abstain_vote_weight, null as start_voting_at, draft_at, signing_off_at, voting_at, null as voting_at_slot,
+				voting_completed_at, executing_at, closed_at, execution_flags, max_vote_weight, null as max_voting_time,
+				vote_threshold_type, vote_threshold_percentage, name, description_link, program_id
+		from proposals_v1
+		where (address = any($1) or $1 is null) and (governance = any($2) or $2 is null and (draft_at >= $3 or $3 is null)
+		and (draft_at <= $4 or $4 is null))
+        order by draft_at desc)
+		union all
+		(select 	address, account_type, governance, governing_token_mint, state, token_owner_record, signatories_count,
+				signatories_signed_off_count, null as yes_votes_count, null as no_votes_count, null as instructions_executed_count,
+				null as instructions_count, null as instructions_next_index, vote_type, deny_vote_weight, veto_vote_weight, abstain_vote_weight,
+				start_voting_at, draft_at, signing_off_at, voting_at, voting_at_slot, voting_completed_at, executing_at, closed_at, execution_flags,
+				max_vote_weight, max_voting_time, vote_threshold_type, vote_threshold_percentage, name, description_link, program_id
+		from proposals_v2
+		where (address = any($1) or $1 is null) and (governance = any($2) or $2 is null and (draft_at >= $3 or $3 is null)
+		and (draft_at <= $4 or $4 is null))
+        order by draft_at desc)
+) p
+limit $5
+offset $6;
  -- $1: addresses::text[]
- -- $2: governances::text[]";
+ -- $2: governances::text[]
+ -- $3: start_ts::timestamp
+ -- $4: stop_ts::timestamp
+ -- $5: limit::integer
+ -- $6: offset::integer";
 
 /// Load all spl governance proposals including V1 and V2
 ///
@@ -85,10 +103,18 @@ pub fn proposals(
     conn: &Connection,
     addresses: impl ToSql<Nullable<Array<Text>>, Pg>,
     governances: impl ToSql<Nullable<Array<Text>>, Pg>,
+    start_time: impl ToSql<Nullable<Timestamp>, Pg>,
+    end_time: impl ToSql<Nullable<Timestamp>, Pg>,
+    limit: impl ToSql<Int4, Pg>,
+    offset: impl ToSql<Int4, Pg>,
 ) -> Result<Vec<SplGovernanceProposal>> {
     diesel::sql_query(PROPOSALS_QUERY)
         .bind(addresses)
         .bind(governances)
+        .bind(start_time)
+        .bind(end_time)
+        .bind(limit)
+        .bind(offset)
         .load(conn)
         .context("Failed to load proposals")
 }

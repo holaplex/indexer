@@ -6,8 +6,8 @@ use diesel::{
     sql_types::{Array, Text},
 };
 use sea_query::{
-    Alias, Condition, DynIden, Expr, Iden, JoinType, Order, PostgresQueryBuilder, Query, SeaRc,
-    Value,
+    Alias, Condition, DynIden, Expr, Iden, JoinType, NullOrdering, Order, OrderedStatement,
+    PostgresQueryBuilder, Query, SeaRc, Value,
 };
 use uuid::Uuid;
 
@@ -699,7 +699,7 @@ pub fn wallet_nfts<O: Into<Value>>(
 
     let sort_unwrap = sort_by.map_or(Listings::Price, Into::into);
 
-    let order_unwrap = order.unwrap_or(Order::Desc);
+    let order_unwrap = order.unwrap_or(Order::Asc);
 
     let current_time = Utc::now().naive_utc();
 
@@ -778,7 +778,11 @@ pub fn wallet_nfts<O: Into<Value>>(
         )
         .limit(limit)
         .offset(offset)
-        .order_by((Listings::Table, sort_unwrap), order_unwrap)
+        .order_by_with_nulls(
+            (Listings::Table, sort_unwrap),
+            order_unwrap,
+            NullOrdering::Last,
+        )
         .take();
 
     if let Some(collections) = collections {
@@ -808,7 +812,7 @@ SELECT listings.id as id, metadata, auction_house, price, auction_house, created
         FROM listings
         LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
         WHERE metadata = ANY($1) and auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
-    UNION
+    UNION ALL
     SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[seller, buyer] as wallets,
     array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
@@ -817,7 +821,7 @@ SELECT listings.id as id, metadata, auction_house, price, auction_house, created
         LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchases.seller)
         LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
         WHERE metadata = ANY($1)
-    UNION
+    UNION ALL
     SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
     array[buyer] as wallets,
     array[bth.twitter_handle] as wallet_twitter_handles,
@@ -868,7 +872,7 @@ pub fn mr_collection_nfts<O: Into<Value>>(
 
     let current_time = Utc::now().naive_utc();
 
-    let order = order.unwrap_or(Order::Desc);
+    let order = order.unwrap_or(Order::Asc);
 
     let mut query = Query::select()
         .columns(vec![
@@ -944,7 +948,7 @@ pub fn mr_collection_nfts<O: Into<Value>>(
         )
         .limit(limit)
         .offset(offset)
-        .order_by((Listings::Table, sort_by), order)
+        .order_by_with_nulls((Listings::Table, sort_by), order, NullOrdering::Last)
         .take();
 
     if let Some(attributes) = attributes {
