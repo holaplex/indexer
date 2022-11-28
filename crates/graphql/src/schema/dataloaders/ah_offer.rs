@@ -44,6 +44,7 @@ impl TryBatchFn<PublicKey<Nft>, Vec<Offer>> for Batcher {
                     .or(offers::expiry.gt(Utc::now().naive_utc())),
             )
             .filter(offers::metadata.eq(any(addresses)))
+            .order(offers::price.desc())
             .load(&conn)
             .context("Failed to load offers")?;
 
