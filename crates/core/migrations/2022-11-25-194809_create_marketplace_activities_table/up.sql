@@ -13,3 +13,10 @@ create table if not exists marketplace_activities (
     collection_id text,
     activity_type activity_type not null
 );
+
+create index on marketplace_activities(metadata);
+create index on marketplace_activities(created_at);
+create index on marketplace_activities(buyer);
+create index on marketplace_activities(seller);
+create index on marketplace_activities(collection_id);
+create index on marketplace_activities(activity_type);
