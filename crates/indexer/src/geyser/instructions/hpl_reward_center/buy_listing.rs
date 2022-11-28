@@ -3,14 +3,14 @@ use hpl_reward_center::state::{PayoutOperation, RewardCenter, RewardRules};
 use indexer_core::{
     bigdecimal::BigDecimal,
     db::{
-        custom_types::PayoutOperationEnum,
+        custom_types::{ActivityTypeEnum, PayoutOperationEnum},
         insert_into,
         models::{
             BuyListing, FeedEventWallet, Purchase, PurchaseEvent, RewardCenter as DbRewardCenter,
             RewardPayout,
         },
         mutations,
-        mutations::collection_activity,
+        mutations::activity,
         select,
         tables::{
             buy_listing_ins, feed_event_wallets, feed_events, listings, offers, purchase_events,
@@ -173,7 +173,7 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
                 return Ok(());
             }
 
-            collection_activity::purchase(db, purchase_id, &data.clone(), "PURCHASE")?;
+            activity::purchase(db, purchase_id, &data.clone(), ActivityTypeEnum::Purchased)?;
 
             let reward_center = reward_centers::table
                 .select(reward_centers::all_columns)

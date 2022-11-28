@@ -1,10 +1,10 @@
 use borsh::BorshDeserialize;
 use indexer_core::{
     db::{
-        custom_types::OfferEventLifecycleEnum,
+        custom_types::{ActivityTypeEnum, OfferEventLifecycleEnum},
         insert_into,
         models::{FeedEventWallet, Offer, OfferEvent, PublicBuyInstruction},
-        on_constraint, select,
+        mutations, select,
         tables::{
             current_metadata_owners, feed_event_wallets, feed_events, metadatas, offer_events,
             offers, public_buy_instructions,
@@ -104,17 +104,13 @@ async fn upsert_into_offers_table<'a>(
             ))
             .get_result::<bool>(db)?;
 
-            let offer_id = insert_into(offers::table)
-                .values(&row)
-                .on_conflict(on_constraint("offers_unique_fields"))
-                .do_update()
-                .set(&row)
-                .returning(offers::id)
-                .get_result::<Uuid>(db)?;
+            let offer_id = mutations::offer::insert(db, &row)?;
 
             if offer_exists {
                 return Ok(());
             }
+
+            mutations::activity::offer(db, offer_id, &row.clone(), ActivityTypeEnum::OfferCreated)?;
 
             db.build_transaction().read_write().run(|| {
                 let metadata_owner: String = current_metadata_owners::table

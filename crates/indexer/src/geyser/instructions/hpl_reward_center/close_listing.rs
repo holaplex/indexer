@@ -1,7 +1,8 @@
 use indexer_core::db::{
+    custom_types::ActivityTypeEnum,
     delete, insert_into,
     models::{HplRewardCenterCloseListing, Listing},
-    mutations::collection_activity,
+    mutations::activity,
     tables::{hpl_reward_center_close_listing_ins, listings, rewards_listings},
 };
 use solana_program::pubkey::Pubkey;
@@ -44,11 +45,11 @@ pub(crate) async fn process(
             .optional()?;
 
             if let Some(listing) = listing {
-                collection_activity::listing(
+                activity::listing(
                     db,
                     listing.id.unwrap(),
                     &listing.clone(),
-                    "LISTING_CANCELED",
+                    ActivityTypeEnum::ListingCanceled,
                 )?;
             }
 

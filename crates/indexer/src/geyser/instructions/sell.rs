@@ -1,7 +1,7 @@
 use borsh::BorshDeserialize;
 use indexer_core::{
     db::{
-        custom_types::ListingEventLifecycleEnum,
+        custom_types::{ActivityTypeEnum, ListingEventLifecycleEnum},
         insert_into,
         models::{FeedEventWallet, Listing, ListingEvent, SellInstruction},
         mutations, select,
@@ -132,11 +132,11 @@ pub async fn upsert_into_listings_table<'a>(client: &Client, row: Listing<'stati
                 return Ok(());
             }
 
-            mutations::collection_activity::listing(
+            mutations::activity::listing(
                 db,
                 listing_id,
                 &row.clone(),
-                "LISTING_CREATED",
+                ActivityTypeEnum::ListingCreated,
             )?;
 
             db.build_transaction().read_write().run(|| {

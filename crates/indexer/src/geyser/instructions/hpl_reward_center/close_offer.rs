@@ -1,9 +1,10 @@
 use borsh::BorshDeserialize;
 use hpl_reward_center::offers::close::CloseOfferParams;
 use indexer_core::db::{
+    custom_types::ActivityTypeEnum,
     delete, insert_into,
     models::{HplRewardCenterCloseoffer, Offer},
-    mutations::collection_activity,
+    mutations::activity,
     tables::{hpl_reward_center_close_offer_ins, offers, rewards_offers},
 };
 use solana_program::pubkey::Pubkey;
@@ -52,11 +53,11 @@ pub(crate) async fn process(
                 .optional()?;
 
                 if let Some(offer) = offer {
-                    collection_activity::offer(
+                    activity::offer(
                         db,
                         offer.id.unwrap(),
                         &offer.clone(),
-                        "OFFER_CANCELED",
+                        ActivityTypeEnum::OfferCanceled,
                     )?;
                 }
 

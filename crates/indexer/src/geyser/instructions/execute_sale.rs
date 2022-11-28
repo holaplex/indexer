@@ -1,6 +1,7 @@
 use borsh::BorshDeserialize;
 use indexer_core::{
     db::{
+        custom_types::ActivityTypeEnum,
         insert_into,
         models::{ExecuteSaleInstruction, FeedEventWallet, Purchase, PurchaseEvent},
         mutations, select,
@@ -144,7 +145,12 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
                 return Ok(());
             }
 
-            mutations::collection_activity::purchase(db, purchase_id, &data.clone(), "PURCHASE")?;
+            mutations::activity::purchase(
+                db,
+                purchase_id,
+                &data.clone(),
+                ActivityTypeEnum::Purchased,
+            )?;
 
             db.build_transaction().read_write().run(|| {
                 let feed_event_id = insert_into(feed_events::table)

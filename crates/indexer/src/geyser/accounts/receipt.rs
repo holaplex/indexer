@@ -1,6 +1,6 @@
 use indexer_core::{
     db::{
-        custom_types::{ListingEventLifecycleEnum, OfferEventLifecycleEnum},
+        custom_types::{ActivityTypeEnum, ListingEventLifecycleEnum, OfferEventLifecycleEnum},
         insert_into,
         models::{
             BidReceipt as DbBidReceipt, FeedEventWallet, Listing, ListingEvent,
@@ -92,11 +92,11 @@ pub(crate) async fn process_listing_receipt(
                 return Ok(());
             }
 
-            mutations::collection_activity::listing(
+            mutations::activity::listing(
                 db,
                 listing_id,
                 &values.clone(),
-                "LISTING_CREATED",
+                ActivityTypeEnum::ListingCreated,
             )?;
 
             db.build_transaction().read_write().run(|| {
@@ -385,11 +385,11 @@ async fn upsert_into_offers_table<'a>(client: &Client, row: DbBidReceipt<'static
         .run({
             move |db| {
                 let offer_id = mutations::offer::insert(db, &values)?;
-                mutations::collection_activity::offer(
+                mutations::activity::offer(
                     db,
                     offer_id,
                     &values.clone(),
-                    "OFFER_CREATED",
+                    ActivityTypeEnum::OfferCreated,
                 )?;
                 Result::<_>::Ok(offer_id)
             }
@@ -423,11 +423,11 @@ async fn upsert_into_purchases_table<'a>(
         .run({
             move |db| {
                 let purchase_id = mutations::purchase::insert(db, &row)?;
-                mutations::collection_activity::purchase(
+                mutations::activity::purchase(
                     db,
                     purchase_id,
                     &row.clone(),
-                    "PURCHASE",
+                    ActivityTypeEnum::Purchased,
                 )?;
 
                 update(
