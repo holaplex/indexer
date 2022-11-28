@@ -149,7 +149,7 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
                 db,
                 purchase_id,
                 &data.clone(),
-                ActivityTypeEnum::Purchased,
+                ActivityTypeEnum::Purchase,
             )?;
 
             db.build_transaction().read_write().run(|| {

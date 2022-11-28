@@ -3627,6 +3627,6 @@ pub struct Activity<'a> {
     pub marketplace_program: Cow<'a, str>,
     pub buyer: Option<Cow<'a, str>>,
     pub seller: Option<Cow<'a, str>>,
-    pub collection_id: Cow<'a, str>,
+    pub collection_id: Option<Cow<'a, str>>,
     pub activity_type: ActivityTypeEnum,
 }

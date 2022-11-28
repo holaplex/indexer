@@ -1,5 +1,5 @@
 create type activity_type 
-as enum ('ListingCreated', 'ListingCanceled', 'OfferCreated', 'OfferCanceled', 'Purchased');
+as enum ('ListingCreated', 'ListingCanceled', 'OfferCreated', 'OfferCanceled', 'Purchase');
 
 create table if not exists marketplace_activities (
     id uuid primary key,
@@ -10,6 +10,6 @@ create table if not exists marketplace_activities (
     marketplace_program varchar(48) not null,
     buyer varchar(48),
     seller varchar(48),
-    collection_id text not null,
+    collection_id text,
     activity_type activity_type not null
 );

@@ -427,7 +427,7 @@ async fn upsert_into_purchases_table<'a>(
                     db,
                     purchase_id,
                     &row.clone(),
-                    ActivityTypeEnum::Purchased,
+                    ActivityTypeEnum::Purchase,
                 )?;
 
                 update(

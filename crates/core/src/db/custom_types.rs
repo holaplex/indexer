@@ -627,7 +627,7 @@ pub enum ActivityTypeEnum {
     ListingCanceled,
     OfferCreated,
     OfferCanceled,
-    Purchased,
+    Purchase,
 }
 
 impl ToSql<ActivityType, Pg> for ActivityTypeEnum {

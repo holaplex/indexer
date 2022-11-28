@@ -173,7 +173,7 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
                 return Ok(());
             }
 
-            activity::purchase(db, purchase_id, &data.clone(), ActivityTypeEnum::Purchased)?;
+            activity::purchase(db, purchase_id, &data.clone(), ActivityTypeEnum::Purchase)?;
 
             let reward_center = reward_centers::table
                 .select(reward_centers::all_columns)

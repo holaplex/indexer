@@ -1292,7 +1292,7 @@ table! {
         marketplace_program -> Varchar,
         buyer -> Nullable<Varchar>,
         seller -> Nullable<Varchar>,
-        collection_id -> Text,
+        collection_id -> Nullable<Text>,
         activity_type -> Activity_type,
     }
 }

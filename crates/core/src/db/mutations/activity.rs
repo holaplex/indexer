@@ -35,18 +35,19 @@ pub fn listing<'a>(
         .inner_join(metadatas::table.on(metadatas::mint_address.eq(collection_mints::mint)))
         .filter(metadatas::address.eq(listing.metadata.clone().to_string()))
         .select(collection_mints::collection_id)
-        .first::<String>(db)?;
+        .first::<String>(db)
+        .optional()?;
 
     let activity = Activity {
         id: listing_id,
         metadata: listing.metadata.clone(),
         price: listing.price,
         auction_house: listing.auction_house.clone(),
-        created_at: listing.created_at,
+        created_at: Local::now().naive_utc(),
         marketplace_program: listing.marketplace_program.clone(),
         buyer: None,
         seller: Some(listing.seller.clone()),
-        collection_id: collection_id.into(),
+        collection_id: collection_id.map(Into::into),
         activity_type,
     };
 
@@ -68,22 +69,29 @@ pub fn offer<'a>(
     offer: &Offer<'a>,
     activity_type: ActivityTypeEnum,
 ) -> Result<()> {
+    let auction_house: Pubkey = offer.auction_house.to_string().parse()?;
+
+    if auction_house == pubkeys::OPENSEA_AUCTION_HOUSE {
+        return Ok(());
+    }
+
     let collection_id = collection_mints::table
         .inner_join(metadatas::table.on(metadatas::mint_address.eq(collection_mints::mint)))
         .filter(metadatas::address.eq(offer.metadata.clone().to_string()))
         .select(collection_mints::collection_id)
-        .first::<String>(db)?;
+        .first::<String>(db)
+        .optional()?;
 
     let activity = Activity {
         id: offer_id,
         metadata: offer.metadata.clone(),
         price: offer.price,
         auction_house: offer.auction_house.clone(),
-        created_at: offer.created_at,
+        created_at: Local::now().naive_utc(),
         marketplace_program: offer.marketplace_program.clone(),
         buyer: Some(offer.buyer.clone()),
         seller: None,
-        collection_id: collection_id.into(),
+        collection_id: collection_id.map(Into::into),
         activity_type,
     };
 
@@ -109,18 +117,19 @@ pub fn purchase<'a>(
         .inner_join(metadatas::table.on(metadatas::mint_address.eq(collection_mints::mint)))
         .filter(metadatas::address.eq(purchase.metadata.clone().to_string()))
         .select(collection_mints::collection_id)
-        .first::<String>(db)?;
+        .first::<String>(db)
+        .optional()?;
 
     let activity = Activity {
         id: purchase_id,
         metadata: purchase.metadata.clone(),
         price: purchase.price,
         auction_house: purchase.auction_house.clone(),
-        created_at: purchase.created_at,
+        created_at: Local::now().naive_utc(),
         marketplace_program: purchase.marketplace_program.clone(),
         buyer: Some(purchase.buyer.clone()),
         seller: Some(purchase.seller.clone()),
-        collection_id: collection_id.into(),
+        collection_id: collection_id.map(Into::into),
         activity_type,
     };
 

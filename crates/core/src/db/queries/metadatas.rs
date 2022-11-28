@@ -805,31 +805,14 @@ pub fn wallet_nfts<O: Into<Value>>(
 }
 
 const ACTIVITES_QUERY: &str = r"
-SELECT listings.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
-    array[seller] as wallets,
-    array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
-    'listing' as activity_type
-        FROM listings
-        LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
-        WHERE metadata = ANY($1) and auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
-    UNION ALL
-    SELECT purchases.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
-    array[seller, buyer] as wallets,
-    array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
-    'purchase' as activity_type
-        FROM purchases
-        LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchases.seller)
-        LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
+SELECT id, metadata, auction_house, price, created_at, marketplace_program,
+    array[buyer, seller] as wallets,
+    array[thb.twitter_handle, ths.twitter_handle] as wallet_twitter_handles,
+    activity_type::text
+    FROM marketplace_activities
+    LEFT JOIN twitter_handle_name_services thb (thb.wallet_address = marketplace_activities.buyer)
+    LEFT JOIN twitter_handle_name_services ths on (ths.wallet_address = marketplace_activities.seller)
         WHERE metadata = ANY($1)
-    UNION ALL
-    SELECT offers.id as id, metadata, auction_house, price, auction_house, created_at, marketplace_program,
-    array[buyer] as wallets,
-    array[bth.twitter_handle] as wallet_twitter_handles,
-    'offer' as activity_type
-        FROM offers
-        LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = offers.buyer)
-        WHERE metadata = ANY($1) and auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
-        AND offers.purchase_id IS NULL
     ORDER BY created_at DESC;
  -- $1: addresses::text[]";
 
