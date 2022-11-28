@@ -4,6 +4,7 @@ mod accounts;
 mod client;
 mod instructions;
 mod programs;
+mod slot_status;
 
 use std::{collections::HashSet, fmt, sync::Arc};
 
@@ -165,10 +166,7 @@ pub async fn process_message<H: std::hash::BuildHasher>(
         },
 
         // Other
-        Message::SlotStatusUpdate(slot) => {
-            debug!("Slot status update: {:?}", slot);
-            Ok(())
-        },
+        Message::SlotStatusUpdate(slot) => slot_status::process(client, slot).await,
 
         // Fallbacks
         Message::AccountUpdate(update) => {
