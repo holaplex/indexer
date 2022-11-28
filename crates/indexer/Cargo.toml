@@ -60,8 +60,9 @@ http = [
   "indexer-rabbitmq/search-indexer",
 ]
 job-runner = [
-  "indexer-rabbitmq/job-runner",
   "solana-client",
+  "solana-transaction-status",
+  "indexer-rabbitmq/job-runner",
 ]
 search = [
   "crossbeam",
@@ -102,6 +103,7 @@ serde = { version = "1.0.147", features = ["derive"] }
 solana-client = { version = "~1.9.28", optional = true }
 solana-program = "~1.9.28"
 solana-sdk = "~1.9.28"
+solana-transaction-status = { version = "~1.9.28", optional = true }
 strum = { version = "0.24.1", features = ["derive"] }
 thiserror = "1.0.37"
 tokio = { version = "1.14.0", features = ["macros", "rt", "rt-multi-thread", "signal", "sync"] }
@@ -156,6 +158,14 @@ git = "https://github.com/holaplex/indexer-geyser-plugin"
 # rev = "57f6b14" # TODO 2
 branch = "ryans/reindex-slot-job"
 version = "=0.3.1"
+
+[dependencies.indexer-selector]
+package = "holaplex-indexer-geyser-selector"
+git = "https://github.com/holaplex/indexer-geyser-plugin"
+# tag = "v0.6.1" # TODO
+# rev = "57f6b14" # TODO 2
+branch = "ryans/reindex-slot-job"
+version = "=0.1.0"
 
 # Workspace dependencies
 [dependencies.genostub]

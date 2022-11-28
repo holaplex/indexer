@@ -39,7 +39,7 @@ fn main() {
                 .await
                 .context("Failed to create queue consumer")?;
 
-            let client = Client::new_rc(client);
+            let client = Client::new_rc(client).context("Failed to construct Client")?;
 
             holaplex_indexer::amqp_consume(
                 &params,

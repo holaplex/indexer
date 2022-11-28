@@ -2885,6 +2885,10 @@ name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
+dependencies = [
+ "ahash 0.7.6",
+ "serde",
+]
 
 [[package]]
 name = "heck"
@@ -2999,6 +3003,7 @@ dependencies = [
  "govern",
  "graph_program",
  "holaplex-indexer-core",
+ "holaplex-indexer-geyser-selector",
  "holaplex-indexer-rabbitmq",
  "hostname",
  "hpl-reward-center",
@@ -3019,6 +3024,7 @@ dependencies = [
  "solana-client",
  "solana-program",
  "solana-sdk",
+ "solana-transaction-status",
  "spl-token",
  "spl-token-bonding",
  "strum",
@@ -3108,6 +3114,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "holaplex-indexer-geyser-selector"
+version = "0.1.0"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?branch=ryans/reindex-slot-job#b6f6dcbee1d4a4c150492d4294ec0d2cc59fca39"
+dependencies = [
+ "hashbrown 0.12.3",
+ "holaplex-indexer-rabbitmq",
+ "log",
+ "once_cell",
+ "serde",
+ "solana-program",
+ "spl-token",
+ "thiserror",
+]
+
+[[package]]
 name = "holaplex-indexer-graphql"
 version = "0.1.0"
 dependencies = [
@@ -3149,7 +3170,7 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-rabbitmq"
 version = "0.3.1"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?branch=ryans/reindex-slot-job#fb96ee244c023e3c3dfcbc44dd9c07a4ee957f63"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?branch=ryans/reindex-slot-job#b6f6dcbee1d4a4c150492d4294ec0d2cc59fca39"
 dependencies = [
  "futures-util",
  "lapin",
