@@ -359,7 +359,7 @@ impl Wallet {
             event_types.map(|e| {
                 e.iter()
                     .map(std::string::ToString::to_string)
-                    .collect::<Vec<String>>()
+                    .collect::<Vec<_>>()
             }),
             limit,
             offset,

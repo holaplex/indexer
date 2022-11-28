@@ -600,10 +600,10 @@ SELECT id, metadata, auction_house, price, listings.created_at, marketplace_prog
     array[thb.twitter_handle, ths.twitter_handle] as wallet_twitter_handles,
     activity_type::text
         FROM marketplace_activities
-        LEFT JOIN twitter_handle_name_services thb (thb.wallet_address = marketplace_activities.buyer)
+        LEFT JOIN twitter_handle_name_services thb on (thb.wallet_address = marketplace_activities.buyer)
 	    LEFT JOIN twitter_handle_name_services ths on (ths.wallet_address = marketplace_activities.seller)
         WHERE collection_id = $1
-        AND ( activity_type = ANY($2) OR $2 IS NULL)
+        AND ( activity_type::text = ANY($2) OR $2 IS NULL)
     ORDER BY created_at DESC
     LIMIT $3
     OFFSET $4;
