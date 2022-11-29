@@ -12,8 +12,8 @@ use crate::{
 };
 
 const VOLUME_QUERY: &str = r"
-SELECT COALESCE(SUM(purchase_price), 0) as volume
-    FROM puchases p
+SELECT COALESCE(SUM(price), 0) as volume
+    FROM purchases p
     INNER JOIN auction_houses ah
         on (p.auction_house = ah.address)
     WHERE p.auction_house = $1

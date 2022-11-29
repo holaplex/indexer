@@ -3614,11 +3614,11 @@ pub struct TokensDistributed {
 }
 
 /// Auction House Volume
-#[derive(Debug, Clone, Copy, Queryable, QueryableByName)]
+#[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct AuctionHouseVolume {
     /// Auction House Volume
-    #[sql_type = "BigInt"]
-    pub volume: i64,
+    #[sql_type = "Numeric"]
+    pub volume: BigDecimal,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
