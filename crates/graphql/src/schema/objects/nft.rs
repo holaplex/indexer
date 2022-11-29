@@ -254,6 +254,7 @@ impl TryFrom<models::NftActivity> for NftActivity {
             created_at: DateTime::from_utc(created_at, Utc),
             wallets: wallets
                 .into_iter()
+                .flatten()
                 .zip(wallet_twitter_handles.into_iter())
                 .map(|(address, twitter_handle)| Wallet::new(address.into(), twitter_handle))
                 .collect(),
