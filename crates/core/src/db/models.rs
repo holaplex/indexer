@@ -671,8 +671,8 @@ pub struct WalletActivity {
     pub created_at: NaiveDateTime,
 
     /// The wallet address asociated to the activity [seller, buyer]
-    #[sql_type = "Array<VarChar>"]
-    pub wallets: Vec<String>,
+    #[sql_type = "Array<Nullable<VarChar>>"]
+    pub wallets: Vec<Option<String>>,
 
     /// The twitter handles asociated to each wallet [seller, buyer]
     #[sql_type = "Array<Nullable<Text>>"]
