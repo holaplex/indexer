@@ -595,7 +595,7 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Do
 // MoonRank queries
 
 const MR_COLLECTION_ACTIVITES_QUERY: &str = r"
-SELECT id, metadata, auction_house, price, listings.created_at, marketplace_program,
+SELECT id, metadata, auction_house, marketplace_program, price, created_at,
     array[buyer, seller] as wallets,
     array[thb.twitter_handle, ths.twitter_handle] as wallet_twitter_handles,
     activity_type::text
