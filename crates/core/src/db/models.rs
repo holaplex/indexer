@@ -3606,11 +3606,11 @@ pub struct DolphinStats1D<'a> {
 }
 
 /// A row in a `tokens_distributed` query, representing total $SAUCE tokens distributed between particular dates.
-#[derive(Debug, Clone, Copy, Queryable, QueryableByName)]
+#[derive(Debug, Clone, Queryable, QueryableByName)]
 pub struct TokensDistributed {
     /// Total tokens distributed
-    #[sql_type = "BigInt"]
-    pub tokens_distributed: i64,
+    #[sql_type = "Numeric"]
+    pub tokens_distributed: BigDecimal,
 }
 
 /// Auction House Volume
