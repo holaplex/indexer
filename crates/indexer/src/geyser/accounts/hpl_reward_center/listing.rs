@@ -3,7 +3,7 @@ use std::str::FromStr;
 use hpl_reward_center::state::Listing;
 use indexer_core::{
     db::{
-        custom_types::ListingEventLifecycleEnum,
+        custom_types::{ActivityTypeEnum, ListingEventLifecycleEnum},
         insert_into,
         models::{
             AuctionHouse, CurrentMetadataOwner, FeedEventWallet, Listing as DbListing,
@@ -146,7 +146,7 @@ pub(crate) async fn process(
                     listings::table.filter(
                         listings::trade_state
                             .eq(trade_state.to_string())
-                            .and(listings::metadata.eq(row.metadata)),
+                            .and(listings::metadata.eq(row.metadata.clone())),
                     ),
                 ))
                 .get_result::<bool>(db)?;
@@ -156,6 +156,13 @@ pub(crate) async fn process(
                 if listing_exists {
                     return Ok(());
                 }
+
+                mutations::activity::listing(
+                    db,
+                    listing_id,
+                    &listing.clone(),
+                    ActivityTypeEnum::ListingCreated,
+                )?;
 
                 db.build_transaction().read_write().run(|| {
                     let feed_event_id = insert_into(feed_events::table)

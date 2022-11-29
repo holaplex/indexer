@@ -1,10 +1,10 @@
 use borsh::BorshDeserialize;
 use indexer_core::{
     db::{
-        custom_types::OfferEventLifecycleEnum,
+        custom_types::{ActivityTypeEnum, OfferEventLifecycleEnum},
         insert_into,
         models::{FeedEventWallet, Offer, OfferEvent, PublicBuyInstruction},
-        on_constraint, select,
+        mutations, select,
         tables::{
             current_metadata_owners, feed_event_wallets, feed_events, metadatas, offer_events,
             offers, public_buy_instructions,
@@ -95,6 +95,8 @@ async fn upsert_into_offers_table<'a>(
     client
         .db()
         .run(move |db| {
+            let auction_house: Pubkey = row.auction_house.to_string().parse()?;
+
             let offer_exists = select(exists(
                 offers::table.filter(
                     offers::trade_state
@@ -104,16 +106,19 @@ async fn upsert_into_offers_table<'a>(
             ))
             .get_result::<bool>(db)?;
 
-            let offer_id = insert_into(offers::table)
-                .values(&row)
-                .on_conflict(on_constraint("offers_unique_fields"))
-                .do_update()
-                .set(&row)
-                .returning(offers::id)
-                .get_result::<Uuid>(db)?;
+            let offer_id = mutations::offer::insert(db, &row)?;
 
             if offer_exists {
                 return Ok(());
+            }
+
+            if auction_house != pubkeys::OPENSEA_AUCTION_HOUSE {
+                mutations::activity::offer(
+                    db,
+                    offer_id,
+                    &row.clone(),
+                    ActivityTypeEnum::OfferCreated,
+                )?;
             }
 
             db.build_transaction().read_write().run(|| {

@@ -1,10 +1,10 @@
 use borsh::BorshDeserialize;
 use indexer_core::{
     db::{
-        custom_types::ListingEventLifecycleEnum,
+        custom_types::{ActivityTypeEnum, ListingEventLifecycleEnum},
         insert_into,
         models::{FeedEventWallet, Listing, ListingEvent, SellInstruction},
-        on_constraint, select,
+        mutations, select,
         tables::{
             feed_event_wallets, feed_events, listing_events, listings, purchases, sell_instructions,
         },
@@ -117,6 +117,8 @@ pub async fn upsert_into_listings_table<'a>(client: &Client, row: Listing<'stati
     client
         .db()
         .run(move |db| {
+            let auction_house: Pubkey = row.auction_house.to_string().parse()?;
+
             let listing_exists = select(exists(
                 listings::table.filter(
                     listings::trade_state
@@ -126,16 +128,19 @@ pub async fn upsert_into_listings_table<'a>(client: &Client, row: Listing<'stati
             ))
             .get_result::<bool>(db)?;
 
-            let listing_id = insert_into(listings::table)
-                .values(&row)
-                .on_conflict(on_constraint("listings_unique_fields"))
-                .do_update()
-                .set(&row)
-                .returning(listings::id)
-                .get_result::<Uuid>(db)?;
+            let listing_id = mutations::listing::insert(db, &row)?;
 
             if listing_exists {
                 return Ok(());
+            }
+
+            if auction_house != pubkeys::OPENSEA_AUCTION_HOUSE {
+                mutations::activity::listing(
+                    db,
+                    listing_id,
+                    &row.clone(),
+                    ActivityTypeEnum::ListingCreated,
+                )?;
             }
 
             db.build_transaction().read_write().run(|| {

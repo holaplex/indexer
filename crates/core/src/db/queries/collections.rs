@@ -595,42 +595,15 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Do
 // MoonRank queries
 
 const MR_COLLECTION_ACTIVITES_QUERY: &str = r"
-SELECT listings.id as id, metadata, auction_house, price, listings.created_at, marketplace_program,
-    array[seller] as wallets,
-    array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
-    'listing' as activity_type
-        FROM listings
-        LEFT JOIN twitter_handle_name_services ON(twitter_handle_name_services.wallet_address = listings.seller)
-        INNER JOIN metadatas on (metadatas.address = listings.metadata)
-        INNER JOIN collection_mints ON(collection_mints.mint = metadatas.mint_address)
-        WHERE collection_mints.collection_id = $1
-        AND listings.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
-        AND ('LISTINGS' = ANY($2) OR $2 IS NULL)
-    UNION ALL
-    SELECT purchases.id as id, metadata, auction_house, price, purchases.created_at, marketplace_program,
-    array[seller, buyer] as wallets,
-    array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
-    'purchase' as activity_type
-        FROM purchases
-        LEFT JOIN twitter_handle_name_services sth ON(sth.wallet_address = purchases.seller)
-        LEFT JOIN twitter_handle_name_services bth ON(bth.wallet_address = purchases.buyer)
-        INNER JOIN metadatas on (metadatas.address = purchases.metadata)
-        INNER JOIN collection_mints ON(collection_mints.mint = metadatas.mint_address)
-        WHERE collection_mints.collection_id = $1
-        AND ('PURCHASES' = ANY($2) OR $2 IS NULL)
-    UNION ALL
-    SELECT offers.id as id, metadata, auction_house, price, offers.created_at, marketplace_program,
-    array[buyer] as wallets,
-    array[bth.twitter_handle] as wallet_twitter_handles,
-    'offer' as activity_type
-        FROM offers
-        LEFT JOIN twitter_handle_name_services bth ON(bth.wallet_address = offers.buyer)
-        INNER JOIN metadatas on (metadatas.address = offers.metadata)
-        INNER JOIN collection_mints ON(collection_mints.mint = metadatas.mint_address)
-        WHERE collection_mints.collection_id = $1
-        AND offers.purchase_id IS NULL
-        AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
-        AND ('OFFERS' = ANY($2) OR $2 IS NULL)
+SELECT id, metadata, auction_house, price, listings.created_at, marketplace_program,
+    array[buyer, seller] as wallets,
+    array[thb.twitter_handle, ths.twitter_handle] as wallet_twitter_handles,
+    activity_type::text
+        FROM marketplace_activities
+        LEFT JOIN twitter_handle_name_services thb on (thb.wallet_address = marketplace_activities.buyer)
+	    LEFT JOIN twitter_handle_name_services ths on (ths.wallet_address = marketplace_activities.seller)
+        WHERE collection_id = $1
+        AND ( activity_type::text = ANY($2) OR $2 IS NULL)
     ORDER BY created_at DESC
     LIMIT $3
     OFFSET $4;

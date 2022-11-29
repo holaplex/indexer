@@ -6,6 +6,7 @@ use indexer_core::{
     uuid::Uuid,
 };
 use objects::{
+    activity::ActivityType,
     auction_house::AuctionHouse,
     collection::Collection,
     listing::Bid,
@@ -346,14 +347,23 @@ impl Wallet {
     pub fn activities(
         &self,
         ctx: &AppContext,
-        event_types: Option<Vec<String>>,
+        event_types: Option<Vec<ActivityType>>,
         limit: i32,
         offset: i32,
     ) -> FieldResult<Vec<WalletActivity>> {
         let conn = ctx.shared.db.get()?;
 
-        let activities =
-            queries::wallet::activities(&conn, &self.address, event_types, limit, offset)?;
+        let activities = queries::wallet::activities(
+            &conn,
+            &self.address,
+            event_types.map(|e| {
+                e.iter()
+                    .map(std::string::ToString::to_string)
+                    .collect::<Vec<_>>()
+            }),
+            limit,
+            offset,
+        )?;
 
         activities
             .into_iter()

@@ -14,13 +14,13 @@ use uuid::Uuid;
 #[allow(clippy::wildcard_imports)]
 use super::schema::*;
 use crate::db::custom_types::{
-    EndSettingType, GovernanceAccountType, GovernanceAccountTypeEnum, InstructionExecutionFlags,
-    InstructionExecutionFlagsEnum, ListingEventLifecycle, ListingEventLifecycleEnum,
-    MintMaxVoteEnum, OfferEventLifecycle, OfferEventLifecycleEnum, OptionVoteResultEnum,
-    PayoutOperationEnum, ProposalState, ProposalStateEnum, ProposalVoteType, ProposalVoteTypeEnum,
-    TokenStandardEnum, TransactionExecutionStatusEnum, VoteRecordV2Vote, VoteRecordV2VoteEnum,
-    VoteThresholdEnum, VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum,
-    WhitelistMintMode,
+    ActivityTypeEnum, EndSettingType, GovernanceAccountType, GovernanceAccountTypeEnum,
+    InstructionExecutionFlags, InstructionExecutionFlagsEnum, ListingEventLifecycle,
+    ListingEventLifecycleEnum, MintMaxVoteEnum, OfferEventLifecycle, OfferEventLifecycleEnum,
+    OptionVoteResultEnum, PayoutOperationEnum, ProposalState, ProposalStateEnum, ProposalVoteType,
+    ProposalVoteTypeEnum, TokenStandardEnum, TransactionExecutionStatusEnum, VoteRecordV2Vote,
+    VoteRecordV2VoteEnum, VoteThresholdEnum, VoteThresholdType, VoteTippingEnum, VoteWeightV1,
+    VoteWeightV1Enum, WhitelistMintMode,
 };
 
 /* HPL LISTING REWARDS */
@@ -3629,4 +3629,20 @@ pub struct AttributeGroup<'a> {
     pub trait_type: Cow<'a, str>,
     pub value: Cow<'a, str>,
     pub count: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[table_name = "marketplace_activities"]
+#[allow(missing_docs)]
+pub struct Activity<'a> {
+    pub activity_id: Uuid,
+    pub metadata: Cow<'a, str>,
+    pub price: i64,
+    pub auction_house: Cow<'a, str>,
+    pub created_at: NaiveDateTime,
+    pub marketplace_program: Cow<'a, str>,
+    pub buyer: Option<Cow<'a, str>>,
+    pub seller: Option<Cow<'a, str>>,
+    pub collection_id: Option<Cow<'a, str>>,
+    pub activity_type: ActivityTypeEnum,
 }

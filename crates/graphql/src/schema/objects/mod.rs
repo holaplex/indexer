@@ -1,3 +1,4 @@
+pub mod activity;
 pub mod ah_listing;
 pub mod ah_offer;
 pub mod ah_purchase;

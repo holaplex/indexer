@@ -7,7 +7,7 @@ use indexer_core::{
     },
     pubkeys,
 };
-use objects::attributes::AttributeGroup;
+use objects::{activity::ActivityType, attributes::AttributeGroup};
 use reqwest::Url;
 use serde_json::Value;
 use services;
@@ -277,7 +277,7 @@ impl Collection {
     pub async fn activities(
         &self,
         ctx: &AppContext,
-        event_types: Option<Vec<String>>,
+        event_types: Option<Vec<ActivityType>>,
         limit: i32,
         offset: i32,
     ) -> FieldResult<Vec<objects::nft::NftActivity>> {
@@ -285,7 +285,11 @@ impl Collection {
         let rows = queries::collections::mr_collection_activities(
             &conn,
             &self.id,
-            event_types,
+            event_types.map(|e| {
+                e.iter()
+                    .map(std::string::ToString::to_string)
+                    .collect::<Vec<_>>()
+            }),
             limit,
             offset,
         )?;
