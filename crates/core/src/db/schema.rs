@@ -1285,6 +1285,7 @@ table! {
 
     marketplace_activities (id) {
         id -> Uuid,
+        activity_id -> Uuid,
         metadata -> Varchar,
         price -> Int8,
         auction_house -> Varchar,

@@ -30,7 +30,7 @@ pub fn listing<'a>(
         .optional()?;
 
     let activity = Activity {
-        id: listing_id,
+        activity_id: listing_id,
         metadata: listing.metadata.clone(),
         price: listing.price,
         auction_house: listing.auction_house.clone(),
@@ -68,7 +68,7 @@ pub fn offer<'a>(
         .optional()?;
 
     let activity = Activity {
-        id: offer_id,
+        activity_id: offer_id,
         metadata: offer.metadata.clone(),
         price: offer.price,
         auction_house: offer.auction_house.clone(),
@@ -106,7 +106,7 @@ pub fn purchase<'a>(
         .optional()?;
 
     let activity = Activity {
-        id: purchase_id,
+        activity_id: purchase_id,
         metadata: purchase.metadata.clone(),
         price: purchase.price,
         auction_house: purchase.auction_house.clone(),

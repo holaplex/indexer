@@ -3619,7 +3619,7 @@ pub struct AttributeGroup<'a> {
 #[table_name = "marketplace_activities"]
 #[allow(missing_docs)]
 pub struct Activity<'a> {
-    pub id: Uuid,
+    pub activity_id: Uuid,
     pub metadata: Cow<'a, str>,
     pub price: i64,
     pub auction_house: Cow<'a, str>,
