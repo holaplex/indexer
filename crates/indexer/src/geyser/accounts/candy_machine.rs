@@ -60,9 +60,9 @@ pub(crate) async fn process(
         Box::pin(process_creators(client, key, candy_machine.data.creators)),
     ];
 
-    if let Some(config_lines) = config_lines {
-        futures.push(Box::pin(process_config_lines(client, key, config_lines)));
-    }
+    // if let Some(config_lines) = config_lines {
+    //     futures.push(Box::pin(process_config_lines(client, key, config_lines)));
+    // }
 
     if let Some(es) = candy_machine.data.end_settings {
         futures.push(Box::pin(process_end_settings(client, key, es)));
