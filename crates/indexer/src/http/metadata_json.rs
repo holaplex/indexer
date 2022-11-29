@@ -211,7 +211,7 @@ async fn try_locate_json(
 
     for (fingerprint, hint) in id.fingerprints_hinted() {
         let url = if let Some(hint) = hint {
-            proxy_url_hinted(client.proxy_args(), id, hint, None)
+            proxy_url_hinted(client.proxy_args(), id, Some(hint), None)
                 .map(|u| u.unwrap_or_else(|| unreachable!()))
         } else if FETCH_NON_PERMAWEB {
             Ok(proxy_non_permaweb_url(client.proxy_args(), id.url.clone())?)
@@ -282,10 +282,6 @@ async fn process_full(
         slot_info,
     }: MetadataJsonParams<'_>,
 ) -> Result<()> {
-    dispatch_metadata_document(client, false, addr.clone())
-        .await
-        .context("Failed to dispatch upsert metadata document job")?;
-
     let MetadataJson {
         name,
         description,
@@ -324,29 +320,36 @@ async fn process_full(
 
     client
         .db()
-        .run(move |db| {
-            insert_into(metadata_jsons::table)
-                .values(&row)
-                .on_conflict(metadata_jsons::metadata_address)
-                .do_update()
-                .set(&row)
-                .execute(db)
-                .context("Failed to insert metadata")?;
+        .run({
+            let addr = addr.clone();
+            move |db| {
+                insert_into(metadata_jsons::table)
+                    .values(&row)
+                    .on_conflict(metadata_jsons::metadata_address)
+                    .do_update()
+                    .set(&row)
+                    .execute(db)
+                    .context("Failed to insert metadata")?;
 
-            // TODO: if the row updates the following functions do not clear the
-            //       previous rows from the old metadata JSON:
+                // TODO: if the row updates the following functions do not clear the
+                //       previous rows from the old metadata JSON:
 
-            process_files(db, &addr, files, slot_info)?;
-            process_attributes(
-                db,
-                &addr,
-                first_verified_creator.as_deref(),
-                json.attributes,
-                slot_info,
-            )?;
-            process_collection(db, &addr, json.collection, slot_info)
+                process_files(db, &addr, files, slot_info)?;
+                process_attributes(
+                    db,
+                    &addr,
+                    first_verified_creator.as_deref(),
+                    json.attributes,
+                    slot_info,
+                )?;
+                process_collection(db, &addr, json.collection, slot_info)
+            }
         })
+        .await?;
+
+    dispatch_metadata_document(client, false, addr.clone())
         .await
+        .context("Failed to dispatch upsert metadata document job")
 }
 
 async fn process_minimal(
@@ -369,10 +372,6 @@ async fn process_minimal(
             }
         })
     }
-
-    dispatch_metadata_document(client, false, addr.clone())
-        .await
-        .context("Failed to dispatch upsert metadata document job")?;
 
     let MetadataJsonMinimal {
         name,
@@ -415,7 +414,9 @@ async fn process_minimal(
         .await
         .context("Failed to insert minimal metadata")?;
 
-    Ok(())
+    dispatch_metadata_document(client, false, addr)
+        .await
+        .context("Failed to dispatch upsert metadata document job")
 }
 
 fn process_files(

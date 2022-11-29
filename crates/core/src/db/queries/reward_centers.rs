@@ -37,7 +37,7 @@ where
 
 const PAYOUTS_QUERY: &str = r"
 SELECT purchase_id, metadata, reward_center, buyer, buyer_reward, seller, seller_reward,
-created_at, reward_payouts.slot as slot, reward_payouts.write_version as write_version,
+created_at,
 bth.twitter_handle as buyer_twitter_handle,
 sth.twitter_handle as seller_twitter_handle
     FROM reward_payouts

@@ -1,10 +1,9 @@
 use borsh::BorshDeserialize;
 use hpl_reward_center::offers::close::CloseOfferParams;
 use indexer_core::db::{
-    insert_into,
+    delete, insert_into,
     models::HplRewardCenterCloseoffer,
     tables::{hpl_reward_center_close_offer_ins, offers, rewards_offers},
-    update,
 };
 use solana_program::pubkey::Pubkey;
 
@@ -23,9 +22,37 @@ pub(crate) async fn process(
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
     let offer_address = accts[1].clone();
     let trade_state = accts[12].clone();
-    let closed_at = Some(Utc::now().naive_utc());
     let slot: i64 = slot.try_into()?;
     let escrow_payment_bump = params.escrow_payment_bump.try_into()?;
+
+    client
+        .db()
+        .run({
+            let offer_address = offer_address.clone();
+            move |db| {
+                delete(
+                    rewards_offers::table.filter(
+                        rewards_offers::address
+                            .eq(offer_address)
+                            .and(rewards_offers::slot.lt(slot)),
+                    ),
+                )
+                .execute(db)?;
+
+                delete(
+                    offers::table.filter(
+                        offers::trade_state
+                            .eq(trade_state)
+                            .and(offers::slot.lt(slot)),
+                    ),
+                )
+                .execute(db)?;
+
+                Result::<_>::Ok(())
+            }
+        })
+        .await
+        .context("failed to delete reward offer")?;
 
     client
         .db()
@@ -66,25 +93,6 @@ pub(crate) async fn process(
         })
         .await
         .context("failed to insert reward center close offer instruction ")?;
-
-    client
-        .db()
-        .run(move |db| {
-            db.build_transaction().read_write().run(|| {
-                update(rewards_offers::table.filter(rewards_offers::address.eq(offer_address)))
-                    .set((
-                        rewards_offers::closed_at.eq(closed_at),
-                        rewards_offers::slot.eq(slot),
-                    ))
-                    .execute(db)?;
-
-                update(offers::table.filter(offers::trade_state.eq(trade_state)))
-                    .set((offers::canceled_at.eq(closed_at), offers::slot.eq(slot)))
-                    .execute(db)
-            })
-        })
-        .await
-        .context("failed to update rewards offer closed at or general offer canceled at")?;
 
     Ok(())
 }

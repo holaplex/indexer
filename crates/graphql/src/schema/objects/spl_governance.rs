@@ -836,6 +836,7 @@ impl TryFrom<models::SplGovernanceProposal> for Proposal {
             veto_vote_weight,
             abstain_vote_weight,
             start_voting_at,
+            program_id,
         }: models::SplGovernanceProposal,
     ) -> Result<Self, Self::Error> {
         match account_type {
@@ -866,6 +867,7 @@ impl TryFrom<models::SplGovernanceProposal> for Proposal {
                 vote_threshold_percentage: vote_threshold_percentage.map(Into::into),
                 name,
                 description_link,
+                program_id: program_id.map(Into::into),
             })),
             GovernanceAccountTypeEnum::ProposalV2 => Ok(Self::ProposalV2(ProposalV2 {
                 address: address.into(),
@@ -895,6 +897,7 @@ impl TryFrom<models::SplGovernanceProposal> for Proposal {
                 vote_threshold_percentage: vote_threshold_percentage.map(Into::into),
                 name,
                 description_link,
+                program_id: program_id.map(Into::into),
             })),
             _ => Err(TryFromProposalError),
         }
@@ -929,6 +932,7 @@ pub struct ProposalV1 {
     pub vote_threshold_percentage: Option<i32>,
     pub name: String,
     pub description_link: String,
+    pub program_id: Option<PublicKey<ProgramId>>,
 }
 
 #[graphql_object(Context = AppContext)]
@@ -1028,6 +1032,10 @@ impl ProposalV1 {
         &self.description_link
     }
 
+    pub fn program_id(&self) -> &Option<PublicKey<ProgramId>> {
+        &self.program_id
+    }
+
     pub async fn governance(&self, ctx: &AppContext) -> FieldResult<Option<Governance>> {
         ctx.spl_governance_loader
             .load(self.governance.clone())
@@ -1075,6 +1083,7 @@ impl<'a> From<models::ProposalV1<'a>> for ProposalV1 {
             vote_threshold_percentage,
             name,
             description_link,
+            program_id,
             ..
         }: models::ProposalV1,
     ) -> Self {
@@ -1105,6 +1114,7 @@ impl<'a> From<models::ProposalV1<'a>> for ProposalV1 {
             vote_threshold_percentage: vote_threshold_percentage.map(Into::into),
             name: name.into_owned(),
             description_link: description_link.into_owned(),
+            program_id: program_id.map(Into::into),
         }
     }
 }
@@ -1138,6 +1148,7 @@ pub struct ProposalV2 {
     pub vote_threshold_percentage: Option<i32>,
     pub name: String,
     pub description_link: String,
+    pub program_id: Option<PublicKey<ProgramId>>,
 }
 
 #[graphql_object(Context = AppContext)]
@@ -1239,6 +1250,10 @@ impl ProposalV2 {
         &self.description_link
     }
 
+    pub fn program_id(&self) -> &Option<PublicKey<ProgramId>> {
+        &self.program_id
+    }
+
     pub async fn multi_choice(&self, ctx: &AppContext) -> FieldResult<Option<MultiChoice>> {
         ctx.spl_proposal_multi_choice_loader
             .load(self.address.clone())
@@ -1301,6 +1316,7 @@ impl<'a> From<models::ProposalV2<'a>> for ProposalV2 {
             vote_threshold_percentage,
             name,
             description_link,
+            program_id,
             ..
         }: models::ProposalV2,
     ) -> Self {
@@ -1332,6 +1348,7 @@ impl<'a> From<models::ProposalV2<'a>> for ProposalV2 {
             vote_threshold_percentage: vote_threshold_percentage.map(Into::into),
             name: name.into_owned(),
             description_link: description_link.into_owned(),
+            program_id: program_id.map(Into::into),
         }
     }
 }

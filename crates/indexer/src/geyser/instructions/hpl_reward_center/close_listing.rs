@@ -1,8 +1,7 @@
 use indexer_core::db::{
-    insert_into,
+    delete, insert_into,
     models::HplRewardCenterCloseListing,
     tables::{hpl_reward_center_close_listing_ins, listings, rewards_listings},
-    update,
 };
 use solana_program::pubkey::Pubkey;
 
@@ -18,8 +17,32 @@ pub(crate) async fn process(
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
     let listing_address = accts[1].clone();
     let trade_state = accts[9].clone();
-    let closed_at = Some(Utc::now().naive_utc());
     let slot: i64 = slot.try_into()?;
+
+    client
+        .db()
+        .run(move |db| {
+            delete(
+                rewards_listings::table.filter(
+                    rewards_listings::address
+                        .eq(listing_address)
+                        .and(rewards_listings::slot.lt(slot)),
+                ),
+            )
+            .execute(db)?;
+
+            delete(
+                listings::table.filter(
+                    listings::trade_state
+                        .eq(trade_state)
+                        .and(listings::slot.lt(slot)),
+                ),
+            )
+            .execute(db)?;
+            Result::<_>::Ok(())
+        })
+        .await
+        .context("failed to delete reward listing")?;
 
     client
         .db()
@@ -53,27 +76,6 @@ pub(crate) async fn process(
         })
         .await
         .context("failed to insert reward center close listing instruction ")?;
-
-    client
-        .db()
-        .run(move |db| {
-            db.build_transaction().read_write().run(|| {
-                update(
-                    rewards_listings::table.filter(rewards_listings::address.eq(listing_address)),
-                )
-                .set((
-                    rewards_listings::closed_at.eq(closed_at),
-                    rewards_listings::slot.eq(slot),
-                ))
-                .execute(db)?;
-
-                update(listings::table.filter(listings::trade_state.eq(trade_state)))
-                    .set((listings::canceled_at.eq(closed_at), listings::slot.eq(slot)))
-                    .execute(db)
-            })
-        })
-        .await
-        .context("failed to update rewards listing closed at or general listing canceled at")?;
 
     Ok(())
 }

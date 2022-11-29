@@ -169,7 +169,7 @@ struct Opts {
     sender: String,
 
     #[command(flatten)]
-    queue_suffix: Suffix,
+    queue_suffix: indexer_core::queue_suffix::QueueSuffix,
 }
 
 fn main() {
@@ -206,6 +206,7 @@ async fn process(opts: Opts) -> Result<()> {
         migrated: _,
     } = db::connect(db, db::ConnectMode::Write { migrate: false })?;
 
+    let queue_suffix = queue_suffix.into();
     let receiver = match queue_suffix {
         Suffix::Debug(ref s) => s.clone(),
         _ => sender.clone(),
