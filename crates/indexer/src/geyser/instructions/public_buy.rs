@@ -95,6 +95,8 @@ async fn upsert_into_offers_table<'a>(
     client
         .db()
         .run(move |db| {
+            let auction_house: Pubkey = row.auction_house.to_string().parse()?;
+
             let offer_exists = select(exists(
                 offers::table.filter(
                     offers::trade_state
@@ -110,7 +112,14 @@ async fn upsert_into_offers_table<'a>(
                 return Ok(());
             }
 
-            mutations::activity::offer(db, offer_id, &row.clone(), ActivityTypeEnum::OfferCreated)?;
+            if auction_house != pubkeys::OPENSEA_AUCTION_HOUSE {
+                mutations::activity::offer(
+                    db,
+                    offer_id,
+                    &row.clone(),
+                    ActivityTypeEnum::OfferCreated,
+                )?;
+            }
 
             db.build_transaction().read_write().run(|| {
                 let metadata_owner: String = current_metadata_owners::table

@@ -117,6 +117,8 @@ pub async fn upsert_into_listings_table<'a>(client: &Client, row: Listing<'stati
     client
         .db()
         .run(move |db| {
+            let auction_house: Pubkey = row.auction_house.to_string().parse()?;
+
             let listing_exists = select(exists(
                 listings::table.filter(
                     listings::trade_state
@@ -132,12 +134,14 @@ pub async fn upsert_into_listings_table<'a>(client: &Client, row: Listing<'stati
                 return Ok(());
             }
 
-            mutations::activity::listing(
-                db,
-                listing_id,
-                &row.clone(),
-                ActivityTypeEnum::ListingCreated,
-            )?;
+            if auction_house != pubkeys::OPENSEA_AUCTION_HOUSE {
+                mutations::activity::listing(
+                    db,
+                    listing_id,
+                    &row.clone(),
+                    ActivityTypeEnum::ListingCreated,
+                )?;
+            }
 
             db.build_transaction().read_write().run(|| {
                 let feed_event_id = insert_into(feed_events::table)

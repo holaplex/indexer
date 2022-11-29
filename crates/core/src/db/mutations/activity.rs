@@ -1,5 +1,3 @@
-use solana_program::pubkey::Pubkey;
-
 use crate::{
     db::{
         custom_types::ActivityTypeEnum,
@@ -10,7 +8,6 @@ use crate::{
     },
     error::Result,
     prelude::*,
-    pubkeys,
     uuid::Uuid,
 };
 
@@ -25,12 +22,6 @@ pub fn listing<'a>(
     listing: &Listing<'a>,
     activity_type: ActivityTypeEnum,
 ) -> Result<()> {
-    let auction_house: Pubkey = listing.auction_house.to_string().parse()?;
-
-    if auction_house == pubkeys::OPENSEA_AUCTION_HOUSE {
-        return Ok(());
-    }
-
     let collection_id = collection_mints::table
         .inner_join(metadatas::table.on(metadatas::mint_address.eq(collection_mints::mint)))
         .filter(metadatas::address.eq(listing.metadata.clone().to_string()))
@@ -69,12 +60,6 @@ pub fn offer<'a>(
     offer: &Offer<'a>,
     activity_type: ActivityTypeEnum,
 ) -> Result<()> {
-    let auction_house: Pubkey = offer.auction_house.to_string().parse()?;
-
-    if auction_house == pubkeys::OPENSEA_AUCTION_HOUSE {
-        return Ok(());
-    }
-
     let collection_id = collection_mints::table
         .inner_join(metadatas::table.on(metadatas::mint_address.eq(collection_mints::mint)))
         .filter(metadatas::address.eq(offer.metadata.clone().to_string()))
