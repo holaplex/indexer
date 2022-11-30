@@ -19,7 +19,7 @@ use crate::schema::{
     scalars::{Numeric, I64, U64},
 };
 
-#[derive(Debug, Clone, GraphQLObject)]
+#[derive(Debug, Clone)]
 pub struct CollectionDocument {
     pub id: String,
     pub name: String,
@@ -70,6 +70,54 @@ impl From<serde_json::Value> for CollectionDocument {
                 .and_then(Value::as_str)
                 .map(Into::into),
         }
+    }
+}
+
+#[graphql_object(Context = AppContext)]
+impl CollectionDocument {
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn twitter_url(&self) -> Option<&str> {
+        self.twitter_url.as_deref()
+    }
+
+    pub fn discord_url(&self) -> Option<&str> {
+        self.discord_url.as_deref()
+    }
+
+    pub fn website_url(&self) -> Option<&str> {
+        self.website_url.as_deref()
+    }
+
+    pub fn magic_eden_id(&self) -> Option<&str> {
+        self.magic_eden_id.as_deref()
+    }
+
+    pub fn verified_collection_address(&self) -> Option<&str> {
+        self.verified_collection_address.as_deref()
+    }
+
+    pub fn image(&self, width: Option<i32>, ctx: &AppContext) -> FieldResult<String> {
+        let url = Url::parse(&self.image);
+        let id = if let Ok(ref url) = url {
+            AssetIdentifier::new(url)
+        } else {
+            return Ok(self.image.clone());
+        };
+
+        let width = ImageSize::from(width.unwrap_or(ImageSize::XSmall as i32));
+        let width_str = (width as i32).to_string();
+
+        Ok(
+            proxy_url(&ctx.shared.asset_proxy, &id, Some(("width", &*width_str)))?
+                .map_or_else(|| self.image.clone(), |u| u.to_string()),
+        )
     }
 }
 
