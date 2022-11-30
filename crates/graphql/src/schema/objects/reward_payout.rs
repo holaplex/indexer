@@ -63,7 +63,7 @@ impl RewardPayout {
     pub async fn purchase(&self, context: &AppContext) -> FieldResult<Option<Purchase>> {
         context
             .purchase_loader
-            .load(self.purchase_id.clone())
+            .load(self.purchase_id)
             .await
             .map_err(Into::into)
     }
