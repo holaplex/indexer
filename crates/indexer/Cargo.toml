@@ -47,6 +47,7 @@ geyser = [
   "tribeca-locked-voter",
   "indexer-rabbitmq/geyser",
   "indexer-rabbitmq/http-indexer",
+  "indexer-rabbitmq/job-runner",
   "indexer-rabbitmq/producer",
   "indexer-rabbitmq/search-indexer",
 ]
@@ -60,6 +61,7 @@ http = [
   "indexer-rabbitmq/search-indexer",
 ]
 job-runner = [
+  "serde_json",
   "solana-client",
   "solana-transaction-status",
   "indexer-rabbitmq/job-runner",
