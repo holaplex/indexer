@@ -367,6 +367,10 @@ fn upsert_attribute_groups(
     collection_id: String,
     attribute: &Attribute,
 ) -> Result<()> {
+    if attribute.attribute.is_empty() || attribute.value.is_empty() {
+        return Ok(());
+    }
+
     let attribute_group = models::AttributeGroup {
         collection_id: Owned(collection_id),
         trait_type: Owned(attribute.attribute.clone()),
