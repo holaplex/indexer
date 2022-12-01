@@ -17,4 +17,8 @@ export DATABASE_NAME
 export DATABASE_PASSWD
 export DATABASE_URL
 
-docker-compose "$@"
+DOCKER_COMPOSE="docker-compose"
+
+which podman-compose 2>&1 && ! which docker-compose 2>&1 && DOCKER_COMPOSE="podman-compose"
+
+"$DOCKER_COMPOSE" "$@"
