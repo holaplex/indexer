@@ -24,5 +24,6 @@ import_types = [
     SettingType as Settingtype, \
     TokenStandard as Token_standard, \
     PayoutOperation as Payout_operation, \
+    ActivityType as Activity_type, \
   }""",
 ]

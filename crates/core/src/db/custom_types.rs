@@ -610,3 +610,34 @@ impl FromSql<PayoutOperation, Pg> for PayoutOperationEnum {
         from_bytes(bytes)
     }
 }
+
+/// Marketplace Activity `activity_type` enum
+#[derive(SqlType, Debug, Clone, Copy)]
+/// Represents database `activity_type` enum
+#[postgres(type_name = "activity_type")]
+pub struct ActivityType;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "ActivityType"]
+#[allow(missing_docs)]
+pub enum ActivityTypeEnum {
+    ListingCreated,
+    ListingCanceled,
+    OfferCreated,
+    OfferCanceled,
+    Purchase,
+}
+
+impl ToSql<ActivityType, Pg> for ActivityTypeEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<ActivityType, Pg> for ActivityTypeEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}

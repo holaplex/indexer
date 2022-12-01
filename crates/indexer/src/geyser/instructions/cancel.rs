@@ -1,7 +1,9 @@
 use borsh::BorshDeserialize;
 use indexer_core::db::{
+    custom_types::ActivityTypeEnum,
     insert_into,
-    models::CancelInstruction,
+    models::{CancelInstruction, Listing, Offer},
+    mutations::activity,
     select,
     tables::{cancel_instructions, listings, offers},
     update,
@@ -58,7 +60,7 @@ pub(crate) async fn process(
                 .get_result::<bool>(db);
 
                 if Ok(true) == listing_trade_state {
-                    update(
+                    let listing = update(
                         listings::table.filter(
                             listings::trade_state
                                 .eq(row.trade_state.clone())
@@ -70,9 +72,20 @@ pub(crate) async fn process(
                         listings::canceled_at.eq(Some(row.created_at)),
                         listings::slot.eq(row.slot),
                     ))
-                    .execute(db)
+                    .returning(listings::all_columns)
+                    .get_result::<Listing>(db)
+                    .optional()?;
+
+                    if let Some(listing) = listing {
+                        activity::listing(
+                            db,
+                            listing.id.unwrap(),
+                            &listing.clone(),
+                            ActivityTypeEnum::ListingCanceled,
+                        )?;
+                    };
                 } else {
-                    update(
+                    let offer = update(
                         offers::table.filter(
                             offers::trade_state
                                 .eq(row.trade_state.clone())
@@ -84,8 +97,21 @@ pub(crate) async fn process(
                         offers::canceled_at.eq(Some(row.created_at)),
                         offers::slot.eq(row.slot),
                     ))
-                    .execute(db)
+                    .returning(offers::all_columns)
+                    .get_result::<Offer>(db)
+                    .optional()?;
+
+                    if let Some(offer) = offer {
+                        activity::offer(
+                            db,
+                            offer.id.unwrap(),
+                            &offer.clone(),
+                            ActivityTypeEnum::OfferCanceled,
+                        )?;
+                    }
                 }
+
+                Result::<_>::Ok(())
             })
         })
         .await

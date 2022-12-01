@@ -1,4 +1,7 @@
-use indexer_core::db::{models, queries};
+use indexer_core::{
+    bigdecimal::ToPrimitive,
+    db::{models, queries},
+};
 use objects::{auction_house::AuctionHouse, reward_payout::RewardPayout};
 
 use super::prelude::*;
@@ -104,5 +107,28 @@ impl RewardCenter {
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()
             .map_err(Into::into)
+    }
+
+    pub fn tokens_distributed(
+        &self,
+        context: &AppContext,
+        start_date: Option<DateTime<Utc>>,
+        end_date: Option<DateTime<Utc>>,
+    ) -> FieldResult<Option<U64>> {
+        let conn = context.shared.db.get()?;
+
+        let result = queries::reward_centers::tokens_distributed(
+            &conn,
+            &self.address,
+            start_date.map(|v| v.naive_utc()),
+            end_date.map(|v| v.naive_utc()),
+        )?;
+
+        Ok(result
+            .into_iter()
+            .next()
+            .map(|models::TokensDistributed { tokens_distributed }| {
+                tokens_distributed.to_u64().unwrap_or_default().into()
+            }))
     }
 }

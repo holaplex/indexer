@@ -255,7 +255,9 @@ impl TryFrom<models::NftActivity> for NftActivity {
             wallets: wallets
                 .into_iter()
                 .zip(wallet_twitter_handles.into_iter())
-                .map(|(address, twitter_handle)| Wallet::new(address.into(), twitter_handle))
+                .filter_map(|(address, twitter_handle)| {
+                    address.map(|address| Wallet::new(address.into(), twitter_handle))
+                })
                 .collect(),
             activity_type,
         })

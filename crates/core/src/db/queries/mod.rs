@@ -1,6 +1,7 @@
 //! Reusable query operations for common or complicated queries.
 
 pub mod activities;
+pub mod auction_house;
 pub mod bonding_changes;
 pub mod charts;
 pub mod collections;

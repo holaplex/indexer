@@ -14,13 +14,13 @@ use uuid::Uuid;
 #[allow(clippy::wildcard_imports)]
 use super::schema::*;
 use crate::db::custom_types::{
-    EndSettingType, GovernanceAccountType, GovernanceAccountTypeEnum, InstructionExecutionFlags,
-    InstructionExecutionFlagsEnum, ListingEventLifecycle, ListingEventLifecycleEnum,
-    MintMaxVoteEnum, OfferEventLifecycle, OfferEventLifecycleEnum, OptionVoteResultEnum,
-    PayoutOperationEnum, ProposalState, ProposalStateEnum, ProposalVoteType, ProposalVoteTypeEnum,
-    TokenStandardEnum, TransactionExecutionStatusEnum, VoteRecordV2Vote, VoteRecordV2VoteEnum,
-    VoteThresholdEnum, VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum,
-    WhitelistMintMode,
+    ActivityTypeEnum, EndSettingType, GovernanceAccountType, GovernanceAccountTypeEnum,
+    InstructionExecutionFlags, InstructionExecutionFlagsEnum, ListingEventLifecycle,
+    ListingEventLifecycleEnum, MintMaxVoteEnum, OfferEventLifecycle, OfferEventLifecycleEnum,
+    OptionVoteResultEnum, PayoutOperationEnum, ProposalState, ProposalStateEnum, ProposalVoteType,
+    ProposalVoteTypeEnum, TokenStandardEnum, TransactionExecutionStatusEnum, VoteRecordV2Vote,
+    VoteRecordV2VoteEnum, VoteThresholdEnum, VoteThresholdType, VoteTippingEnum, VoteWeightV1,
+    VoteWeightV1Enum, WhitelistMintMode,
 };
 
 /* HPL LISTING REWARDS */
@@ -470,8 +470,8 @@ pub struct NftActivity {
     pub created_at: NaiveDateTime,
 
     /// The wallet address asociated to the activity [seller, buyer]
-    #[sql_type = "Array<VarChar>"]
-    pub wallets: Vec<String>,
+    #[sql_type = "Array<Nullable<VarChar>>"]
+    pub wallets: Vec<Option<String>>,
 
     /// The twitter handles asociated to each wallet [seller, buyer]
     #[sql_type = "Array<Nullable<Text>>"]
@@ -671,8 +671,8 @@ pub struct WalletActivity {
     pub created_at: NaiveDateTime,
 
     /// The wallet address asociated to the activity [seller, buyer]
-    #[sql_type = "Array<VarChar>"]
-    pub wallets: Vec<String>,
+    #[sql_type = "Array<Nullable<VarChar>>"]
+    pub wallets: Vec<Option<String>>,
 
     /// The twitter handles asociated to each wallet [seller, buyer]
     #[sql_type = "Array<Nullable<Text>>"]
@@ -3605,6 +3605,22 @@ pub struct DolphinStats1D<'a> {
     pub change_listed_1d: Option<i32>,
 }
 
+/// A row in a `tokens_distributed` query, representing total $SAUCE tokens distributed between particular dates.
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct TokensDistributed {
+    /// Total tokens distributed
+    #[sql_type = "Numeric"]
+    pub tokens_distributed: BigDecimal,
+}
+
+/// Auction House Volume
+#[derive(Debug, Clone, Queryable, QueryableByName)]
+pub struct AuctionHouseVolume {
+    /// Auction House Volume
+    #[sql_type = "Numeric"]
+    pub volume: BigDecimal,
+}
+
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[table_name = "attribute_groups"]
 #[allow(missing_docs)]
@@ -3613,4 +3629,20 @@ pub struct AttributeGroup<'a> {
     pub trait_type: Cow<'a, str>,
     pub value: Cow<'a, str>,
     pub count: i64,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[table_name = "marketplace_activities"]
+#[allow(missing_docs)]
+pub struct Activity<'a> {
+    pub activity_id: Uuid,
+    pub metadata: Cow<'a, str>,
+    pub price: i64,
+    pub auction_house: Cow<'a, str>,
+    pub created_at: NaiveDateTime,
+    pub marketplace_program: Cow<'a, str>,
+    pub buyer: Option<Cow<'a, str>>,
+    pub seller: Option<Cow<'a, str>>,
+    pub collection_id: Option<Cow<'a, str>>,
+    pub activity_type: ActivityTypeEnum,
 }

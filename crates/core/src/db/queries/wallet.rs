@@ -15,48 +15,21 @@ use crate::{
 };
 
 const ACTIVITES_QUERY: &str = r"
-SELECT listings.id as id, metadata, price, auction_house, created_at, marketplace_program,
-array[seller] as wallets,
-array[twitter_handle_name_services.twitter_handle] as wallet_twitter_handles,
-'listing' as activity_type
-    FROM listings
-    LEFT JOIN twitter_handle_name_services on (twitter_handle_name_services.wallet_address = listings.seller)
-    WHERE seller = $1
-    AND canceled_at IS NULL
-    AND listings.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
-    AND ('LISTINGS' = ANY($2) OR $2 IS NULL)
-UNION ALL
-SELECT purchases.id as id, metadata, price, auction_house, created_at, marketplace_program,
-array[seller, buyer] as wallets,
-array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
-'purchase' as activity_type
-    FROM purchases
-    LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchases.seller)
-    LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
-    WHERE buyer = $1
-    AND ('PURCHASES' = ANY($2) OR $2 IS NULL)
-UNION ALL
-SELECT purchases.id as id, metadata, price, auction_house, created_at, marketplace_program,
-array[seller, buyer] as wallets,
-array[sth.twitter_handle, bth.twitter_handle] as wallet_twitter_handles,
-'sell' as activity_type
-    FROM purchases
-    LEFT JOIN twitter_handle_name_services sth on (sth.wallet_address = purchases.seller)
-    LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = purchases.buyer)
-    WHERE seller = $1
-    AND ('SALES' = ANY($2) OR $2 IS NULL)
-UNION ALL
-SELECT offers.id as id, metadata, price, auction_house, created_at, marketplace_program,
-array[buyer] as wallets,
-array[bth.twitter_handle] as wallet_twitter_handles,
-'offer' as activity_type
-    FROM offers
-    LEFT JOIN twitter_handle_name_services bth on (bth.wallet_address = offers.buyer)
-    WHERE buyer = $1
-    AND offers.purchase_id IS NULL
-    AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
-    AND ('OFFERS' = ANY($2) OR $2 IS NULL)
-ORDER BY created_at DESC
+Select * from (
+    SELECT id, metadata, price, auction_house, created_at, marketplace_program,
+    array[buyer, seller] as wallets,
+    array[thb.twitter_handle, ths.twitter_handle] as wallet_twitter_handles,
+    case when (seller = $1 and activity_type = 'Purchase')
+           then 'Sales'
+           else activity_type::text end as activity_type
+        FROM marketplace_activities
+        LEFT JOIN twitter_handle_name_services thb on (thb.wallet_address = marketplace_activities.buyer)
+        LEFT JOIN twitter_handle_name_services ths on (ths.wallet_address = marketplace_activities.seller)
+        WHERE (seller = $1
+        OR buyer = $1)
+    ) A
+    where ( A.activity_type::text = ANY($2) OR $2 IS NULL )
+    ORDER BY created_at DESC
 LIMIT $3
 OFFSET $4;
 
@@ -102,6 +75,7 @@ FROM offers
     INNER JOIN metadatas on (metadatas.address = offers.metadata)
     INNER JOIN current_metadata_owners on (current_metadata_owners.mint_address = metadatas.mint_address)
     WHERE current_metadata_owners.owner_address = $1
+    AND buyer != $1
     AND offers.purchase_id IS NULL
     AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
     AND ('OFFER_RECEIVED' = $2 OR $2 IS NULL)

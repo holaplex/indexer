@@ -3,7 +3,7 @@ use std::str::FromStr;
 use hpl_reward_center::state::Offer;
 use indexer_core::{
     db::{
-        custom_types::OfferEventLifecycleEnum,
+        custom_types::{ActivityTypeEnum, OfferEventLifecycleEnum},
         insert_into,
         models::{
             AuctionHouse, CurrentMetadataOwner, FeedEventWallet, Offer as Dboffer, OfferEvent,
@@ -156,6 +156,13 @@ pub(crate) async fn process(
                 if offer_exists {
                     return Ok(());
                 }
+
+                mutations::activity::offer(
+                    db,
+                    offer_id,
+                    &offer.clone(),
+                    ActivityTypeEnum::OfferCreated,
+                )?;
 
                 db.build_transaction().read_write().run(|| {
                     let metadata_owner: String =
