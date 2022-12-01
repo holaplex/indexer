@@ -75,6 +75,7 @@ FROM offers
     INNER JOIN metadatas on (metadatas.address = offers.metadata)
     INNER JOIN current_metadata_owners on (current_metadata_owners.mint_address = metadatas.mint_address)
     WHERE current_metadata_owners.owner_address = $1
+    AND buyer != $1
     AND offers.purchase_id IS NULL
     AND offers.auction_house != '3o9d13qUvEuuauhFrVom1vuCzgNsJifeaBYDPquaT73Y'
     AND ('OFFER_RECEIVED' = $2 OR $2 IS NULL)
