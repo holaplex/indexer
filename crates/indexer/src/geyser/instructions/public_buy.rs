@@ -122,45 +122,47 @@ async fn upsert_into_offers_table<'a>(
             }
 
             db.build_transaction().read_write().run(|| {
-                let metadata_owner: String = current_metadata_owners::table
+                let metadata_owner: Option<String> = current_metadata_owners::table
                     .inner_join(
                         metadatas::table
                             .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
                     )
                     .filter(metadatas::address.eq(row.metadata.clone()))
                     .select(current_metadata_owners::owner_address)
-                    .first(db)?;
+                    .first(db)
+                    .optional()?;
+                if let Some(metadata_owner) = metadata_owner {
+                    let feed_event_id = insert_into(feed_events::table)
+                        .default_values()
+                        .returning(feed_events::id)
+                        .get_result::<Uuid>(db)
+                        .context("Failed to insert feed event")?;
 
-                let feed_event_id = insert_into(feed_events::table)
-                    .default_values()
-                    .returning(feed_events::id)
-                    .get_result::<Uuid>(db)
-                    .context("Failed to insert feed event")?;
+                    insert_into(offer_events::table)
+                        .values(&OfferEvent {
+                            feed_event_id,
+                            lifecycle: OfferEventLifecycleEnum::Created,
+                            offer_id,
+                        })
+                        .execute(db)
+                        .context("failed to insert offer created event")?;
 
-                insert_into(offer_events::table)
-                    .values(&OfferEvent {
-                        feed_event_id,
-                        lifecycle: OfferEventLifecycleEnum::Created,
-                        offer_id,
-                    })
-                    .execute(db)
-                    .context("failed to insert offer created event")?;
+                    insert_into(feed_event_wallets::table)
+                        .values(&FeedEventWallet {
+                            wallet_address: row.buyer,
+                            feed_event_id,
+                        })
+                        .execute(db)
+                        .context("Failed to insert offer feed event wallet for buyer")?;
 
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: row.buyer,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert offer feed event wallet for buyer")?;
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: Owned(metadata_owner),
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert offer feed event wallet for metadata owner")?;
+                    insert_into(feed_event_wallets::table)
+                        .values(&FeedEventWallet {
+                            wallet_address: Owned(metadata_owner),
+                            feed_event_id,
+                        })
+                        .execute(db)
+                        .context("Failed to insert offer feed event wallet for metadata owner")?;
+                }
 
                 Result::<_>::Ok(())
             })
