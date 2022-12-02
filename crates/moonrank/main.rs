@@ -24,7 +24,7 @@ use indexer_core::{
         Pool, PooledConnection,
     },
     prelude::*,
-    util::unix_timestamp_unsigned,
+    util::{self, unix_timestamp_unsigned},
 };
 use indexer_rabbitmq::{search_indexer, suffix::Suffix};
 use serde::{Deserialize, Serialize};
@@ -233,18 +233,30 @@ async fn process(opts: Opts) -> Result<()> {
         .json::<Vec<Data>>()
         .await?;
 
-    futures_util::stream::iter(collections.clone().into_iter().map(|data| {
-        tokio::spawn(upsert_collection_data(
-            moonrank_endpoint.clone(),
-            moonrank_auth.clone(),
-            data,
-            pool.clone(),
-            http.clone(),
-        ))
-    }))
+    let start = Local::now();
+
+    futures_util::stream::iter(
+        collections
+            .clone()
+            .into_iter()
+            .enumerate()
+            .map(|(idx, data)| {
+                tokio::spawn(upsert_collection_data(
+                    moonrank_endpoint.clone(),
+                    moonrank_auth.clone(),
+                    data,
+                    pool.clone(),
+                    http.clone(),
+                    idx,
+                ))
+            }),
+    )
     .buffer_unordered(jobs)
     .collect::<Vec<_>>()
     .await;
+
+    let duration = util::duration_hhmmssfff(Local::now() - start);
+    info!("execution time {:?}", duration);
 
     dispatch_documents(collections, search, asset_proxy).await?;
 
@@ -257,6 +269,7 @@ async fn upsert_collection_data(
     json: Data,
     pool: Pool,
     http: reqwest::Client,
+    index: usize,
 ) -> Result<()> {
     let conn = pool.get()?;
     let collection_id = json.collection.id;
@@ -323,7 +336,7 @@ async fn upsert_collection_data(
 
     let mints_json: CollectionMints = serde_json::from_slice(&bytes)?;
 
-    for mint in mints_json.mints {
+    for mint in mints_json.mints.clone() {
         let collection_id = collection_id.clone();
 
         upsert_collection_mints(&conn, collection_id.clone(), mint.clone())?;
@@ -332,6 +345,13 @@ async fn upsert_collection_data(
             upsert_attribute_groups(&conn, collection_id.clone(), &attribute)?;
         }
     }
+
+    info!(
+        "Collection #{:?} {:?} {:?} mints",
+        index,
+        collection_id,
+        mints_json.mints.len()
+    );
 
     Ok(())
 }
