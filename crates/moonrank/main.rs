@@ -24,7 +24,7 @@ use indexer_core::{
         Pool, PooledConnection,
     },
     prelude::*,
-    util::{self, unix_timestamp_unsigned},
+    util::{duration_hhmmssfff, unix_timestamp_unsigned},
 };
 use indexer_rabbitmq::{search_indexer, suffix::Suffix};
 use serde::{Deserialize, Serialize};
@@ -255,7 +255,8 @@ async fn process(opts: Opts) -> Result<()> {
     .collect::<Vec<_>>()
     .await;
 
-    let duration = util::duration_hhmmssfff(Local::now() - start);
+    let duration = duration_hhmmssfff(Local::now() - start);
+
     info!("execution time {:?}", duration);
 
     dispatch_documents(collections, search, asset_proxy).await?;
@@ -325,6 +326,8 @@ async fn upsert_collection_data(
     let collection_mints = url::Url::parse(&endpoint)?
         .join("../mints/")?
         .join(&collection_id)?;
+
+    debug!("processing {:?}", collection_mints.to_string());
 
     let bytes = http
         .get(collection_mints)
