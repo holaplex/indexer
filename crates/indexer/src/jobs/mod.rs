@@ -3,7 +3,7 @@
 use std::fmt;
 
 pub use client::{Args as ClientArgs, Client};
-use indexer_rabbitmq::job_runner::Message;
+use indexer_rabbitmq::job_runner::{Message, SlotReindex};
 
 use crate::prelude::*;
 
@@ -16,14 +16,16 @@ pub enum MessageId {
     /// A refresh of a cache table
     RefreshTable(String),
     /// A reindex of a slot
-    ReindexSlot(u64),
+    ReindexSlot(SlotReindex),
 }
 
 impl fmt::Display for MessageId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::RefreshTable(n) => write!(f, "refresh of cached table {n}"),
-            Self::ReindexSlot(s) => write!(f, "reindex of slot {s}"),
+            Self::ReindexSlot(SlotReindex { slot, startup }) => {
+                write!(f, "reindex of slot {slot} for startup type {startup}")
+            },
         }
     }
 }
@@ -35,7 +37,7 @@ impl fmt::Display for MessageId {
 pub async fn process_message(client: &Client, msg: Message) -> MessageResult<MessageId> {
     let id = match msg {
         Message::RefreshTable(ref n) => MessageId::RefreshTable(n.clone()),
-        Message::ReindexSlot(i) => MessageId::ReindexSlot(i),
+        Message::ReindexSlot(s) => MessageId::ReindexSlot(s),
     };
 
     match msg {

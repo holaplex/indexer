@@ -11,7 +11,8 @@
 
 use indexer_core::{clap, clap::Parser, prelude::*};
 use indexer_rabbitmq::{
-    job_runner::{self, Message},
+    geyser,
+    job_runner::{self, Message, SlotReindex},
     lapin,
 };
 
@@ -40,6 +41,10 @@ enum Command {
     },
     /// Request a re-indexing of transactions from a block
     ReindexBlock {
+        /// The startup-type hint for the target AMQP queue
+        #[arg(long, env, default_value_t = geyser::StartupType::Normal)]
+        startup: geyser::StartupType,
+
         /// The slot number of the block to reindex
         #[arg(env)]
         slot: u64,
@@ -89,7 +94,11 @@ fn main() {
 
             match cmd {
                 Command::RefreshTable { name } => producer.write(Message::RefreshTable(name)).await,
-                Command::ReindexBlock { slot } => producer.write(Message::ReindexSlot(slot)).await,
+                Command::ReindexBlock { slot, startup } => {
+                    producer
+                        .write(Message::ReindexSlot(SlotReindex { slot, startup }))
+                        .await
+                },
             }
             .context("Failed to send requested message")?;
 

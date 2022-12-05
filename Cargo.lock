@@ -2891,6 +2891,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashbrown"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33ff8ae62cd3a9102e5637afc8452c55acf3844001bd5374e0b0bd7b6616c038"
+dependencies = [
+ "ahash 0.8.1",
+ "serde",
+]
+
+[[package]]
 name = "heck"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3070,6 +3080,7 @@ dependencies = [
  "diesel_migrations",
  "dotenv",
  "env_logger",
+ "hashbrown 0.13.1",
  "holaplex-indexer-rabbitmq",
  "log",
  "md5",
@@ -3116,7 +3127,7 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-geyser-selector"
 version = "0.1.0"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?branch=ryans/reindex-slot-job#b6f6dcbee1d4a4c150492d4294ec0d2cc59fca39"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?branch=ryans/reindex-slot-job#31ea05fa7a39db41aee43f2d470c8c9ef56e56eb"
 dependencies = [
  "hashbrown 0.12.3",
  "holaplex-indexer-rabbitmq",
@@ -3170,7 +3181,7 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-rabbitmq"
 version = "0.3.1"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?branch=ryans/reindex-slot-job#b6f6dcbee1d4a4c150492d4294ec0d2cc59fca39"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?branch=ryans/reindex-slot-job#31ea05fa7a39db41aee43f2d470c8c9ef56e56eb"
 dependencies = [
  "futures-util",
  "lapin",

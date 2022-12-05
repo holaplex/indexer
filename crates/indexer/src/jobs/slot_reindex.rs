@@ -1,7 +1,14 @@
-use indexer_rabbitmq::geyser::{InstructionIndex, InstructionNotify, Message};
+use indexer_rabbitmq::{
+    geyser::{InstructionIndex, InstructionNotify, Message},
+    job_runner::SlotReindex,
+};
 use indexer_selector::{InstructionInfo, InstructionSelector};
+use solana_client::rpc_config::RpcBlockConfig;
 use solana_program::instruction::CompiledInstruction;
-use solana_transaction_status::{UiInstruction, UiParsedInstruction};
+use solana_sdk::commitment_config::CommitmentConfig;
+use solana_transaction_status::{
+    TransactionDetails, UiInstruction, UiParsedInstruction, UiTransactionEncoding,
+};
 
 use super::Client;
 use crate::prelude::*;
@@ -138,7 +145,7 @@ fn process_instruction(
     })))
 }
 
-pub async fn process(client: &Client, slot: u64) -> Result<()> {
+pub async fn process(client: &Client, SlotReindex { slot, startup }: SlotReindex) -> Result<()> {
     if client.ins_sel().is_empty() {
         debug!("Skipping block reindex for {slot:?} due to empty selector");
         return Ok(());
@@ -146,13 +153,24 @@ pub async fn process(client: &Client, slot: u64) -> Result<()> {
 
     debug!("Reindexing slot {slot:?}");
 
-    let block = client.run_rpc(move |r| r.get_block(slot)).await;
+    let block = client
+        .run_rpc(move |r| {
+            r.get_block_with_config(slot, RpcBlockConfig {
+                encoding: Some(UiTransactionEncoding::Binary),
+                transaction_details: Some(TransactionDetails::Full),
+                rewards: Some(false),
+                commitment: Some(CommitmentConfig::confirmed()),
+            })
+        })
+        .await
+        .context("Failed to get block data")?;
 
-    debug!("Block data: {block:?}");
+    debug!(
+        "Got block with {} transaction(s)",
+        block.transactions.as_ref().map_or(0, Vec::len)
+    );
 
-    let block = block?;
-
-    for tx in block.transactions {
+    for tx in block.transactions.into_iter().flatten() {
         let Some(meta) = tx.meta else {
             continue;
         };
@@ -171,7 +189,10 @@ pub async fn process(client: &Client, slot: u64) -> Result<()> {
 
         let keys = tx.message.account_keys;
 
-        for ins in tx
+        // The messages have to be collected into a Vec before sending because
+        // borrowing transaction data across an await causes a rat's nest of
+        // compiler errors
+        let msgs: Vec<_> = tx
             .message
             .instructions
             .iter()
@@ -185,15 +206,19 @@ pub async fn process(client: &Client, slot: u64) -> Result<()> {
                     ))
                 })
             }))
-        {
-            match process_instruction(client.ins_sel(), ins, &keys, slot, signature.as_ref()) {
-                Ok(Some(m)) => {
-                    todo!("send {m:?}");
-                },
-                Ok(None) => (),
-                Err(e) => {
-                    warn!("Error processing instruction: {:?}", e);
-                },
+            .filter_map(|i| {
+                process_instruction(client.ins_sel(), i, &keys, slot, signature.as_ref())
+                    .unwrap_or_else(|e| {
+                        warn!("Error processing instruction: {e:?}");
+                        None
+                    })
+            })
+            .collect();
+
+        for msg in msgs {
+            match client.dispatch_geyser(startup, msg).await {
+                Ok(()) => (),
+                Err(e) => warn!("Failed to dispatch Geyser message: {e:?}"),
             }
         }
     }

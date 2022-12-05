@@ -1,6 +1,6 @@
 use holaplex_indexer::jobs::{Client, ClientArgs};
 use indexer_core::{clap, prelude::*};
-use indexer_rabbitmq::job_runner;
+use indexer_rabbitmq::{job_runner, suffix::Suffix};
 
 /// Indexer worker for running scheduled jobs
 #[derive(Debug, clap::Args)]
@@ -32,14 +32,20 @@ fn main() {
          },
          params,
          _db| async move {
-            let conn = holaplex_indexer::amqp_connect(amqp_url, env!("CARGO_BIN_NAME")).await?;
+            let queue_suffix = Suffix::from(queue_suffix);
 
-            let queue_type = job_runner::QueueType::new(&sender, &queue_suffix.into())?;
+            let conn = holaplex_indexer::amqp_connect(amqp_url, env!("CARGO_BIN_NAME")).await?;
+            let chan = conn
+                .create_channel()
+                .await
+                .context("Failed to create lazy queue channel")?;
+            let client = Client::new_rc(chan, queue_suffix.clone(), client)
+                .context("Failed to construct Client")?;
+
+            let queue_type = job_runner::QueueType::new(&sender, &queue_suffix)?;
             let consumer = job_runner::Consumer::new(&conn, queue_type.clone(), "job-consumer")
                 .await
                 .context("Failed to create queue consumer")?;
-
-            let client = Client::new_rc(client).context("Failed to construct Client")?;
 
             holaplex_indexer::amqp_consume(
                 &params,

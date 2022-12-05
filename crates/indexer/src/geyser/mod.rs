@@ -8,7 +8,7 @@ mod slot_status;
 
 use std::{collections::HashSet, fmt, sync::Arc};
 
-pub use client::{Args as ClientArgs, Client};
+pub use client::{Args as ClientArgs, Client, Queues as ClientQueues};
 use indexer_core::pubkeys;
 pub(self) use indexer_rabbitmq::geyser::AccountUpdate;
 use indexer_rabbitmq::geyser::Message;

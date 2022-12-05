@@ -61,6 +61,7 @@ uuid = "0.8.2"
 
 # Fast hash tables
 ahash = "0.8.1"
+hashbrown = { version = "0.13.1", features = ["serde"] }
 dashmap = "5.4.0"
 
 # ORM

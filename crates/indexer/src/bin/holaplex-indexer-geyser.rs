@@ -1,6 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
-use holaplex_indexer::geyser::{Client, ClientArgs, IgnoreType};
+use holaplex_indexer::geyser::{Client, ClientArgs, ClientQueues, IgnoreType};
 use indexer_core::{clap, prelude::*};
 use indexer_rabbitmq::{geyser, http_indexer, job_runner, search_indexer, suffix::Suffix};
 
@@ -57,10 +57,13 @@ fn main() {
             let client = Client::new_rc(
                 db,
                 &conn,
-                http_indexer::QueueType::new(&receiver, &queue_suffix)?,
-                http_indexer::QueueType::new(&receiver, &queue_suffix)?,
-                search_indexer::QueueType::new(&receiver, &queue_suffix)?,
-                job_runner::QueueType::new(&receiver, &queue_suffix)?,
+                ClientQueues {
+                    metadata_json: http_indexer::QueueType::new(&receiver, &queue_suffix)?,
+                    store_config: http_indexer::QueueType::new(&receiver, &queue_suffix)?,
+                    search: search_indexer::QueueType::new(&receiver, &queue_suffix)?,
+                    jobs: job_runner::QueueType::new(&receiver, &queue_suffix)?,
+                },
+                startup,
                 client,
             )
             .await
