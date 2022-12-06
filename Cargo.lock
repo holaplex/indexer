@@ -3127,7 +3127,7 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-geyser-selector"
 version = "0.1.0"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?branch=ryans/reindex-slot-job#31ea05fa7a39db41aee43f2d470c8c9ef56e56eb"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.7.0#98045382f5b2bfcdf7a4a1032f6dcd38137639bc"
 dependencies = [
  "hashbrown 0.12.3",
  "holaplex-indexer-rabbitmq",
@@ -3180,8 +3180,8 @@ dependencies = [
 
 [[package]]
 name = "holaplex-indexer-rabbitmq"
-version = "0.3.1"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?branch=ryans/reindex-slot-job#31ea05fa7a39db41aee43f2d470c8c9ef56e56eb"
+version = "0.4.0"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.7.0#98045382f5b2bfcdf7a4a1032f6dcd38137639bc"
 dependencies = [
  "futures-util",
  "lapin",
