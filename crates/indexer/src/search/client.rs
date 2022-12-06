@@ -292,11 +292,10 @@ impl Client {
 
             debug!("Ticking document upsert for {} document(s)...", queue.len());
 
-            let map =
-                std::iter::from_fn(|| queue.pop()).fold(HashMap::default(), |mut h, (k, v)| {
-                    h.entry(k).or_insert_with(Vec::new).push(v);
-                    h
-                });
+            let map = std::iter::from_fn(|| queue.pop()).fold(HashMap::new(), |mut h, (k, v)| {
+                h.entry(k).or_insert_with(Vec::new).push(v);
+                h
+            });
 
             let mut futures = futures_util::stream::FuturesUnordered::new();
 

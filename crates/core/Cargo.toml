@@ -61,6 +61,7 @@ uuid = "0.8.2"
 
 # Fast hash tables
 ahash = "0.8.1"
+hashbrown = { version = "0.13.1", features = ["serde"] }
 dashmap = "5.4.0"
 
 # ORM
@@ -79,9 +80,8 @@ md5 = { version = "0.7.0", optional = true }
 [dependencies.indexer-rabbitmq]
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
-# tag = "v0.6.1" # TODO
-rev = "57f6b14"
-version = "=0.3.1"
+tag = "v0.7.0"
+version = "=0.4.0"
 default-features = false
 features = ["suffix"]
 optional = true

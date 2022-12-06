@@ -2885,6 +2885,20 @@ name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
+dependencies = [
+ "ahash 0.7.6",
+ "serde",
+]
+
+[[package]]
+name = "hashbrown"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33ff8ae62cd3a9102e5637afc8452c55acf3844001bd5374e0b0bd7b6616c038"
+dependencies = [
+ "ahash 0.8.1",
+ "serde",
+]
 
 [[package]]
 name = "heck"
@@ -2999,6 +3013,7 @@ dependencies = [
  "govern",
  "graph_program",
  "holaplex-indexer-core",
+ "holaplex-indexer-geyser-selector",
  "holaplex-indexer-rabbitmq",
  "hostname",
  "hpl-reward-center",
@@ -3016,8 +3031,10 @@ dependencies = [
  "serde",
  "serde_json",
  "smart-wallet 0.10.1",
+ "solana-client",
  "solana-program",
  "solana-sdk",
+ "solana-transaction-status",
  "spl-token",
  "spl-token-bonding",
  "strum",
@@ -3063,6 +3080,7 @@ dependencies = [
  "diesel_migrations",
  "dotenv",
  "env_logger",
+ "hashbrown 0.13.1",
  "holaplex-indexer-rabbitmq",
  "log",
  "md5",
@@ -3107,6 +3125,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "holaplex-indexer-geyser-selector"
+version = "0.1.0"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.7.0#98045382f5b2bfcdf7a4a1032f6dcd38137639bc"
+dependencies = [
+ "hashbrown 0.12.3",
+ "holaplex-indexer-rabbitmq",
+ "log",
+ "once_cell",
+ "serde",
+ "solana-program",
+ "spl-token",
+ "thiserror",
+]
+
+[[package]]
 name = "holaplex-indexer-graphql"
 version = "0.1.0"
 dependencies = [
@@ -3147,8 +3180,8 @@ dependencies = [
 
 [[package]]
 name = "holaplex-indexer-rabbitmq"
-version = "0.3.1"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?rev=57f6b14#57f6b1457967e70f0ae9a1c82de82ca632165eec"
+version = "0.4.0"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.7.0#98045382f5b2bfcdf7a4a1032f6dcd38137639bc"
 dependencies = [
  "futures-util",
  "lapin",

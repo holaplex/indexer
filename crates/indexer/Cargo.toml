@@ -47,6 +47,7 @@ geyser = [
   "tribeca-locked-voter",
   "indexer-rabbitmq/geyser",
   "indexer-rabbitmq/http-indexer",
+  "indexer-rabbitmq/job-runner",
   "indexer-rabbitmq/producer",
   "indexer-rabbitmq/search-indexer",
 ]
@@ -60,6 +61,9 @@ http = [
   "indexer-rabbitmq/search-indexer",
 ]
 job-runner = [
+  "serde_json",
+  "solana-client",
+  "solana-transaction-status",
   "indexer-rabbitmq/job-runner",
 ]
 search = [
@@ -98,8 +102,10 @@ crossbeam = { version = "0.8.2", optional = true }
 futures-util = "0.3.25"
 hostname = "0.3.1"
 serde = { version = "1.0.147", features = ["derive"] }
+solana-client = { version = "~1.9.28", optional = true }
 solana-program = "~1.9.28"
 solana-sdk = "~1.9.28"
+solana-transaction-status = { version = "~1.9.28", optional = true }
 strum = { version = "0.24.1", features = ["derive"] }
 thiserror = "1.0.37"
 tokio = { version = "1.14.0", features = ["macros", "rt", "rt-multi-thread", "signal", "sync"] }
@@ -150,9 +156,14 @@ optional = true
 [dependencies.indexer-rabbitmq]
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
-# tag = "v0.6.1" # TODO
-rev = "57f6b14"
-version = "=0.3.1"
+tag = "v0.7.0"
+version = "=0.4.0"
+
+[dependencies.indexer-selector]
+package = "holaplex-indexer-geyser-selector"
+git = "https://github.com/holaplex/indexer-geyser-plugin"
+tag = "v0.7.0"
+version = "=0.1.0"
 
 # Workspace dependencies
 [dependencies.genostub]

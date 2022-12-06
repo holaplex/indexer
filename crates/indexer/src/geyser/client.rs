@@ -1,13 +1,20 @@
 use std::{sync::Arc, time::Duration};
 
 use indexer_core::clap;
-use indexer_rabbitmq::{http_indexer, search_indexer};
+use indexer_rabbitmq::{geyser, http_indexer, job_runner, search_indexer};
 
 use crate::{db::Pool, prelude::*, reqwest, search_dispatch};
 
+#[derive(Debug)]
 struct HttpProducers {
     metadata_json: http_indexer::Producer<http_indexer::MetadataJson>,
     store_config: http_indexer::Producer<http_indexer::StoreConfig>,
+}
+
+#[derive(Debug)]
+struct JobProducers {
+    prod: job_runner::Producer,
+    enable_block_reindex: bool,
 }
 
 /// Common arguments for Geyser indexer usage
@@ -21,6 +28,10 @@ pub struct Args {
     /// Dialect API key
     #[arg(long, env, requires("dialect_api_endpoint"))]
     dialect_api_key: Option<String>,
+
+    /// Request reindexing of blocks when their status is marked as confirmed
+    #[arg(long, env, default_value_t = false)]
+    enable_block_reindex: bool,
 
     #[command(flatten)]
     search: search_dispatch::Args,
@@ -36,16 +47,31 @@ enum DialectEvent {
     },
 }
 
-// RpcClient doesn't implement Debug for some reason
-#[allow(missing_debug_implementations)]
 /// Wrapper for handling networking logic
+#[derive(Debug)]
 pub struct Client {
     db: Pool,
     http: reqwest::Client,
     http_prod: HttpProducers,
+    job_prod: JobProducers,
     search: search_dispatch::Client,
+    startup: geyser::StartupType,
     dialect_api_endpoint: Option<String>,
     dialect_api_key: Option<String>,
+}
+
+/// Helper type for storing the necessary queue types for constructing a
+/// [`Client`]
+#[derive(Debug)]
+pub struct Queues {
+    /// HTTP queue for metadata JSON
+    pub metadata_json: http_indexer::QueueType<http_indexer::MetadataJson>,
+    /// HTTP queue for store config
+    pub store_config: http_indexer::QueueType<http_indexer::StoreConfig>,
+    /// Search indexer queue
+    pub search: search_indexer::QueueType,
+    /// Job runner queue
+    pub jobs: job_runner::QueueType,
 }
 
 impl Client {
@@ -57,12 +83,12 @@ impl Client {
     pub async fn new_rc(
         db: Pool,
         conn: &indexer_rabbitmq::lapin::Connection,
-        meta_queue: http_indexer::QueueType<http_indexer::MetadataJson>,
-        store_cfg_queue: http_indexer::QueueType<http_indexer::StoreConfig>,
-        search_queue: search_indexer::QueueType,
+        queues: Queues,
+        startup: geyser::StartupType,
         Args {
             dialect_api_endpoint,
             dialect_api_key,
+            enable_block_reindex,
             search,
         }: Args,
     ) -> Result<Arc<Self>> {
@@ -72,30 +98,46 @@ impl Client {
             debug!("Dialect integration enabled");
         }
 
+        let Queues {
+            metadata_json: meta_q,
+            store_config: store_q,
+            search: search_q,
+            jobs: job_q,
+        } = queues;
+
         Ok(Arc::new(Self {
             db,
             http: reqwest::Client::new(Duration::from_millis(500))?,
             http_prod: HttpProducers {
-                metadata_json: http_indexer::Producer::new(conn, meta_queue)
+                metadata_json: http_indexer::Producer::new(conn, meta_q)
                     .await
                     .context("Couldn't create AMQP metadata JSON producer")?,
-                store_config: http_indexer::Producer::new(conn, store_cfg_queue)
+                store_config: http_indexer::Producer::new(conn, store_q)
                     .await
                     .context("Couldn't create AMQP store config producer")?,
             },
-            search: search_dispatch::Client::new(conn, search_queue, search).await?,
+            job_prod: JobProducers {
+                prod: job_runner::Producer::new(conn, job_q)
+                    .await
+                    .context("Couldn't create job-runner producer")?,
+                enable_block_reindex,
+            },
+            search: search_dispatch::Client::new(conn, search_q, search).await?,
+            startup,
             dialect_api_endpoint,
             dialect_api_key,
         }))
     }
 
     /// Get a reference to the database
+    #[inline]
     #[must_use]
     pub fn db(&self) -> &Pool {
         &self.db
     }
 
     /// Get a reference to the search index dispatcher
+    #[inline]
     #[must_use]
     pub fn search(&self) -> &search_dispatch::Client {
         &self.search
@@ -106,6 +148,7 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if the AMQP payload cannot be sent.
+    #[inline]
     pub async fn dispatch_metadata_json(
         &self,
         meta_address: Pubkey,
@@ -129,6 +172,7 @@ impl Client {
     ///
     /// # Errors
     /// This function fails if the AMQP payload cannot be sent.
+    #[inline]
     pub async fn dispatch_store_config(
         &self,
         config_address: Pubkey,
@@ -140,6 +184,28 @@ impl Client {
                 config_address,
                 uri,
             })
+            .await
+    }
+
+    /// Dispatch an AMQP message to the job runner to reindex the block at the
+    /// given slot
+    ///
+    /// # Errors
+    /// This function fails if the AMQP payload cannot be sent.
+    #[inline]
+    pub async fn dispatch_block_reindex(&self, slot: u64) -> Result<(), indexer_rabbitmq::Error> {
+        if !self.job_prod.enable_block_reindex {
+            return Ok(());
+        }
+
+        let Self { startup, .. } = *self;
+
+        self.job_prod
+            .prod
+            .write(job_runner::Message::ReindexSlot(job_runner::SlotReindex {
+                slot,
+                startup,
+            }))
             .await
     }
 
