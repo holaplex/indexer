@@ -183,7 +183,7 @@ mod runtime {
         Q::Message: Debug + for<'de> serde::Deserialize<'de>,
     {
         enum Delivery<T> {
-            Message(Option<(T, lapin::acker::Acker)>),
+            Message(Result<Option<(T, lapin::acker::Acker)>, indexer_rabbitmq::Error>),
             Stop,
         }
 
@@ -197,15 +197,17 @@ mod runtime {
 
         loop {
             let del = tokio::select! {
-                r = consumer.read() => {
-                    Delivery::Message(r.context("Failed to read AMQP message")?)
-                },
+                r = consumer.read() => Delivery::Message(r),
                 r = stop_rx.recv() => handle_stop(r)?,
             };
 
             let (msg, acker) = match del {
-                Delivery::Message(Some(d)) => d,
-                Delivery::Message(None) => break Ok(StopType::Hangup),
+                Delivery::Message(Ok(Some(d))) => d,
+                Delivery::Message(Ok(None)) => break Ok(StopType::Hangup),
+                Delivery::Message(Err(e)) => {
+                    error!("Invalid message received: {:?}", anyhow!(e));
+                    continue;
+                },
                 Delivery::Stop => break Ok(StopType::Stopped),
             };
 
