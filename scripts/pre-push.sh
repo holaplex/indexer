@@ -10,12 +10,29 @@ bin_flags=(--workspace --bins --all-features)
 [[ -z "$CARGO" ]] && CARGO=cargo
 
 diff --unified <(./diesel.sh print-schema) crates/core/src/db/schema.rs
-"$CARGO" fmt --all --check
-"$CARGO" clippy "${lib_flags[@]}" --no-deps
-"$CARGO" doc "${lib_flags[@]}" --no-deps
-"$CARGO" build "${lib_flags[@]}"
-"$CARGO" test "${lib_flags[@]}"
 
-"$CARGO" clippy "${bin_flags[@]}" --no-deps
-"$CARGO" build "${bin_flags[@]}"
-"$CARGO" test "${bin_flags[@]}"
+for m in Cargo.toml crates/geyser-consumer/Cargo.toml; do
+  [[ -t 2 ]] && echo $'\x1b[1m'"Checking manifest $m..."$'\x1b[m'
+
+  mp=(--manifest-path "$m")
+
+  "$CARGO" fmt "${mp[@]}" --all --check
+
+  # hack
+  no_lib=''
+  if [[ "$m" != Cargo.toml ]]; then
+    no_lib=t
+  fi
+
+  if [[ -z "$no_lib" ]]; then
+    "$CARGO" clippy "${mp[@]}" "${lib_flags[@]}" --no-deps
+    "$CARGO" doc "${mp[@]}" "${lib_flags[@]}" --no-deps
+    "$CARGO" build "${mp[@]}" "${lib_flags[@]}"
+    "$CARGO" test "${mp[@]}" "${lib_flags[@]}"
+  fi
+
+  "$CARGO" clippy "${mp[@]}" "${bin_flags[@]}" --no-deps
+  [[ -z "$no_lib" ]] || "$CARGO" doc "${mp[@]}" "${bin_flags[@]}" --no-deps
+  "$CARGO" build "${mp[@]}" "${bin_flags[@]}"
+  "$CARGO" test "${mp[@]}" "${bin_flags[@]}"
+done

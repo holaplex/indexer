@@ -1,4 +1,4 @@
-use anchor_lang_v0_20::AccountDeserialize;
+use anchor_lang_v0_24::AccountDeserialize;
 use indexer_core::prelude::*;
 use namespaces::state::{Entry, Namespace, ENTRY_SIZE, NAMESPACE_SIZE};
 

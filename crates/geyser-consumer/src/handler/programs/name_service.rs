@@ -1,8 +1,8 @@
 use borsh::BorshDeserialize;
+use indexer::prelude::*;
 use solana_program::pubkey;
 
 use super::{accounts::name_service, AccountUpdate, Client};
-use crate::prelude::*;
 
 const HEADER_LENGTH: usize = 96;
 

@@ -1,4 +1,5 @@
 use borsh::BorshDeserialize;
+use indexer::prelude::*;
 use indexer_core::db::{
     custom_types::ActivityTypeEnum,
     insert_into,
@@ -11,7 +12,6 @@ use indexer_core::db::{
 use mpl_auction_house::instruction::Cancel;
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

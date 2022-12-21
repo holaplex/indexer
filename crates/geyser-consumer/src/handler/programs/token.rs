@@ -1,8 +1,8 @@
+use indexer::prelude::*;
 use solana_program::program_pack::Pack;
 use spl_token::state::Account as TokenAccount;
 
 use super::{accounts::token, instructions::token as token_instruction, AccountUpdate, Client};
-use crate::prelude::*;
 
 const BURN: u8 = 8;
 async fn process_token(client: &Client, update: AccountUpdate) -> Result<()> {

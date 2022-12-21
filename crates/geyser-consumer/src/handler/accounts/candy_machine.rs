@@ -1,22 +1,18 @@
 use futures_util::{future::join_all, Future};
-use indexer_core::{
-    db::{
-        custom_types::{
-            EndSettingType as DbEndSettingType, WhitelistMintMode as DbWhitelistMintMode,
-        },
-        insert_into,
-        models::{
-            CMCollectionPDA, CMConfigLine, CMCreator, CMEndSetting, CMGateKeeperConfig,
-            CMHiddenSetting, CMWhitelistMintSetting, CandyMachine as DbCandyMachine,
-            CandyMachineData as CMData,
-        },
-        tables::{
-            candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators,
-            candy_machine_datas, candy_machine_end_settings, candy_machine_gate_keeper_configs,
-            candy_machine_hidden_settings, candy_machine_whitelist_mint_settings, candy_machines,
-        },
+use indexer::prelude::*;
+use indexer_core::db::{
+    custom_types::{EndSettingType as DbEndSettingType, WhitelistMintMode as DbWhitelistMintMode},
+    insert_into,
+    models::{
+        CMCollectionPDA, CMConfigLine, CMCreator, CMEndSetting, CMGateKeeperConfig,
+        CMHiddenSetting, CMWhitelistMintSetting, CandyMachine as DbCandyMachine,
+        CandyMachineData as CMData,
     },
-    prelude::*,
+    tables::{
+        candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators,
+        candy_machine_datas, candy_machine_end_settings, candy_machine_gate_keeper_configs,
+        candy_machine_hidden_settings, candy_machine_whitelist_mint_settings, candy_machines,
+    },
 };
 use mpl_candy_machine::{
     CandyMachine, CandyMachineData, CollectionPDA, ConfigLine, Creator, EndSettingType,
@@ -24,7 +20,6 @@ use mpl_candy_machine::{
 };
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

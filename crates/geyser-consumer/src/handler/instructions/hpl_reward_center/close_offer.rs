@@ -1,5 +1,6 @@
 use borsh::BorshDeserialize;
 use hpl_reward_center::offers::close::CloseOfferParams;
+use indexer::prelude::*;
 use indexer_core::db::{
     custom_types::ActivityTypeEnum,
     delete, insert_into,
@@ -10,7 +11,6 @@ use indexer_core::db::{
 use solana_program::pubkey::Pubkey;
 
 use super::super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

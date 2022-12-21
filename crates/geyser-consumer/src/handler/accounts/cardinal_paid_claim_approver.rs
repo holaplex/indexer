@@ -1,11 +1,10 @@
 use cardinal_paid_claim_approver::state::PaidClaimApprover as PaidClaimApproverAccount;
-use indexer_core::{
-    db::{insert_into, models::CardinalPaidClaimApprover, tables::cardinal_paid_claim_approvers},
-    prelude::*,
+use indexer::prelude::*;
+use indexer_core::db::{
+    insert_into, models::CardinalPaidClaimApprover, tables::cardinal_paid_claim_approvers,
 };
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

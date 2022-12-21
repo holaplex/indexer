@@ -1,4 +1,5 @@
 use borsh::BorshDeserialize;
+use indexer::prelude::*;
 use indexer_core::{
     db::{
         custom_types::{ActivityTypeEnum, OfferEventLifecycleEnum},
@@ -16,7 +17,6 @@ use indexer_core::{
 use mpl_auction_house::instruction::Buy;
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

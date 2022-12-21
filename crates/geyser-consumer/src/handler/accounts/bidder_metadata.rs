@@ -1,3 +1,4 @@
+use indexer::prelude::*;
 use indexer_core::{
     db::{insert_into, models::Bid, tables::bids},
     util,
@@ -5,7 +6,6 @@ use indexer_core::{
 use metaplex_auction::processor::BidderMetadata as BidderMetadataAccount;
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

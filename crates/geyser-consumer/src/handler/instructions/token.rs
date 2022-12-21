@@ -1,10 +1,7 @@
-use indexer_core::{
-    db::{tables::metadatas, update},
-    prelude::*,
-};
+use indexer::prelude::*;
+use indexer_core::db::{tables::metadatas, update};
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process_burn_instruction(
     client: &Client,

@@ -1,7 +1,7 @@
+use indexer::prelude::*;
 use indexer_rabbitmq::geyser::{SlotStatus, SlotStatusUpdate};
 
 use super::Client;
-use crate::prelude::*;
 
 pub async fn process(client: &Client, slot: SlotStatusUpdate) -> Result<()> {
     let SlotStatusUpdate {

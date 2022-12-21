@@ -1,11 +1,11 @@
 use chrono::{offset::Local, Duration, NaiveDateTime};
+use indexer::prelude::*;
 use indexer_core::{
     db::{
         insert_into,
         models::{AuctionData, AuctionDataExt},
         tables::{auction_datas, auction_datas_ext},
     },
-    prelude::*,
     util,
 };
 use metaplex_auction::processor::{
@@ -13,7 +13,6 @@ use metaplex_auction::processor::{
 };
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

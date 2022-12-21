@@ -7,6 +7,9 @@ use indexer_core::prelude::*;
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 
 /// Borrow an account's raw as a `solana-program` account info struct.
+///
+/// # Errors
+/// Fails if Tokio encounters an error spawning a blocking thread.
 #[inline]
 pub async fn account_data_as_info<T: Send + 'static>(
     key: Pubkey,

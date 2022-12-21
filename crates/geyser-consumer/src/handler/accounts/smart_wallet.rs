@@ -3,26 +3,23 @@ use goki_smart_wallet::{
     InstructionBuffer, InstructionBundle, SmartWallet, SubaccountInfo, SubaccountType,
     TXAccountMeta, TXInstruction, Transaction,
 };
-use indexer_core::{
-    db::{
-        insert_into,
-        models::{
-            InsBufferBundle, InsBufferBundleInsKey, InsBuffferBundleInstruction,
-            InstructionBuffer as InstructionBufferModel, SmartWallet as SmartWalletModel,
-            SmartWalletOwner, SubAccountInfo as SubaccountInfoModel,
-            TXInstruction as TXInstructionModel, TXInstructionKey, Transaction as TransactionModel,
-        },
-        tables::{
-            ins_buffer_bundle_ins_keys, ins_buffer_bundle_instructions, ins_buffer_bundles,
-            instruction_buffers, smart_wallet_owners, smart_wallets, sub_account_infos,
-            transactions, tx_instruction_keys, tx_instructions,
-        },
+use indexer::prelude::*;
+use indexer_core::db::{
+    insert_into,
+    models::{
+        InsBufferBundle, InsBufferBundleInsKey, InsBuffferBundleInstruction,
+        InstructionBuffer as InstructionBufferModel, SmartWallet as SmartWalletModel,
+        SmartWalletOwner, SubAccountInfo as SubaccountInfoModel,
+        TXInstruction as TXInstructionModel, TXInstructionKey, Transaction as TransactionModel,
     },
-    prelude::*,
+    tables::{
+        ins_buffer_bundle_ins_keys, ins_buffer_bundle_instructions, ins_buffer_bundles,
+        instruction_buffers, smart_wallet_owners, smart_wallets, sub_account_infos, transactions,
+        tx_instruction_keys, tx_instructions,
+    },
 };
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process_smart_wallet(
     client: &Client,

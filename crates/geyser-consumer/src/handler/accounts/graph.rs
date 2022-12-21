@@ -1,4 +1,5 @@
 use graph_program::state::ConnectionV2;
+use indexer::prelude::*;
 use indexer_core::{
     db::{
         insert_into,
@@ -6,13 +7,11 @@ use indexer_core::{
         select,
         tables::{feed_event_wallets, feed_events, follow_events, graph_connections},
     },
-    prelude::*,
     util,
     uuid::Uuid,
 };
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

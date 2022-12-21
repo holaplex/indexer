@@ -1,14 +1,11 @@
 use hpl_reward_center::state::{PayoutOperation, RewardCenter};
-use indexer_core::{
-    db::{
-        custom_types::PayoutOperationEnum, insert_into, models::RewardCenter as DbRewardCenter,
-        tables::reward_centers,
-    },
-    prelude::*,
+use indexer::prelude::*;
+use indexer_core::db::{
+    custom_types::PayoutOperationEnum, insert_into, models::RewardCenter as DbRewardCenter,
+    tables::reward_centers,
 };
 
 use super::super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

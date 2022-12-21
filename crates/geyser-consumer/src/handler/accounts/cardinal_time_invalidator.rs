@@ -1,12 +1,11 @@
 use cardinal_time_invalidator::state::TimeInvalidator as TimeInvalidatorAccount;
+use indexer::prelude::*;
 use indexer_core::{
     db::{insert_into, models::CardinalTimeInvalidator, tables::cardinal_time_invalidators},
-    prelude::*,
     util,
 };
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

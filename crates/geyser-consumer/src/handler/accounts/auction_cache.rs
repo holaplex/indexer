@@ -1,3 +1,4 @@
+use indexer::prelude::*;
 use indexer_core::{
     db::{
         insert_into,
@@ -10,7 +11,6 @@ use indexer_core::{
 use metaplex::state::AuctionCache as AuctionCacheAccount;
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

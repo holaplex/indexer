@@ -1,19 +1,17 @@
 //! Tribeca Govern program accounts indexing
-use indexer_core::{
-    db::{
-        insert_into,
-        models::{
-            GovernanceParameter as GovernanceParameterModel, Governor as GovernorModel,
-            Proposal as ProposalModel, ProposalAccountMeta as ProposalAccountMetaModel,
-            ProposalInstruction as ProposalInstructionModel, ProposalMeta as ProposalMetaModel,
-            Vote as VoteModel,
-        },
-        tables::{
-            governance_parameters, governors, proposal_account_metas, proposal_instructions,
-            proposal_metas, proposals, votes,
-        },
+use indexer::prelude::*;
+use indexer_core::db::{
+    insert_into,
+    models::{
+        GovernanceParameter as GovernanceParameterModel, Governor as GovernorModel,
+        Proposal as ProposalModel, ProposalAccountMeta as ProposalAccountMetaModel,
+        ProposalInstruction as ProposalInstructionModel, ProposalMeta as ProposalMetaModel,
+        Vote as VoteModel,
     },
-    prelude::*,
+    tables::{
+        governance_parameters, governors, proposal_account_metas, proposal_instructions,
+        proposal_metas, proposals, votes,
+    },
 };
 use tribeca_govern::{
     GovernanceParameters, Governor, Proposal, ProposalAccountMeta, ProposalInstruction,
@@ -21,7 +19,6 @@ use tribeca_govern::{
 };
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process_governor(client: &Client, key: Pubkey, g: Governor) -> Result<()> {
     let row = GovernorModel {

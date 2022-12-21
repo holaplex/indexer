@@ -1,4 +1,5 @@
 use borsh::BorshDeserialize;
+use indexer::prelude::*;
 use indexer_core::{
     db::{
         insert_into,
@@ -8,10 +9,7 @@ use indexer_core::{
     pubkeys,
 };
 
-use super::super::Client;
-use crate::{
-    geyser::instructions::hpl_reward_center::buy_listing::upsert_into_purchases_table, prelude::*,
-};
+use super::{super::Client, buy_listing::upsert_into_purchases_table};
 
 #[allow(clippy::pedantic)]
 pub(crate) async fn process(

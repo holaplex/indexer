@@ -1,11 +1,11 @@
 use borsh::BorshDeserialize;
+use indexer::prelude::*;
 use indexer_core::db::{
     insert_into, models::WithdrawFromFeeInstruction, tables::withdraw_from_fee_instructions,
 };
 use mpl_auction_house::instruction::WithdrawFromFee;
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

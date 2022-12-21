@@ -1,4 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
+use indexer::prelude::*;
 use indexer_core::{
     db::{
         custom_types::{
@@ -26,13 +27,11 @@ use indexer_core::{
             vote_record_v2_vote_approve_vote_choices, vote_records_v1, vote_records_v2,
         },
     },
-    prelude::*,
     util::unix_timestamp,
 };
 use solana_program::{clock::UnixTimestamp, slot_history::Slot};
 
 use super::Client;
-use crate::prelude::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub enum GovernanceAccountType {

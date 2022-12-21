@@ -1,4 +1,5 @@
 use genostub::state::{HabitatData, RentalAgreement};
+use indexer::prelude::*;
 use indexer_core::{
     bigdecimal::BigDecimal,
     db::{
@@ -10,7 +11,6 @@ use indexer_core::{
 };
 
 use super::Client;
-use crate::prelude::*;
 
 async fn process_rent(
     client: &Client,

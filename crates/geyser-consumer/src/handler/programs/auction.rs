@@ -1,3 +1,4 @@
+use indexer::{prelude::*, util};
 use indexer_core::pubkeys;
 use metaplex_auction::processor::{
     AuctionData, AuctionDataExtended, BidderMetadata, BASE_AUCTION_DATA_SIZE,
@@ -7,7 +8,6 @@ use super::{
     accounts::{auction_data, bidder_metadata},
     AccountUpdate, Client,
 };
-use crate::{prelude::*, util};
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
     let accounts = util::account_data_as_info(

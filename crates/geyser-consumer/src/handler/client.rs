@@ -1,9 +1,8 @@
 use std::{sync::Arc, time::Duration};
 
+use indexer::{db::Pool, prelude::*, reqwest, search_dispatch};
 use indexer_core::clap;
 use indexer_rabbitmq::{geyser, http_indexer, job_runner, search_indexer};
-
-use crate::{db::Pool, prelude::*, reqwest, search_dispatch};
 
 #[derive(Debug)]
 struct HttpProducers {

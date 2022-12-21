@@ -1,11 +1,10 @@
 use borsh::BorshDeserialize;
-use indexer_core::{
-    db::{insert_into, models::TwitterHandle, tables::twitter_handle_name_services, update},
-    prelude::*,
+use indexer::{prelude::*, search_dispatch::TwitterHandleDocument};
+use indexer_core::db::{
+    insert_into, models::TwitterHandle, tables::twitter_handle_name_services, update,
 };
 
 use super::Client;
-use crate::{prelude::*, search_dispatch::TwitterHandleDocument};
 
 #[derive(BorshDeserialize, PartialEq, Debug, Clone)]
 struct TwitterHandleAndRegistry {

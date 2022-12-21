@@ -1,3 +1,4 @@
+use indexer::prelude::*;
 use metaplex::{
     state::{
         AuctionCache, Key, Store, WhitelistedCreator, MAX_AUCTION_CACHE_SIZE, MAX_STORE_SIZE,
@@ -19,7 +20,6 @@ use super::{
     accounts::{auction_cache, mpl_store},
     AccountUpdate, Client,
 };
-use crate::prelude::*;
 
 // TODO: once we switch to mpl_metaplex, remove all the MPL_ prefixes and
 //       cross-package assertions

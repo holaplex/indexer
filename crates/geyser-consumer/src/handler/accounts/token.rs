@@ -1,3 +1,4 @@
+use indexer::prelude::*;
 use indexer_core::{
     db::{
         insert_into,
@@ -5,13 +6,11 @@ use indexer_core::{
         tables::{associated_token_accounts, current_metadata_owners},
         update,
     },
-    prelude::*,
     pubkeys,
 };
 use spl_token::state::Account as TokenAccount;
 
 use super::Client;
-use crate::prelude::*;
 
 pub async fn process(
     client: &Client,

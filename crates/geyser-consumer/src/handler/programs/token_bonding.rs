@@ -1,8 +1,8 @@
 use anchor_lang_v0_22::AccountDeserialize;
+use indexer::prelude::*;
 use spl_token_bonding::state::TokenBondingV0;
 
 use super::{accounts::bonding_change, AccountUpdate, Client};
-use crate::prelude::*;
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
     if let Ok(token_bonding) =

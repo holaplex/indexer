@@ -1,8 +1,8 @@
 use anchor_lang_v0_22::AccountDeserialize;
 use goki_smart_wallet::{InstructionBuffer, SmartWallet, SubaccountInfo, Transaction};
+use indexer::prelude::*;
 
 use super::{accounts::smart_wallet, AccountUpdate, Client};
-use crate::prelude::*;
 
 const SUBACCOUNT_INFO_SIZE: usize = 8 + SubaccountInfo::LEN;
 

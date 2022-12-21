@@ -1,8 +1,8 @@
 use anchor_lang_v0_22::AccountDeserialize;
+use indexer::prelude::*;
 use tribeca_govern::{Governor, Proposal, ProposalMeta, Vote};
 
 use super::{accounts::govern, AccountUpdate, Client};
-use crate::prelude::*;
 
 const GOVERNOR_SIZE: usize = 8 + 32 + 1 + 8 + 32 + 32 + GOVERNANCE_PARAMS_SIZE;
 const GOVERNANCE_PARAMS_SIZE: usize = 8 + 8 + 8 + 8;

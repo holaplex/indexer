@@ -9,11 +9,10 @@ mod slot_status;
 use std::{collections::HashSet, fmt, sync::Arc};
 
 pub use client::{Args as ClientArgs, Client, Queues as ClientQueues};
+use indexer::prelude::*;
 use indexer_core::pubkeys;
 pub(self) use indexer_rabbitmq::geyser::AccountUpdate;
 use indexer_rabbitmq::geyser::Message;
-
-use crate::prelude::*;
 
 /// A value indicating a specific topic to ignore
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, strum::EnumString, strum::Display)]

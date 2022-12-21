@@ -1,11 +1,10 @@
 use cardinal_use_invalidator::state::UseInvalidator as UseInvalidatorAccount;
-use indexer_core::{
-    db::{insert_into, models::CardinalUseInvalidator, tables::cardinal_use_invalidators},
-    prelude::*,
+use indexer::prelude::*;
+use indexer_core::db::{
+    insert_into, models::CardinalUseInvalidator, tables::cardinal_use_invalidators,
 };
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

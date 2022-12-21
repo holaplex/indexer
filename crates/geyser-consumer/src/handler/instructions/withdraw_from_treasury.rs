@@ -1,4 +1,5 @@
 use borsh::BorshDeserialize;
+use indexer::prelude::*;
 use indexer_core::db::{
     insert_into, models::WithdrawFromTreasuryInstruction,
     tables::withdraw_from_treasury_instructions,
@@ -6,7 +7,6 @@ use indexer_core::db::{
 use mpl_auction_house::instruction::WithdrawFromTreasury;
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

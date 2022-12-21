@@ -1,3 +1,4 @@
+use indexer::prelude::*;
 use indexer_core::db::{
     insert_into,
     models::{Edition, MasterEdition},
@@ -9,7 +10,6 @@ use mpl_token_metadata::state::{
 };
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

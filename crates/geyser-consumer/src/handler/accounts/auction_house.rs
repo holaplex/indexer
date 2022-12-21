@@ -1,11 +1,10 @@
-use indexer_core::{
-    db::{insert_into, models::AuctionHouse as DbAuctionHouse, tables::auction_houses},
-    prelude::*,
+use indexer::prelude::*;
+use indexer_core::db::{
+    insert_into, models::AuctionHouse as DbAuctionHouse, tables::auction_houses,
 };
 use mpl_auction_house::AuctionHouse;
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

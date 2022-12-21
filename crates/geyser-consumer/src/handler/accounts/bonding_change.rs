@@ -1,11 +1,8 @@
-use indexer_core::{
-    db::{insert_into, models::BondingChange, tables::bonding_changes},
-    prelude::*,
-};
+use indexer::prelude::*;
+use indexer_core::db::{insert_into, models::BondingChange, tables::bonding_changes};
 use spl_token_bonding::state::TokenBondingV0;
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process(
     client: &Client,

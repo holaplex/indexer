@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use hpl_reward_center::state::Listing;
+use indexer::prelude::*;
 use indexer_core::{
     db::{
         custom_types::{ActivityTypeEnum, ListingEventLifecycleEnum},
@@ -16,7 +17,6 @@ use indexer_core::{
         },
         Error as DbError,
     },
-    prelude::*,
     pubkeys, util,
     uuid::Uuid,
 };
@@ -24,7 +24,6 @@ use mpl_auction_house::pda::find_auctioneer_trade_state_address;
 use solana_program::pubkey::Pubkey;
 
 use super::super::Client;
-use crate::prelude::*;
 
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn process(

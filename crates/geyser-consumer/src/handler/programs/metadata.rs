@@ -1,3 +1,4 @@
+use indexer::prelude::*;
 use metaplex_token_metadata::{
     state::{Key as MetaplexKey, Metadata as MetaplexMetadata},
     utils::try_from_slice_checked as metaplex_try_from_slice_checked,
@@ -14,7 +15,6 @@ use super::{
     accounts::{edition, metadata},
     AccountUpdate, Client,
 };
-use crate::prelude::*;
 
 const METADATA: u8 = Key::MetadataV1 as u8;
 const EDITION_V1: u8 = Key::EditionV1 as u8;

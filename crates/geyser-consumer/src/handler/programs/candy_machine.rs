@@ -1,10 +1,11 @@
-use anchor_lang_v0_21::{AccountDeserialize, AnchorDeserialize};
+use anchor_lang_v0_24::{AccountDeserialize, AnchorDeserialize};
+use indexer::prelude::*;
 use mpl_candy_machine::{
-    CandyMachine, CollectionPDA, ConfigLine, CONFIG_ARRAY_START, CONFIG_LINE_SIZE,
+    constants::{CONFIG_ARRAY_START, CONFIG_LINE_SIZE},
+    CandyMachine, CollectionPDA, ConfigLine,
 };
 
 use super::{accounts::candy_machine, AccountUpdate, Client};
-use crate::prelude::*;
 
 const COLLECTION_PDA_SIZE: usize = 8 + 64;
 
@@ -110,11 +111,11 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
 mod tests {
     use std::{env, fs, io::prelude::*, path::Path};
 
-    use anchor_lang_v0_21::AccountDeserialize;
+    use anchor_lang_v0_24::AccountDeserialize;
+    use indexer::prelude::*;
     use mpl_candy_machine::CandyMachine;
 
     use super::parse_cm_config_lines;
-    use crate::prelude::*;
 
     fn load_account_dump(filename: impl AsRef<Path>) -> Result<Vec<u8>> {
         let mut path = env::current_dir().context("Failed to get working dir")?;

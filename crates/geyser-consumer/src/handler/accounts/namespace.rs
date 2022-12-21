@@ -1,3 +1,4 @@
+use indexer::{prelude::*, search_dispatch::TwitterHandleDocument};
 use indexer_core::{
     db::{
         insert_into,
@@ -10,7 +11,6 @@ use indexer_core::{
 use namespaces::state::{Entry, Namespace};
 
 use super::Client;
-use crate::{prelude::*, search_dispatch::TwitterHandleDocument};
 
 pub(crate) async fn process(
     client: &Client,

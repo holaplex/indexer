@@ -1,5 +1,6 @@
 use borsh::BorshDeserialize;
 use hpl_reward_center::state::{PayoutOperation, RewardCenter, RewardRules};
+use indexer::prelude::*;
 use indexer_core::{
     bigdecimal::BigDecimal,
     db::{
@@ -23,7 +24,6 @@ use indexer_core::{
 };
 
 use super::super::Client;
-use crate::prelude::*;
 
 #[allow(clippy::pedantic)]
 pub(crate) async fn process(

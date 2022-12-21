@@ -1,8 +1,8 @@
 use anchor_lang_v0_22::AccountDeserialize;
+use indexer::prelude::*;
 use tribeca_locked_voter::{Escrow, Locker, LockerWhitelistEntry};
 
 use super::{accounts::locked_voter, AccountUpdate, Client};
-use crate::prelude::*;
 
 const LOCKER_SIZE: usize = 8 + 32 + 1 + 32 + 8 + 32 + LOCKER_PARAMS_SIZE;
 const ESCROW_SIZE: usize = 8 + 32 + 32 + 1 + 32 + 8 + 8 + 8 + 32;

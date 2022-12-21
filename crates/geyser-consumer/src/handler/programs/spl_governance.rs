@@ -1,4 +1,5 @@
 use borsh::BorshDeserialize;
+use indexer::prelude::*;
 
 use super::{
     accounts::spl_governance::{
@@ -11,7 +12,6 @@ use super::{
     },
     AccountUpdate, Client,
 };
-use crate::prelude::*;
 
 const GOVERNANCE_V1: u8 = GovernanceAccountType::GovernanceV1 as u8;
 const GOVERNANCE_V2: u8 = GovernanceAccountType::GovernanceV2 as u8;

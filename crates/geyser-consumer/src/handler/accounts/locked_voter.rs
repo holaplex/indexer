@@ -1,19 +1,16 @@
 //! Tribeca Locked-Voter program accounts indexing
-use indexer_core::{
-    db::{
-        insert_into,
-        models::{
-            Escrow as EscrowModel, Locker as LockerModel, LockerParam as LockerParamModel,
-            LockerWhitelistEntry as LockerWhitelistEntryModel,
-        },
-        tables::{escrows, locker_params, locker_whitelist_entries, lockers},
+use indexer::prelude::*;
+use indexer_core::db::{
+    insert_into,
+    models::{
+        Escrow as EscrowModel, Locker as LockerModel, LockerParam as LockerParamModel,
+        LockerWhitelistEntry as LockerWhitelistEntryModel,
     },
-    prelude::*,
+    tables::{escrows, locker_params, locker_whitelist_entries, lockers},
 };
 use tribeca_locked_voter::{Escrow, Locker, LockerParams, LockerWhitelistEntry};
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process_locker(client: &Client, key: Pubkey, l: Locker) -> Result<()> {
     let row = LockerModel {

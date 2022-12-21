@@ -9,6 +9,8 @@ use indexer_core::{
 };
 use tokio::sync::Mutex;
 
+/// Wrapper for a [`reqwest::Client`] that handles timeouts and connection pool
+/// invalidation.
 #[derive(Debug)]
 pub struct Client {
     inner: Mutex<(u8, reqwest::Client)>,
@@ -16,6 +18,10 @@ pub struct Client {
 }
 
 impl Client {
+    /// Construct a new HTTP client configured with the given request timeout
+    ///
+    /// # Errors
+    /// Fails if a new [`reqwest::Client`] cannot be constructed.
     pub fn new(timeout: Duration) -> IResult<Self> {
         Ok(Self {
             inner: Mutex::new((0, Self::build_client(timeout)?)),

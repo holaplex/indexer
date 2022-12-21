@@ -1,8 +1,8 @@
 use anchor_lang_v0_24::{AccountDeserialize, Discriminator};
 use genostub::state::HabitatData;
+use indexer::prelude::*;
 
 use super::{accounts::geno_habitat_data, AccountUpdate, Client};
-use crate::prelude::*;
 
 pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()> {
     let discrim = &update.data[..8];

@@ -1,3 +1,4 @@
+use indexer::prelude::*;
 use indexer_core::{
     db::{
         insert_into,
@@ -7,14 +8,12 @@ use indexer_core::{
         },
         tables::{store_configs, stores, whitelisted_creators},
     },
-    prelude::*,
     pubkeys::find_store_config,
 };
 use metaplex::state::{Store, WhitelistedCreator};
 use mpl_metaplex::state::StoreConfig;
 
 use super::Client;
-use crate::prelude::*;
 
 pub(crate) async fn process_config(
     client: &Client,
