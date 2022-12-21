@@ -1,6 +1,6 @@
 [workspace]
 members = ["crates/*"]
-exclude = ["crates/geyser-consumer", "crates/genostub"]
+exclude = ["crates/geyser-consumer"]
 resolver = "2"
 
 [profile.release]
