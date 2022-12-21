@@ -70,7 +70,7 @@ diesel_migrations = { version = "1.4.0", optional = true }
 diesel_full_text_search = { version = "1.0.1", git = "https://github.com/diesel-rs/diesel_full_text_search", rev = "886fe85", optional = true }
 
 # Solana
-solana-program = { version = "1.9.4", optional = true }
+solana-program = { version = "~1.13.5", optional = true }
 
 # Asset id
 cid = { version = "0.8.6", optional = true }
@@ -80,8 +80,8 @@ md5 = { version = "0.7.0", optional = true }
 [dependencies.indexer-rabbitmq]
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
-tag = "v0.7.0"
-version = "=0.4.0"
+tag = "v0.8.1"
+version = "=0.4.1"
 default-features = false
 features = ["suffix"]
 optional = true
