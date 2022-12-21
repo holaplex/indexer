@@ -160,6 +160,7 @@ pub async fn process(client: &Client, SlotReindex { slot, startup }: SlotReindex
                 transaction_details: Some(TransactionDetails::Full),
                 rewards: Some(false),
                 commitment: Some(CommitmentConfig::confirmed()),
+                max_supported_transaction_version: Some(0),
             })
         })
         .await
@@ -187,27 +188,34 @@ pub async fn process(client: &Client, SlotReindex { slot, startup }: SlotReindex
             continue;
         };
 
-        let keys = tx.message.account_keys;
+        // TODO: I don't think this accounts for address lookup tables but
+        //       honestly I don't want to deal with that right now.
+        let keys = tx.message.static_account_keys();
 
         // The messages have to be collected into a Vec before sending because
         // borrowing transaction data across an await causes a rat's nest of
         // compiler errors
         let msgs: Vec<_> = tx
             .message
-            .instructions
+            .instructions()
             .iter()
             .enumerate()
             .map(|(i, ins)| Result::<_>::Ok((InstructionIndex::TopLevel(i), ins.into())))
-            .chain(meta.inner_instructions.iter().flatten().flat_map(|ins| {
-                ins.instructions.iter().enumerate().map(|(i, inner)| {
-                    Ok((
-                        InstructionIndex::Inner(ins.index, i),
-                        InstructionShim::try_from_ui(inner, &keys)?,
-                    ))
-                })
-            }))
+            .chain(
+                Option::<Vec<_>>::from(meta.inner_instructions)
+                    .iter()
+                    .flatten()
+                    .flat_map(|ins| {
+                        ins.instructions.iter().enumerate().map(|(i, inner)| {
+                            Ok((
+                                InstructionIndex::Inner(ins.index, i),
+                                InstructionShim::try_from_ui(inner, keys)?,
+                            ))
+                        })
+                    }),
+            )
             .filter_map(|i| {
-                process_instruction(client.ins_sel(), i, &keys, slot, signature.as_ref())
+                process_instruction(client.ins_sel(), i, keys, slot, signature.as_ref())
                     .unwrap_or_else(|e| {
                         warn!("Error processing instruction: {e:?}");
                         None

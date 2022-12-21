@@ -368,7 +368,7 @@ pub struct CandyMachineHiddenSetting {
     pub candy_machine_address: PublicKey<CandyMachine>,
     pub name: String,
     pub uri: String,
-    #[graphql(description = "lowercase base64 encoded string of the hash bytes")]
+    #[graphql(description = "base64-encoded string of the hash bytes")]
     pub hash: String,
 }
 
@@ -383,11 +383,18 @@ impl<'a> TryFrom<models::CMHiddenSetting<'a>> for CandyMachineHiddenSetting {
             hash,
         }: models::CMHiddenSetting,
     ) -> Result<Self, Self::Error> {
+        use base64::engine::fast_portable::FastPortable;
+
+        const ENGINE: FastPortable = FastPortable::from(
+            &base64::alphabet::STANDARD,
+            base64::engine::fast_portable::NO_PAD,
+        );
+
         Ok(Self {
             candy_machine_address: candy_machine_address.into(),
             name: name.into_owned(),
             uri: uri.into_owned(),
-            hash: base64::encode_config(hash, base64::STANDARD_NO_PAD),
+            hash: base64::encode_engine(hash, &ENGINE),
         })
     }
 }

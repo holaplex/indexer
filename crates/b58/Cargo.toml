@@ -20,5 +20,5 @@ path = "main.rs"
 
 [dependencies]
 bs58 = "0.4.0"
-clap = { version = "4.0.22", features = ["derive"] }
+clap = { version = "4.0.30", features = ["derive"] }
 hex = "0.4.3"

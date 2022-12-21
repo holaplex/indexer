@@ -97,15 +97,25 @@ impl<'a> AssetIdentifier<'a> {
     }
 
     fn try_arweave(s: &str) -> Option<ArTxid> {
+        use base64::{
+            alphabet::{STANDARD, URL_SAFE},
+            engine::fast_portable::{FastPortable, NO_PAD, PAD},
+        };
+
+        const STANDARD_PAD: FastPortable = FastPortable::from(&STANDARD, PAD);
+        const STANDARD_NO_PAD: FastPortable = FastPortable::from(&STANDARD, NO_PAD);
+        const URL_SAFE_PAD: FastPortable = FastPortable::from(&URL_SAFE, PAD);
+        const URL_SAFE_NO_PAD: FastPortable = FastPortable::from(&URL_SAFE, NO_PAD);
+
         [
-            base64::URL_SAFE,
-            base64::URL_SAFE_NO_PAD,
-            base64::STANDARD,
-            base64::STANDARD_NO_PAD,
+            &STANDARD_PAD,
+            &STANDARD_NO_PAD,
+            &URL_SAFE_PAD,
+            &URL_SAFE_NO_PAD,
         ]
         .into_iter()
-        .find_map(|c| {
-            base64::decode_config(s.as_bytes(), c)
+        .find_map(|e| {
+            base64::decode_engine(s.as_bytes(), e)
                 .ok()
                 .and_then(|v| v.try_into().ok())
                 .map(ArTxid)
@@ -311,7 +321,14 @@ mod cdn {
             .map(Some),
             (Some((txid, path)), None, _)
             | (Some((txid, path)), Some(_), Some(AssetHint::Arweave)) => {
-                let txid = base64::encode_config(txid.0, base64::URL_SAFE_NO_PAD);
+                use base64::engine::fast_portable::FastPortable;
+
+                const ENGINE: FastPortable = FastPortable::from(
+                    &base64::alphabet::URL_SAFE,
+                    base64::engine::fast_portable::NO_PAD,
+                );
+
+                let txid = base64::encode_engine(txid.0, &ENGINE);
 
                 format_impl(
                     args,
