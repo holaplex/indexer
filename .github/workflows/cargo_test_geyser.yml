@@ -1,0 +1,94 @@
+name: Cargo test (geyser-consumer)
+
+on:
+  pull_request:
+    branches: [dev, master]
+  push:
+    branches: [dev, master]
+
+jobs:
+  debug-test:
+    name: cargo build/test (debug profile)
+    runs-on: indexer-test-runner
+
+    services:
+      postgres:
+        image: postgres:14.1
+
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: ci
+
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2022-11-08
+          components: cargo, rustc
+          profile: minimal
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
+
+      - name: cargo test --bins
+        uses: actions-rs/cargo@v1
+        env:
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci
+        with:
+          command: test
+          args: --manifest-path crates/geyser-consumer/Cargo.toml --bins --all-features --profile=debug-lite
+
+  release-test:
+    name: cargo build/test (release profile)
+    runs-on: indexer-test-runner
+
+    services:
+      postgres:
+        image: postgres:14.1
+
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: ci
+
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2022-11-08
+          components: cargo, rustc
+          profile: minimal
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
+
+      - name: cargo test --bins --release
+        uses: actions-rs/cargo@v1
+        env:
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci
+        with:
+          command: test
+          args: --manifest-path crates/geyser-consumer/Cargo.toml --bins --all-features --profile=release-lite

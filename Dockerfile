@@ -23,7 +23,6 @@ RUN cargo fetch --locked
 RUN cargo build --locked \
   --profile docker \
   --features " \
-    holaplex-indexer/geyser, \
     holaplex-indexer/http, \
     holaplex-indexer/job-runner, \
     holaplex-indexer/search, \
@@ -31,7 +30,6 @@ RUN cargo build --locked \
   --bin burn-fix \
   --bin dolphin-stats \
   --bin holaplex-indexer-dispatcher \
-  --bin holaplex-indexer-geyser \
   --bin holaplex-indexer-http \
   --bin holaplex-indexer-job-runner \
   --bin holaplex-indexer-search \
@@ -39,9 +37,14 @@ RUN cargo build --locked \
   --bin holaplex-indexer-graphql \
   --bin moonrank-collections-indexer
 
+RUN cargo build --locked \
+  --profile docker \
+  --bin holaplex-indexer-geyser
+
 COPY scripts scripts
 
 RUN scripts/strip-bins.sh target/docker bin
+RUN scripts/strip-bins.sh crates/geyser-consumer/target/docker bin
 
 FROM debian:bullseye-slim AS base
 WORKDIR /holaplex-indexer

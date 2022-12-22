@@ -13,6 +13,35 @@ license = "AGPL-3.0-or-later"
 keywords = ["solana", "metaplex", "holaplex", "web3"]
 categories = ["cryptography::cryptocurrencies", "web-programming"]
 
+[profile.release]
+opt-level = 3
+lto = "thin"
+
+[profile.debug-lite]
+inherits = "dev"
+incremental = false
+opt-level = 0
+debug = 1
+lto = "none"
+
+[profile.release-lite]
+inherits = "release"
+opt-level = 2
+
+[profile.debug-opt]
+inherits = "release"
+debug = 2
+debug-assertions = true
+incremental = true
+
+[profile.docker]
+inherits = "release"
+# strip = "symbols" # Not supported in the workspace toolchain version
+
+[[bin]]
+name = "holaplex-indexer-geyser"
+path = "src/main.rs"
+
 [dependencies]
 anchor-lang-v0-22 = { package = "anchor-lang", version = "0.22.1" }
 anchor-lang-v0-24 = { package = "anchor-lang", version = "0.24.2" }
