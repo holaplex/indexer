@@ -9,11 +9,11 @@ name = "moonrank-collections-indexer"
 path = "main.rs"
 
 [dependencies]
-reqwest = { version = "0.11.12", features = ["json"] }
+reqwest = { version = "0.11.13", features = ["json"] }
 url = "2.3.1"
-serde = { version = "1.0.147", features = ["derive"] }
-serde_json = "1.0.87"
-tokio = "1.14.1"
+serde = { version = "1.0.151", features = ["derive"] }
+serde_json = "1.0.91"
+tokio = "1.23.0"
 futures-util = "0.3.25"
 
 [dependencies.indexer-core]
@@ -29,5 +29,5 @@ features = ["search-dispatch"]
 [dependencies.indexer-rabbitmq]
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
-tag = "v0.7.0"
-version = "=0.4.0"
+tag = "v0.8.1"
+version = "=0.4.1"

@@ -39,19 +39,19 @@ required-features = ["db"]
 
 [dependencies]
 # Basic utilities
-anyhow = "1.0.66"
-base64 = "0.13.1"
+anyhow = "1.0.68"
+base64 = "0.20.0"
 bigdecimal = "0.1.0"
-chrono = "0.4.22"
-clap = { version = "4.0.22", features = ["derive", "env"] }
+chrono = "0.4.23"
+clap = { version = "4.0.30", features = ["derive", "env"] }
 dotenv = "0.15.0"
-env_logger = "0.9.3"
+env_logger = "0.10.0"
 log = "0.4.17"
 meilisearch-sdk = { version = "0.17.0", optional = true }
-num_cpus = "1.14.0"
+num_cpus = "1.15.0"
 rand = "0.8.5"
-serde = { version = "1.0.147", features = ["derive"], optional = true }
-serde_json = "1.0.87"
+serde = { version = "1.0.151", features = ["derive"], optional = true }
+serde_json = "1.0.91"
 sea-query = { version = "0.27.1", features = ["with-chrono"] }
 sea-query-derive = "0.2.0"
 sea-query-attr = "0.1.1"
@@ -60,7 +60,7 @@ strum = { version = "0.24.1", features = ["derive"] }
 uuid = "0.8.2"
 
 # Fast hash tables
-ahash = "0.8.1"
+ahash = "0.8.2"
 hashbrown = { version = "0.13.1", features = ["serde"] }
 dashmap = "5.4.0"
 
@@ -70,18 +70,18 @@ diesel_migrations = { version = "1.4.0", optional = true }
 diesel_full_text_search = { version = "1.0.1", git = "https://github.com/diesel-rs/diesel_full_text_search", rev = "886fe85", optional = true }
 
 # Solana
-solana-program = { version = "1.9.4", optional = true }
+solana-program = { version = ">=1.9.28,<1.14", optional = true }
 
 # Asset id
-cid = { version = "0.8.6", optional = true }
+cid = { version = "0.9.0", optional = true }
 url = "2.3.1"
 md5 = { version = "0.7.0", optional = true }
 
 [dependencies.indexer-rabbitmq]
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
-tag = "v0.7.0"
-version = "=0.4.0"
+tag = "v0.8.1"
+version = "=0.4.1"
 default-features = false
 features = ["suffix"]
 optional = true

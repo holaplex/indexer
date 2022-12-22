@@ -10,20 +10,18 @@
 #![warn(clippy::pedantic, clippy::cargo, missing_docs)]
 
 pub mod db;
-#[cfg(feature = "geyser")]
-pub mod geyser;
 #[cfg(feature = "http")]
 pub mod http;
 #[cfg(feature = "job-runner")]
 pub mod jobs;
 #[cfg(feature = "reqwest")]
-pub(crate) mod reqwest;
+pub mod reqwest;
 #[cfg(feature = "search")]
 pub mod search;
 #[cfg(feature = "search-dispatch")]
 /// Search dispatch module for creating client and dispatching AMQP messages to the search indexer
 pub mod search_dispatch;
-pub(crate) mod util;
+pub mod util;
 
 pub use runtime::*;
 

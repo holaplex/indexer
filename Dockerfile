@@ -1,8 +1,11 @@
-FROM rust:1.58.1-slim-bullseye AS build
+FROM rust:1.64.0-slim-bullseye AS build-base
 WORKDIR /build
+
+RUN rustup toolchain remove 1.64.0
 
 RUN apt-get update -y && \
   apt-get install -y \
+    jq \
     libpq-dev \
     libssl-dev \
     libudev-dev \
@@ -15,39 +18,47 @@ COPY rust-toolchain.toml ./
 # Force rustup to install toolchain
 RUN rustc --version
 
-COPY crates crates
-COPY Cargo.toml Cargo.lock ./
+FROM build-base AS skel
+
+COPY scripts/install-skeleton.sh ./scripts/
+RUN mkdir ../repo
+COPY . ../repo
+RUN scripts/install-skeleton.sh ../repo .
+RUN scripts/install-skeleton.sh ../repo/crates/geyser-consumer crates/geyser-consumer
+RUN scripts/install-skeleton.sh ../repo/crates/genostub crates/genostub
+
+FROM build-base AS build
+
+COPY --from=skel /build/Cargo.lock /build/Cargo.toml ./
+COPY --from=skel /build/crates crates
 
 RUN cargo fetch --locked
+RUN cargo fetch --locked --manifest-path crates/geyser-consumer/Cargo.toml
 
-RUN cargo build --locked \
-  --profile docker \
-  --features " \
-    holaplex-indexer/geyser, \
-    holaplex-indexer/http, \
-    holaplex-indexer/job-runner, \
-    holaplex-indexer/search, \
-  " \
-  --bin burn-fix \
-  --bin dolphin-stats \
-  --bin holaplex-indexer-dispatcher \
-  --bin holaplex-indexer-geyser \
-  --bin holaplex-indexer-http \
-  --bin holaplex-indexer-job-runner \
-  --bin holaplex-indexer-search \
-  --bin holaplex-indexer-migrator \
-  --bin holaplex-indexer-graphql \
-  --bin moonrank-collections-indexer
+COPY scripts/docker-build ./scripts/docker-build
+
+RUN scripts/docker-build/workspace.sh
+RUN scripts/docker-build/geyser.sh
+
+COPY crates crates
+COPY scripts/install-skeleton.sh ./scripts/
+RUN scripts/install-skeleton.sh -t .
+RUN scripts/install-skeleton.sh -t crates/geyser-consumer
+RUN scripts/install-skeleton.sh -t crates/genostub
+
+RUN scripts/docker-build/workspace.sh
+RUN scripts/docker-build/geyser.sh
 
 COPY scripts scripts
 
 RUN scripts/strip-bins.sh target/docker bin
+RUN scripts/strip-bins.sh crates/geyser-consumer/target/docker bin
 
 FROM debian:bullseye-slim AS base
-WORKDIR /holaplex-indexer
+WORKDIR /opt/indexer
 
 RUN apt-get update -y && \
-  apt-get install -y \
+  apt-get install -y --no-install-recommends \
     ca-certificates \
     libpq5 \
     libssl1.1 \
