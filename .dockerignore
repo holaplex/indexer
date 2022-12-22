@@ -1,7 +1,8 @@
 /.git
 /.github
 /fixtures
-target
+/target
+/crates/*/target
 .env.dev
 .env.local
 .DS_Store

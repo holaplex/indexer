@@ -21,7 +21,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --manifest-path crates/geyser-consumer/Cargo.toml --manifest-path crates/geyser-consumer/Cargo.toml --check
+          args: --manifest-path crates/geyser-consumer/Cargo.toml --check
 
   debug-check:
     name: cargo check/doc/clippy (debug profile)

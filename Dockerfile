@@ -37,7 +37,8 @@ RUN cargo build --locked \
   --bin holaplex-indexer-graphql \
   --bin moonrank-collections-indexer
 
-RUN cargo build --locked \
+RUN cargo build --manifest-path crates/geyser-consumer/Cargo.toml \
+  --locked \
   --profile docker \
   --bin holaplex-indexer-geyser
 
