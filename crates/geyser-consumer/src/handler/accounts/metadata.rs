@@ -2,7 +2,7 @@ use indexer::prelude::*;
 use indexer_core::{
     db::{
         custom_types::TokenStandardEnum,
-        insert_into,
+        delete, insert_into,
         models::{FeedEventWallet, Metadata, MetadataCollectionKey, MetadataCreator, MintEvent},
         select,
         tables::{
@@ -68,6 +68,20 @@ pub(crate) async fn process(
         )
         .await
         .context("Failed to dispatch metadata JSON job")?;
+
+    client
+        .db()
+        .run({
+            let addr = addr.clone();
+            move |db| {
+                delete(
+                    metadata_creators::table.filter(metadata_creators::metadata_address.eq(addr)),
+                )
+                .execute(db)
+            }
+        })
+        .await
+        .context("Failed to delete metadata creators")?;
 
     for (position, creator) in meta.data.creators.iter().flatten().enumerate() {
         let row = MetadataCreator {
