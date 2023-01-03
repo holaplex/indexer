@@ -12,6 +12,6 @@ IF EXISTS (
 	ORDER  BY conrelid::regclass::text, contype DESC
 ) F THEN
 ALTER TABLE metadata_collection_keys DROP CONSTRAINT metadata_collection_keys_pkey;
-ALTER TABLE metadata_collection_keys ADD PRIMARY KEY (metadata_address);
+ALTER TABLE metadata_collection_keys ADD PRIMARY KEY (metadata_address, collection_address);
 END IF;
 END $$;
