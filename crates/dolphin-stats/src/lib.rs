@@ -12,7 +12,7 @@
 use indexer_core::{prelude::*, url::Url};
 use serde_json::Number;
 
-const V3_BASE: &str = "https://app.getdolphin.io/apiv3";
+const V3_BASE: &str =  "https://market-api.getdolphin.io/apiv3";
 
 /// API endpoint for the Dolphin collections list
 #[inline]
