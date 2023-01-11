@@ -2136,7 +2136,7 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-geyser-selector"
 version = "0.1.1"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.8.1#aedb4f191e176e4629e28a9cf206ad20f15abfdf"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?rev=e3e9ee5#e3e9ee52d474a6bf21e1c82310211b4f6558be00"
 dependencies = [
  "hashbrown 0.12.3",
  "holaplex-indexer-rabbitmq",
@@ -2151,7 +2151,7 @@ dependencies = [
 [[package]]
 name = "holaplex-indexer-rabbitmq"
 version = "0.4.1"
-source = "git+https://github.com/holaplex/indexer-geyser-plugin?tag=v0.8.1#aedb4f191e176e4629e28a9cf206ad20f15abfdf"
+source = "git+https://github.com/holaplex/indexer-geyser-plugin?rev=e3e9ee5#e3e9ee52d474a6bf21e1c82310211b4f6558be00"
 dependencies = [
  "futures-util",
  "lapin",
