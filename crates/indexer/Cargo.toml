@@ -80,13 +80,15 @@ serde_json = { version = "1.0.91", optional = true }
 [dependencies.indexer-rabbitmq]
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
-tag = "v0.8.1"
+rev = "e3e9ee5"
+# tag = "v0.8.1"
 version = "=0.4.1"
 
 [dependencies.indexer-selector]
 package = "holaplex-indexer-geyser-selector"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
-tag = "v0.8.1"
+rev = "e3e9ee5"
+# tag = "v0.8.1"
 version = "=0.1.1"
 
 # Workspace dependencies
