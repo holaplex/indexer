@@ -1,0 +1,113 @@
+[package]
+name = "holaplex-indexer-geyser-consumer"
+version = "0.1.0"
+authors = [
+  "Holaplex Engineering <engineering@holaplex.com>",
+]
+edition = "2021"
+description = "Geyser-specific indexer write worker"
+documentation = "https://docs.rs/holaplex-indexer-geyser-consumer"
+readme = "../../README.md"
+repository = "https://github.com/holaplex/indexer"
+license = "AGPL-3.0-or-later"
+keywords = ["solana", "metaplex", "holaplex", "web3"]
+categories = ["cryptography::cryptocurrencies", "web-programming"]
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+
+[profile.debug-lite]
+inherits = "dev"
+incremental = false
+opt-level = 0
+debug = 1
+lto = "none"
+
+[profile.release-lite]
+inherits = "release"
+opt-level = 2
+
+[profile.debug-opt]
+inherits = "release"
+debug = 2
+debug-assertions = true
+incremental = true
+
+[profile.docker]
+inherits = "release"
+# strip = "symbols" # Not supported in the workspace toolchain version
+
+[[bin]]
+name = "holaplex-indexer-geyser"
+path = "src/main.rs"
+
+[dependencies]
+anchor-lang-v0-22 = { package = "anchor-lang", version = "0.22.1" }
+anchor-lang-v0-24 = { package = "anchor-lang", version = "0.24.2" }
+borsh = "0.9.3"
+cardinal-paid-claim-approver = { version = "1.4.9", features = ["no-entrypoint"] }
+cardinal-time-invalidator = { version = "1.4.9", features = ["no-entrypoint"] }
+cardinal-token-manager = { version = "1.4.9", features = ["no-entrypoint"] }
+cardinal-use-invalidator = { version = "1.4.9", features = ["no-entrypoint"] }
+futures-util = "0.3.25"
+goki-smart-wallet = { package = "smart-wallet", version = "0.10.1", features = ["no-entrypoint"] }
+metaplex = { version = "0.0.1", features = ["no-entrypoint"] }
+metaplex-auction = { version = "0.0.1", features = ["no-entrypoint"] }
+metaplex-token-metadata = { version = "0.0.1", features = ["no-entrypoint"] }
+metaplex-token-vault = { version = "0.0.1", features = ["no-entrypoint"] }
+mpl-auction-house = { version = "~1.2.4", features = ["no-entrypoint"] }
+hpl-reward-center = { version = "0.2.4", features = ["no-entrypoint"] }
+mpl-candy-machine = { version = "~4.0.2", features = ["no-entrypoint"] }
+mpl-token-metadata = { version = "~1.2.10", features = ["no-entrypoint"] }
+namespaces = { version = "~4.1.35", features = ["no-entrypoint"] }
+serde = { version = "1.0.151", features = ["derive"] }
+serde_json = "1.0.91"
+solana-program = "<=1.9.28,<1.14"
+solana-sdk = ">=1.9.28,<1.14"
+spl-token = { version = "3.2.0", features = ["no-entrypoint"] }
+spl-token-bonding = { package = "spl-token-bonding", version = "3.2.5", features = ["no-entrypoint"] }
+strum = { version = "0.24.1", features = ["derive"] }
+tribeca-govern = { package = "govern", version = "0.5.5", features = ["no-entrypoint"] }
+tribeca-locked-voter = { package = "locked-voter", version = "0.5.5", features = ["no-entrypoint"] }
+
+[dependencies.mpl-metaplex]
+git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
+rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
+features = ["no-entrypoint"]
+
+[dependencies.graph_program]
+git = "https://github.com/holaplex/graph-program.git"
+rev = "fed1261e68c524a0389b7b41e00c89623e7c3abc"
+
+[dependencies.indexer-rabbitmq]
+package = "holaplex-indexer-rabbitmq"
+git = "https://github.com/holaplex/indexer-geyser-plugin"
+rev = "e3e9ee5"
+# tag = "v0.8.1"
+version = "=0.4.1"
+features = [
+  "geyser",
+  "http-indexer",
+  "job-runner",
+  "producer",
+  "search-indexer",
+]
+
+# Workspace dependencies
+[dependencies.genostub]
+package = "genostub"
+version = "=0.1.0"
+path = "../genostub"
+
+[dependencies.indexer]
+package = "holaplex-indexer"
+version = "=0.1.0"
+path = "../indexer"
+features = ["reqwest", "search-dispatch"]
+
+[dependencies.indexer-core]
+package = "holaplex-indexer-core"
+version = "=0.1.0"
+path = "../core"
+features = ["indexer-rabbitmq"]

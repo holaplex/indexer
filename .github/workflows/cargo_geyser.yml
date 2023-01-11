@@ -1,0 +1,94 @@
+name: Cargo fmt/lint (geyser-consumer)
+
+on:
+  pull_request:
+  push:
+    branches: [dev, master]
+
+jobs:
+  fmt:
+    name: cargo fmt
+    runs-on: indexer-test-runner
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2022-11-08
+          components: cargo, rustc, rustfmt
+          profile: minimal
+
+      - name: cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --manifest-path crates/geyser-consumer/Cargo.toml --check
+
+  debug-check:
+    name: cargo check/doc/clippy (debug profile)
+    runs-on: indexer-test-runner
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2022-11-08
+          components: cargo, rustc
+          profile: minimal
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
+
+      - name: cargo clippy --bins
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path crates/geyser-consumer/Cargo.toml --bins --all-features --no-deps --profile=debug-lite
+
+      - name: check lockfile
+        run: |
+          diff Cargo.lock <(git show HEAD:Cargo.lock)
+
+      - name: cargo doc --bins
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --manifest-path crates/geyser-consumer/Cargo.toml --bins --all-features --no-deps --profile=debug-lite
+
+  release-check:
+    name: cargo check/doc/clippy (release profile)
+    runs-on: indexer-test-runner
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2022-11-08
+          components: cargo, rustc
+          profile: minimal
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
+
+      - name: cargo clippy --bins --release
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path crates/geyser-consumer/Cargo.toml --bins --all-features --profile=release-lite
+
+      - name: cargo doc --bins --release
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --manifest-path crates/geyser-consumer/Cargo.toml --bins --all-features --no-deps --profile=release-lite

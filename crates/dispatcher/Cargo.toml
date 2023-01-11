@@ -16,15 +16,15 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 [dependencies]
 async-reactor-trait = "1.1.0"
 hostname = "0.3.1"
-smol = { version = "1.2.5", default-features = false }
+smol = { version = "1.3.0", default-features = false }
 smol-executor-trait = "2.1.0"
 
 [dependencies.indexer-rabbitmq]
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
-# tag = "v0.6.1" # TODO
-rev = "57f6b14"
-version = "=0.3.1"
+rev = "e3e9ee5"
+# tag = "v0.8.1"
+version = "=0.4.1"
 default-features = false
 features = ["job-runner", "producer"]
 

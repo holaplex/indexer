@@ -15,41 +15,6 @@ categories = ["cryptography::cryptocurrencies", "web-programming"]
 
 [features]
 default = []
-geyser = [
-  "anchor-lang-v0-20",
-  "anchor-lang-v0-21",
-  "anchor-lang-v0-22",
-  "anchor-lang-v0-24",
-  "borsh",
-  "cardinal-paid-claim-approver",
-  "cardinal-time-invalidator",
-  "cardinal-token-manager",
-  "cardinal-use-invalidator",
-  "genostub",
-  "goki-smart-wallet",
-  "graph_program",
-  "metaplex",
-  "metaplex-auction",
-  "metaplex-token-metadata",
-  "metaplex-token-vault",
-  "mpl-auction-house",
-  "mpl-candy-machine",
-  "mpl-metaplex",
-  "mpl-token-metadata",
-  "hpl-reward-center",
-  "namespaces",
-  "reqwest",
-  "search-dispatch",
-  "serde_json",
-  "spl-token",
-  "spl-token-bonding",
-  "tribeca-govern",
-  "tribeca-locked-voter",
-  "indexer-rabbitmq/geyser",
-  "indexer-rabbitmq/http-indexer",
-  "indexer-rabbitmq/producer",
-  "indexer-rabbitmq/search-indexer",
-]
 http = [
   "cid",
   "reqwest",
@@ -60,6 +25,9 @@ http = [
   "indexer-rabbitmq/search-indexer",
 ]
 job-runner = [
+  "serde_json",
+  "solana-client",
+  "solana-transaction-status",
   "indexer-rabbitmq/job-runner",
 ]
 search = [
@@ -76,10 +44,6 @@ search-dispatch = [
 ]
 
 [[bin]]
-name = "holaplex-indexer-geyser"
-required-features = ["geyser"]
-
-[[bin]]
 name = "holaplex-indexer-http"
 required-features = ["http"]
 
@@ -92,75 +56,42 @@ name = "holaplex-indexer-search"
 required-features = ["search"]
 
 [dependencies]
-async-trait = "0.1.58"
+async-trait = "0.1.60"
 bs58 = "0.4.0"
 crossbeam = { version = "0.8.2", optional = true }
 futures-util = "0.3.25"
 hostname = "0.3.1"
-serde = { version = "1.0.147", features = ["derive"] }
-solana-program = "~1.9.28"
-solana-sdk = "~1.9.28"
+serde = { version = "1.0.151", features = ["derive"] }
+solana-client = { version = "~1.13.5", optional = true }
+solana-program = ">=1.9.28,<1.14"
+solana-sdk = ">=1.9.28,<1.14"
+solana-transaction-status = { version = "~1.13.5", optional = true }
 strum = { version = "0.24.1", features = ["derive"] }
-thiserror = "1.0.37"
-tokio = { version = "1.14.0", features = ["macros", "rt", "rt-multi-thread", "signal", "sync"] }
+thiserror = "1.0.38"
+tokio = { version = "1.23.0", features = ["macros", "rt", "rt-multi-thread", "signal", "sync"] }
 tokio-executor-trait = "2.1.0"
 tokio-reactor-trait = "1.1.0"
 
-# Geyser indexer
-anchor-lang-v0-20 = { package = "anchor-lang", version = "0.20.1", optional = true }
-anchor-lang-v0-21 = { package = "anchor-lang", version = "0.21.0", optional = true }
-anchor-lang-v0-22 = { package = "anchor-lang", version = "0.22.1", optional = true }
-anchor-lang-v0-24 = { package = "anchor-lang", version = "0.24.2", optional = true }
-borsh = { version = "0.9.3", optional = true }
-cardinal-paid-claim-approver = { version = "^1.0.3", features = ["no-entrypoint"], optional = true }
-cardinal-time-invalidator = { version = "^1.0.3", features = ["no-entrypoint"], optional = true }
-cardinal-token-manager = { version = "^1.0.3", features = ["no-entrypoint"], optional = true }
-cardinal-use-invalidator = { version = "^1.0.3", features = ["no-entrypoint"], optional = true }
-goki-smart-wallet = { package = "smart-wallet", version = "0.10.1", features = ["no-entrypoint"], optional = true }
-metaplex = { version = "0.0.1", features = ["no-entrypoint"], optional = true }
-metaplex-auction = { version = "0.0.1", features = ["no-entrypoint"], optional = true }
-metaplex-token-metadata = { version = "0.0.1", features = ["no-entrypoint"], optional = true }
-metaplex-token-vault = { version = "0.0.1", features = ["no-entrypoint"], optional = true }
-mpl-auction-house = { version = "1.2.4", features = ["no-entrypoint"], optional = true }
-hpl-reward-center = { version = "0.2.4", features = ["no-entrypoint"], optional = true }
-mpl-candy-machine = { version = "~3.1.1", features = ["no-entrypoint"], optional = true }
-mpl-token-metadata = { version = "1.2.10", features = ["no-entrypoint"], optional = true }
-namespaces = { version = "0.1.0", features = ["no-entrypoint"], optional = true }
-spl-token = { version = "~3.2.0", features = ["no-entrypoint"], optional = true }
-spl-token-bonding = { package = "spl-token-bonding", version = "3.2.5", features = ["no-entrypoint"], optional = true }
-tribeca-govern = { package = "govern", version = "0.5.5", features = ["no-entrypoint"], optional = true }
-tribeca-locked-voter = { package = "locked-voter", version = "0.5.5", features = ["no-entrypoint"], optional = true }
-
 # HTTP indexer
-cid = { version = "0.8.6", optional = true }
-reqwest = { version = "0.11.12", features = ["json", "gzip", "brotli", "deflate"], optional = true }
-serde_json = { version = "1.0.87", optional = true }
-
-[dependencies.mpl-metaplex]
-git = "https://github.com/metaplex-foundation/metaplex-program-library.git"
-rev = "63f26d6b1c393859c1d93c18dc9379827347229b"
-features = ["no-entrypoint"]
-optional = true
-
-[dependencies.graph_program]
-git = "https://github.com/holaplex/graph-program.git"
-rev = "fed1261e68c524a0389b7b41e00c89623e7c3abc"
-optional = true
+cid = { version = "0.9.0", optional = true }
+reqwest = { version = "0.11.13", features = ["json", "gzip", "brotli", "deflate"], optional = true }
+serde_json = { version = "1.0.91", optional = true }
 
 [dependencies.indexer-rabbitmq]
 package = "holaplex-indexer-rabbitmq"
 git = "https://github.com/holaplex/indexer-geyser-plugin"
-# tag = "v0.6.1" # TODO
-rev = "57f6b14"
-version = "=0.3.1"
+rev = "e3e9ee5"
+# tag = "v0.8.1"
+version = "=0.4.1"
+
+[dependencies.indexer-selector]
+package = "holaplex-indexer-geyser-selector"
+git = "https://github.com/holaplex/indexer-geyser-plugin"
+rev = "e3e9ee5"
+# tag = "v0.8.1"
+version = "=0.1.1"
 
 # Workspace dependencies
-[dependencies.genostub]
-package = "genostub"
-version = "=0.1.0"
-path = "../genostub"
-optional = true
-
 [dependencies.indexer-core]
 package = "holaplex-indexer-core"
 version = "=0.1.0"
