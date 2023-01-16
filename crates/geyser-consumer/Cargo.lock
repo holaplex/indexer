@@ -2046,6 +2046,8 @@ dependencies = [
  "holaplex-indexer-geyser-selector",
  "holaplex-indexer-rabbitmq",
  "hostname",
+ "lazy_static",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",
