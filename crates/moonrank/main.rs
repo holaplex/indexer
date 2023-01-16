@@ -37,7 +37,7 @@ struct Collection {
     name: String,
     description: String,
     verified_collection_address: Option<String>,
-    pieces: u64,
+    pieces: Value,
     verified: bool,
     metadata: Metadata,
     #[serde(flatten)]
@@ -63,7 +63,7 @@ struct XCollectionMetadata {
     #[serde(rename = "x.id")]
     x_id: String,
     #[serde(rename = "x.supply")]
-    x_supply: u64,
+    x_supply: Value,
     #[serde(rename = "x.url.web")]
     x_url_web: Option<String>,
     #[serde(rename = "x.url.twitter")]
@@ -85,16 +85,16 @@ struct Crawl {
     id: String,
     created: DateTime<Utc>,
     updated: DateTime<Utc>,
-    first_mint_ts: u64,
-    last_mint_ts: u64,
+    first_mint_ts: Value,
+    last_mint_ts: Value,
     first_mint: String,
     last_mint: String,
-    expected_pieces: u64,
-    seen_pieces: u64,
+    expected_pieces: Value,
+    seen_pieces: Value,
     last_crawl_id: u128,
     complete: bool,
     blocked: bool,
-    unblocked_at_ts: Option<u64>,
+    unblocked_at_ts: Option<Value>,
     #[serde(flatten)]
     extra: HashMap<String, Value>,
 }
@@ -117,12 +117,12 @@ struct CollectionMints {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Mint {
-    crawl_id: u128,
+    crawl_id: Value,
     mint: String,
     name: String,
     image: String,
-    created: u64,
-    rank: u64,
+    created: Value,
+    rank: Value,
     rarity: f64,
     rank_explain: Vec<Attribute>,
     filtered_rank_explain: Option<Value>,
@@ -309,7 +309,7 @@ async fn upsert_collection_data(
         website_url,
         magic_eden_id,
         verified_collection_address: json.collection.verified_collection_address.map(Owned),
-        pieces: json.collection.pieces.try_into()?,
+        pieces: json.collection.pieces.as_i64().unwrap_or_default(),
         verified: json.collection.verified,
         go_live_at: json.collection.metadata.go_live_at.naive_utc(),
         created_at: json.crawl.created.naive_utc(),
@@ -369,8 +369,8 @@ fn upsert_collection_mints(
         mint: Owned(mint.mint),
         name: Owned(mint.name),
         image: Owned(mint.image),
-        created_at: unix_timestamp_unsigned(mint.created)?,
-        rank: mint.rank.try_into()?,
+        created_at: unix_timestamp_unsigned(mint.created.as_u64().unwrap_or_default())?,
+        rank: mint.rank.as_i64().unwrap_or_default(),
         rarity: mint.rarity.try_into()?,
     };
 

@@ -1,6 +1,12 @@
 use indexer_core::{clap, meilisearch};
 use indexer_rabbitmq::search_indexer::{Document, Message, Producer, QueueType};
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::Serialize;
+
+lazy_static! {
+    static ref DOCUMENT_ID_RE: Regex = Regex::new("^[A-Za-z0-9-_]+$").unwrap();
+}
 
 use crate::prelude::*;
 #[allow(missing_docs)]
@@ -102,7 +108,11 @@ impl Client {
         id: impl std::fmt::Display,
         body: impl Serialize,
     ) -> Result<()> {
-        if is_for_backfill && !self.backfill {
+        // id can only contain alphanumeric characters (a-z, A-Z, 0-9), hyphens (-), and underscores (_)
+
+        let is_valid = DOCUMENT_ID_RE.is_match(&id.to_string());
+
+        if (is_for_backfill && !self.backfill) || !is_valid {
             return Ok(());
         }
 
