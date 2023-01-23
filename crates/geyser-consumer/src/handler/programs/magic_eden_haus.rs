@@ -10,6 +10,10 @@ use indexer_core::{
     util::{self, unix_timestamp},
     uuid::Uuid,
 };
+use solana_client::{
+    client_error::{ClientError, ClientErrorKind},
+    rpc_request::RpcError,
+};
 
 use super::{
     instructions::{
@@ -295,8 +299,21 @@ pub(crate) async fn process_instruction(
     let discriminator = <[u8; 8]>::try_from(discriminator)?;
 
     let mut block_time = Utc::now().naive_utc();
-    if let Ok(bt) = client.rpc().get_block_time(slot) {
-        block_time = unix_timestamp(bt)?;
+
+    // RPC error code 32009 occurs if the slot is not found.
+    // could be due to a brief delay at the rpc side for the most recent slot data to be returned.
+
+    match client.rpc().get_block_time(slot) {
+        Ok(bt) => {
+            block_time = unix_timestamp(bt)?;
+        },
+        Err(ClientError {
+            request: _,
+            kind: ClientErrorKind::RpcError(RpcError::RpcResponseError { code, .. }),
+        }) if code == -32009 => (),
+        Err(e) => {
+            bail!("failed to get block time {:?}", e);
+        },
     }
 
     match discriminator {
