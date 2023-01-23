@@ -2118,7 +2118,6 @@ dependencies = [
  "locked-voter",
  "metaplex",
  "metaplex-auction",
- "metaplex-token-metadata",
  "metaplex-token-vault",
  "mpl-auction-house",
  "mpl-candy-machine",

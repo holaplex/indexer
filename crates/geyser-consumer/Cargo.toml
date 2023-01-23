@@ -54,7 +54,6 @@ futures-util = "0.3.25"
 goki-smart-wallet = { package = "smart-wallet", version = "0.10.1", features = ["no-entrypoint"] }
 metaplex = { version = "0.0.1", features = ["no-entrypoint"] }
 metaplex-auction = { version = "0.0.1", features = ["no-entrypoint"] }
-metaplex-token-metadata = { version = "0.0.1", features = ["no-entrypoint"] }
 metaplex-token-vault = { version = "0.0.1", features = ["no-entrypoint"] }
 mpl-auction-house = { version = "~1.2.4", features = ["no-entrypoint"] }
 hpl-reward-center = { version = "0.2.4", features = ["no-entrypoint"] }
