@@ -203,10 +203,7 @@ async fn index_metadata_collection_key(
         .run(move |db| {
             insert_into(metadata_collection_keys::table)
                 .values(&row)
-                .on_conflict((
-                    metadata_collection_keys::metadata_address,
-                    metadata_collection_keys::collection_address,
-                ))
+                .on_conflict(metadata_collection_keys::metadata_address)
                 .do_update()
                 .set(&row)
                 .execute(db)
