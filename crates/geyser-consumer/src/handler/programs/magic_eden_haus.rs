@@ -21,6 +21,7 @@ use super::{
 const BUY: [u8; 8] = [102, 6, 61, 18, 1, 218, 235, 234];
 const SELL: [u8; 8] = [51, 230, 133, 164, 1, 127, 131, 173];
 const EXECUTE_SALE: [u8; 8] = [37, 74, 217, 157, 79, 49, 35, 6];
+const EXECUTE_SALEV2: [u8; 8] = [91, 220, 49, 223, 204, 129, 53, 193];
 const CANCEL_SELL: [u8; 8] = [198, 198, 130, 203, 163, 95, 175, 75];
 const CANCEL_BUY: [u8; 8] = [238, 76, 36, 218, 132, 177, 224, 233];
 
@@ -284,6 +285,7 @@ pub(crate) async fn process_instruction(
         BUY => process_buy(client, params, accounts, slot).await,
         SELL => process_sale(client, params, accounts, slot).await,
         EXECUTE_SALE => process_execute_sale(client, params, accounts, slot).await,
+        EXECUTE_SALEV2 => process_execute_sale(client, params, accounts, slot).await,
         CANCEL_SELL => process_cancel_sale(client, accounts, slot).await,
         CANCEL_BUY => process_cancel_buy(client, accounts, slot).await,
         _ => Ok(()),
