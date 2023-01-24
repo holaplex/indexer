@@ -43,7 +43,7 @@ pub(crate) async fn process_listing_receipt(
         bump: listing.bump.into(),
         trade_state_bump: listing.trade_state_bump.into(),
         created_at: util::unix_timestamp(listing.created_at)?,
-        canceled_at: listing.canceled_at.map(util::unix_timestamp).transpose()?,
+        canceled_at: Some(listing.canceled_at.map(util::unix_timestamp).transpose()?),
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
     };
@@ -258,10 +258,12 @@ pub(crate) async fn process_bid_receipt(
         bump: bid_receipt.bump.into(),
         trade_state_bump: bid_receipt.trade_state_bump.into(),
         created_at: util::unix_timestamp(bid_receipt.created_at)?,
-        canceled_at: bid_receipt
-            .canceled_at
-            .map(util::unix_timestamp)
-            .transpose()?,
+        canceled_at: Some(
+            bid_receipt
+                .canceled_at
+                .map(util::unix_timestamp)
+                .transpose()?,
+        ),
         slot: slot.try_into()?,
         write_version: write_version.try_into()?,
     };

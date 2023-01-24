@@ -86,7 +86,7 @@ async fn upsert_into_offers_table<'a>(
         token_size: data.token_size,
         trade_state_bump: data.trade_state_bump,
         created_at: data.created_at,
-        canceled_at: None,
+        canceled_at: Some(None),
         slot: data.slot,
         write_version: None,
         expiry: None,

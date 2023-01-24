@@ -131,7 +131,7 @@ async fn process_sale(
         token_size: params.token_size.try_into()?,
         trade_state_bump: params.trade_state_bump.try_into()?,
         created_at: timestamp,
-        canceled_at: None,
+        canceled_at: Some(None),
         slot,
         write_version: None,
         expiry: match params.expiry {
@@ -206,7 +206,7 @@ async fn process_buy(
         token_size: params.token_size.try_into()?,
         trade_state_bump: params.trade_state_bump.try_into()?,
         created_at: timestamp,
-        canceled_at: None,
+        canceled_at: Some(None),
         slot,
         write_version: None,
         expiry: match params.expiry {
