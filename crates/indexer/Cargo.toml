@@ -64,13 +64,13 @@ hostname = "0.3.1"
 lazy_static = "1.4.0"
 regex = "1.7"
 serde = { version = "1.0.151", features = ["derive"] }
-solana-client = { version = "~1.13.5", optional = true }
+solana-client = { version = ">=1.9.28,<1.14", optional = true }
 solana-program = ">=1.9.28,<1.14"
 solana-sdk = ">=1.9.28,<1.14"
-solana-transaction-status = { version = "~1.13.5", optional = true }
+solana-transaction-status = { version = ">=1.9.28,<1.14", optional = true }
 strum = { version = "0.24.1", features = ["derive"] }
 thiserror = "1.0.38"
-tokio = { version = "1.23.0", features = ["macros", "rt", "rt-multi-thread", "signal", "sync"] }
+tokio = { version = "~1.14.0", features = ["macros", "rt", "rt-multi-thread", "signal", "sync"] }
 tokio-executor-trait = "2.1.0"
 tokio-reactor-trait = "1.1.0"
 

@@ -1,8 +1,9 @@
-use std::{sync::Arc, time::Duration};
+use std::{fmt, sync::Arc, time::Duration};
 
 use indexer::{db::Pool, prelude::*, reqwest, search_dispatch};
 use indexer_core::clap;
 use indexer_rabbitmq::{geyser, http_indexer, job_runner, search_indexer};
+use solana_client::rpc_client::RpcClient;
 
 #[derive(Debug)]
 struct HttpProducers {
@@ -28,6 +29,10 @@ pub struct Args {
     #[arg(long, env, requires("dialect_api_endpoint"))]
     dialect_api_key: Option<String>,
 
+    /// Solana rpc endpoint
+    #[arg(long, env)]
+    solana_endpoint: String,
+
     /// Request reindexing of blocks when their status is marked as confirmed
     #[arg(long, env, default_value_t = false)]
     enable_block_reindex: bool,
@@ -52,11 +57,20 @@ pub struct Client {
     db: Pool,
     http: reqwest::Client,
     http_prod: HttpProducers,
+    rpc_client: Rpc,
     job_prod: JobProducers,
     search: search_dispatch::Client,
     startup: geyser::StartupType,
     dialect_api_endpoint: Option<String>,
     dialect_api_key: Option<String>,
+}
+
+pub struct Rpc(RpcClient);
+
+impl fmt::Debug for Rpc {
+    fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
+        Ok(())
+    }
 }
 
 /// Helper type for storing the necessary queue types for constructing a
@@ -87,6 +101,7 @@ impl Client {
         Args {
             dialect_api_endpoint,
             dialect_api_key,
+            solana_endpoint,
             enable_block_reindex,
             search,
         }: Args,
@@ -115,6 +130,7 @@ impl Client {
                     .await
                     .context("Couldn't create AMQP store config producer")?,
             },
+            rpc_client: Rpc(RpcClient::new(solana_endpoint)),
             job_prod: JobProducers {
                 prod: job_runner::Producer::new(conn, job_q)
                     .await
@@ -140,6 +156,13 @@ impl Client {
     #[must_use]
     pub fn search(&self) -> &search_dispatch::Client {
         &self.search
+    }
+
+    /// Get a reference to the search index dispatcher
+    #[inline]
+    #[must_use]
+    pub fn rpc(&self) -> &RpcClient {
+        &self.rpc_client.0
     }
 
     /// Dispatch an AMQP message to the HTTP indexer to request off-chain
