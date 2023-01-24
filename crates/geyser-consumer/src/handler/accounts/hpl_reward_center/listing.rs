@@ -136,7 +136,7 @@ pub(crate) async fn process(
                     price: row.price,
                     created_at: row.created_at,
                     expiry: None,
-                    canceled_at: None,
+                    canceled_at: Some(None),
                     write_version: Some(row.write_version),
                     slot: row.slot,
                 };

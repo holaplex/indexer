@@ -1050,7 +1050,8 @@ pub struct BidReceipt<'a> {
     /// Created_at timestamp
     pub created_at: NaiveDateTime,
     /// Canceled_at timestamp
-    pub canceled_at: Option<NaiveDateTime>,
+    #[diesel(deserialize_as = "Option<NaiveDateTime>")]
+    pub canceled_at: Option<Option<NaiveDateTime>>,
     /// Solana slot number
     pub slot: i64,
     /// Solana write_version
@@ -1087,7 +1088,8 @@ pub struct ListingReceipt<'a> {
     /// Created_at timestamp
     pub created_at: NaiveDateTime,
     /// Canceled_at timestamp
-    pub canceled_at: Option<NaiveDateTime>,
+    #[diesel(deserialize_as = "Option<NaiveDateTime>")]
+    pub canceled_at: Option<Option<NaiveDateTime>>,
     /// Solana slot number
     pub slot: i64,
     /// Solana write_version
@@ -2856,7 +2858,8 @@ pub struct Offer<'a> {
     /// Created_at timestamp
     pub created_at: NaiveDateTime,
     /// Canceled_at timestamp
-    pub canceled_at: Option<NaiveDateTime>,
+    #[diesel(deserialize_as = "Option<NaiveDateTime>")]
+    pub canceled_at: Option<Option<NaiveDateTime>>,
     /// Solana slot number
     pub slot: i64,
     /// Solana write_version
@@ -2927,7 +2930,8 @@ pub struct Listing<'a> {
     /// Created_at timestamp
     pub created_at: NaiveDateTime,
     /// Canceled_at timestamp
-    pub canceled_at: Option<NaiveDateTime>,
+    #[diesel(deserialize_as = "Option<NaiveDateTime>")]
+    pub canceled_at: Option<Option<NaiveDateTime>>,
     /// Solana slot number
     pub slot: i64,
     /// Solana write_version

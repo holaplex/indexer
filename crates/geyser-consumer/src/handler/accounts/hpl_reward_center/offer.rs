@@ -135,7 +135,7 @@ pub(crate) async fn process(
                     token_size: row.token_size,
                     trade_state_bump: trade_state_bump.try_into()?,
                     created_at: row.created_at,
-                    canceled_at: None,
+                    canceled_at: Some(None),
                     slot: row.slot,
                     write_version: Some(row.write_version),
                     expiry: None,

@@ -129,7 +129,7 @@ impl<'a> TryFrom<models::Offer<'a>> for Offer {
             marketplace_program_address: marketplace_program.into_owned(),
             trade_state_bump: trade_state_bump.into(),
             created_at: DateTime::from_utc(created_at, Utc),
-            canceled_at: canceled_at.map(|c| DateTime::from_utc(c, Utc)),
+            canceled_at: canceled_at.flatten().map(|c| DateTime::from_utc(c, Utc)),
             token_size: token_size.try_into()?,
         })
     }

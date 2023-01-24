@@ -119,7 +119,7 @@ impl<'a> TryFrom<models::ListingReceipt<'a>> for ListingReceipt {
             price: price.try_into()?,
             trade_state_bump: trade_state_bump.into(),
             created_at: DateTime::from_utc(created_at, Utc),
-            canceled_at: canceled_at.map(|c| DateTime::from_utc(c, Utc)),
+            canceled_at: canceled_at.flatten().map(|c| DateTime::from_utc(c, Utc)),
             bookkeeper: bookkeeper.into_owned().into(),
             purchase_receipt: purchase_receipt.map(|pr| pr.into_owned().into()),
             token_size: token_size.try_into()?,
