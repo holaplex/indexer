@@ -4,16 +4,12 @@ use indexer_core::{
     db::{
         custom_types::ActivityTypeEnum,
         insert_into,
-        models::{ExecuteSaleInstruction, FeedEventWallet, Purchase, PurchaseEvent},
+        models::{ExecuteSaleInstruction, Purchase},
         mutations, select,
-        tables::{
-            execute_sale_instructions, feed_event_wallets, feed_events, listings, offers,
-            purchase_events, purchases,
-        },
+        tables::{execute_sale_instructions, listings, offers, purchases},
         update,
     },
     pubkeys,
-    uuid::Uuid,
 };
 use mpl_auction_house::instruction::ExecuteSale;
 
@@ -152,39 +148,7 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
                 ActivityTypeEnum::Purchase,
             )?;
 
-            db.build_transaction().read_write().run(|| {
-                let feed_event_id = insert_into(feed_events::table)
-                    .default_values()
-                    .returning(feed_events::id)
-                    .get_result::<Uuid>(db)
-                    .context("Failed to insert feed event")?;
-
-                insert_into(purchase_events::table)
-                    .values(PurchaseEvent {
-                        purchase_id,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("failed to insert purchase created event")?;
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: data.seller,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert purchase feed event wallet for seller")?;
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: data.buyer,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert purchase feed event wallet for buyer")?;
-
-                Result::<_>::Ok(())
-            })
+            Result::<_>::Ok(())
         })
         .await
         .context("Failed to insert purchase!")?;
