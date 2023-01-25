@@ -4,19 +4,18 @@ use indexer_core::db::{
     custom_types::{EndSettingType as DbEndSettingType, WhitelistMintMode as DbWhitelistMintMode},
     insert_into,
     models::{
-        CMCollectionPDA, CMConfigLine, CMCreator, CMEndSetting, CMGateKeeperConfig,
-        CMHiddenSetting, CMWhitelistMintSetting, CandyMachine as DbCandyMachine,
-        CandyMachineData as CMData,
+        CMCollectionPDA, CMCreator, CMEndSetting, CMGateKeeperConfig, CMHiddenSetting,
+        CMWhitelistMintSetting, CandyMachine as DbCandyMachine, CandyMachineData as CMData,
     },
     tables::{
-        candy_machine_collection_pdas, candy_machine_config_lines, candy_machine_creators,
-        candy_machine_datas, candy_machine_end_settings, candy_machine_gate_keeper_configs,
+        candy_machine_collection_pdas, candy_machine_creators, candy_machine_datas,
+        candy_machine_end_settings, candy_machine_gate_keeper_configs,
         candy_machine_hidden_settings, candy_machine_whitelist_mint_settings, candy_machines,
     },
 };
 use mpl_candy_machine::{
-    CandyMachine, CandyMachineData, CollectionPDA, ConfigLine, Creator, EndSettingType,
-    EndSettings, GatekeeperConfig, HiddenSettings, WhitelistMintMode, WhitelistMintSettings,
+    CandyMachine, CandyMachineData, CollectionPDA, Creator, EndSettingType, EndSettings,
+    GatekeeperConfig, HiddenSettings, WhitelistMintMode, WhitelistMintSettings,
 };
 
 use super::Client;
@@ -25,7 +24,6 @@ pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
     candy_machine: CandyMachine,
-    config_lines: Option<Vec<(ConfigLine, usize, bool)>>,
 ) -> Result<()> {
     let cm = DbCandyMachine {
         address: Owned(bs58::encode(key).into_string()),
@@ -55,10 +53,6 @@ pub(crate) async fn process(
         Box::pin(process_creators(client, key, candy_machine.data.creators)),
     ];
 
-    if let Some(config_lines) = config_lines {
-        futures.push(Box::pin(process_config_lines(client, key, config_lines)));
-    }
-
     if let Some(es) = candy_machine.data.end_settings {
         futures.push(Box::pin(process_end_settings(client, key, es)));
     };
@@ -76,35 +70,6 @@ pub(crate) async fn process(
     }
 
     join_all(futures).await;
-
-    Ok(())
-}
-
-async fn process_config_lines(
-    client: &Client,
-    key: Pubkey,
-    config_lines: Vec<(ConfigLine, usize, bool)>,
-) -> Result<()> {
-    for config_line in &config_lines {
-        let db_config_line = CMConfigLine {
-            candy_machine_address: Owned(key.to_string()),
-            name: Owned(config_line.0.name.trim_matches('\0').to_owned()),
-            uri: Owned(config_line.0.uri.trim_matches('\0').to_owned()),
-            idx: i32::try_from(config_line.1).unwrap_or(-1),
-            taken: config_line.2,
-        };
-
-        client
-            .db()
-            .run(move |db| {
-                insert_into(candy_machine_config_lines::table)
-                    .values(db_config_line)
-                    .on_conflict_do_nothing()
-                    .execute(db)
-            })
-            .await
-            .context("Failed to insert candy machine config lines")?;
-    }
 
     Ok(())
 }
