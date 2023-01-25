@@ -3,7 +3,7 @@ use indexer_core::{
     db::{
         self,
         expression::dsl::all,
-        queries::{self, collections::TrendingQueryOptions, feed_event::EventType},
+        queries::{self, collections::TrendingQueryOptions},
     },
     pubkeys,
 };
@@ -17,7 +17,6 @@ use objects::{
     collection::{CollectionDocument, CollectionTrend},
     creator::Creator,
     denylist::Denylist,
-    feed_event::FeedEvent,
     genopets::{GenoHabitat, GenoHabitatList, GenoHabitatsParams},
     graph_connection::GraphConnection,
     listing::{Listing, ListingColumns, ListingRow},
@@ -129,89 +128,6 @@ impl QueryRoot {
             query.load(&conn).context("Failed to load wallet totals")?;
 
         Ok(rows.into_iter().map(Into::into).collect())
-    }
-
-    #[graphql(
-        description = "Returns events for the wallets the user is following using the graph_program.",
-        arguments(
-            wallet(description = "A user wallet public key"),
-            limit(description = "The query record limit"),
-            offset(description = "The query record offset")
-        )
-    )]
-    fn feed_events(
-        &self,
-        ctx: &AppContext,
-        wallet: PublicKey<Wallet>,
-        limit: i32,
-        offset: i32,
-        exclude_types: Option<Vec<String>>,
-    ) -> FieldResult<Vec<FeedEvent>> {
-        let conn = ctx.shared.db.get().context("failed to connect to db")?;
-
-        let exclude_types_parsed: Option<Vec<EventType>> = exclude_types.map(|v_types| {
-            v_types
-                .iter()
-                .map(|v| v.parse::<EventType>())
-                .filter_map(Result::ok)
-                .collect()
-        });
-
-        let feed_events = queries::feed_event::list(
-            &conn,
-            limit.try_into()?,
-            offset.try_into()?,
-            Some(wallet.to_string()),
-            exclude_types_parsed,
-        )?;
-
-        feed_events
-            .into_iter()
-            .map(TryInto::try_into)
-            .collect::<Result<_, _>>()
-            .map_err(Into::into)
-    }
-
-    #[graphql(
-        description = "Returns the latest on chain events using the graph_program.",
-        arguments(
-            limit(description = "The query record limit"),
-            is_forward(description = "Data record needed forward or backward"),
-            cursor(description = "The query record offset")
-        )
-    )]
-    fn latest_feed_events(
-        &self,
-        ctx: &AppContext,
-        limit: i32,
-        is_forward: bool,
-        cursor: String,
-        include_types: Option<Vec<String>>,
-    ) -> FieldResult<Vec<FeedEvent>> {
-        let conn = ctx.shared.db.get().context("failed to connect to db")?;
-
-        let include_types_parsed: Option<Vec<EventType>> = include_types.map(|v_types| {
-            v_types
-                .iter()
-                .map(|v| v.parse::<EventType>())
-                .filter_map(Result::ok)
-                .collect()
-        });
-
-        let feed_events = queries::feed_event::list_relay(
-            &conn,
-            limit.try_into()?,
-            is_forward,
-            cursor,
-            None,
-            include_types_parsed,
-        )?;
-
-        feed_events
-            .into_iter()
-            .map(TryInto::try_into)
-            .collect::<Result<_, _>>()
-            .map_err(Into::into)
     }
 
     #[graphql(arguments(creators(description = "creators of nfts")))]
