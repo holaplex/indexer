@@ -316,6 +316,20 @@ pub(crate) async fn process_instruction(
     let (discriminator, params) = data.split_at(8);
     let discriminator = <[u8; 8]>::try_from(discriminator)?;
 
+    let block_time = get_block_time(client, slot)?;
+
+    match discriminator {
+        BUY => process_buy(client, params, accounts, slot, block_time).await,
+        SELL => process_sale(client, params, accounts, slot, block_time).await,
+        EXECUTE_SALE => process_execute_sale(client, params, accounts, slot, block_time).await,
+        EXECUTE_SALEV2 => process_execute_sale(client, params, accounts, slot, block_time).await,
+        CANCEL_SELL => process_cancel_sale(client, accounts, slot, block_time).await,
+        CANCEL_BUY => process_cancel_buy(client, accounts, slot, block_time).await,
+        _ => Ok(()),
+    }
+}
+
+pub(crate) fn get_block_time(client: &Client, slot: u64) -> Result<NaiveDateTime> {
     let mut block_time = Utc::now().naive_utc();
 
     // RPC error code 32009 occurs if the slot is not found.
@@ -334,13 +348,5 @@ pub(crate) async fn process_instruction(
         },
     }
 
-    match discriminator {
-        BUY => process_buy(client, params, accounts, slot, block_time).await,
-        SELL => process_sale(client, params, accounts, slot, block_time).await,
-        EXECUTE_SALE => process_execute_sale(client, params, accounts, slot, block_time).await,
-        EXECUTE_SALEV2 => process_execute_sale(client, params, accounts, slot, block_time).await,
-        CANCEL_SELL => process_cancel_sale(client, accounts, slot, block_time).await,
-        CANCEL_BUY => process_cancel_buy(client, accounts, slot, block_time).await,
-        _ => Ok(()),
-    }
+    Ok(block_time)
 }

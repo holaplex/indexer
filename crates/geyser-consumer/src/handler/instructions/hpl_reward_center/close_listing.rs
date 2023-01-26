@@ -15,6 +15,7 @@ pub(crate) async fn process(
     _data: &[u8],
     accounts: &[Pubkey],
     slot: u64,
+    timestamp: NaiveDateTime,
 ) -> Result<()> {
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
     let listing_address = accts[1].clone();
@@ -80,7 +81,7 @@ pub(crate) async fn process(
                 trade_state: Owned(accts[9].clone()),
                 ah_auctioneer_pda: Owned(accts[10].clone()),
                 token_size: token_size.unwrap_or_default(),
-                created_at: Utc::now().naive_utc(),
+                created_at: timestamp,
                 slot,
             };
 

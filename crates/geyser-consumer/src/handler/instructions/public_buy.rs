@@ -22,6 +22,11 @@ pub(crate) async fn process(
 ) -> Result<()> {
     let params = PublicBuy::try_from_slice(data).context("failed to deserialize")?;
 
+    if accounts.len() != 14 {
+        debug!("invalid accounts for PublicBuy instruction");
+        return Ok(());
+    }
+
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
     let row = PublicBuyInstruction {

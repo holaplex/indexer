@@ -17,7 +17,7 @@ use indexer_core::{
         },
         Error as DbError,
     },
-    pubkeys, util,
+    pubkeys,
     uuid::Uuid,
 };
 use mpl_auction_house::pda::find_auctioneer_trade_state_address;
@@ -32,6 +32,7 @@ pub(crate) async fn process(
     account_data: Listing,
     slot: u64,
     write_version: u64,
+    timestamp: NaiveDateTime,
 ) -> Result<()> {
     let row = DbRewardsListing {
         address: Owned(bs58::encode(key).into_string()),
@@ -46,7 +47,7 @@ pub(crate) async fn process(
             .token_size
             .try_into()
             .context("Token size is too big to store")?,
-        created_at: util::unix_timestamp(account_data.created_at)?,
+        created_at: timestamp,
         closed_at: None,
         purchase_id: None,
         bump: account_data.bump.try_into()?,
