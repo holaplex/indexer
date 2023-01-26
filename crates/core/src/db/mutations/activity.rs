@@ -40,6 +40,7 @@ pub fn listing<'a>(
         seller: Some(listing.seller.clone()),
         collection_id: collection_id.map(Into::into),
         activity_type,
+        slot: listing.slot,
     };
 
     insert_into(marketplace_activities::table)
@@ -78,6 +79,7 @@ pub fn offer<'a>(
         seller: None,
         collection_id: collection_id.map(Into::into),
         activity_type,
+        slot: offer.slot,
     };
 
     insert_into(marketplace_activities::table)
@@ -116,6 +118,7 @@ pub fn purchase<'a>(
         seller: Some(purchase.seller.clone()),
         collection_id: collection_id.map(Into::into),
         activity_type,
+        slot: purchase.slot,
     };
 
     insert_into(marketplace_activities::table)

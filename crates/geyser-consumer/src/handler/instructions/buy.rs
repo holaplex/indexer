@@ -5,7 +5,7 @@ use indexer_core::{
         custom_types::ActivityTypeEnum,
         insert_into,
         models::{BuyInstruction, Offer},
-        mutations, select,
+        mutations,
         tables::{buy_instructions, offers, purchases},
     },
     pubkeys,
@@ -117,29 +117,30 @@ pub async fn upsert_into_offers_table<'a>(client: &Client, data: Offer<'static>)
         .run(move |db| {
             let auction_house: Pubkey = data.auction_house.to_string().parse()?;
 
-            let offer_exists = select(exists(
-                offers::table.filter(
+            let indexed_offer_slot: Option<i64> = offers::table
+                .filter(
                     offers::trade_state
                         .eq(data.trade_state.clone())
                         .and(offers::metadata.eq(data.metadata.clone())),
-                ),
-            ))
-            .get_result::<bool>(db)?;
+                )
+                .select(offers::slot)
+                .first(db)
+                .optional()?;
 
-            let offer_id = mutations::offer::insert(db, &data)?;
+            let offer_id = mutations::offer::insert(db, &data.clone())?;
 
-            if offer_exists {
+            if Some(data.slot) == indexed_offer_slot
+                || auction_house == pubkeys::OPENSEA_AUCTION_HOUSE
+            {
                 return Ok(());
             }
 
-            if auction_house != pubkeys::OPENSEA_AUCTION_HOUSE {
-                mutations::activity::offer(
-                    db,
-                    offer_id,
-                    &data.clone(),
-                    ActivityTypeEnum::OfferCreated,
-                )?;
-            }
+            mutations::activity::offer(
+                db,
+                offer_id,
+                &data.clone(),
+                ActivityTypeEnum::OfferCreated,
+            )?;
             Result::<_>::Ok(())
         })
         .await
