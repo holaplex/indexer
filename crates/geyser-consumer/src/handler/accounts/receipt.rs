@@ -1,20 +1,15 @@
 use indexer::prelude::*;
 use indexer_core::{
     db::{
-        custom_types::{ActivityTypeEnum, ListingEventLifecycleEnum, OfferEventLifecycleEnum},
+        custom_types::ActivityTypeEnum,
         insert_into,
         models::{
-            BidReceipt as DbBidReceipt, FeedEventWallet, Listing, ListingEvent,
-            ListingReceipt as DbListingReceipt, Offer, OfferEvent, Purchase, PurchaseEvent,
-            PurchaseReceipt as DbPurchaseReceipt,
+            BidReceipt as DbBidReceipt, Listing, ListingReceipt as DbListingReceipt, Offer,
+            Purchase, PurchaseReceipt as DbPurchaseReceipt,
         },
         mutations, select,
-        tables::{
-            bid_receipts, current_metadata_owners, feed_event_wallets, feed_events, listing_events,
-            listing_receipts, listings, metadatas, offer_events, offers, purchase_events,
-            purchase_receipts, purchases,
-        },
-        update, Error as DbError,
+        tables::{bid_receipts, listing_receipts, listings, offers, purchase_receipts, purchases},
+        update,
     },
     pubkeys, util,
     uuid::Uuid,
@@ -98,39 +93,9 @@ pub(crate) async fn process_listing_receipt(
                 ActivityTypeEnum::ListingCreated,
             )?;
 
-            db.build_transaction().read_write().run(|| {
-                let feed_event_id = insert_into(feed_events::table)
-                    .default_values()
-                    .returning(feed_events::id)
-                    .get_result::<Uuid>(db)
-                    .context("Failed to insert feed event")?;
-
-                let listing_event = insert_into(listing_events::table)
-                    .values(&ListingEvent {
-                        feed_event_id,
-                        lifecycle: ListingEventLifecycleEnum::Created,
-                        listing_id,
-                    })
-                    .execute(db);
-
-                if Err(DbError::RollbackTransaction) == listing_event {
-                    return Ok(());
-                }
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: row.seller,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert listing feed event wallet")?;
-
-                Result::<_>::Ok(())
-            })
+            Result::<_>::Ok(())
         })
-        .await
-        .context("Failed to insert listing receipt!")?;
-
+        .await?;
     Ok(())
 }
 
@@ -191,47 +156,7 @@ pub(crate) async fn process_purchase_receipt(
         return Ok(());
     }
 
-    let purchase_id = upsert_into_purchases_table(client, row.clone()).await?;
-
-    client
-        .db()
-        .run(move |db| {
-            db.build_transaction().read_write().run(|| {
-                let feed_event_id = insert_into(feed_events::table)
-                    .default_values()
-                    .returning(feed_events::id)
-                    .get_result::<Uuid>(db)
-                    .context("Failed to insert feed event")?;
-
-                insert_into(purchase_events::table)
-                    .values(PurchaseEvent {
-                        purchase_id,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("failed to insert purchase created event")?;
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: row.seller,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert purchase feed event wallet for seller")?;
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: row.buyer,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert purchase feed event wallet for buyer")?;
-
-                Result::<_>::Ok(())
-            })
-        })
-        .await
-        .context("failed to insert purchase event")?;
+    upsert_into_purchases_table(client, row.clone()).await?;
 
     Ok(())
 }
@@ -299,64 +224,13 @@ pub(crate) async fn process_bid_receipt(
         return Ok(());
     }
 
-    let offer_id = upsert_into_offers_table(client, row.clone())
+    upsert_into_offers_table(client, row.clone())
         .await
         .context("failed to insert offer")?;
 
-    let offer_event = client
-        .db()
-        .run(move |db| {
-            db.build_transaction().read_write().run(|| {
-                let metadata_owner: String = current_metadata_owners::table
-                    .inner_join(
-                        metadatas::table
-                            .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
-                    )
-                    .select(current_metadata_owners::owner_address)
-                    .first(db)?;
-
-                let feed_event_id = insert_into(feed_events::table)
-                    .default_values()
-                    .returning(feed_events::id)
-                    .get_result::<Uuid>(db)
-                    .context("Failed to insert feed event")?;
-
-                insert_into(offer_events::table)
-                    .values(&OfferEvent {
-                        feed_event_id,
-                        lifecycle: OfferEventLifecycleEnum::Created,
-                        offer_id,
-                    })
-                    .execute(db)
-                    .context("failed to insert offer created event")?;
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: row.buyer,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert offer feed event wallet for buyer")?;
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: Owned(metadata_owner),
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert offer feed event wallet for metadata owner")?;
-
-                Result::<_>::Ok(Some(feed_event_id))
-            })
-        })
-        .await
-        .context("Failed to insert bid receipt!")?;
-
-    if offer_event.is_some() {
-        client
-            .dispatch_dialect_offer_event(key, bid_receipt.metadata)
-            .await?;
-    }
+    client
+        .dispatch_dialect_offer_event(key, bid_receipt.metadata)
+        .await?;
 
     Ok(())
 }

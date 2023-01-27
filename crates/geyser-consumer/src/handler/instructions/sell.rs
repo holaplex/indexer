@@ -2,14 +2,11 @@ use borsh::BorshDeserialize;
 use indexer::prelude::*;
 use indexer_core::{
     db::{
-        custom_types::{ActivityTypeEnum, ListingEventLifecycleEnum},
+        custom_types::ActivityTypeEnum,
         insert_into,
-        models::{FeedEventWallet, Listing, ListingEvent, SellInstruction},
+        models::{Listing, SellInstruction},
         mutations, select,
-        tables::{
-            feed_event_wallets, feed_events, listing_events, listings, purchases, sell_instructions,
-        },
-        Error as DbError,
+        tables::{listings, purchases, sell_instructions},
     },
     pubkeys,
     uuid::Uuid,
@@ -143,35 +140,7 @@ pub async fn upsert_into_listings_table<'a>(client: &Client, row: Listing<'stati
                 )?;
             }
 
-            db.build_transaction().read_write().run(|| {
-                let feed_event_id = insert_into(feed_events::table)
-                    .default_values()
-                    .returning(feed_events::id)
-                    .get_result::<Uuid>(db)
-                    .context("Failed to insert feed event")?;
-
-                let listing_event = insert_into(listing_events::table)
-                    .values(&ListingEvent {
-                        feed_event_id,
-                        lifecycle: ListingEventLifecycleEnum::Created,
-                        listing_id,
-                    })
-                    .execute(db);
-
-                if Err(DbError::RollbackTransaction) == listing_event {
-                    return Ok(());
-                }
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: row.seller,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert listing feed event wallet")?;
-
-                Result::<_>::Ok(())
-            })
+            Result::<_>::Ok(())
         })
         .await
         .context("Failed to insert listing!")?;
