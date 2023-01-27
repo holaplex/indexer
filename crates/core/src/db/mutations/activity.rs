@@ -29,12 +29,20 @@ pub fn listing<'a>(
         .first::<String>(db)
         .optional()?;
 
+    let mut created_at = listing.created_at;
+    if ActivityTypeEnum::ListingCanceled == activity_type {
+        created_at = listing
+            .canceled_at
+            .flatten()
+            .context("canceled_at timestamp not found")?;
+    }
+
     let activity = Activity {
         activity_id: listing_id,
         metadata: listing.metadata.clone(),
         price: listing.price,
         auction_house: listing.auction_house.clone(),
-        created_at: listing.created_at,
+        created_at,
         marketplace_program: listing.marketplace_program.clone(),
         buyer: None,
         seller: Some(listing.seller.clone()),
@@ -68,12 +76,20 @@ pub fn offer<'a>(
         .first::<String>(db)
         .optional()?;
 
+    let mut created_at = offer.created_at;
+    if ActivityTypeEnum::OfferCanceled == activity_type {
+        created_at = offer
+            .canceled_at
+            .flatten()
+            .context("canceled_at timestamp not found")?;
+    }
+
     let activity = Activity {
         activity_id: offer_id,
         metadata: offer.metadata.clone(),
         price: offer.price,
         auction_house: offer.auction_house.clone(),
-        created_at: offer.created_at,
+        created_at,
         marketplace_program: offer.marketplace_program.clone(),
         buyer: Some(offer.buyer.clone()),
         seller: None,
