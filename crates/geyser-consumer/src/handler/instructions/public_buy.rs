@@ -5,7 +5,7 @@ use indexer_core::{
         custom_types::ActivityTypeEnum,
         insert_into,
         models::{Offer, PublicBuyInstruction},
-        mutations, select,
+        mutations,
         tables::{offers, public_buy_instructions},
     },
     pubkeys,
@@ -93,29 +93,25 @@ async fn upsert_into_offers_table<'a>(
         .run(move |db| {
             let auction_house: Pubkey = row.auction_house.to_string().parse()?;
 
-            let offer_exists = select(exists(
-                offers::table.filter(
+            let indexed_offer_slot: Option<i64> = offers::table
+                .filter(
                     offers::trade_state
                         .eq(row.trade_state.clone())
                         .and(offers::metadata.eq(row.metadata.clone())),
-                ),
-            ))
-            .get_result::<bool>(db)?;
+                )
+                .select(offers::slot)
+                .first(db)
+                .optional()?;
 
             let offer_id = mutations::offer::insert(db, &row)?;
 
-            if offer_exists {
+            if Some(row.slot) == indexed_offer_slot
+                || auction_house == pubkeys::OPENSEA_AUCTION_HOUSE
+            {
                 return Ok(());
             }
 
-            if auction_house != pubkeys::OPENSEA_AUCTION_HOUSE {
-                mutations::activity::offer(
-                    db,
-                    offer_id,
-                    &row.clone(),
-                    ActivityTypeEnum::OfferCreated,
-                )?;
-            }
+            mutations::activity::offer(db, offer_id, &row.clone(), ActivityTypeEnum::OfferCreated)?;
 
             Result::<_>::Ok(())
         })

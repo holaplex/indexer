@@ -17,6 +17,7 @@ pub(crate) async fn process(
     data: &[u8],
     accounts: &[Pubkey],
     slot: u64,
+    timestamp: NaiveDateTime,
 ) -> Result<()> {
     let params =
         CloseOfferParams::try_from_slice(data).context("failed to deserialize close offer args")?;
@@ -95,7 +96,7 @@ pub(crate) async fn process(
                     escrow_payment_bump,
                     buyer_price,
                     token_size,
-                    created_at: Utc::now().naive_utc(),
+                    created_at: timestamp,
                     slot,
                 };
 

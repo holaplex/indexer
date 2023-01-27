@@ -5,7 +5,7 @@ use indexer_core::{
         custom_types::ActivityTypeEnum,
         insert_into,
         models::{Listing, SellInstruction},
-        mutations, select,
+        mutations,
         tables::{listings, purchases, sell_instructions},
     },
     pubkeys,
@@ -116,29 +116,30 @@ pub async fn upsert_into_listings_table<'a>(client: &Client, row: Listing<'stati
         .run(move |db| {
             let auction_house: Pubkey = row.auction_house.to_string().parse()?;
 
-            let listing_exists = select(exists(
-                listings::table.filter(
+            let indexed_listing_slot: Option<i64> = listings::table
+                .filter(
                     listings::trade_state
                         .eq(row.trade_state.clone())
                         .and(listings::metadata.eq(row.metadata.clone())),
-                ),
-            ))
-            .get_result::<bool>(db)?;
+                )
+                .select(listings::slot)
+                .first(db)
+                .optional()?;
 
             let listing_id = mutations::listing::insert(db, &row)?;
 
-            if listing_exists {
+            if Some(row.slot) == indexed_listing_slot
+                || auction_house == pubkeys::OPENSEA_AUCTION_HOUSE
+            {
                 return Ok(());
             }
 
-            if auction_house != pubkeys::OPENSEA_AUCTION_HOUSE {
-                mutations::activity::listing(
-                    db,
-                    listing_id,
-                    &row.clone(),
-                    ActivityTypeEnum::ListingCreated,
-                )?;
-            }
+            mutations::activity::listing(
+                db,
+                listing_id,
+                &row.clone(),
+                ActivityTypeEnum::ListingCreated,
+            )?;
 
             Result::<_>::Ok(())
         })

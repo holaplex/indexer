@@ -2,7 +2,9 @@ use borsh::BorshDeserialize;
 use indexer::prelude::*;
 use indexer_core::{
     db::{
+        custom_types::ActivityTypeEnum,
         models::{Listing, Offer, Purchase},
+        mutations::activity,
         tables::{listings, offers, purchases},
         update,
     },
@@ -236,7 +238,7 @@ async fn process_cancel_sale(
     client
         .db()
         .run(move |db| {
-            update(
+            let listing = update(
                 listings::table.filter(
                     listings::trade_state
                         .eq(trade_state)
@@ -248,7 +250,15 @@ async fn process_cancel_sale(
                 listings::canceled_at.eq(Some(timestamp)),
                 listings::slot.eq(slot),
             ))
-            .execute(db)
+            .returning(listings::all_columns)
+            .get_result::<Listing>(db)?;
+
+            activity::listing(
+                db,
+                listing.id.unwrap(),
+                &listing.clone(),
+                ActivityTypeEnum::ListingCanceled,
+            )
         })
         .await
         .context("failed to cancel ME listing ")?;
@@ -269,7 +279,7 @@ async fn process_cancel_buy(
     client
         .db()
         .run(move |db| {
-            update(
+            let offer = update(
                 offers::table.filter(
                     offers::trade_state
                         .eq(trade_state)
@@ -281,7 +291,15 @@ async fn process_cancel_buy(
                 offers::canceled_at.eq(Some(timestamp)),
                 offers::slot.eq(slot),
             ))
-            .execute(db)
+            .returning(offers::all_columns)
+            .get_result::<Offer>(db)?;
+
+            activity::offer(
+                db,
+                offer.id.unwrap(),
+                &offer.clone(),
+                ActivityTypeEnum::OfferCanceled,
+            )
         })
         .await
         .context("failed to cancel ME bid ")?;
@@ -298,6 +316,20 @@ pub(crate) async fn process_instruction(
     let (discriminator, params) = data.split_at(8);
     let discriminator = <[u8; 8]>::try_from(discriminator)?;
 
+    let block_time = get_block_time(client, slot)?;
+
+    match discriminator {
+        BUY => process_buy(client, params, accounts, slot, block_time).await,
+        SELL => process_sale(client, params, accounts, slot, block_time).await,
+        EXECUTE_SALE => process_execute_sale(client, params, accounts, slot, block_time).await,
+        EXECUTE_SALEV2 => process_execute_sale(client, params, accounts, slot, block_time).await,
+        CANCEL_SELL => process_cancel_sale(client, accounts, slot, block_time).await,
+        CANCEL_BUY => process_cancel_buy(client, accounts, slot, block_time).await,
+        _ => Ok(()),
+    }
+}
+
+pub(crate) fn get_block_time(client: &Client, slot: u64) -> Result<NaiveDateTime> {
     let mut block_time = Utc::now().naive_utc();
 
     // RPC error code 32009 occurs if the slot is not found.
@@ -316,13 +348,5 @@ pub(crate) async fn process_instruction(
         },
     }
 
-    match discriminator {
-        BUY => process_buy(client, params, accounts, slot, block_time).await,
-        SELL => process_sale(client, params, accounts, slot, block_time).await,
-        EXECUTE_SALE => process_execute_sale(client, params, accounts, slot, block_time).await,
-        EXECUTE_SALEV2 => process_execute_sale(client, params, accounts, slot, block_time).await,
-        CANCEL_SELL => process_cancel_sale(client, accounts, slot, block_time).await,
-        CANCEL_BUY => process_cancel_buy(client, accounts, slot, block_time).await,
-        _ => Ok(()),
-    }
+    Ok(block_time)
 }

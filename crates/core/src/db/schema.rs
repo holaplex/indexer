@@ -1295,6 +1295,7 @@ table! {
         seller -> Nullable<Varchar>,
         collection_id -> Nullable<Text>,
         activity_type -> Activity_type,
+        slot -> Int8,
     }
 }
 

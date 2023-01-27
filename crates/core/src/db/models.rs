@@ -3649,4 +3649,5 @@ pub struct Activity<'a> {
     pub seller: Option<Cow<'a, str>>,
     pub collection_id: Option<Cow<'a, str>>,
     pub activity_type: ActivityTypeEnum,
+    pub slot: i64,
 }
