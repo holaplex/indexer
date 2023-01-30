@@ -6,21 +6,17 @@ use indexer_core::{
     db::{
         custom_types::{ActivityTypeEnum, PayoutOperationEnum},
         insert_into,
-        models::{
-            BuyListing, FeedEventWallet, Purchase, PurchaseEvent, RewardCenter as DbRewardCenter,
-            RewardPayout,
-        },
+        models::{BuyListing, Purchase, RewardCenter as DbRewardCenter, RewardPayout},
         mutations,
         mutations::activity,
         select,
         tables::{
-            buy_listing_ins, feed_event_wallets, feed_events, listings, offers, purchase_events,
-            purchases, reward_centers, reward_payouts, rewards_listings,
+            buy_listing_ins, listings, offers, purchases, reward_centers, reward_payouts,
+            rewards_listings,
         },
         update,
     },
     pubkeys,
-    uuid::Uuid,
 };
 
 use super::super::Client;
@@ -32,6 +28,7 @@ pub(crate) async fn process(
     data: &[u8],
     accounts: &[Pubkey],
     slot: u64,
+    timestamp: NaiveDateTime,
 ) -> Result<()> {
     let params = hpl_reward_center::listings::buy::BuyListingParams::try_from_slice(data)
         .context("failed to deserialize buy listing params")?;
@@ -101,7 +98,7 @@ pub(crate) async fn process(
                 metadata: row.metadata.clone(),
                 token_size,
                 price,
-                created_at: Utc::now().naive_utc(),
+                created_at: timestamp,
                 slot: row.slot,
                 write_version: None,
             },
@@ -202,43 +199,9 @@ pub(crate) async fn upsert_into_purchases_table<'a>(
                     .on_conflict_do_nothing()
                     .execute(db)?;
             }
-
-            db.build_transaction().read_write().run(|| {
-                let feed_event_id = insert_into(feed_events::table)
-                    .default_values()
-                    .returning(feed_events::id)
-                    .get_result::<Uuid>(db)
-                    .context("Failed to insert feed event")?;
-
-                insert_into(purchase_events::table)
-                    .values(PurchaseEvent {
-                        purchase_id,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("failed to insert purchase created event")?;
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: data.seller,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert purchase feed event wallet for seller")?;
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: data.buyer,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert purchase feed event wallet for buyer")?;
-
-                Result::<_>::Ok(())
-            })
+            Result::<_>::Ok(())
         })
-        .await
-        .context("Failed to insert purchase!")?;
+        .await?;
 
     Ok(())
 }

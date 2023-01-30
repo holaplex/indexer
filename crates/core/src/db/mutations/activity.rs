@@ -29,17 +29,26 @@ pub fn listing<'a>(
         .first::<String>(db)
         .optional()?;
 
+    let mut created_at = listing.created_at;
+    if ActivityTypeEnum::ListingCanceled == activity_type {
+        created_at = listing
+            .canceled_at
+            .flatten()
+            .context("canceled_at timestamp not found")?;
+    }
+
     let activity = Activity {
         activity_id: listing_id,
         metadata: listing.metadata.clone(),
         price: listing.price,
         auction_house: listing.auction_house.clone(),
-        created_at: Local::now().naive_utc(),
+        created_at,
         marketplace_program: listing.marketplace_program.clone(),
         buyer: None,
         seller: Some(listing.seller.clone()),
         collection_id: collection_id.map(Into::into),
         activity_type,
+        slot: listing.slot,
     };
 
     insert_into(marketplace_activities::table)
@@ -67,17 +76,26 @@ pub fn offer<'a>(
         .first::<String>(db)
         .optional()?;
 
+    let mut created_at = offer.created_at;
+    if ActivityTypeEnum::OfferCanceled == activity_type {
+        created_at = offer
+            .canceled_at
+            .flatten()
+            .context("canceled_at timestamp not found")?;
+    }
+
     let activity = Activity {
         activity_id: offer_id,
         metadata: offer.metadata.clone(),
         price: offer.price,
         auction_house: offer.auction_house.clone(),
-        created_at: Local::now().naive_utc(),
+        created_at,
         marketplace_program: offer.marketplace_program.clone(),
         buyer: Some(offer.buyer.clone()),
         seller: None,
         collection_id: collection_id.map(Into::into),
         activity_type,
+        slot: offer.slot,
     };
 
     insert_into(marketplace_activities::table)
@@ -110,12 +128,13 @@ pub fn purchase<'a>(
         metadata: purchase.metadata.clone(),
         price: purchase.price,
         auction_house: purchase.auction_house.clone(),
-        created_at: Local::now().naive_utc(),
+        created_at: purchase.created_at,
         marketplace_program: purchase.marketplace_program.clone(),
         buyer: Some(purchase.buyer.clone()),
         seller: Some(purchase.seller.clone()),
         collection_id: collection_id.map(Into::into),
         activity_type,
+        slot: purchase.slot,
     };
 
     insert_into(marketplace_activities::table)

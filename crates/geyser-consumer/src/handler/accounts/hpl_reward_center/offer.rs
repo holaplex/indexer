@@ -16,7 +16,7 @@ use indexer_core::{
             offer_events, offers, purchases, reward_centers, rewards_offers,
         },
     },
-    pubkeys, util,
+    pubkeys,
     uuid::Uuid,
 };
 use mpl_auction_house::pda::find_public_bid_trade_state_address;
@@ -31,6 +31,8 @@ pub(crate) async fn process(
     account_data: Offer,
     slot: u64,
     write_version: u64,
+
+    timestamp: NaiveDateTime,
 ) -> Result<()> {
     let row = DbRewardsOffer {
         address: Owned(bs58::encode(key).into_string()),
@@ -45,7 +47,7 @@ pub(crate) async fn process(
             .token_size
             .try_into()
             .context("Token size is too big to store")?,
-        created_at: util::unix_timestamp(account_data.created_at)?,
+        created_at: timestamp,
         closed_at: None,
         purchase_id: None,
         bump: account_data.bump.try_into()?,
@@ -135,7 +137,7 @@ pub(crate) async fn process(
                     token_size: row.token_size,
                     trade_state_bump: trade_state_bump.try_into()?,
                     created_at: row.created_at,
-                    canceled_at: None,
+                    canceled_at: Some(None),
                     slot: row.slot,
                     write_version: Some(row.write_version),
                     expiry: None,

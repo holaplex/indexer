@@ -2,12 +2,19 @@ use borsh::BorshDeserialize;
 use indexer::prelude::*;
 use indexer_core::{
     db::{
+        custom_types::ActivityTypeEnum,
         models::{Listing, Offer, Purchase},
+        mutations::activity,
         tables::{listings, offers, purchases},
         update,
     },
-    pubkeys, util,
+    pubkeys,
+    util::{self, unix_timestamp},
     uuid::Uuid,
+};
+use solana_client::{
+    client_error::{ClientError, ClientErrorKind},
+    rpc_request::RpcError,
 };
 
 use super::{
@@ -39,6 +46,7 @@ async fn process_execute_sale(
     mut data: &[u8],
     accounts: &[Pubkey],
     slot: u64,
+    timestamp: NaiveDateTime,
 ) -> Result<()> {
     let params = MEInstructionData::deserialize(&mut data)
         .context("failed to deserialize ME ExecuteSale instruction")?;
@@ -56,7 +64,7 @@ async fn process_execute_sale(
             metadata: Owned(accts[5].clone()),
             token_size: params.token_size.try_into()?,
             price: params.buyer_price.try_into()?,
-            created_at: Utc::now().naive_utc(),
+            created_at: timestamp,
             slot: slot.try_into()?,
             write_version: None,
         },
@@ -74,6 +82,7 @@ async fn process_sale(
     mut data: &[u8],
     accounts: &[Pubkey],
     slot: u64,
+    timestamp: NaiveDateTime,
 ) -> Result<()> {
     let params = MEInstructionData::deserialize(&mut data)
         .context("failed to deserialize ME Sell instruction")?;
@@ -123,8 +132,8 @@ async fn process_sale(
         price: params.buyer_price.try_into()?,
         token_size: params.token_size.try_into()?,
         trade_state_bump: params.trade_state_bump.try_into()?,
-        created_at: Utc::now().naive_utc(),
-        canceled_at: None,
+        created_at: timestamp,
+        canceled_at: Some(None),
         slot,
         write_version: None,
         expiry: match params.expiry {
@@ -143,6 +152,7 @@ async fn process_buy(
     mut data: &[u8],
     accounts: &[Pubkey],
     slot: u64,
+    timestamp: NaiveDateTime,
 ) -> Result<()> {
     let params = MEInstructionData::deserialize(&mut data)
         .context("failed to deserialize ME Buy instruction")?;
@@ -197,8 +207,8 @@ async fn process_buy(
         price,
         token_size: params.token_size.try_into()?,
         trade_state_bump: params.trade_state_bump.try_into()?,
-        created_at: Utc::now().naive_utc(),
-        canceled_at: None,
+        created_at: timestamp,
+        canceled_at: Some(None),
         slot,
         write_version: None,
         expiry: match params.expiry {
@@ -214,16 +224,21 @@ async fn process_buy(
     Ok(())
 }
 
-async fn process_cancel_sale(client: &Client, accounts: &[Pubkey], slot: u64) -> Result<()> {
+async fn process_cancel_sale(
+    client: &Client,
+    accounts: &[Pubkey],
+    slot: u64,
+    timestamp: NaiveDateTime,
+) -> Result<()> {
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
-    let canceled_at = Utc::now().naive_utc();
+
     let trade_state = accts[6].clone();
     let slot = i64::try_from(slot)?;
 
     client
         .db()
         .run(move |db| {
-            update(
+            let listing = update(
                 listings::table.filter(
                     listings::trade_state
                         .eq(trade_state)
@@ -232,10 +247,18 @@ async fn process_cancel_sale(client: &Client, accounts: &[Pubkey], slot: u64) ->
                 ),
             )
             .set((
-                listings::canceled_at.eq(Some(canceled_at)),
+                listings::canceled_at.eq(Some(timestamp)),
                 listings::slot.eq(slot),
             ))
-            .execute(db)
+            .returning(listings::all_columns)
+            .get_result::<Listing>(db)?;
+
+            activity::listing(
+                db,
+                listing.id.unwrap(),
+                &listing.clone(),
+                ActivityTypeEnum::ListingCanceled,
+            )
         })
         .await
         .context("failed to cancel ME listing ")?;
@@ -243,16 +266,20 @@ async fn process_cancel_sale(client: &Client, accounts: &[Pubkey], slot: u64) ->
     Ok(())
 }
 
-async fn process_cancel_buy(client: &Client, accounts: &[Pubkey], slot: u64) -> Result<()> {
+async fn process_cancel_buy(
+    client: &Client,
+    accounts: &[Pubkey],
+    slot: u64,
+    timestamp: NaiveDateTime,
+) -> Result<()> {
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
-    let canceled_at = Utc::now().naive_utc();
     let trade_state = accts[5].clone();
     let slot = i64::try_from(slot)?;
 
     client
         .db()
         .run(move |db| {
-            update(
+            let offer = update(
                 offers::table.filter(
                     offers::trade_state
                         .eq(trade_state)
@@ -261,10 +288,18 @@ async fn process_cancel_buy(client: &Client, accounts: &[Pubkey], slot: u64) -> 
                 ),
             )
             .set((
-                offers::canceled_at.eq(Some(canceled_at)),
+                offers::canceled_at.eq(Some(timestamp)),
                 offers::slot.eq(slot),
             ))
-            .execute(db)
+            .returning(offers::all_columns)
+            .get_result::<Offer>(db)?;
+
+            activity::offer(
+                db,
+                offer.id.unwrap(),
+                &offer.clone(),
+                ActivityTypeEnum::OfferCanceled,
+            )
         })
         .await
         .context("failed to cancel ME bid ")?;
@@ -281,13 +316,37 @@ pub(crate) async fn process_instruction(
     let (discriminator, params) = data.split_at(8);
     let discriminator = <[u8; 8]>::try_from(discriminator)?;
 
+    let block_time = get_block_time(client, slot)?;
+
     match discriminator {
-        BUY => process_buy(client, params, accounts, slot).await,
-        SELL => process_sale(client, params, accounts, slot).await,
-        EXECUTE_SALE => process_execute_sale(client, params, accounts, slot).await,
-        EXECUTE_SALEV2 => process_execute_sale(client, params, accounts, slot).await,
-        CANCEL_SELL => process_cancel_sale(client, accounts, slot).await,
-        CANCEL_BUY => process_cancel_buy(client, accounts, slot).await,
+        BUY => process_buy(client, params, accounts, slot, block_time).await,
+        SELL => process_sale(client, params, accounts, slot, block_time).await,
+        EXECUTE_SALE => process_execute_sale(client, params, accounts, slot, block_time).await,
+        EXECUTE_SALEV2 => process_execute_sale(client, params, accounts, slot, block_time).await,
+        CANCEL_SELL => process_cancel_sale(client, accounts, slot, block_time).await,
+        CANCEL_BUY => process_cancel_buy(client, accounts, slot, block_time).await,
         _ => Ok(()),
     }
+}
+
+pub(crate) fn get_block_time(client: &Client, slot: u64) -> Result<NaiveDateTime> {
+    let mut block_time = Utc::now().naive_utc();
+
+    // RPC error code 32009 occurs if the slot is not found.
+    // could be due to a brief delay at the rpc side for the most recent slot data to be returned.
+
+    match client.rpc().get_block_time(slot) {
+        Ok(bt) => {
+            block_time = unix_timestamp(bt)?;
+        },
+        Err(ClientError {
+            request: _,
+            kind: ClientErrorKind::RpcError(RpcError::RpcResponseError { code, .. }),
+        }) if code == -32009 => (),
+        Err(e) => {
+            bail!("failed to get block time {:?}", e);
+        },
+    }
+
+    Ok(block_time)
 }

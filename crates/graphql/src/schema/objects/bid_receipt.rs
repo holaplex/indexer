@@ -127,7 +127,7 @@ impl<'a> TryFrom<models::BidReceipt<'a>> for BidReceipt {
             trade_state_bump: trade_state_bump.into(),
             purchase_receipt: purchase_receipt.map(|pr| pr.into_owned().into()),
             created_at: DateTime::from_utc(created_at, Utc),
-            canceled_at: canceled_at.map(|c| DateTime::from_utc(c, Utc)),
+            canceled_at: canceled_at.flatten().map(|c| DateTime::from_utc(c, Utc)),
             token_size: token_size.try_into()?,
             bump: bump.into(),
         })

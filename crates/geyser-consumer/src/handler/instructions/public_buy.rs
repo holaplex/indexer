@@ -2,17 +2,13 @@ use borsh::BorshDeserialize;
 use indexer::prelude::*;
 use indexer_core::{
     db::{
-        custom_types::{ActivityTypeEnum, OfferEventLifecycleEnum},
+        custom_types::ActivityTypeEnum,
         insert_into,
-        models::{FeedEventWallet, Offer, OfferEvent, PublicBuyInstruction},
-        mutations, select,
-        tables::{
-            current_metadata_owners, feed_event_wallets, feed_events, metadatas, offer_events,
-            offers, public_buy_instructions,
-        },
+        models::{Offer, PublicBuyInstruction},
+        mutations,
+        tables::{offers, public_buy_instructions},
     },
     pubkeys,
-    uuid::Uuid,
 };
 use mpl_auction_house::instruction::PublicBuy;
 
@@ -86,7 +82,7 @@ async fn upsert_into_offers_table<'a>(
         token_size: data.token_size,
         trade_state_bump: data.trade_state_bump,
         created_at: data.created_at,
-        canceled_at: None,
+        canceled_at: Some(None),
         slot: data.slot,
         write_version: None,
         expiry: None,
@@ -97,75 +93,27 @@ async fn upsert_into_offers_table<'a>(
         .run(move |db| {
             let auction_house: Pubkey = row.auction_house.to_string().parse()?;
 
-            let offer_exists = select(exists(
-                offers::table.filter(
+            let indexed_offer_slot: Option<i64> = offers::table
+                .filter(
                     offers::trade_state
                         .eq(row.trade_state.clone())
                         .and(offers::metadata.eq(row.metadata.clone())),
-                ),
-            ))
-            .get_result::<bool>(db)?;
+                )
+                .select(offers::slot)
+                .first(db)
+                .optional()?;
 
             let offer_id = mutations::offer::insert(db, &row)?;
 
-            if offer_exists {
+            if Some(row.slot) == indexed_offer_slot
+                || auction_house == pubkeys::OPENSEA_AUCTION_HOUSE
+            {
                 return Ok(());
             }
 
-            if auction_house != pubkeys::OPENSEA_AUCTION_HOUSE {
-                mutations::activity::offer(
-                    db,
-                    offer_id,
-                    &row.clone(),
-                    ActivityTypeEnum::OfferCreated,
-                )?;
-            }
+            mutations::activity::offer(db, offer_id, &row.clone(), ActivityTypeEnum::OfferCreated)?;
 
-            db.build_transaction().read_write().run(|| {
-                let metadata_owner: Option<String> = current_metadata_owners::table
-                    .inner_join(
-                        metadatas::table
-                            .on(metadatas::mint_address.eq(current_metadata_owners::mint_address)),
-                    )
-                    .filter(metadatas::address.eq(row.metadata.clone()))
-                    .select(current_metadata_owners::owner_address)
-                    .first(db)
-                    .optional()?;
-                if let Some(metadata_owner) = metadata_owner {
-                    let feed_event_id = insert_into(feed_events::table)
-                        .default_values()
-                        .returning(feed_events::id)
-                        .get_result::<Uuid>(db)
-                        .context("Failed to insert feed event")?;
-
-                    insert_into(offer_events::table)
-                        .values(&OfferEvent {
-                            feed_event_id,
-                            lifecycle: OfferEventLifecycleEnum::Created,
-                            offer_id,
-                        })
-                        .execute(db)
-                        .context("failed to insert offer created event")?;
-
-                    insert_into(feed_event_wallets::table)
-                        .values(&FeedEventWallet {
-                            wallet_address: row.buyer,
-                            feed_event_id,
-                        })
-                        .execute(db)
-                        .context("Failed to insert offer feed event wallet for buyer")?;
-
-                    insert_into(feed_event_wallets::table)
-                        .values(&FeedEventWallet {
-                            wallet_address: Owned(metadata_owner),
-                            feed_event_id,
-                        })
-                        .execute(db)
-                        .context("Failed to insert offer feed event wallet for metadata owner")?;
-                }
-
-                Result::<_>::Ok(())
-            })
+            Result::<_>::Ok(())
         })
         .await
         .context("Failed to insert offer!")?;

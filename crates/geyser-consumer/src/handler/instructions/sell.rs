@@ -2,14 +2,11 @@ use borsh::BorshDeserialize;
 use indexer::prelude::*;
 use indexer_core::{
     db::{
-        custom_types::{ActivityTypeEnum, ListingEventLifecycleEnum},
+        custom_types::ActivityTypeEnum,
         insert_into,
-        models::{FeedEventWallet, Listing, ListingEvent, SellInstruction},
-        mutations, select,
-        tables::{
-            feed_event_wallets, feed_events, listing_events, listings, purchases, sell_instructions,
-        },
-        Error as DbError,
+        models::{Listing, SellInstruction},
+        mutations,
+        tables::{listings, purchases, sell_instructions},
     },
     pubkeys,
     uuid::Uuid,
@@ -93,7 +90,7 @@ pub(crate) async fn process(
         token_size: row.token_size,
         trade_state_bump: row.trade_state_bump,
         created_at: row.created_at,
-        canceled_at: None,
+        canceled_at: Some(None),
         slot: row.slot,
         write_version: None,
         expiry: None,
@@ -119,59 +116,32 @@ pub async fn upsert_into_listings_table<'a>(client: &Client, row: Listing<'stati
         .run(move |db| {
             let auction_house: Pubkey = row.auction_house.to_string().parse()?;
 
-            let listing_exists = select(exists(
-                listings::table.filter(
+            let indexed_listing_slot: Option<i64> = listings::table
+                .filter(
                     listings::trade_state
                         .eq(row.trade_state.clone())
                         .and(listings::metadata.eq(row.metadata.clone())),
-                ),
-            ))
-            .get_result::<bool>(db)?;
+                )
+                .select(listings::slot)
+                .first(db)
+                .optional()?;
 
             let listing_id = mutations::listing::insert(db, &row)?;
 
-            if listing_exists {
+            if Some(row.slot) == indexed_listing_slot
+                || auction_house == pubkeys::OPENSEA_AUCTION_HOUSE
+            {
                 return Ok(());
             }
 
-            if auction_house != pubkeys::OPENSEA_AUCTION_HOUSE {
-                mutations::activity::listing(
-                    db,
-                    listing_id,
-                    &row.clone(),
-                    ActivityTypeEnum::ListingCreated,
-                )?;
-            }
+            mutations::activity::listing(
+                db,
+                listing_id,
+                &row.clone(),
+                ActivityTypeEnum::ListingCreated,
+            )?;
 
-            db.build_transaction().read_write().run(|| {
-                let feed_event_id = insert_into(feed_events::table)
-                    .default_values()
-                    .returning(feed_events::id)
-                    .get_result::<Uuid>(db)
-                    .context("Failed to insert feed event")?;
-
-                let listing_event = insert_into(listing_events::table)
-                    .values(&ListingEvent {
-                        feed_event_id,
-                        lifecycle: ListingEventLifecycleEnum::Created,
-                        listing_id,
-                    })
-                    .execute(db);
-
-                if Err(DbError::RollbackTransaction) == listing_event {
-                    return Ok(());
-                }
-
-                insert_into(feed_event_wallets::table)
-                    .values(&FeedEventWallet {
-                        wallet_address: row.seller,
-                        feed_event_id,
-                    })
-                    .execute(db)
-                    .context("Failed to insert listing feed event wallet")?;
-
-                Result::<_>::Ok(())
-            })
+            Result::<_>::Ok(())
         })
         .await
         .context("Failed to insert listing!")?;
