@@ -117,23 +117,28 @@ pub async fn upsert_into_offers_table<'a>(client: &Client, data: Offer<'static>)
         .run(move |db| {
             let auction_house: Pubkey = data.auction_house.to_string().parse()?;
 
-            let indexed_offer_slot: Option<i64> = offers::table
-                .filter(
-                    offers::trade_state
-                        .eq(data.trade_state.clone())
-                        .and(offers::metadata.eq(data.metadata.clone())),
-                )
-                .select(offers::slot)
-                .first(db)
-                .optional()?;
+            let indexed_offer: Option<Offer> = offers::table
+            .filter(
+                offers::trade_state
+                    .eq(data.trade_state.clone())
+                    .and(offers::metadata.eq(data.metadata.clone())),
+            )
+            .select(offers::all_columns)
+            .first(db)
+            .optional()?;
 
-            let offer_id = mutations::offer::insert(db, &data.clone())?;
+        let offer_id = mutations::offer::insert(db, &data)?;
 
-            if Some(data.slot) == indexed_offer_slot
+        if let Some(indexed_offer) = indexed_offer {
+            if (indexed_offer.purchase_id.is_none()
+                && indexed_offer.canceled_at.is_none()
+                && indexed_offer.price == data.price)
                 || auction_house == pubkeys::OPENSEA_AUCTION_HOUSE
+                || data.slot == indexed_offer.slot
             {
                 return Ok(());
             }
+        }
 
             mutations::activity::offer(
                 db,
