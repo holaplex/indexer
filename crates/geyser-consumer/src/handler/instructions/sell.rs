@@ -116,22 +116,27 @@ pub async fn upsert_into_listings_table<'a>(client: &Client, row: Listing<'stati
         .run(move |db| {
             let auction_house: Pubkey = row.auction_house.to_string().parse()?;
 
-            let indexed_listing_slot: Option<i64> = listings::table
+            let indexed_listing: Option<Listing> = listings::table
                 .filter(
                     listings::trade_state
                         .eq(row.trade_state.clone())
                         .and(listings::metadata.eq(row.metadata.clone())),
                 )
-                .select(listings::slot)
+                .select(listings::all_columns)
                 .first(db)
                 .optional()?;
 
             let listing_id = mutations::listing::insert(db, &row)?;
 
-            if Some(row.slot) == indexed_listing_slot
-                || auction_house == pubkeys::OPENSEA_AUCTION_HOUSE
-            {
-                return Ok(());
+            if let Some(indexed_listing) = indexed_listing {
+                if (indexed_listing.purchase_id.is_none()
+                    && indexed_listing.canceled_at.is_none()
+                    && indexed_listing.price == row.price)
+                    || auction_house == pubkeys::OPENSEA_AUCTION_HOUSE
+                    || row.slot == indexed_listing.slot
+                {
+                    return Ok(());
+                }
             }
 
             mutations::activity::listing(
@@ -140,7 +145,6 @@ pub async fn upsert_into_listings_table<'a>(client: &Client, row: Listing<'stati
                 &row.clone(),
                 ActivityTypeEnum::ListingCreated,
             )?;
-
             Result::<_>::Ok(())
         })
         .await
