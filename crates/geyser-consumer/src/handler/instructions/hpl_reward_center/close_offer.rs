@@ -53,7 +53,9 @@ pub(crate) async fn process(
                 .get_result::<Offer>(db)
                 .optional()?;
 
-                if let Some(offer) = offer {
+                if let Some(mut offer) = offer {
+                    offer.canceled_at = Some(Some(timestamp));
+
                     activity::offer(
                         db,
                         offer.id.unwrap(),
