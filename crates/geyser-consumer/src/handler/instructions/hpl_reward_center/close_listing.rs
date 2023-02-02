@@ -45,7 +45,9 @@ pub(crate) async fn process(
             .get_result::<Listing>(db)
             .optional()?;
 
-            if let Some(listing) = listing {
+            if let Some(mut listing) = listing {
+                listing.canceled_at = Some(Some(timestamp));
+
                 activity::listing(
                     db,
                     listing.id.unwrap(),
