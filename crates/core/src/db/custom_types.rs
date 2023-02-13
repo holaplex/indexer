@@ -112,6 +112,8 @@ pub enum TokenStandardEnum {
     Fungible,
     /// This is a limited edition
     NonFungibleEdition,
+    /// PNFT
+    ProgrammableNonFungible,
 }
 
 impl ToSql<TokenStandard, Pg> for TokenStandardEnum {
@@ -121,6 +123,33 @@ impl ToSql<TokenStandard, Pg> for TokenStandardEnum {
 }
 
 impl FromSql<TokenStandard, Pg> for TokenStandardEnum {
+    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+        from_bytes(bytes)
+    }
+}
+
+#[derive(SqlType, Debug, Clone, Copy)]
+#[postgres(type_name = "programmable_config")]
+/// Represents database `programmable_config` type
+pub struct ProgrammableConfig;
+
+#[derive(
+    Debug, PartialEq, FromSqlRow, AsExpression, Clone, Copy, strum::EnumString, strum::Display,
+)]
+#[sql_type = "ProgrammableConfig"]
+/// `TokenStandard` enum in `Metadata` struct
+pub enum ProgrammableConfigEnum {
+    /// Variant V1
+    V1,
+}
+
+impl ToSql<ProgrammableConfig, Pg> for ProgrammableConfigEnum {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        to_bytes(self, out, |_| false)
+    }
+}
+
+impl FromSql<ProgrammableConfig, Pg> for ProgrammableConfigEnum {
     fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
         from_bytes(bytes)
     }
