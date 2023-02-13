@@ -1,0 +1,2 @@
+drop table metadata_programmable_configs;
+drop type programmable_config;

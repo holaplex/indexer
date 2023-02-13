@@ -17,10 +17,10 @@ use crate::db::custom_types::{
     ActivityTypeEnum, EndSettingType, GovernanceAccountType, GovernanceAccountTypeEnum,
     InstructionExecutionFlags, InstructionExecutionFlagsEnum, ListingEventLifecycle,
     ListingEventLifecycleEnum, MintMaxVoteEnum, OfferEventLifecycle, OfferEventLifecycleEnum,
-    OptionVoteResultEnum, PayoutOperationEnum, ProposalState, ProposalStateEnum, ProposalVoteType,
-    ProposalVoteTypeEnum, TokenStandardEnum, TransactionExecutionStatusEnum, VoteRecordV2Vote,
-    VoteRecordV2VoteEnum, VoteThresholdEnum, VoteThresholdType, VoteTippingEnum, VoteWeightV1,
-    VoteWeightV1Enum, WhitelistMintMode,
+    OptionVoteResultEnum, PayoutOperationEnum, ProgrammableConfigEnum, ProposalState,
+    ProposalStateEnum, ProposalVoteType, ProposalVoteTypeEnum, TokenStandardEnum,
+    TransactionExecutionStatusEnum, VoteRecordV2Vote, VoteRecordV2VoteEnum, VoteThresholdEnum,
+    VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum, WhitelistMintMode,
 };
 
 /* HPL LISTING REWARDS */
@@ -346,6 +346,18 @@ pub struct Metadata<'a> {
     pub slot: Option<i64>,
     /// Timestamp when the NFT was burned
     pub burned_at: Option<NaiveDateTime>,
+}
+
+/// A row in the `metadata_programmable_configs` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct MetadataProgrammableConfig<'a> {
+    /// The address of this account
+    pub metadata_address: Cow<'a, str>,
+    /// Variant
+    pub variant: ProgrammableConfigEnum,
+    /// Rule set
+    pub rule_set: Option<Cow<'a, str>>,
 }
 
 /// A row in the `storefronts` table

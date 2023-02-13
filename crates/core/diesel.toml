@@ -23,6 +23,7 @@ import_types = [
     OfferEventLifecycle as Offereventlifecycle, \
     SettingType as Settingtype, \
     TokenStandard as Token_standard, \
+    ProgrammableConfig as Programmable_config, \
     PayoutOperation as Payout_operation, \
     ActivityType as Activity_type, \
   }""",

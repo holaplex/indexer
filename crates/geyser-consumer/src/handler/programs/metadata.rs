@@ -1,12 +1,9 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 use indexer::prelude::*;
-use metaplex_token_metadata::{
-    state::{Key as MetaplexKey, Metadata as MetaplexMetadata},
-    utils::try_from_slice_checked as metaplex_try_from_slice_checked,
-};
 use mpl_token_metadata::{
     state::{
-        Creator, Data, Edition, Key, MasterEditionV1, MasterEditionV2, Metadata, MAX_EDITION_LEN,
-        MAX_MASTER_EDITION_LEN, MAX_METADATA_LEN,
+        Collection, Data, Edition, Key, MasterEditionV1, MasterEditionV2, Metadata, Uses,
+        MAX_EDITION_LEN, MAX_MASTER_EDITION_LEN,
     },
     utils::try_from_slice_checked,
 };
@@ -21,55 +18,46 @@ const EDITION_V1: u8 = Key::EditionV1 as u8;
 const MASTER_EDITION_V1: u8 = Key::MasterEditionV1 as u8;
 const MASTER_EDITION_V2: u8 = Key::MasterEditionV2 as u8;
 
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Eq, Debug, Clone)]
+
+pub struct ProgrammableConfigStruct(Option<ProgrammableConfig>);
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Eq, Debug, Clone)]
+
+pub enum ProgrammableConfig {
+    V1 { rule_set: Option<Pubkey> },
+}
+
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Eq, Debug, Clone)]
+
+pub enum CollectionDetails {
+    V1 { size: u64 },
+}
+
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Eq, Debug, Clone)]
+
+pub struct TokenStandardStruct(pub Option<TokenStandard>);
+
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Eq, Debug, Clone)]
+
+pub enum TokenStandard {
+    NonFungible,
+    FungibleAsset,
+    Fungible,
+    NonFungibleEdition,
+    ProgrammableNonFungible,
+}
+
 async fn process_metadata(client: &Client, update: AccountUpdate) -> Result<()> {
-    // Deserializing using mpl_token_metadata crate
-    if let Ok(metadata) = try_from_slice_checked(&update.data, Key::MetadataV1, MAX_METADATA_LEN) {
-        return metadata::process(
-            client,
-            update.key,
-            metadata,
-            update.slot,
-            update.write_version,
-        )
-        .await;
-    }
-
-    // Deserializing using metaplex_token_metadata and changing the metaplex Metadata to mpl Metadata
-    let m: MetaplexMetadata =
-        metaplex_try_from_slice_checked(&update.data, MetaplexKey::MetadataV1, MAX_METADATA_LEN)
-            .context("failed to deserialize metadata!")?;
-
-    let metaplex_metadata = Metadata {
-        key: Key::MetadataV1,
-        update_authority: m.update_authority,
-        mint: m.mint,
-        data: Data {
-            name: m.data.name,
-            symbol: m.data.symbol,
-            uri: m.data.uri,
-            seller_fee_basis_points: m.data.seller_fee_basis_points,
-            creators: m.data.creators.map(|o| {
-                o.into_iter()
-                    .map(|c| Creator {
-                        address: c.address,
-                        verified: c.verified,
-                        share: c.share,
-                    })
-                    .collect()
-            }),
-        },
-        primary_sale_happened: m.primary_sale_happened,
-        is_mutable: m.is_mutable,
-        edition_nonce: m.edition_nonce,
-        token_standard: None,
-        collection: None,
-        uses: None,
-    };
+    let buf = &mut update.data.as_slice();
+    let (metadata, programmable_config, token_standard) =
+        metadata_deser(buf).context("failed to deserialize metadata")?;
 
     metadata::process(
         client,
         update.key,
-        metaplex_metadata,
+        metadata,
+        programmable_config,
+        token_standard,
         update.slot,
         update.write_version,
     )
@@ -124,4 +112,59 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
             Ok(())
         },
     }
+}
+
+
+/// https://docs.rs/mpl-token-metadata/1.8.3/src/mpl_token_metadata/utils/metadata.rs.html#192
+fn metadata_deser(
+    buf: &mut &[u8],
+) -> Result<(Metadata, Option<ProgrammableConfig>, Option<TokenStandard>)> {
+    let key: Key = BorshDeserialize::deserialize(buf)?;
+    let update_authority: Pubkey = BorshDeserialize::deserialize(buf)?;
+    let mint: Pubkey = BorshDeserialize::deserialize(buf)?;
+    let data: Data = BorshDeserialize::deserialize(buf)?;
+    let primary_sale_happened: bool = BorshDeserialize::deserialize(buf)?;
+    let is_mutable: bool = BorshDeserialize::deserialize(buf)?;
+    let edition_nonce: Option<u8> = BorshDeserialize::deserialize(buf)?;
+
+    let token_standard_res: Result<Option<TokenStandard>> =
+        BorshDeserialize::deserialize(buf).map_err(Into::into);
+    let collection_res: Result<Option<Collection>> =
+        BorshDeserialize::deserialize(buf).map_err(Into::into);
+    let uses_res: Result<Option<Uses>> = BorshDeserialize::deserialize(buf).map_err(Into::into);
+
+    // V1.3
+    let _collection_details_res: Result<Option<CollectionDetails>> =
+        BorshDeserialize::deserialize(buf).map_err(Into::into);
+
+    // pNFT - Programmable Config
+    let programmable_config_res: Result<Option<ProgrammableConfig>> =
+        BorshDeserialize::deserialize(buf).map_err(Into::into);
+
+    let (token_standard, collection, uses) = match (token_standard_res, collection_res, uses_res) {
+        (Ok(token_standard_res), Ok(collection_res), Ok(uses_res)) => {
+            (token_standard_res, collection_res, uses_res)
+        },
+        _ => (None, None, None),
+    };
+
+    // Programmable Config
+    let programmable_config = programmable_config_res.unwrap_or(None);
+
+    Ok((
+        Metadata {
+            key,
+            update_authority,
+            mint,
+            data,
+            primary_sale_happened,
+            is_mutable,
+            edition_nonce,
+            token_standard: None,
+            collection,
+            uses,
+        },
+        programmable_config,
+        token_standard,
+    ))
 }
