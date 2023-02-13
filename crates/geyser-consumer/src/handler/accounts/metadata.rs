@@ -133,7 +133,6 @@ pub(crate) async fn process(
     }
 
     if let Some(pc) = programmable_config {
-        debug!("{:?}", &pc);
         let (variant, rule_set) = match pc {
             ProgrammableConfig::V1 { rule_set } => {
                 (ProgrammableConfigEnum::V1, rule_set.map(|r| r.to_string()))

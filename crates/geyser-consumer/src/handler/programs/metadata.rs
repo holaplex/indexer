@@ -114,7 +114,6 @@ pub(crate) async fn process(client: &Client, update: AccountUpdate) -> Result<()
     }
 }
 
-
 /// https://docs.rs/mpl-token-metadata/1.8.3/src/mpl_token_metadata/utils/metadata.rs.html#192
 fn metadata_deser(
     buf: &mut &[u8],
