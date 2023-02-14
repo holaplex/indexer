@@ -547,6 +547,7 @@ pub fn collection_nfts<O: Into<Value>>(
             (Metadatas::Table, Metadatas::PrimarySaleHappened),
             (Metadatas::Table, Metadatas::Uri),
             (Metadatas::Table, Metadatas::Slot),
+            (Metadatas::Table, Metadatas::TokenStandard),
         ])
         .columns(vec![
             (MetadataJsons::Table, MetadataJsons::Description),
@@ -871,6 +872,7 @@ pub fn mr_collection_nfts<O: Into<Value>>(
             (Metadatas::Table, Metadatas::PrimarySaleHappened),
             (Metadatas::Table, Metadatas::Uri),
             (Metadatas::Table, Metadatas::Slot),
+            (Metadatas::Table, Metadatas::TokenStandard),
         ])
         .columns(vec![
             (MetadataJsons::Table, MetadataJsons::Description),
