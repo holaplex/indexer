@@ -43,6 +43,7 @@ enum Metadatas {
     Uri,
     Slot,
     BurnedAt,
+    TokenStandard,
 }
 
 #[derive(Iden)]
@@ -169,6 +170,7 @@ pub type NftColumns = (
     metadatas::update_authority_address,
     metadatas::uri,
     metadatas::slot,
+    metadatas::token_standard,
     metadata_jsons::description,
     metadata_jsons::image,
     metadata_jsons::animation_url,
@@ -188,6 +190,7 @@ pub const NFT_COLUMNS: NftColumns = (
     metadatas::update_authority_address,
     metadatas::uri,
     metadatas::slot,
+    metadatas::token_standard,
     metadata_jsons::description,
     metadata_jsons::image,
     metadata_jsons::animation_url,
@@ -262,6 +265,7 @@ pub fn list<O: Clone + Into<Value>>(
             (Metadatas::Table, Metadatas::PrimarySaleHappened),
             (Metadatas::Table, Metadatas::Uri),
             (Metadatas::Table, Metadatas::Slot),
+            (Metadatas::Table, Metadatas::TokenStandard),
         ])
         .columns(vec![
             (MetadataJsons::Table, MetadataJsons::Description),
@@ -543,6 +547,7 @@ pub fn collection_nfts<O: Into<Value>>(
             (Metadatas::Table, Metadatas::PrimarySaleHappened),
             (Metadatas::Table, Metadatas::Uri),
             (Metadatas::Table, Metadatas::Slot),
+            (Metadatas::Table, Metadatas::TokenStandard),
         ])
         .columns(vec![
             (MetadataJsons::Table, MetadataJsons::Description),
@@ -867,6 +872,7 @@ pub fn mr_collection_nfts<O: Into<Value>>(
             (Metadatas::Table, Metadatas::PrimarySaleHappened),
             (Metadatas::Table, Metadatas::Uri),
             (Metadatas::Table, Metadatas::Slot),
+            (Metadatas::Table, Metadatas::TokenStandard),
         ])
         .columns(vec![
             (MetadataJsons::Table, MetadataJsons::Description),

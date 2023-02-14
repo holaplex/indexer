@@ -1,21 +1,26 @@
 use indexer::prelude::*;
 use indexer_core::{
     db::{
-        custom_types::TokenStandardEnum,
+        custom_types::{ProgrammableConfigEnum, TokenStandardEnum},
         delete, insert_into,
-        models::{Metadata, MetadataCollectionKey, MetadataCreator},
-        tables::{metadata_collection_keys, metadata_creators, metadatas},
+        models::{Metadata, MetadataCollectionKey, MetadataCreator, MetadataProgrammableConfig},
+        tables::{
+            metadata_collection_keys, metadata_creators, metadata_programmable_configs, metadatas,
+        },
     },
     pubkeys::find_edition,
 };
-use mpl_token_metadata::state::{Collection, Metadata as MetadataAccount, TokenStandard};
+use mpl_token_metadata::state::{Collection, Metadata as MetadataAccount};
 
 use super::Client;
+use crate::handler::programs::metadata::{ProgrammableConfig, TokenStandard};
 
 pub(crate) async fn process(
     client: &Client,
     key: Pubkey,
     meta: MetadataAccount,
+    programmable_config: Option<ProgrammableConfig>,
+    token_standard: Option<TokenStandard>,
     slot: u64,
     write_version: u64,
 ) -> Result<()> {
@@ -33,11 +38,12 @@ pub(crate) async fn process(
         is_mutable: meta.is_mutable,
         edition_nonce: meta.edition_nonce.map(Into::into),
         edition_pda: Owned(bs58::encode(edition_pda_key).into_string()),
-        token_standard: meta.token_standard.map(|ts| match ts {
+        token_standard: token_standard.map(|ts| match ts {
             TokenStandard::NonFungible => TokenStandardEnum::NonFungible,
             TokenStandard::FungibleAsset => TokenStandardEnum::FungibleAsset,
             TokenStandard::Fungible => TokenStandardEnum::Fungible,
             TokenStandard::NonFungibleEdition => TokenStandardEnum::NonFungibleEdition,
+            TokenStandard::ProgrammableNonFungible => TokenStandardEnum::ProgrammableNonFungible,
         }),
         slot: Some(
             slot.try_into()
@@ -124,6 +130,35 @@ pub(crate) async fn process(
 
     if meta.collection.is_some() {
         index_metadata_collection_key(client, addr, meta.collection.context("err!")?).await?;
+    }
+
+    if let Some(pc) = programmable_config {
+        let (variant, rule_set) = match pc {
+            ProgrammableConfig::V1 { rule_set } => {
+                (ProgrammableConfigEnum::V1, rule_set.map(|r| r.to_string()))
+            },
+        };
+
+        let val = MetadataProgrammableConfig {
+            metadata_address: metadata.address.clone(),
+            variant,
+            rule_set: rule_set.map(Owned),
+        };
+
+        client
+            .db()
+            .run({
+                move |db| {
+                    insert_into(metadata_programmable_configs::table)
+                        .values(val.clone())
+                        .on_conflict(metadata_programmable_configs::metadata_address)
+                        .do_update()
+                        .set(&val)
+                        .execute(db)
+                }
+            })
+            .await
+            .context("Failed to insert metadata programmable config")?;
     }
 
     Ok(())

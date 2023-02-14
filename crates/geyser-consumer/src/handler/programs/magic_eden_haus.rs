@@ -330,23 +330,18 @@ pub(crate) async fn process_instruction(
 }
 
 pub(crate) fn get_block_time(client: &Client, slot: u64) -> Result<NaiveDateTime> {
-    let mut block_time = Utc::now().naive_utc();
-
-    // RPC error code 32009 occurs if the slot is not found.
-    // could be due to a brief delay at the rpc side for the most recent slot data to be returned.
-
     match client.rpc().get_block_time(slot) {
-        Ok(bt) => {
-            block_time = unix_timestamp(bt)?;
-        },
+        Ok(bt) => unix_timestamp(bt),
+        // Catch slot-not-found errors, likely due to race condition between
+        // Geyser and RPC
         Err(ClientError {
             request: _,
-            kind: ClientErrorKind::RpcError(RpcError::RpcResponseError { code, .. }),
-        }) if code == -32009 => (),
-        Err(e) => {
-            bail!("failed to get block time {:?}", e);
-        },
+            kind:
+                ClientErrorKind::RpcError(RpcError::RpcResponseError {
+                    code: -32009 | -32004,
+                    ..
+                }),
+        }) => Ok(Utc::now().naive_utc()),
+        Err(e) => Err(e).context("Error getting block time"),
     }
-
-    Ok(block_time)
 }

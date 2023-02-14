@@ -17,12 +17,11 @@ use crate::db::custom_types::{
     ActivityTypeEnum, EndSettingType, GovernanceAccountType, GovernanceAccountTypeEnum,
     InstructionExecutionFlags, InstructionExecutionFlagsEnum, ListingEventLifecycle,
     ListingEventLifecycleEnum, MintMaxVoteEnum, OfferEventLifecycle, OfferEventLifecycleEnum,
-    OptionVoteResultEnum, PayoutOperationEnum, ProposalState, ProposalStateEnum, ProposalVoteType,
-    ProposalVoteTypeEnum, TokenStandardEnum, TransactionExecutionStatusEnum, VoteRecordV2Vote,
-    VoteRecordV2VoteEnum, VoteThresholdEnum, VoteThresholdType, VoteTippingEnum, VoteWeightV1,
-    VoteWeightV1Enum, WhitelistMintMode,
+    OptionVoteResultEnum, PayoutOperationEnum, ProgrammableConfigEnum, ProposalState,
+    ProposalStateEnum, ProposalVoteType, ProposalVoteTypeEnum, TokenStandard, TokenStandardEnum,
+    TransactionExecutionStatusEnum, VoteRecordV2Vote, VoteRecordV2VoteEnum, VoteThresholdEnum,
+    VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum, WhitelistMintMode,
 };
-
 /* HPL LISTING REWARDS */
 
 /// A row in the `reward_centers` table
@@ -348,6 +347,18 @@ pub struct Metadata<'a> {
     pub burned_at: Option<NaiveDateTime>,
 }
 
+/// A row in the `metadata_programmable_configs` table
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
+#[diesel(treat_none_as_null = true)]
+pub struct MetadataProgrammableConfig<'a> {
+    /// The address of this account
+    pub metadata_address: Cow<'a, str>,
+    /// Variant
+    pub variant: ProgrammableConfigEnum,
+    /// Rule set
+    pub rule_set: Option<Cow<'a, str>>,
+}
+
 /// A row in the `storefronts` table
 #[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(treat_none_as_null = true)]
@@ -410,6 +421,10 @@ pub struct Nft {
     /// Solana slot number
     #[sql_type = "Nullable<Int8>"]
     pub slot: Option<i64>,
+
+    /// Token Standard
+    #[sql_type = "Nullable<TokenStandard>"]
+    pub token_standard: Option<TokenStandardEnum>,
 
     // Table metadata_json
     /// Metadata description
@@ -720,6 +735,10 @@ pub struct SampleNft {
     /// uri for metadata_json
     #[sql_type = "Text"]
     pub uri: String,
+
+    /// Token Standard
+    #[sql_type = "Nullable<TokenStandard>"]
+    pub token_standard: Option<TokenStandardEnum>,
 
     // Table metadata_json
     /// Metadata description
