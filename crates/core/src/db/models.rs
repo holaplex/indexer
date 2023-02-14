@@ -18,11 +18,10 @@ use crate::db::custom_types::{
     InstructionExecutionFlags, InstructionExecutionFlagsEnum, ListingEventLifecycle,
     ListingEventLifecycleEnum, MintMaxVoteEnum, OfferEventLifecycle, OfferEventLifecycleEnum,
     OptionVoteResultEnum, PayoutOperationEnum, ProgrammableConfigEnum, ProposalState,
-    ProposalStateEnum, ProposalVoteType, ProposalVoteTypeEnum, TokenStandardEnum,
+    ProposalStateEnum, ProposalVoteType, ProposalVoteTypeEnum, TokenStandard, TokenStandardEnum,
     TransactionExecutionStatusEnum, VoteRecordV2Vote, VoteRecordV2VoteEnum, VoteThresholdEnum,
     VoteThresholdType, VoteTippingEnum, VoteWeightV1, VoteWeightV1Enum, WhitelistMintMode,
 };
-
 /* HPL LISTING REWARDS */
 
 /// A row in the `reward_centers` table
@@ -423,6 +422,10 @@ pub struct Nft {
     #[sql_type = "Nullable<Int8>"]
     pub slot: Option<i64>,
 
+    /// Token Standard
+    #[sql_type = "Nullable<TokenStandard>"]
+    pub token_standard: Option<TokenStandardEnum>,
+
     // Table metadata_json
     /// Metadata description
     #[sql_type = "Nullable<Text>"]
@@ -732,6 +735,10 @@ pub struct SampleNft {
     /// uri for metadata_json
     #[sql_type = "Text"]
     pub uri: String,
+
+    /// Token Standard
+    #[sql_type = "Nullable<TokenStandard>"]
+    pub token_standard: Option<TokenStandardEnum>,
 
     // Table metadata_json
     /// Metadata description

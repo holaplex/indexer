@@ -2,6 +2,7 @@ use indexer_core::{
     assets::{proxy_url, AssetIdentifier, ImageSize},
     bigdecimal::ToPrimitive,
     db::{
+        custom_types::TokenStandardEnum,
         queries::{self, metadatas::CollectionNftOptions},
         sql_query,
         sql_types::Text,
@@ -359,6 +360,32 @@ impl LastSale {
     }
 }
 
+#[derive(Debug, Clone, juniper::GraphQLEnum)]
+pub enum TokenStandard {
+    /// This is a master edition
+    NonFungible,
+    /// A token with metadata that can also have attributes, sometimes called Semi Fungible
+    FungibleAsset,
+    /// A token with simple metadata
+    Fungible,
+    /// This is a limited edition
+    NonFungibleEdition,
+    /// PNFT
+    ProgrammableNonFungible,
+}
+
+impl From<TokenStandardEnum> for TokenStandard {
+    fn from(v: TokenStandardEnum) -> Self {
+        match v {
+            TokenStandardEnum::NonFungible => TokenStandard::NonFungible,
+            TokenStandardEnum::FungibleAsset => TokenStandard::FungibleAsset,
+            TokenStandardEnum::Fungible => TokenStandard::Fungible,
+            TokenStandardEnum::NonFungibleEdition => TokenStandard::NonFungibleEdition,
+            TokenStandardEnum::ProgrammableNonFungible => TokenStandard::ProgrammableNonFungible,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 /// An NFT
 pub struct Nft {
@@ -377,6 +404,7 @@ pub struct Nft {
     pub category: String,
     pub model: Option<String>,
     pub slot: Option<i32>,
+    pub token_standard: Option<TokenStandard>,
 }
 
 impl TryFrom<models::Nft> for Nft {
@@ -399,6 +427,7 @@ impl TryFrom<models::Nft> for Nft {
             category,
             model,
             slot,
+            token_standard,
         }: models::Nft,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -417,6 +446,7 @@ impl TryFrom<models::Nft> for Nft {
             category: category.unwrap_or_default(),
             model,
             slot: slot.map(TryInto::try_into).transpose()?,
+            token_standard: token_standard.map(Into::into),
         })
     }
 }
@@ -441,6 +471,10 @@ impl Nft {
 
     pub fn token_account_address(&self) -> &str {
         &self.token_account_address
+    }
+
+    pub fn token_standard(&self) -> &Option<TokenStandard> {
+        &self.token_standard
     }
 
     pub fn primary_sale_happened(&self) -> bool {

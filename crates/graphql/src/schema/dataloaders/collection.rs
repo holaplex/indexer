@@ -33,6 +33,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                     sample_metadatas.primary_sale_happened,
                     sample_metadatas.update_authority_address,
                     sample_metadatas.uri,
+                    sample_metadatas.token_standard,
                     sample_metadatas.description,
                     sample_metadatas.image,
                     sample_metadatas.animation_url,
@@ -51,6 +52,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                         metadatas.update_authority_address AS update_authority_address,
                         current_metadata_owners.token_account_address AS token_account_address,
                         metadatas.uri AS uri,
+                        metadatas.token_standard as token_standard,
                         metadata_jsons.description AS description,
                         metadata_jsons.image AS image,
                         metadata_jsons.animation_url AS animation_url,
@@ -83,6 +85,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                      primary_sale_happened,
                      update_authority_address,
                      uri,
+                     token_standard,
                      description,
                      image,
                      animation_url,
@@ -108,6 +111,7 @@ impl TryBatchFn<PublicKey<StoreCreator>, Vec<Nft>> for Batcher {
                             category,
                             model,
                             slot: None,
+                            token_standard,
                         }
                         .try_into(),
                     )
