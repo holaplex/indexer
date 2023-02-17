@@ -31,6 +31,9 @@ const EXECUTE_SALE: [u8; 8] = [37, 74, 217, 157, 79, 49, 35, 6];
 const EXECUTE_SALEV2: [u8; 8] = [91, 220, 49, 223, 204, 129, 53, 193];
 const CANCEL_SELL: [u8; 8] = [198, 198, 130, 203, 163, 95, 175, 75];
 const CANCEL_BUY: [u8; 8] = [238, 76, 36, 218, 132, 177, 224, 233];
+const MIP1_EXECUTE_SALEV2: [u8; 8] = [236, 163, 204, 173, 71, 144, 235, 118];
+const MIP1_SELL: [u8; 8] = [58, 50, 172, 111, 166, 151, 22, 94];
+const MIP1_CANCEL_SELL: [u8; 8] = [74, 190, 185, 225, 88, 105, 209, 156];
 
 #[derive(BorshDeserialize, Debug, Clone)]
 struct MEInstructionData {
@@ -77,6 +80,41 @@ async fn process_execute_sale(
     Ok(())
 }
 
+async fn process_mip_execute_salev2(
+    client: &Client,
+    mut data: &[u8],
+    accounts: &[Pubkey],
+    slot: u64,
+    timestamp: NaiveDateTime,
+) -> Result<()> {
+    let params = MEInstructionData::deserialize(&mut data)
+        .context("failed to deserialize Mip1 ExecuteSaleV2 instruction")?;
+
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
+
+    upsert_into_purchases_table(
+        client,
+        Purchase {
+            id: None,
+            buyer: Owned(accts[0].clone()),
+            seller: Owned(accts[2].clone()),
+            auction_house: Owned(accts[9].clone()),
+            marketplace_program: Owned(pubkeys::ME_HAUS.to_string()),
+            metadata: Owned(accts[8].clone()),
+            token_size: params.token_size.try_into()?,
+            price: params.buyer_price.try_into()?,
+            created_at: timestamp,
+            slot: slot.try_into()?,
+            write_version: None,
+        },
+        accts[12].clone(),
+        accts[11].clone(),
+    )
+    .await
+    .context("failed to insert listing!")?;
+
+    Ok(())
+}
 async fn process_sale(
     client: &Client,
     mut data: &[u8],
@@ -89,6 +127,7 @@ async fn process_sale(
 
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
+    let trade_state = accts[8].clone();
     let seller = accts[0].clone();
     let auction_house = accts[7].clone();
     let metadata = accts[5].clone();
@@ -96,38 +135,71 @@ async fn process_sale(
     let token_size = i64::try_from(params.token_size)?;
     let slot = i64::try_from(slot)?;
 
+    upsert_listing(
+        client,
+        params,
+        trade_state,
+        seller,
+        auction_house,
+        metadata,
+        price,
+        token_size,
+        slot,
+        timestamp,
+    )
+    .await
+}
+
+async fn upsert_listing(
+    client: &Client,
+    params: MEInstructionData,
+    trade_state: String,
+    seller: String,
+    auction_house: String,
+    metadata: String,
+    price: i64,
+    token_size: i64,
+    slot: i64,
+    timestamp: NaiveDateTime,
+) -> Result<()> {
     let purchase_id = client
         .db()
         .run({
-            move |db| {
-                purchases::table
-                    .filter(
-                        purchases::seller
-                            .eq(seller)
-                            .and(purchases::auction_house.eq(auction_house))
-                            .and(purchases::metadata.eq(metadata))
-                            .and(purchases::price.eq(price))
-                            .and(
-                                purchases::token_size
-                                    .eq(token_size)
-                                    .and(purchases::slot.eq(slot)),
-                            ),
-                    )
-                    .select(purchases::id)
-                    .first::<Uuid>(db)
-                    .optional()
-                    .context("failed to get purchase ids")
+            {
+                let auction_house = auction_house.clone();
+                let metadata = metadata.clone();
+                let seller = seller.clone();
+
+                move |db| {
+                    purchases::table
+                        .filter(
+                            purchases::seller
+                                .eq(seller)
+                                .and(purchases::auction_house.eq(auction_house))
+                                .and(purchases::metadata.eq(metadata))
+                                .and(purchases::price.eq(price))
+                                .and(
+                                    purchases::token_size
+                                        .eq(token_size)
+                                        .and(purchases::slot.eq(slot)),
+                                ),
+                        )
+                        .select(purchases::id)
+                        .first::<Uuid>(db)
+                        .optional()
+                        .context("failed to get purchase ids")
+                }
             }
         })
         .await?;
 
     upsert_into_listings_table(client, Listing {
         id: None,
-        trade_state: Owned(accts[8].clone()),
-        auction_house: Owned(accts[7].clone()),
+        trade_state: Owned(trade_state.clone()),
+        auction_house: Owned(auction_house.clone()),
         marketplace_program: Owned(pubkeys::ME_HAUS.to_string()),
-        seller: Owned(accts[0].clone()),
-        metadata: Owned(accts[5].clone()),
+        seller: Owned(seller.clone()),
+        metadata: Owned(metadata.clone()),
         purchase_id,
         price: params.buyer_price.try_into()?,
         token_size: params.token_size.try_into()?,
@@ -145,6 +217,41 @@ async fn process_sale(
     .context("failed to insert listing!")?;
 
     Ok(())
+}
+
+async fn process_mip_sell(
+    client: &Client,
+    mut data: &[u8],
+    accounts: &[Pubkey],
+    slot: u64,
+    timestamp: NaiveDateTime,
+) -> Result<()> {
+    let params = MEInstructionData::deserialize(&mut data)
+        .context("failed to deserialize Mip1 Sell instruction")?;
+
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
+
+    let trade_state = accts[7].clone();
+    let seller = accts[0].clone();
+    let auction_house = accts[6].clone();
+    let metadata = accts[5].clone();
+    let price = i64::try_from(params.buyer_price)?;
+    let token_size = i64::try_from(params.token_size)?;
+    let slot = i64::try_from(slot)?;
+
+    upsert_listing(
+        client,
+        params,
+        trade_state,
+        seller,
+        auction_house,
+        metadata,
+        price,
+        token_size,
+        slot,
+        timestamp,
+    )
+    .await
 }
 
 async fn process_buy(
@@ -235,6 +342,33 @@ async fn process_cancel_sale(
     let trade_state = accts[6].clone();
     let slot = i64::try_from(slot)?;
 
+    cancel_listing(client, slot, trade_state, timestamp)
+        .await
+        .context("failed to cancel listing")
+}
+
+async fn process_mip_cancel_sell(
+    client: &Client,
+    accounts: &[Pubkey],
+    slot: u64,
+    timestamp: NaiveDateTime,
+) -> Result<()> {
+    let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
+
+    let trade_state = accts[7].clone();
+    let slot = i64::try_from(slot)?;
+
+    cancel_listing(client, slot, trade_state, timestamp)
+        .await
+        .context("failed to cancel listing")
+}
+
+async fn cancel_listing(
+    client: &Client,
+    slot: i64,
+    trade_state: String,
+    timestamp: NaiveDateTime,
+) -> Result<()> {
     client
         .db()
         .run(move |db| {
@@ -325,6 +459,11 @@ pub(crate) async fn process_instruction(
         EXECUTE_SALEV2 => process_execute_sale(client, params, accounts, slot, block_time).await,
         CANCEL_SELL => process_cancel_sale(client, accounts, slot, block_time).await,
         CANCEL_BUY => process_cancel_buy(client, accounts, slot, block_time).await,
+        MIP1_SELL => process_mip_sell(client, params, accounts, slot, block_time).await,
+        MIP1_EXECUTE_SALEV2 => {
+            process_mip_execute_salev2(client, params, accounts, slot, block_time).await
+        },
+        MIP1_CANCEL_SELL => process_mip_cancel_sell(client, accounts, slot, block_time).await,
         _ => Ok(()),
     }
 }
