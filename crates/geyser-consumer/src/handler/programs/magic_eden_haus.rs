@@ -35,13 +35,24 @@ const MIP1_EXECUTE_SALEV2: [u8; 8] = [236, 163, 204, 173, 71, 144, 235, 118];
 const MIP1_SELL: [u8; 8] = [58, 50, 172, 111, 166, 151, 22, 94];
 const MIP1_CANCEL_SELL: [u8; 8] = [74, 190, 185, 225, 88, 105, 209, 156];
 
-#[derive(BorshDeserialize, Debug, Clone)]
+#[derive(BorshDeserialize, Debug, Clone, Default)]
 struct MEInstructionData {
     trade_state_bump: u8,
     _escrow_payment_bump: u8,
     buyer_price: u64,
     token_size: u64,
     expiry: i64,
+}
+
+#[derive(BorshDeserialize, Debug, Clone)]
+struct MIP1Sell {
+    buyer_price: u64,
+    seller_expiry: i64,
+}
+
+#[derive(BorshDeserialize, Debug, Clone)]
+struct MIP1ExecuteSaleV2 {
+    buyer_price: u64,
 }
 
 async fn process_execute_sale(
@@ -82,12 +93,13 @@ async fn process_execute_sale(
 
 async fn process_mip_execute_salev2(
     client: &Client,
-    mut data: &[u8],
+    data: &[u8],
     accounts: &[Pubkey],
     slot: u64,
     timestamp: NaiveDateTime,
 ) -> Result<()> {
-    let params = MEInstructionData::deserialize(&mut data)
+    let mut price = &data[..8];
+    let params = MIP1ExecuteSaleV2::deserialize(&mut price)
         .context("failed to deserialize Mip1 ExecuteSaleV2 instruction")?;
 
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
@@ -101,7 +113,7 @@ async fn process_mip_execute_salev2(
             auction_house: Owned(accts[9].clone()),
             marketplace_program: Owned(pubkeys::ME_HAUS.to_string()),
             metadata: Owned(accts[8].clone()),
-            token_size: params.token_size.try_into()?,
+            token_size: 1,
             price: params.buyer_price.try_into()?,
             created_at: timestamp,
             slot: slot.try_into()?,
@@ -131,8 +143,6 @@ async fn process_sale(
     let seller = accts[0].clone();
     let auction_house = accts[7].clone();
     let metadata = accts[5].clone();
-    let price = i64::try_from(params.buyer_price)?;
-    let token_size = i64::try_from(params.token_size)?;
     let slot = i64::try_from(slot)?;
 
     upsert_listing(
@@ -142,14 +152,13 @@ async fn process_sale(
         seller,
         auction_house,
         metadata,
-        price,
-        token_size,
         slot,
         timestamp,
     )
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn upsert_listing(
     client: &Client,
     params: MEInstructionData,
@@ -157,11 +166,12 @@ async fn upsert_listing(
     seller: String,
     auction_house: String,
     metadata: String,
-    price: i64,
-    token_size: i64,
     slot: i64,
     timestamp: NaiveDateTime,
 ) -> Result<()> {
+    let token_size: i64 = params.token_size.try_into()?;
+    let price: i64 = params.buyer_price.try_into()?;
+
     let purchase_id = client
         .db()
         .run({
@@ -221,13 +231,13 @@ async fn upsert_listing(
 
 async fn process_mip_sell(
     client: &Client,
-    mut data: &[u8],
+    data: &[u8],
     accounts: &[Pubkey],
     slot: u64,
     timestamp: NaiveDateTime,
 ) -> Result<()> {
-    let params = MEInstructionData::deserialize(&mut data)
-        .context("failed to deserialize Mip1 Sell instruction")?;
+    let params =
+        MIP1Sell::try_from_slice(data).context("failed to deserialize Mip1 Sell instruction")?;
 
     let accts: Vec<_> = accounts.iter().map(ToString::to_string).collect();
 
@@ -235,19 +245,20 @@ async fn process_mip_sell(
     let seller = accts[0].clone();
     let auction_house = accts[6].clone();
     let metadata = accts[5].clone();
-    let price = i64::try_from(params.buyer_price)?;
-    let token_size = i64::try_from(params.token_size)?;
     let slot = i64::try_from(slot)?;
 
     upsert_listing(
         client,
-        params,
+        MEInstructionData {
+            buyer_price: params.buyer_price,
+            token_size: 1,
+            expiry: params.seller_expiry,
+            ..Default::default()
+        },
         trade_state,
         seller,
         auction_house,
         metadata,
-        price,
-        token_size,
         slot,
         timestamp,
     )
