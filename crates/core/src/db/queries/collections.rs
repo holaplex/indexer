@@ -11,7 +11,7 @@ use diesel::{
     serialize::ToSql,
     sql_types::{Array, Integer, Nullable, Text, Timestamp},
 };
-use sea_query::{Expr, Iden, Order, PostgresQueryBuilder, Query};
+use sea_query::{Alias, Expr, Func, Iden, Order, PostgresQueryBuilder, Query};
 
 use crate::{
     db::{
@@ -91,6 +91,7 @@ enum DolphinStats {
 enum Collections {
     Table,
     Id,
+    MagicEdenId,
 }
 
 /// Query collection by address
@@ -544,8 +545,11 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Do
     let order = order.unwrap_or(Order::Desc);
 
     let query = Query::select()
+        .expr_as(
+            Expr::col((Collections::Table, Collections::Id)),
+            Alias::new(&DolphinStats::CollectionSymbol.to_string()),
+        )
         .columns(vec![
-            (DolphinStats::Table, DolphinStats::CollectionSymbol),
             (DolphinStats::Table, DolphinStats::Floor1d),
             (DolphinStats::Table, DolphinStats::Floor7d),
             (DolphinStats::Table, DolphinStats::Floor30d),
@@ -577,8 +581,10 @@ pub fn trends(conn: &Connection, options: TrendingQueryOptions) -> Result<Vec<Do
         .from(DolphinStats::Table)
         .inner_join(
             Collections::Table,
-            Expr::tbl(Collections::Table, Collections::Id)
-                .equals(DolphinStats::Table, DolphinStats::CollectionSymbol),
+            Expr::col((DolphinStats::Table, DolphinStats::CollectionSymbol)).eq(Func::coalesce([
+                Expr::col((Collections::Table, Collections::MagicEdenId)),
+                Expr::col((Collections::Table, Collections::Id)),
+            ])),
         )
         .limit(limit)
         .offset(offset)
