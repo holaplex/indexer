@@ -181,6 +181,15 @@ impl<'a> TryFrom<models::Collection<'a>> for Collection {
     }
 }
 
+impl Collection {
+    fn id_for_dolphin(&self) -> String {
+        self.magic_eden_id
+            .as_deref()
+            .unwrap_or(&self.id)
+            .to_string()
+    }
+}
+
 #[graphql_object(Context = AppContext)]
 impl Collection {
     pub fn id(&self) -> &CollectionId {
@@ -238,7 +247,7 @@ impl Collection {
     pub async fn trends(&self, context: &AppContext) -> FieldResult<Option<CollectionTrend>> {
         context
             .mr_collection_trends_loader
-            .load(self.id.clone())
+            .load(self.id_for_dolphin())
             .await
             .map_err(Into::into)
     }
@@ -356,7 +365,7 @@ impl Collection {
     ) -> FieldResult<Timeseries> {
         let http = &ctx.shared.http;
         let dolphin_key = &ctx.shared.dolphin_key;
-        let url = market_stats_endpoint(&self.id, &start_time, &end_time)?;
+        let url = market_stats_endpoint(&self.id_for_dolphin(), &start_time, &end_time)?;
 
         let json = http
             .get(url.clone())
