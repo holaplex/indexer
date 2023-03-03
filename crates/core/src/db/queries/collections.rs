@@ -609,13 +609,13 @@ SELECT id, metadata, auction_house, marketplace_program, price, created_at,
         LEFT JOIN twitter_handle_name_services thb on (thb.wallet_address = marketplace_activities.buyer)
 	    LEFT JOIN twitter_handle_name_services ths on (ths.wallet_address = marketplace_activities.seller)
         WHERE collection_id = $1
-        AND ( activity_type::text = ANY($2) OR $2 IS NULL)
+        AND (activity_type = ANY($2::activity_type[]) OR $2 IS NULL)
     ORDER BY created_at DESC
     LIMIT $3
     OFFSET $4;
 
  -- $1: id::text
- -- $2: event_types::text[]
+ -- $2: activity_type::activity_type[]
  -- $3: limit::integer
  -- $4: offset::integer";
 
