@@ -795,6 +795,8 @@ pub fn wallet_nfts<O: Into<Value>>(
             order_unwrap,
             NullOrdering::Last,
         )
+        .order_by((Metadatas::Table, Metadatas::Name), Order::Asc)
+        .order_by((Metadatas::Table, Metadatas::MintAddress), Order::Asc)
         .take();
 
     if let Some(collections) = collections {
@@ -945,6 +947,8 @@ pub fn mr_collection_nfts<O: Into<Value>>(
         .limit(limit)
         .offset(offset)
         .order_by_with_nulls((Listings::Table, sort_by), order, NullOrdering::Last)
+        .order_by((Metadatas::Table, Metadatas::Name), Order::Asc)
+        .order_by((Metadatas::Table, Metadatas::MintAddress), Order::Asc)
         .take();
 
     if let Some(attributes) = attributes {
