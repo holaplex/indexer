@@ -306,7 +306,7 @@ pub fn list<O: Clone + Into<Value>>(
                     CurrentMetadataOwners::OwnerAddress,
                 )),
         )
-        .and_where(Expr::col(Metadatas::BurnedAt).is_null())
+        .and_where(Expr::col((Metadatas::Table, Metadatas::BurnedAt)).is_null())
         .limit(limit)
         .offset(offset)
         .order_by((Listings::Table, Listings::Price), Order::Asc)
@@ -624,7 +624,7 @@ pub fn collection_nfts<O: Into<Value>>(
                         .eq(marketplace_program)
                 })),
         )
-        .and_where(Expr::col(Metadatas::BurnedAt).is_null())
+        .and_where(Expr::col((Metadatas::Table, Metadatas::BurnedAt)).is_null())
         .conditions(
             is_me_collection,
             |query| {
@@ -779,8 +779,14 @@ pub fn wallet_nfts<O: Into<Value>>(
         )
         .cond_where(
             Condition::all()
-                .add(Expr::col(CurrentMetadataOwners::OwnerAddress).eq(wallet))
-                .add(Expr::col(Metadatas::BurnedAt).is_null()),
+                .add(
+                    Expr::col((
+                        CurrentMetadataOwners::Table,
+                        CurrentMetadataOwners::OwnerAddress,
+                    ))
+                    .eq(wallet),
+                )
+                .add(Expr::col((Metadatas::Table, Metadatas::BurnedAt)).is_null()),
         )
         .limit(limit)
         .offset(offset)
@@ -789,6 +795,8 @@ pub fn wallet_nfts<O: Into<Value>>(
             order_unwrap,
             NullOrdering::Last,
         )
+        .order_by((Metadatas::Table, Metadatas::Name), Order::Asc)
+        .order_by((Metadatas::Table, Metadatas::MintAddress), Order::Asc)
         .take();
 
     if let Some(collections) = collections {
@@ -932,13 +940,15 @@ pub fn mr_collection_nfts<O: Into<Value>>(
                         .eq(marketplace_program)
                 })),
         )
-        .and_where(Expr::col(Metadatas::BurnedAt).is_null())
+        .and_where(Expr::col((Metadatas::Table, Metadatas::BurnedAt)).is_null())
         .and_where(
             Expr::col((CollectionMints::Table, CollectionMints::CollectionId)).eq(collection),
         )
         .limit(limit)
         .offset(offset)
         .order_by_with_nulls((Listings::Table, sort_by), order, NullOrdering::Last)
+        .order_by((Metadatas::Table, Metadatas::Name), Order::Asc)
+        .order_by((Metadatas::Table, Metadatas::MintAddress), Order::Asc)
         .take();
 
     if let Some(attributes) = attributes {
